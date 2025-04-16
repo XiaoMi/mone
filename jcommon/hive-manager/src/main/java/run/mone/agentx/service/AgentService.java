@@ -13,7 +13,7 @@ import run.mone.agentx.repository.AgentAccessRepository;
 import run.mone.agentx.repository.AgentRepository;
 import run.mone.agentx.repository.AgentInstanceRepository;
 import run.mone.hive.bo.HealthInfo;
-import run.mone.hive.bo.RegInfo;
+import run.mone.hive.bo.RegInfoDto;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -122,25 +122,23 @@ public class AgentService {
         return agentRepository.deleteById(id);
     }
 
-    // Agent access management methods
-    public Mono<AgentAccess> grantAccess(Long agentId, Long userId) {
-        return hasAccess(agentId, userId)
-                .flatMap(hasAccess -> {
-                    if (Boolean.TRUE.equals(hasAccess)) {
-                        // User already has access
-                        return agentAccessRepository.findByAgentIdAndUserId(agentId, userId)
-                                .switchIfEmpty(Mono.defer(() -> {
-                                    AgentAccess access = new AgentAccess();
-                                    access.setAgentId(agentId);
-                                    access.setUserId(userId);
-                                    access.setCtime(System.currentTimeMillis());
-                                    access.setUtime(System.currentTimeMillis());
-                                    access.setState(1);
-                                    return agentAccessRepository.save(access);
-                                }));
-                    }
-                    return Mono.empty();
-                });
+    public Mono<Void> grantAccess(Long agentId, Long userId) {
+        return agentAccessRepository.findByAgentIdAndUserId(agentId, userId)
+                .flatMap(access -> {
+                    access.setState(1);
+                    access.setUtime(System.currentTimeMillis());
+                    return agentAccessRepository.save(access);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    AgentAccess access = new AgentAccess();
+                    access.setAgentId(agentId);
+                    access.setUserId(userId);
+                    access.setState(1);
+                    access.setCtime(System.currentTimeMillis());
+                    access.setUtime(System.currentTimeMillis());
+                    return agentAccessRepository.save(access);
+                }))
+                .then();
     }
 
     public Mono<Void> revokeAccess(Long agentId, Long userId) {
@@ -159,14 +157,14 @@ public class AgentService {
                 .map(AgentAccess::getUserId);
     }
 
-    public Mono<AgentInstance> register(RegInfo regInfo) {
-        return agentRepository.findByNameAndGroupAndVersion(regInfo.getName(), regInfo.getGroup(), regInfo.getVersion())
+    public Mono<AgentInstance> register(RegInfoDto regInfoDto) {
+        return agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
                 .switchIfEmpty(Mono.defer(() -> {
                     // 如果Agent不存在，先创建一个
                     Agent agent = new Agent();
-                    agent.setName(regInfo.getName());
-                    agent.setGroup(regInfo.getGroup());
-                    agent.setVersion(regInfo.getVersion());
+                    agent.setName(regInfoDto.getName());
+                    agent.setGroup(regInfoDto.getGroup());
+                    agent.setVersion(regInfoDto.getVersion());
                     agent.setDescription("Auto created during registration");
                     agent.setCtime(System.currentTimeMillis());
                     agent.setUtime(System.currentTimeMillis());
@@ -175,14 +173,35 @@ public class AgentService {
                     return agentRepository.save(agent);
                 }))
                 .flatMap(agent -> {
+                    // 检查 ip 和 port 是否有效
+                    if (regInfoDto.getIp() == null || regInfoDto.getPort() <= 0) {
+                        // 如果 ip 为 null 或 port 为 0，只返回一个空的 AgentInstance
+                        AgentInstance emptyInstance = new AgentInstance();
+                        emptyInstance.setAgentId(agent.getId());
+                        emptyInstance.setIp("unknown");
+                        emptyInstance.setPort(0);
+                        emptyInstance.setLastHeartbeatTime(System.currentTimeMillis());
+                        emptyInstance.setIsActive(true);
+                        emptyInstance.setCtime(System.currentTimeMillis());
+                        emptyInstance.setUtime(System.currentTimeMillis());
+                        return Mono.just(emptyInstance);
+                    }
+                    
                     // 检查AgentInstance是否已存在
-                    return agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), regInfo.getIp(), regInfo.getPort())
+                    return agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), regInfoDto.getIp(), regInfoDto.getPort())
+                            .flatMap(existingInstance -> {
+                                // 如果AgentInstance已存在，更新最后心跳时间
+                                existingInstance.setLastHeartbeatTime(System.currentTimeMillis());
+                                existingInstance.setIsActive(true);
+                                existingInstance.setUtime(System.currentTimeMillis());
+                                return agentInstanceRepository.save(existingInstance);
+                            })
                             .switchIfEmpty(Mono.defer(() -> {
                                 // 如果AgentInstance不存在，创建一个新的
                                 AgentInstance instance = new AgentInstance();
                                 instance.setAgentId(agent.getId());
-                                instance.setIp(regInfo.getIp());
-                                instance.setPort(regInfo.getPort());
+                                instance.setIp(regInfoDto.getIp());
+                                instance.setPort(regInfoDto.getPort());
                                 instance.setLastHeartbeatTime(System.currentTimeMillis());
                                 instance.setIsActive(true);
                                 instance.setCtime(System.currentTimeMillis());
@@ -192,11 +211,11 @@ public class AgentService {
                 });
     }
 
-    public Mono<Void> unregister(RegInfo regInfo) {
-        return agentRepository.findByNameAndGroupAndVersion(regInfo.getName(), regInfo.getGroup(), regInfo.getVersion())
+    public Mono<Void> unregister(RegInfoDto regInfoDto) {
+        return agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
                 .flatMap(agent -> {
                     // 如果Agent存在，检查AgentInstance是否存在
-                    return agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), regInfo.getIp(), regInfo.getPort())
+                    return agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), regInfoDto.getIp(), regInfoDto.getPort())
                             .flatMap(instance -> {
                                 // 如果AgentInstance存在，删除它
                                 return agentInstanceRepository.deleteById(instance.getId())
@@ -228,14 +247,15 @@ public class AgentService {
     }
 
     @Scheduled(fixedRate = 60000) // 每分钟检查一次
-    public Mono<Void> checkHeartbeats() {
-        return agentInstanceRepository.findByIsActiveTrue()
-                .filter(instance -> System.currentTimeMillis() - instance.getLastHeartbeatTime() > HEARTBEAT_TIMEOUT)
+    public void checkHeartbeats() {
+        long cutoffTime = System.currentTimeMillis() - HEARTBEAT_TIMEOUT;
+        agentInstanceRepository.findByIsActiveTrue()
+                .filter(instance -> instance.getLastHeartbeatTime() < cutoffTime)
                 .flatMap(instance -> {
                     instance.setIsActive(false);
                     instance.setUtime(System.currentTimeMillis());
                     return agentInstanceRepository.save(instance);
                 })
-                .then();
+                .subscribe();
     }
 }

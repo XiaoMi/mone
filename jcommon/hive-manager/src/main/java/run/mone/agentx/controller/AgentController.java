@@ -20,7 +20,7 @@ import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
 import run.mone.hive.bo.HealthInfo;
-import run.mone.hive.bo.RegInfo;
+import run.mone.hive.bo.RegInfoDto;
 
 @RestController
 @RequestMapping("/api/v1/agents")
@@ -74,13 +74,13 @@ public class AgentController {
     }
 
     @PostMapping("/register")
-    public Mono<ApiResponse<AgentInstance>> register(@RequestBody RegInfo regInfo) {
-        return agentService.register(regInfo).map(ApiResponse::success);
+    public Mono<ApiResponse<AgentInstance>> register(@RequestBody RegInfoDto regInfoDto) {
+        return agentService.register(regInfoDto).map(ApiResponse::success);
     }
 
     @PostMapping("/unregister")
-    public Mono<ApiResponse<Void>> unregister(@RequestBody RegInfo regInfo) {
-        return agentService.unregister(regInfo).thenReturn(ApiResponse.success(null));
+    public Mono<ApiResponse<Void>> unregister(@RequestBody RegInfoDto regInfoDto) {
+        return agentService.unregister(regInfoDto).thenReturn(ApiResponse.success(null));
     }
 
     @PostMapping("/health")
