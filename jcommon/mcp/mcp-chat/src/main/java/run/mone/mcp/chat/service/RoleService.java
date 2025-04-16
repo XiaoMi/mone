@@ -1,5 +1,6 @@
 package run.mone.mcp.chat.service;
 
+import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.chat.task.MinZaiTask;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
@@ -24,6 +26,7 @@ import run.mone.mcp.chat.tool.SystemInfoTool;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -55,7 +58,8 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", new CountDownLatch(1), llm) {
+        List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool(), new DocumentProcessingTool(), new SystemInfoTool());
+        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", new CountDownLatch(1), llm, tools) {
             @Override
             public void reg(RegInfo info) {
             }
@@ -69,12 +73,6 @@ public class RoleService {
             }
         };
         minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
-        //支持使用聊天工具
-        minzai.getTools().add(new ChatTool());
-        minzai.getTools().add(new AskTool());
-        minzai.getTools().add(new AttemptCompletionTool());
-        minzai.getTools().add(new DocumentProcessingTool());
-        minzai.getTools().add(new SystemInfoTool());
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
         //一直执行不会停下来

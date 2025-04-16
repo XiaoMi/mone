@@ -1,5 +1,6 @@
 package run.mone.hive.roles;
 
+import com.google.api.client.util.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import lombok.Data;
@@ -111,15 +112,16 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", countDownLatch, llm);
+        this(name, "", "", countDownLatch, llm, Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, CountDownLatch countDownLatch, LLM llm) {
+    public ReactorRole(String name, String group, String version, CountDownLatch countDownLatch, LLM llm, List<ITool> tools) {
         super(name);
         this.group = group;
         this.version = version;
+        tools.forEach(this::addTool);
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
