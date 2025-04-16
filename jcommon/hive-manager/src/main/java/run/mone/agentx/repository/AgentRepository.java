@@ -8,4 +8,5 @@ import run.mone.agentx.entity.Agent;
 public interface AgentRepository extends ReactiveCrudRepository<Agent, Long> {
     Flux<Agent> findByCreatedBy(Long userId);
     Mono<Agent> findByIdAndCreatedBy(Long id, Long userId);
+    Mono<Agent> findByNameAndGroupAndVersion(String name, String group, String version);
 }
