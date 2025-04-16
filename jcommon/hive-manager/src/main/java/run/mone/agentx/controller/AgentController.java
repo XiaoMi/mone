@@ -16,8 +16,10 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.common.ApiResponse;
 import run.mone.agentx.entity.Agent;
+import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
+import run.mone.hive.bo.RegInfo;
 
 @RestController
 @RequestMapping("/api/v1/agents")
@@ -68,5 +70,20 @@ public class AgentController {
                 .flatMap(existingAgent -> agentService.deleteAgent(id))
                 .thenReturn(ApiResponse.<Void>success(null))
                 .defaultIfEmpty(ApiResponse.<Void>error(403, "Unauthorized or agent not found"));
+    }
+
+    @PostMapping("/register")
+    public Mono<ApiResponse<AgentInstance>> register(@RequestBody RegInfo regInfo) {
+        return agentService.register(regInfo).map(ApiResponse::success);
+    }
+
+    @PostMapping("/unregister")
+    public Mono<ApiResponse<Void>> unregister(@RequestBody RegInfo regInfo) {
+        return agentService.unregister(regInfo).thenReturn(ApiResponse.success(null));
+    }
+
+    @PostMapping("/health")
+    public Mono<ApiResponse<Void>> heartbeat(@RequestBody RegInfo regInfo) {
+        return agentService.heartbeat(regInfo).thenReturn(ApiResponse.success(null));
     }
 }
