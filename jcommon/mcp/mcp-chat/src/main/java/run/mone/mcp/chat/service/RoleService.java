@@ -1,10 +1,13 @@
 package run.mone.mcp.chat.service;
 
+import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.RegInfo;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
@@ -14,6 +17,7 @@ import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.chat.task.MinZaiTask;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
@@ -22,7 +26,9 @@ import run.mone.mcp.chat.tool.SystemInfoTool;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author goodjava@qq.com
@@ -52,15 +58,21 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole minzai = new ReactorRole("minzai", llm);
-        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
-        //支持使用聊天工具(聊天工具是比mcp要轻量级的存在,如果tool能支持,优先使用tool)
-        minzai.addTool(new ChatTool());
-        minzai.addTool(new AskTool());
-        minzai.addTool(new AttemptCompletionTool());
-        minzai.addTool(new DocumentProcessingTool());
-        minzai.addTool(new SystemInfoTool());
+        List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool(), new DocumentProcessingTool(), new SystemInfoTool());
+        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", new CountDownLatch(1), llm, tools) {
+            @Override
+            public void reg(RegInfo info) {
+            }
 
+            @Override
+            public void unreg(RegInfo regInfo) {
+            }
+
+            @Override
+            public void health(HealthInfo healthInfo) {
+            }
+        };
+        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
         //一直执行不会停下来
@@ -82,5 +94,13 @@ public class RoleService {
         });
     }
 
+    public void clearHistory(Message message) {
+        // Clear the role's memory
+        String from = message.getSentFrom().toString();
+        if (roleMap.containsKey(from)) {
+            ReactorRole minzai = roleMap.get(from);
+            minzai.clearMemory();
+        }
+    }
 
 }

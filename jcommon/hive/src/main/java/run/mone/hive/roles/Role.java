@@ -443,4 +443,13 @@ public class Role {
     public void sendMessage(Message msg) {
         log.info("msg:{}, ", msg);
     }
+
+    /**
+     * Clears all messages from the role's memory
+     */
+    public void clearMemory() {
+        if (this.rc != null && this.rc.getMemory() != null) {
+            this.rc.getMemory().clear();
+        }
+    }
 }

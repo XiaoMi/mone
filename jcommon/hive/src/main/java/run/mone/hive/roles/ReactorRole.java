@@ -1,5 +1,6 @@
 package run.mone.hive.roles;
 
+import com.google.api.client.util.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import lombok.Data;
@@ -8,6 +9,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
+import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
@@ -61,6 +64,10 @@ public class ReactorRole extends Role {
 
     private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
 
+    private String version;
+
+    private String group;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -92,10 +99,29 @@ public class ReactorRole extends Role {
         this(name, null, llm);
     }
 
+    public void reg(RegInfo info) {
+        log.info("reg info:{}", info);
+    }
+
+    public void unreg(RegInfo regInfo) {
+        log.info("unreg info:{}", regInfo);
+    }
+
+    public void health(HealthInfo healthInfo) {
+        log.info("health:{}", healthInfo);
+    }
+
+    public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
+        this(name, "", "", countDownLatch, llm, Lists.newArrayList());
+    }
+
 
     @SneakyThrows
-    public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
+    public ReactorRole(String name, String group, String version, CountDownLatch countDownLatch, LLM llm, List<ITool> tools) {
         super(name);
+        this.group = group;
+        this.version = version;
+        tools.forEach(this::addTool);
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
@@ -105,18 +131,22 @@ public class ReactorRole extends Role {
         // Initialize scheduler with a single thread
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
 
+        //注册到agent注册中心
+        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).toolMap(this.toolMap).build());
+
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
+                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).build());
                 log.info("Scheduled task executed at: {}", System.currentTimeMillis());
             });
         }, 0, 20, TimeUnit.SECONDS);
     }
 
-    //tink -> observe -> act
+    //think -> observe -> act
     @Override
     protected int think() {
         log.info("think");
@@ -129,6 +159,10 @@ public class ReactorRole extends Role {
         }
     }
 
+    @Override
+    protected void postReact(ActionContext ac) {
+        this.unreg(RegInfo.builder().name(this.name).group(this.group).version(this.version).build());
+    }
 
     @SneakyThrows
     @Override
