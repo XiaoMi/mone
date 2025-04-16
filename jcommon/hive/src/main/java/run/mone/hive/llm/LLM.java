@@ -200,6 +200,7 @@ public class LLM {
             if ((this.llmProvider == LLMProvider.OPENROUTER
                     || this.llmProvider == LLMProvider.MOONSHOT
                     || this.llmProvider == LLMProvider.DOUBAO
+                    || this.llmProvider == LLMProvider.QWEN
             ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
