@@ -19,6 +19,7 @@ import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
+import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 
 @RestController
@@ -83,7 +84,7 @@ public class AgentController {
     }
 
     @PostMapping("/health")
-    public Mono<ApiResponse<Void>> heartbeat(@RequestBody RegInfo regInfo) {
-        return agentService.heartbeat(regInfo).thenReturn(ApiResponse.success(null));
+    public Mono<ApiResponse<Void>> heartbeat(@RequestBody HealthInfo healthInfo) {
+        return agentService.heartbeat(healthInfo).thenReturn(ApiResponse.success(null));
     }
 }

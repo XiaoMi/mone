@@ -12,6 +12,7 @@ import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.repository.AgentAccessRepository;
 import run.mone.agentx.repository.AgentRepository;
 import run.mone.agentx.repository.AgentInstanceRepository;
+import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 
 import java.time.Duration;
@@ -214,9 +215,9 @@ public class AgentService {
                 .switchIfEmpty(Mono.empty()); // 如果Agent不存在，不做任何操作
     }
 
-    public Mono<Void> heartbeat(RegInfo regInfo) {
-        return agentRepository.findByNameAndGroupAndVersion(regInfo.getName(), regInfo.getGroup(), regInfo.getVersion())
-                .flatMap(agent -> agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), regInfo.getIp(), regInfo.getPort())
+    public Mono<Void> heartbeat(HealthInfo healthInfo) {
+        return agentRepository.findByNameAndGroupAndVersion(healthInfo.getName(), healthInfo.getGroup(), healthInfo.getVersion())
+                .flatMap(agent -> agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), healthInfo.getIp(), healthInfo.getPort())
                         .flatMap(instance -> {
                             instance.setLastHeartbeatTime(System.currentTimeMillis());
                             instance.setIsActive(true);
