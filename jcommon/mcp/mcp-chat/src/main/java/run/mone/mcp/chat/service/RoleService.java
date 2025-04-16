@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.RegInfo;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
@@ -53,8 +55,20 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole minzai = new ReactorRole("minzai", new CountDownLatch(1), llm);
-        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai,grpcServerTransport).run());
+        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", new CountDownLatch(1), llm) {
+            @Override
+            public void reg(RegInfo info) {
+            }
+
+            @Override
+            public void unreg(RegInfo regInfo) {
+            }
+
+            @Override
+            public void health(HealthInfo healthInfo) {
+            }
+        };
+        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
         //支持使用聊天工具
         minzai.getTools().add(new ChatTool());
         minzai.getTools().add(new AskTool());
