@@ -26,6 +26,7 @@ public class AgentService {
     private final AgentInstanceRepository agentInstanceRepository;
 
     private static final long HEARTBEAT_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
+    private static final long HEARTBEAT_DELETE_TIMEOUT = TimeUnit.MINUTES.toMillis(10);
 
     public Mono<Agent> createAgent(Agent agent) {
         return agentRepository.findByNameAndGroupAndVersion(agent.getName(), agent.getGroup(), agent.getVersion())
@@ -240,13 +241,13 @@ public class AgentService {
             if (instance != null) {
                 agentInstanceRepository.deleteById(instance.getId()).block();
                 
-                // 检查此agent_id的t_agent_instance记录数是否为0
-                long count = agentInstanceRepository.findByAgentId(agent.getId()).count().block();
-                
-                // 如果为0，删除t_agent记录
-                if (count == 0) {
-                    agentRepository.deleteById(agent.getId()).block();
-                }
+//                // 检查此agent_id的t_agent_instance记录数是否为0
+//                long count = agentInstanceRepository.findByAgentId(agent.getId()).count().block();
+//
+//                // 如果为0，删除t_agent记录
+//                if (count == 0) {
+//                    agentRepository.deleteById(agent.getId()).block();
+//                }
             }
             
             return Mono.empty();
@@ -269,14 +270,38 @@ public class AgentService {
 
     @Scheduled(fixedRate = 60000) // 每分钟检查一次
     public void checkHeartbeats() {
-        long cutoffTime = System.currentTimeMillis() - HEARTBEAT_TIMEOUT;
-        agentInstanceRepository.findByIsActiveTrue()
-                .filter(instance -> instance.getLastHeartbeatTime() < cutoffTime)
-                .flatMap(instance -> {
-                    instance.setIsActive(false);
-                    instance.setUtime(System.currentTimeMillis());
-                    return agentInstanceRepository.save(instance);
-                })
-                .subscribe();
+        try {
+            long currentTime = System.currentTimeMillis();
+            long cutoffTime = currentTime - HEARTBEAT_TIMEOUT;
+            long deleteTime = currentTime - HEARTBEAT_DELETE_TIMEOUT;
+            
+            // 查找所有当前标记为活跃的Agent实例
+            agentInstanceRepository.findByIsActiveTrue()
+                    .filter(instance -> instance.getLastHeartbeatTime() < cutoffTime)
+                    .flatMap(instance -> {
+                        // 如果超过10分钟没有心跳，直接删除
+                        if (instance.getLastHeartbeatTime() < deleteTime) {
+                            return agentInstanceRepository.deleteById(instance.getId())
+                                    .then(agentInstanceRepository.findByAgentId(instance.getAgentId()).count()
+                                            .flatMap(count -> {
+                                                // 检查此agent_id的t_agent_instance记录数是否为0
+                                                if (count == 0) {
+                                                    // 如果为0，删除t_agent记录
+                                                    return agentRepository.deleteById(instance.getAgentId());
+                                                }
+                                                return Mono.empty();
+                                            }));
+                        } else {
+                            // 如果只是超过3分钟但不到10分钟，标记为非活跃
+                            instance.setIsActive(false);
+                            instance.setUtime(currentTime);
+                            return agentInstanceRepository.save(instance);
+                        }
+                    })
+                    .subscribe();
+        } catch (Exception e) {
+            // 记录异常但不抛出，避免定时任务中断
+            e.printStackTrace();
+        }
     }
 }
