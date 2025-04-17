@@ -3,7 +3,7 @@
     <div id="particles-js"></div>
     <ChatWindow
       placeholder="placeholder"
-      :messageList="messageList"
+      :messageList="list"
       :isOpen="true"
       :alwaysScrollToBottom="true"
       :onMessageClick="messageClick"
@@ -21,14 +21,21 @@ import {
   useChatContextStore,
   type Message,
 } from "@/stores/chat-context";
-import { onMounted, onBeforeUnmount } from "vue"
+import { onMounted, onBeforeUnmount, computed } from "vue"
 import { getAgentDetail } from '@/api/agent'
 import { useRoute } from 'vue-router'
 import { connectWebSocket } from '@/api/wsConnect'
+import { streamChat } from '@/api/message'
+import { v4 as uuidv4 } from 'uuid';
+import { fluxCodeHandler } from '@/components/Chat/common/result-code';
 const route = useRoute()
 const { getChatContext, setMessageList, addMessage, setProject, setModule, setLoading, messageList } =
   useChatContextStore();
-const { user } = useUserStore();
+const { user, setAgent } = useUserStore();
+
+const list = computed(() => {
+  return messageList
+})
 
   const scrollToTop = () => {
     // 滚动到顶部
@@ -39,7 +46,26 @@ const { user } = useUserStore();
     }
   const sendMessage = async (message: Message) => {
     addMessage(message);
-    // 发送给ws
+    try {
+      const uuid = uuidv4();
+      streamChat(message.data.text as string, (data: any) => {
+        if (data) {
+          // 处理 SSE 数据流
+          const messages = data
+            .split('\n')
+            .filter((line: string) => line.startsWith('data:'))
+            .map((line: string) => line.slice(5))
+            .filter(Boolean);
+          // 打印消息
+          messages.forEach((msg: any) => {
+            fluxCodeHandler(msg, uuid)
+          });
+        }
+      });
+      
+    } catch (error) {
+      console.error('发送消息失败:', error);
+    }
   }
 
 const messageClick = async (item: { type: string; text: string; params: any }) => {
@@ -156,6 +182,7 @@ onMounted(async () => {
       const { data } = await getAgentDetail(Number(route.query.serverAgentId))
       if (data.code === 200) {
         const agent = data.data
+        setAgent(agent)
         addMessage({
             type: "md",
             author: {
@@ -170,9 +197,9 @@ onMounted(async () => {
                 text: `你好，我是 ${agent.name}，有什么可以帮你的吗？`,
             },
         });
-        connectWebSocket(() => {
-            console.log('WebSocket connection closed');
-        });
+        // connectWebSocket(() => {
+        //     console.log('WebSocket connection closed');
+        // });
       }
     } catch (error) {
       console.error('获取Agent详情失败:', error)

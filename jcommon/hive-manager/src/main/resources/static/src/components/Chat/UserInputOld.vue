@@ -726,10 +726,6 @@
   .send-btn {
     height: 100%;
     width: 30px;
-    :deep(svg) {
-      width: 12px;
-      height: 12px;
-    }
     // &:hover {
     //   background: #565857;
     // }

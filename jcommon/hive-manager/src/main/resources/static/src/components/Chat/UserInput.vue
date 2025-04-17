@@ -23,9 +23,9 @@
             :placeholder="isEnter ? 'Enter = 发送' : 'Shift + Enter = 发送'" :initCodePrompt="initCodePrompt"
             :setInputActive="setInputActive" @submit="submitText" />
         </div>
-        <!-- <div class="bt-box">
+        <div class="bt-box">
           <div class="sc-user-input--hbuttons">
-            <el-dropdown @command="setContextMaxNum">
+            <!-- <el-dropdown @command="setContextMaxNum">
               <div class="sc-user-input--hbutton">
                 <IconLines color="red" />
               </div>
@@ -58,19 +58,19 @@
               <div>
                 <span v-if="isEnter" style="color: aqua">Enter</span><span v-else style="color: aqua">Shift+Enter</span>
               </div>
-            </div>
+            </div> -->
           </div>
           <div class="sc-user-input--buttons h-100">
-            <div v-if="vision" class="sc-user-input--button">
+            <!-- <div v-if="vision" class="sc-user-input--button">
               <Recoder @submit="submitAudio" />
-            </div>
+            </div> -->
             <div v-if="vision" class="sc-user-input--button test">
               <ImageUpload :limit="1" v-model="images" />
             </div>
-            <div v-if="vision" class="sc-user-input--button">
+            <!-- <div v-if="vision" class="sc-user-input--button">
               <Screenshot v-model="screenshotImages" />
-            </div>
-            <div v-if="vision" class="sc-user-input--button test">
+            </div> -->
+            <div class="sc-user-input--button test">
               <PasteImage v-model="screenshotImages" />
             </div>
             <div class="send-btn-box">
@@ -79,7 +79,7 @@
               </UserInputButton>
             </div>
           </div>
-        </div> -->
+        </div>
       </div>
     </div>
     <div v-if="suggestionVisible" class="sc-user-input--commonds">
@@ -1220,11 +1220,9 @@ export default {
 .send-btn {
   height: 100%;
   width: 30px;
-
-  :deep(svg) {
-    width: 12px;
-    height: 12px;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   // &:hover {
   //   background: #565857;

@@ -1,5 +1,8 @@
 <template>
   <div class="agent-list-container">
+    <div class="cyber-grid"></div>
+    <div class="circuit-point point-1"></div>
+    <div class="circuit-point point-2"></div>
     <div class="dashboard-header">
       <div class="title-container">
         <h1>⚡ AGENT 控制中心</h1>
@@ -15,7 +18,11 @@
 
     <div class="table-container">
       <div class="agent-table">
-        <TransitionGroup name="list" tag="div">
+        <div v-if="loading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <span>加载中...</span>
+        </div>
+        <TransitionGroup name="list" tag="div" v-else>
           <div v-if="agentList.length === 0" :key="'empty'" class="empty-state">
             <div class="empty-content">
               <span class="empty-text">暂无Agent数据</span><br/>
@@ -321,6 +328,33 @@ onMounted(() => {
   background: #0d1117;
   color: #fff;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridMove 20s linear infinite;
+  transform-origin: center;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+  0% {
+    transform: perspective(500px) rotateX(60deg) translateY(0);
+  }
+  100% {
+    transform: perspective(500px) rotateX(60deg) translateY(40px);
+  }
 }
 
 .dashboard-header {
@@ -328,6 +362,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .title-container {
@@ -457,6 +493,9 @@ onMounted(() => {
   gap: 20px;
   align-items: center;
   transition: all 0.3s;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .agent-card:hover {
@@ -499,7 +538,31 @@ onMounted(() => {
 .agent-details h4 {
   font-size: 18px;
   margin-bottom: 5px;
-  color: #00f0ff;
+  color: #63f5ff;
+  position: relative;
+  display: inline-block;
+}
+
+.agent-details h4::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  transition: width 0.3s ease;
+}
+
+.agent-details h4:hover {
+  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.agent-details h4:hover::after {
+  width: 100%;
 }
 
 .agent-details p {
@@ -592,5 +655,180 @@ onMounted(() => {
   .search-bar {
     width: 100%;
   }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #00f0ff;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  border: 3px solid rgba(0, 240, 255, 0.1);
+  border-top: 3px solid #00f0ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.circuit-point {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #00f0ff;
+  border-radius: 50%;
+  filter: blur(1px);
+  box-shadow: 
+    0 0 10px #00f0ff,
+    0 0 20px #00f0ff,
+    0 0 30px rgba(0, 240, 255, 0.5);
+  opacity: 0;
+  z-index: 0;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: rgba(0, 240, 255, 0.3);
+    border-radius: 50%;
+    filter: blur(2px);
+  }
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    width: 40px;
+    height: 2px;
+    background: linear-gradient(
+      270deg,
+      rgba(0, 240, 255, 0.8),
+      rgba(0, 240, 255, 0)
+    );
+    transform-origin: right center;
+    transform: translateY(-50%);
+    filter: blur(1px);
+  }
+}
+
+.point-1 {
+  bottom: 40px;
+  left: 40px;
+  animation: movePoint1 15s linear infinite;
+  &::after {
+    animation: tailRotate1 15s linear infinite;
+  }
+}
+
+.point-2 {
+  bottom: 40px;
+  right: 40px;
+  animation: movePoint2 15s linear infinite;
+  &::after {
+    animation: tailRotate2 15s linear infinite;
+  }
+}
+
+@keyframes movePoint1 {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  15% {
+    transform: translate(0, -160px);
+  }
+  30% {
+    transform: translate(120px, -160px);
+  }
+  45% {
+    transform: translate(120px, -320px);
+  }
+  60% {
+    transform: translate(240px, -320px);
+  }
+  75% {
+    transform: translate(240px, -480px);
+  }
+  90% {
+    transform: translate(360px, -480px);
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate(360px, -480px);
+    opacity: 0;
+  }
+}
+
+@keyframes movePoint2 {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  15% {
+    transform: translate(0, -200px);
+  }
+  30% {
+    transform: translate(-160px, -200px);
+  }
+  45% {
+    transform: translate(-160px, -360px);
+  }
+  60% {
+    transform: translate(-280px, -360px);
+  }
+  75% {
+    transform: translate(-280px, -520px);
+  }
+  90% {
+    transform: translate(-400px, -520px);
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-400px, -520px);
+    opacity: 0;
+  }
+}
+
+@keyframes tailRotate1 {
+  0%, 15% { transform: translateY(-50%) rotate(-90deg); }
+  15.1%, 30% { transform: translateY(-50%) rotate(0deg); }
+  30.1%, 45% { transform: translateY(-50%) rotate(-90deg); }
+  45.1%, 60% { transform: translateY(-50%) rotate(0deg); }
+  60.1%, 75% { transform: translateY(-50%) rotate(-90deg); }
+  75.1%, 90% { transform: translateY(-50%) rotate(0deg); }
+}
+
+@keyframes tailRotate2 {
+  0%, 15% { transform: translateY(-50%) rotate(-90deg); }
+  15.1%, 30% { transform: translateY(-50%) rotate(180deg); }
+  30.1%, 45% { transform: translateY(-50%) rotate(-90deg); }
+  45.1%, 60% { transform: translateY(-50%) rotate(180deg); }
+  60.1%, 75% { transform: translateY(-50%) rotate(-90deg); }
+  75.1%, 90% { transform: translateY(-50%) rotate(180deg); }
 }
 </style>

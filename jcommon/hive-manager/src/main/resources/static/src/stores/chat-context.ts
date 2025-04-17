@@ -184,10 +184,11 @@ export const useChatContextStore = defineStore("chat-context", () => {
   }
 
   function setMessageList(list: MessageList) {
-    messageList.value = list;
+    messageList.value.length = 0;  // 清空现有数组
+    messageList.value.push(...list);  // 添加新的元素
 
-    db.data.messageList = list;
-    db.write();
+    // db.data.messageList = list;
+    // db.write();
   }
 
   function disableContext() {
