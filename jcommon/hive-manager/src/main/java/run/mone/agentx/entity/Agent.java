@@ -20,4 +20,5 @@ public class Agent extends BaseEntity {
     private String agentUrl;
     private Long createdBy;
     private Boolean isPublic;
+    private byte[] image;
 }
