@@ -13,6 +13,7 @@ import run.mone.agentx.entity.User;
 
 import java.util.List;
 import java.util.Map;
+import java.net.URI;
 
 @Component
 @Slf4j
@@ -29,6 +30,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
             Map<String, List<String>> headers = session.getHandshakeHeaders();
             List<String> authHeaders = headers.get("Authorization");
             
+            // 获取对话ID，可以从URL参数中获取
+            String conversationId = extractConversationId(session.getUri());
+            if (conversationId == null) {
+                log.error("No conversation ID provided");
+                session.close(CloseStatus.POLICY_VIOLATION);
+                return;
+            }
+
             if (authHeaders == null || authHeaders.isEmpty()) {
                 log.error("No Authorization header found");
                 session.close(CloseStatus.POLICY_VIOLATION);
@@ -58,12 +67,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            // 可以将用户信息存储在 session 的 attributes 中，以便后续使用
+            // 存储用户信息和对话ID
             session.getAttributes().put("user", user);
+            session.getAttributes().put("conversationId", conversationId);
             
-            String sessionId = session.getId();
-            WebSocketHolder.session = session;
-            log.info("WebSocket connection established for user: {}, sessionId: {}", username, sessionId);
+            // 使用对话ID存储session
+            WebSocketHolder.addSession(conversationId, session);
+            
+            log.info("WebSocket connection established for conversation: {}, user: {}", 
+                    conversationId, user.getUsername());
         } catch (Exception e) {
             log.error("Error during WebSocket authentication", e);
             session.close(CloseStatus.SERVER_ERROR);
@@ -81,12 +93,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String sessionId = session.getId();
+        String conversationId = (String) session.getAttributes().get("conversationId");
         User user = (User) session.getAttributes().get("user");
-        WebSocketHolder.session = null;
-        log.info("WebSocket connection closed for user: {}, sessionId: {}, status: {}", 
-                user != null ? user.getUsername() : "unknown", 
-                sessionId, 
-                status);
+        if (conversationId != null) {
+            WebSocketHolder.removeSession(conversationId);
+            log.info("WebSocket connection closed for conversation: {}, user: {}, status: {}", 
+                    conversationId, user != null ? user.getUsername() : "unknown", status);
+        }
+    }
+
+    private String extractConversationId(URI uri) {
+        String query = uri.getQuery();
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                if (param.startsWith("conversationId=")) {
+                    return param.substring("conversationId=".length());
+                }
+            }
+        }
+        return null;
     }
 }
