@@ -43,16 +43,8 @@ public class McpService {
     }
 
 
-    public Message callMcp(Result it, FluxSink sink) {
-        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
-        McpSchema.Content content = result.getContent();
-        if (content instanceof McpSchema.TextContent textContent) {
-            return Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:" + textContent.text() + "\n" + "; 请继续").build();
-        } else if (content instanceof McpSchema.ImageContent imageContent) {
-            return Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n" + "; 请继续").build();
-        }
-
-        return null;
+    public void callMcp(Result it, FluxSink sink) {
+        MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
     }
 
 }

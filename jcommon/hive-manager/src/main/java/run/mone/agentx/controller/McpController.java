@@ -17,7 +17,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/mcp")
+@RequestMapping("/api/v1/mcp")
 public class McpController {
 
     private final McpService mcpService;
@@ -51,11 +51,13 @@ public class McpController {
         // 使用Flux.create创建消息流
         return Flux.create(sink -> {
             // 调用McpService的callMcp方法
-            Message message = mcpService.callMcp(result, sink);
-            if (message != null) {
-                sink.next(message);
-            }
-            sink.complete();
+            mcpService.callMcp(result, sink);
+            
+            // 注意：不要在这里调用sink.complete()，应该在McpService中适当的时候调用
+            // 或者使用sink.onDispose()来处理流的完成
+            sink.onDispose(() -> {
+                log.info("MCP流已结束");
+            });
         });
     }
 } 
