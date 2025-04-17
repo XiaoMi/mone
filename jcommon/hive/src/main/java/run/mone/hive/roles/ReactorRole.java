@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
@@ -23,6 +24,7 @@ import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
+import run.mone.hive.utils.NetUtils;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -68,6 +70,8 @@ public class ReactorRole extends Role {
 
     private String group;
 
+    private int grpcPort;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -112,15 +116,16 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", countDownLatch, llm, Lists.newArrayList());
+        this(name, "", "", 0, countDownLatch, llm, Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, CountDownLatch countDownLatch, LLM llm, List<ITool> tools) {
+    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools) {
         super(name);
         this.group = group;
         this.version = version;
+        this.grpcPort = port;
         tools.forEach(this::addTool);
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
@@ -132,7 +137,7 @@ public class ReactorRole extends Role {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
 
         //注册到agent注册中心
-        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).toolMap(this.toolMap).build());
+        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).toolMap(this.toolMap).build());
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
@@ -140,7 +145,7 @@ public class ReactorRole extends Role {
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
-                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).build());
+                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).build());
                 log.info("Scheduled task executed at: {}", System.currentTimeMillis());
             });
         }, 0, 20, TimeUnit.SECONDS);
@@ -161,7 +166,7 @@ public class ReactorRole extends Role {
 
     @Override
     protected void postReact(ActionContext ac) {
-        this.unreg(RegInfo.builder().name(this.name).group(this.group).version(this.version).build());
+        this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
 
     @SneakyThrows

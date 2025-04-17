@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.bo.RegInfoDto;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -86,8 +87,11 @@ public class HiveManagerService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + currentToken);
+
+            // 将 RegInfo 转换为 RegInfoDto
+            RegInfoDto regInfoDto = RegInfoDto.fromRegInfo(regInfo);
             
-            HttpEntity<RegInfo> request = new HttpEntity<>(regInfo, headers);
+            HttpEntity<RegInfoDto> request = new HttpEntity<>(regInfoDto, headers);
             
             String registerUrl = baseUrl + "/api/v1/agents/register";
             Object response = restTemplate.postForObject(registerUrl, request, Object.class);
@@ -118,7 +122,10 @@ public class HiveManagerService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + currentToken);
             
-            HttpEntity<RegInfo> request = new HttpEntity<>(regInfo, headers);
+            // 将 RegInfo 转换为 RegInfoDto
+            RegInfoDto regInfoDto = RegInfoDto.fromRegInfo(regInfo);
+            
+            HttpEntity<RegInfoDto> request = new HttpEntity<>(regInfoDto, headers);
             
             String unregisterUrl = baseUrl + "/api/v1/agents/unregister";
             Object response = restTemplate.postForObject(unregisterUrl, request, Object.class);
