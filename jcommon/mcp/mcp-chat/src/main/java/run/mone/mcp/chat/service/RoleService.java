@@ -51,6 +51,9 @@ public class RoleService {
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
+    @Value("${mcp.grpc.port:9999}")
+    private int grpcPort;
+
     @PostConstruct
     @SneakyThrows
     public void init() {
@@ -62,7 +65,7 @@ public class RoleService {
 
     public ReactorRole createRole(String owner, String clientId) {
         List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool(), new DocumentProcessingTool(), new SystemInfoTool());
-        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", new CountDownLatch(1), llm, tools) {
+        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, tools) {
             @Override
             public void reg(RegInfo info) {
                 // 直接传递传入的RegInfo对象
