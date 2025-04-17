@@ -39,6 +39,7 @@ public class MonerMcpClient {
                                     sb.append(tc.text());
                                 }
                             }))
+                            .doOnComplete(() -> Optional.ofNullable(sink).ifPresent(FluxSink::complete))
                             .blockLast();
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                 } else {
