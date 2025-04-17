@@ -15,6 +15,8 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.transport.SseServerTransport;
 
+import static run.mone.hive.llm.ClaudeProxy.*;
+
 
 @Configuration
 public class ChatMcpConfig {
@@ -24,9 +26,21 @@ public class ChatMcpConfig {
 
     @Bean
     LLM llm() {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
-        config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
+
+        LLMConfig config = LLMConfig.builder()
+                .llmProvider(LLMProvider.CLAUDE_COMPANY)
+                .url(getClaudeUrl())
+                .version(getClaudeVersion())
+                .maxTokens(getClaudeMaxToekns())
+                .build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
         return new LLM(config);
+
+
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
+//        config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
+//        return new LLM(config);
     }
 
     @Bean
