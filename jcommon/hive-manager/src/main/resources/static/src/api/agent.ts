@@ -8,6 +8,7 @@ export interface Agent {
   createdAt: string
   agentUrl: string
   isPublic: boolean
+  image: string
 }
 
 export interface CreateAgentRequest {

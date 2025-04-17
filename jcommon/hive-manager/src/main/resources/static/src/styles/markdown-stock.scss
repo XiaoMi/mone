@@ -1,0 +1,293 @@
+// 股票账户和订单列表通用样式
+.stock-account-block,
+.stock-order-block {
+  margin: 1rem 0;
+  border: 1px solid var(--el-border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--el-bg-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  line-height: 0;
+
+  .account-header,
+  .order-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--el-fill-color-light);
+    border-bottom: 1px solid var(--el-border-color);
+
+    i {
+      margin-right: 8px;
+      font-size: 16px;
+      color: var(--el-color-primary);
+    }
+
+    span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+    }
+  }
+
+  .account-content,
+  .order-content {
+    padding: 16px;
+  }
+
+  // 表格样式
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    table-layout: fixed;
+    
+    th, td {
+      padding: 12px;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      background: var(--el-fill-color-light);
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+      border-top: 1px solid var(--el-border-color-lighter);
+      border-bottom: 1px solid var(--el-border-color-lighter);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+
+      &:first-child {
+        border-left: 1px solid var(--el-border-color-lighter);
+        border-top-left-radius: 4px;
+      }
+
+      &:last-child {
+        border-right: 1px solid var(--el-border-color-lighter);
+        border-top-right-radius: 4px;
+      }
+    }
+
+    td {
+      color: var(--el-text-color-regular);
+      border-bottom: 1px solid var(--el-border-color-lighter);
+      transition: background 0.3s ease;
+
+      &:first-child {
+        border-left: 1px solid var(--el-border-color-lighter);
+      }
+
+      &:last-child {
+        border-right: 1px solid var(--el-border-color-lighter);
+      }
+    }
+
+    tbody {
+      tr {
+        &:last-child {
+          td {
+            border-bottom: 1px solid var(--el-border-color-lighter);
+            &:first-child {
+              border-bottom-left-radius: 4px;
+            }
+            &:last-child {
+              border-bottom-right-radius: 4px;
+            }
+          }
+        }
+
+        &:hover {
+          td {
+            background: var(--el-fill-color-lighter);
+          }
+        }
+      }
+    }
+
+    // 设置每列的宽度
+    th, td {
+      &:nth-child(1) { width: 30%; } // 代码列 - 增加宽度因为包含更多信息
+      &:nth-child(2) { width: 10%; } // 类型列
+      &:nth-child(3) { width: 8%; }  // 方向列
+      &:nth-child(4) { width: 8%; }  // 数量列
+      &:nth-child(5) { width: 15%; } // 成交价列
+      &:nth-child(6) { width: 14%; } // 状态列
+      &:nth-child(7) { width: 15%; } // 手续费列
+    }
+  }
+
+  // 汇总信息样式
+  .summary-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 14px;
+    color: var(--el-text-color-regular);
+    line-height: 1.8;
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 200px;
+
+      .label {
+        color: var(--el-text-color-secondary);
+        white-space: nowrap;
+      }
+
+      .value {
+        color: var(--el-text-color-primary);
+        font-weight: 500;
+        
+        &.na {
+          color: var(--el-text-color-secondary);
+          font-style: italic;
+        }
+      }
+    }
+  }
+
+  // 盈亏颜色
+  .profit-positive {
+    color: var(--el-color-danger);
+    
+    &.dark {
+      color: #ff7875;
+    }
+  }
+
+  .profit-negative {
+    color: var(--el-color-success);
+    
+    &.dark {
+      color: #95de64;
+    }
+  }
+
+  // 错误状态样式
+  &.error {
+    border-color: var(--el-color-danger);
+
+    .account-header {
+      background: var(--el-color-danger-light);
+      border-bottom-color: var(--el-color-danger);
+
+      i {
+        color: var(--el-color-danger);
+      }
+    }
+
+    .error-message {
+      color: var(--el-color-danger);
+      text-align: center;
+      padding: 16px;
+    }
+  }
+}
+
+// 订单列表特有样式
+.stock-order-block {
+  .order-table {
+    overflow: auto;
+    border-radius: 4px;
+    position: relative;
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--el-border-color);
+      border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--el-fill-color-lighter);
+      border-radius: 3px;
+    }
+
+    table {
+      min-width: 800px;
+      background: var(--el-bg-color);
+    }
+  }
+}
+
+// 暗色主题
+.dark {
+  .stock-account-block,
+  .stock-order-block {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    .account-header,
+    .order-header {
+      background: var(--el-bg-color-overlay);
+    }
+
+    table {
+      th {
+        background: var(--el-bg-color-overlay);
+      }
+
+      tr:hover td {
+        background: var(--el-bg-color-overlay);
+      }
+    }
+
+    &.error {
+      .account-header {
+        background: rgba(var(--el-color-danger-rgb), 0.1);
+      }
+    }
+
+    .summary-content {
+      .summary-item {
+        .value.na {
+          color: var(--el-text-color-disabled);
+        }
+      }
+    }
+  }
+}
+
+// 响应式布局
+@media screen and (max-width: 768px) {
+  .stock-account-block,
+  .stock-order-block {
+    .account-header,
+    .order-header {
+      padding: 10px 12px;
+
+      i {
+        font-size: 14px;
+      }
+
+      span {
+        font-size: 13px;
+      }
+    }
+
+    table {
+      th, td {
+        padding: 8px;
+        font-size: 13px;
+      }
+    }
+
+    .summary-content {
+      .summary-item {
+        min-width: 150px;
+        font-size: 13px;
+      }
+    }
+  }
+} 

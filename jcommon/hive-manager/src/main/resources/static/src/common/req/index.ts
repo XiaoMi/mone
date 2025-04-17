@@ -16,7 +16,7 @@ export const Service = axios.create({
   timeout: 15000, // 请求超时时间
   method: 'post',
   withCredentials: true,
-  baseURL: import.meta.env.VITE_APP_API_BASE_URL,
+  baseURL: "/api/manager",
   headers: {
     'Content-Type': 'application/json;charset=UTF-8',
     // 'Content-Type': 'application/x-www-form-urlencoded'

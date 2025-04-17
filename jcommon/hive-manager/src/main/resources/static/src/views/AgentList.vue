@@ -1,101 +1,78 @@
 <template>
   <div class="agent-list-container">
-    <el-card class="box-card custom-card">
-      <template #header>
-        <div class="card-header">
-          <span>Agent列表</span>
-          <el-button 
-            class="create-btn custom-btn" 
-            type="primary" 
-            @click="handleCreate"
-          >
-            创建Agent
-          </el-button>
-        </div>
-      </template>
+    <div class="dashboard-header">
+      <div class="title-container">
+        <h1>⚡ AGENT 控制中心</h1>
+        <div class="animated-underline"></div>
+      </div>
+      <div class="header-actions">
+        <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
+        <!-- <div class="search-bar">
+          <input type="text" placeholder="搜索 Agent...">
+        </div> -->
+      </div>
+    </div>
 
-      <div class="future-table">
-        <div class="table-header">
-          <div class="header-cell" style="width: 80px">ID</div>
-          <div class="header-cell flex-1">名称</div>
-          <div class="header-cell flex-1">描述</div>
-          <div class="header-cell" style="width: 180px">创建时间</div>
-          <div class="header-cell" style="width: 200px">操作</div>
-        </div>
-        
-        <TransitionGroup 
-          name="list" 
-          tag="div" 
-          class="table-body"
-        >
-          <div 
-            v-if="agentList.length === 0" 
-            :key="'empty'" 
-            class="empty-state"
-          >
+    <div class="table-container">
+      <div class="agent-table">
+        <TransitionGroup name="list" tag="div">
+          <div v-if="agentList.length === 0" :key="'empty'" class="empty-state">
             <div class="empty-content">
-              <span class="empty-text">暂无Agent数据</span>
-              <el-button 
-                class="custom-btn create-btn" 
-                @click="handleCreate"
-              >
-                创建Agent
-              </el-button>
+              <span class="empty-text">暂无Agent数据</span><br/>
+              <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
             </div>
           </div>
-          <div 
-            v-for="agent in agentList" 
-            :key="agent.id" 
-            class="table-row"
-            :class="{'hover-effect': true}"
-          >
-            <div class="cell" style="width: 80px">
-              <div class="id-badge">{{agent.id}}</div>
+          
+          <div v-for="agent in agentList" 
+               :key="agent.id" 
+               class="agent-card"
+               @click.stop="handleChat(agent)">
+            <div class="agent-info">
+              <div class="agent-avatar">
+                <img v-if="agent.image" 
+                     :src="`data:image/jpeg;base64,${agent.image}`" 
+                     class="agent-logo" 
+                     alt="agent logo"/>
+                <div v-else class="agent-logo-placeholder">
+                  {{ agent.name.charAt(0).toUpperCase() }}
+                </div>
+              </div>
+              <div class="agent-details">
+                <h4 @click.stop="handleShowDetail(agent)">{{agent.name}}</h4>
+                <p>{{agent.description}}</p>
+              </div>
             </div>
-            <div class="cell flex-1">
-              <div class="name-container">
-                <span 
-                  class="agent-name"
-                  @click="handleShowDetail(agent)"
-                >
-                  {{agent.name}}
+
+            <div class="agent-status">
+              <div class="visibility">
+                <span class="badge" :class="{'public': agent.isPublic}">
+                  {{agent.isPublic ? '公开' : '私有'}}
                 </span>
               </div>
             </div>
-            <div class="cell flex-1">{{agent.description}}</div>
-            <div class="cell" style="width: 180px">
-              {{formatDate(agent.ctime)}}
+
+            <div class="activity">
+              <span>创建时间：</span>
+              <time>{{formatDate(agent.ctime)}}</time><br/>
+              <span>更新时间：</span>
+              <time>{{formatDate(agent.utime)}}</time>
             </div>
-            <div class="cell actions" style="width: 200px">
-              <el-button 
-                class="custom-btn edit"
-                @click="handleEdit(agent)"
-              >
-                编辑
-              </el-button>
-              <el-button 
-                class="custom-btn delete"
-                @click="handleDelete(agent)"
-              >
-                删除
-              </el-button>
-              <el-button 
-                class="custom-btn task-btn"
-                @click="handleTask(agent)"
-              >
-                任务
-              </el-button>
+
+            <div class="control-buttons">
+              <button class="edit-btn" @click.stop="handleEdit(agent)">编辑</button>
+              <button class="delete-btn" @click.stop="handleDelete(agent)">删除</button>
+              <button class="task-btn" @click.stop="handleTask(agent)">任务</button>
             </div>
           </div>
         </TransitionGroup>
       </div>
-    </el-card>
+    </div>
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogType === 'create' ? '创建Agent' : '编辑Agent'"
-      width="500px"
+      width="640px"
     >
       <el-form :model="agentForm" label-width="80px">
         <el-form-item label="名称">
@@ -120,6 +97,20 @@
         <el-form-item label="公开">
           <el-switch v-model="agentForm.isPublic" />
         </el-form-item>
+        <el-form-item label="Logo" class="avatar-uploader-container">
+          <el-upload
+            class="avatar-uploader"
+            :show-file-list="false"
+            :before-upload="beforeImageUpload"
+            :on-success="handleImageSuccess"
+            :on-error="handleImageError"
+            accept=".jpg,.jpeg,.png"
+          >
+            <img v-if="imageUrl" :src="imageUrl" class="avatar" />
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+          <div class="upload-tip">支持 jpg、png 格式，大小不超过 5MB</div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -143,6 +134,8 @@ import { getAgentList, createAgent, updateAgent, deleteAgent } from '@/api/agent
 import type { Agent } from '@/api/agent'
 import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
 import { useRouter } from 'vue-router'
+import { Plus } from '@element-plus/icons-vue'
+import { v4 as uuidv4 } from "uuid";
 
 const agentList = ref<Agent[]>([])
 const loading = ref(false)
@@ -158,6 +151,8 @@ const agentForm = ref({
 const drawerVisible = ref(false)
 const selectedAgent = ref<Agent | null>(null)
 const router = useRouter()
+const imageUrl = ref('')
+const imageFile = ref<File | null>(null)
 
 const fetchAgents = async () => {
   loading.value = true
@@ -184,12 +179,20 @@ const handleCreate = () => {
     agentUrl: '',
     isPublic: false
   }
+  imageUrl.value = ''
+  imageFile.value = null
   dialogVisible.value = true
 }
 
 const handleEdit = (row: Agent) => {
   dialogType.value = 'edit'
   agentForm.value = { ...row }
+  if (row.image) {
+    imageUrl.value = `data:image/jpeg;base64,${row.image}`
+  } else {
+    imageUrl.value = ''
+  }
+  imageFile.value = null
   dialogVisible.value = true
 }
 
@@ -214,13 +217,28 @@ const handleDelete = async (row: Agent) => {
 
 const handleSubmit = async () => {
   try {
-    if (dialogType.value === 'create') {
-      const response = await createAgent({
-        name: agentForm.value.name,
-        description: agentForm.value.description,
-        agentUrl: agentForm.value.agentUrl,
-        isPublic: agentForm.value.isPublic
+    let imageBase64 = null
+    if (imageFile.value) {
+      imageBase64 = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string
+          resolve(base64.split(',')[1])
+        }
+        reader.readAsDataURL(imageFile.value)
       })
+    }
+
+    const formData = {
+      name: agentForm.value.name,
+      description: agentForm.value.description,
+      agentUrl: agentForm.value.agentUrl,
+      isPublic: agentForm.value.isPublic,
+      image: imageBase64
+    }
+
+    if (dialogType.value === 'create') {
+      const response = await createAgent(formData)
       if (response.data.code === 200) {
         ElMessage.success('创建成功')
         fetchAgents()
@@ -228,12 +246,7 @@ const handleSubmit = async () => {
         ElMessage.error('创建失败')
       }
     } else {
-      const response = await updateAgent(agentForm.value.id, {
-        name: agentForm.value.name,
-        description: agentForm.value.description,
-        agentUrl: agentForm.value.agentUrl,
-        isPublic: agentForm.value.isPublic
-      })
+      const response = await updateAgent(agentForm.value.id, formData)
       if (response.data.code === 200) {
         ElMessage.success('更新成功')
         fetchAgents()
@@ -264,432 +277,320 @@ const handleTask = (agent: Agent) => {
   })
 }
 
+const handleChat = (agent: Agent) => {
+  router.push({
+    path: '/chat',
+    query: { serverAgentId: agent.id, conversationId: uuidv4() }
+  })
+}
+
+const beforeImageUpload = (file: File) => {
+  const isValidFormat = ['image/jpeg', 'image/png'].includes(file.type)
+  const isLt5M = file.size / 1024 / 1024 < 5
+
+  if (!isValidFormat) {
+    ElMessage.error('图片格式只能是 JPG 或 PNG!')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB!')
+    return false
+  }
+
+  imageFile.value = file
+  imageUrl.value = URL.createObjectURL(file)
+  return false
+}
+
+const handleImageSuccess = (response: any) => {
+  // 处理图片上传成功后的逻辑
+}
+
+const handleImageError = (error: any) => {
+  // 处理图片上传失败后的逻辑
+}
+
 onMounted(() => {
   fetchAgents()
 })
 </script>
 
 <style scoped>
-
 .agent-list-container {
-  padding: 20px;
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);  /* 更深的黑色背景 */
   min-height: 100vh;
-  position: relative;
-  overflow: hidden;
+  background: #0d1117;
+  color: #fff;
+  padding: 20px;
 }
 
-/* 更暗的网格背景 */
-.agent-list-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-}
-
-.custom-card {
-  background: rgba(13, 17, 23, 0.5);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(48, 54, 61, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
-}
-
-.card-header {
+.dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #ffffff;
-  font-size: 1.2em;
-  text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+  margin-bottom: 40px;
 }
 
-.future-table {
-  background: rgba(13, 17, 23, 0.4);
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(48, 54, 61, 0.2);
+.title-container {
   position: relative;
 }
 
-.future-table::before {
-  content: '';
+.animated-underline {
   position: absolute;
-  top: 0;
+  bottom: -10px;
   left: 0;
-  right: 0;
+  width: 0;
   height: 2px;
-  background: linear-gradient(90deg, 
-    rgba(99, 179, 237, 0) 0%,
-    rgba(99, 179, 237, 0.8) 50%,
-    rgba(99, 179, 237, 0) 100%
+  background: linear-gradient(
+    90deg,
+    #00f0ff 0%,
+    #b400ff 50%,
+    #00f0ff 100%
   );
-  /* animation: scanline 3s linear infinite; */
+  animation: progressLine 3s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
 }
 
-.table-header {
-  display: flex;
-  background: linear-gradient(90deg, rgba(22, 27, 34, 0.4) 0%, rgba(28, 33, 40, 0.4) 100%);
-  padding: 16px;
-  color: #31e8f9;
-  font-weight: 500;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
-}
-
-.header-cell {
-  padding: 0 12px;
-}
-
-.table-body {
-  position: relative;
-}
-
-.table-row {
-  display: flex;
-  padding: 16px;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  color: #ffffff;
-}
-
-.table-row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent 0%,
-    rgba(99, 179, 237, 0.1) 50%,
-    transparent 100%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.5s ease;
-}
-
-.table-row:hover::before {
-  transform: translateX(100%);
-}
-
-.hover-effect:hover {
-  transform: translateX(4px) scale(1.01);
-  background: rgba(48, 54, 61, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.cell {
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  color: #ffffff;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-.name-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffffff;
-}
-
-.custom-btn {
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.custom-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%) rotate(45deg) scale(0);
-  transition: transform 0.6s ease;
-}
-
-.custom-btn:hover::before {
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
-}
-
-.edit {
-  background: linear-gradient(135deg, #238636 0%, #1b6b2c 100%);
-}
-
-.delete {
-  background: linear-gradient(135deg, #da3633 0%, #b62824 100%);
-  margin-left: 12px;
-}
-
-.task-btn {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
-  margin-left: 12px;
-}
-
-/* 添加新的动画关键帧 */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* 优化列表动画 */
-.list-enter-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.list-leave-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  position: absolute;
-  width: 100%;
-}
-
-.list-enter-from {
-  opacity: 0;
-  transform: translateX(-50px) scale(0.9);
-}
-
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(50px) scale(0.9);
-}
-
-@keyframes pulse {
+@keyframes progressLine {
   0% {
-    transform: scale(1);
-    opacity: 0.8;
+    width: 0;
+    opacity: 0.6;
+    left: 0;
   }
   50% {
-    transform: scale(1.8);
-    opacity: 0;
+    width: 100%;
+    opacity: 1;
+    left: 0;
+  }
+  51% {
+    width: 100%;
+    opacity: 1;
+    left: 0;
   }
   100% {
-    transform: scale(1);
-    opacity: 0;
+    width: 0;
+    opacity: 0.6;
+    left: 100%;
   }
 }
 
-/* 修改创建按钮样式 */
-.create-btn {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%) !important;
-  border: none !important;
-  padding: 10px 24px !important;
-  border-radius: 8px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.5px;
+.dashboard-header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.search-bar {
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(35, 166, 213, 0.3);
+  width: 300px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+}
+
+.scan-animation {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00f0ff, transparent);
+  animation: scan 2s infinite;
+}
+
+.empty-state {
+  width: 240px;
+  height: 80px;
+  margin: 120px auto 0;
+  display: flex;
+  align-items: center;
+}
+
+.empty-state .empty-text {
+  display: inline-block;
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: #0d1117;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(35, 166, 213, 0.4);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
 }
 
-.create-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%) rotate(45deg) scale(0);
-  transition: transform 0.6s ease;
-}
-
-.create-btn:hover::before {
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
-}
-
-/* 添加自定义对话框样式 */
-:deep(.el-dialog) {
+.agent-card {
   background: rgba(13, 17, 23, 0.7);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(48, 54, 61, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
-}
-
-:deep(.el-dialog__header) {
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 12px;
   padding: 20px;
-}
-
-:deep(.el-dialog__title) {
-  color: #fff;
-  font-size: 1.2em;
-  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
-}
-
-:deep(.el-dialog__body) {
-  color: #ffffff;
-  padding: 30px 20px;
-}
-
-:deep(.el-form-item__label) {
-  color: #fff;
-}
-
-:deep(.el-input__wrapper) {
-  background: rgba(22, 27, 34, 0.4);
-  border: 1px solid rgba(49, 232, 249, 0.3);
-  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
-  transition: all 0.3s ease;
-}
-
-:deep(.el-input__wrapper:hover) {
-  border-color: rgba(49, 232, 249, 0.8);
-  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  border-color: #31e8f9;
-  box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
-}
-
-:deep(.el-input__inner) {
-  color: #ffffff;
-}
-
-:deep(.el-textarea__inner) {
-  background: rgba(22, 27, 34, 0.4);
-  border: 1px solid rgba(49, 232, 249, 0.3);
-  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
-  color: #ffffff;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-textarea__inner:hover) {
-  border-color: rgba(49, 232, 249, 0.8);
-  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
-}
-
-:deep(.el-textarea__inner:focus) {
-  border-color: #31e8f9;
-  box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
-}
-
-:deep(.el-dialog__footer) {
-  border-top: 1px solid rgba(48, 54, 61, 0.2);
-  padding: 20px;
-}
-
-:deep(.el-switch__core) {
-  border-color: rgba(48, 54, 61, 0.4);
-  background: rgba(22, 27, 34, 0.4);
-}
-
-:deep(.el-switch.is-checked .el-switch__core) {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
-}
-
-/* 弹窗按钮样式 */
-:deep(.el-dialog__footer .el-button) {
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-:deep(.el-dialog__footer .el-button--default) {
-  background: rgba(48, 54, 61, 0.5);
-  color: #ffffff;
-  border: 1px solid rgba(49, 232, 249, 0.3);
-}
-
-:deep(.el-dialog__footer .el-button--default:hover) {
-  background: rgba(48, 54, 61, 0.7);
-  border-color: rgba(49, 232, 249, 0.8);
-  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
-  transform: translateY(-2px);
-}
-
-:deep(.el-dialog__footer .el-button--primary) {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
-  border: none;
-  box-shadow: 0 4px 15px rgba(35, 166, 213, 0.3);
-}
-
-:deep(.el-dialog__footer .el-button--primary:hover) {
-  box-shadow: 0 6px 20px rgba(35, 166, 213, 0.4);
-  transform: translateY(-2px);
-}
-
-:deep(.el-dialog__footer .el-button::before) {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%) rotate(45deg) scale(0);
-  transition: transform 0.6s ease;
-}
-
-:deep(.el-dialog__footer .el-button:hover::before) {
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
-}
-
-.agent-name {
-  cursor: pointer;
-  color: #31e8f9;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    text-shadow: 0 0 10px rgba(49, 232, 249, 0.5);
-    text-decoration: underline;
-  }
-}
-
-/* 空状态样式 */
-.empty-state {
-  padding: 60px 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.empty-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 20px;
+  align-items: center;
+  transition: all 0.3s;
 }
 
-.empty-text {
-  color: #ffffff;
-  font-size: 16px;
-  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
+.agent-card:hover {
+  transform: translateX(4px);
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+}
+
+.agent-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.agent-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+}
+
+.agent-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agent-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #0d1117;
+}
+
+.agent-details h4 {
+  font-size: 18px;
+  margin-bottom: 5px;
+  color: #00f0ff;
+}
+
+.agent-details p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #00ff88;
+  animation: pulse 2s infinite;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.badge.public {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.control-buttons button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.edit-btn {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+}
+
+.delete-btn {
+  background: rgba(255, 85, 85, 0.1);
+  color: #ff5555;
+  border: 1px solid #ff5555;
+}
+
+.task-btn {
+  background: rgba(180, 0, 255, 0.1);
+  color: #b400ff;
+  border: 1px solid #b400ff;
+}
+
+@keyframes scan {
+  0% { transform: translateY(-10px) scaleX(0); opacity: 0; }
+  50% { transform: translateY(0) scaleX(1); opacity: 1; }
+  100% { transform: translateY(10px) scaleX(0); opacity: 0; }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .agent-card {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-bar {
+    width: 100%;
+  }
 }
 </style>

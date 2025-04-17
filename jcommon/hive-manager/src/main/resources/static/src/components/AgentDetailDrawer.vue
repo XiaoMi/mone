@@ -41,7 +41,7 @@
           
           <!-- 添加技能列表组件 -->
           <div class="skills-section">
-            <SkillList :agent-id="agentDetail.id" />
+            <SkillList :agent-id="agent.id" />
           </div>
         </div>
       </template>
