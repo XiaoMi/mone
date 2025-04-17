@@ -41,7 +41,7 @@ public class AgentAccessController {
     }
 
     @PostMapping("/{agentId}/users/{userId}")
-    public Mono<ApiResponse<AgentAccess>> grantAccess(
+    public Mono<ApiResponse<Void>> grantAccess(
             @AuthenticationPrincipal User user,
             @PathVariable Long agentId,
             @PathVariable Long userId) {
@@ -49,8 +49,8 @@ public class AgentAccessController {
         return agentService.findById(agentId)
                 .filter(agent -> agent.getCreatedBy().equals(user.getId()))
                 .flatMap(agent -> agentService.grantAccess(agentId, userId))
-                .map(ApiResponse::success)
-                .defaultIfEmpty(ApiResponse.error(403, "Unauthorized or agent not found"));
+                .thenReturn(ApiResponse.<Void>success(null))
+                .defaultIfEmpty(ApiResponse.<Void>error(403, "Unauthorized or agent not found"));
     }
 
     @DeleteMapping("/{agentId}/users/{userId}")

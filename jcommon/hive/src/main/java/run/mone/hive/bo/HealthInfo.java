@@ -21,4 +21,8 @@ public class HealthInfo {
 
     private String group;
 
+    private String ip;
+
+    private int port;
+
 }

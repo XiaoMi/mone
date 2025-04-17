@@ -42,11 +42,17 @@ public class RoleService {
 
     @Resource
     private GrpcServerTransport grpcServerTransport;
+    
+    @Resource
+    private HiveManagerService hiveManagerService;
 
     @Value("${mcp.hub.path:}")
     private String mcpPath;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
+
+    @Value("${mcp.grpc.port:9999}")
+    private int grpcPort;
 
     @PostConstruct
     @SneakyThrows
@@ -59,17 +65,23 @@ public class RoleService {
 
     public ReactorRole createRole(String owner, String clientId) {
         List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool(), new DocumentProcessingTool(), new SystemInfoTool());
-        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", new CountDownLatch(1), llm, tools) {
+        ReactorRole minzai = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, tools) {
             @Override
             public void reg(RegInfo info) {
+                // 直接传递传入的RegInfo对象
+                hiveManagerService.register(info);
             }
 
             @Override
             public void unreg(RegInfo regInfo) {
+                // 直接传递传入的RegInfo对象
+                hiveManagerService.unregister(regInfo);
             }
 
             @Override
             public void health(HealthInfo healthInfo) {
+                // 直接传递传入的HealthInfo对象
+                hiveManagerService.heartbeat(healthInfo);
             }
         };
         minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
