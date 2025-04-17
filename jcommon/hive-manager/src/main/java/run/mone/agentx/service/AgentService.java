@@ -68,16 +68,19 @@ public class AgentService {
 
     public Flux<Agent> findAccessibleAgents(Long userId) {
         // Find agents created by the user
-        Flux<Agent> ownedAgents = agentRepository.findByCreatedBy(userId);
-        
+        Flux<Agent> ownedAgents = agentRepository.findByCreatedBy(userId)
+                .filter(agent -> agent.getState() == 1);
+
         // Find public agents
         Flux<Agent> publicAgents = agentRepository.findAll()
-                .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()));
-        
+                .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()))
+                .filter(agent -> agent.getState() == 1);
+
         // Find agents the user has been granted access to
         Flux<Agent> accessibleAgents = agentAccessRepository.findByUserId(userId)
-                .flatMap(access -> agentRepository.findById(access.getAgentId()));
-        
+                .flatMap(access -> agentRepository.findById(access.getAgentId()))
+                .filter(agent -> agent.getState() == 1);
+
         // Combine all sources and remove duplicates
         return Flux.concat(ownedAgents, publicAgents, accessibleAgents)
                 .distinct(Agent::getId);
