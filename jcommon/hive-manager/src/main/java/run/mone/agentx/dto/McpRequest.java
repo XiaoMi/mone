@@ -16,6 +16,11 @@ public class McpRequest {
      * 内容
      */
     private McpContent content;
+
+    private String data;
+
+
+    private String clientId;
     
     /**
      * MCP内容

@@ -19,3 +19,4 @@
 + grpc 支持通过headers 传递信息(clientId token)
 + 支持权限验证
 + 支持server push 信息回来
++ 任何mcp都有一个chat工具(方便和用户沟通)
