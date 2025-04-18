@@ -69,7 +69,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             Result result = new Result("mcp_request", keyValuePairs);
             
             // 创建消息适配器并直接调用MCP服务
-            mcpService.callMcp(result, new McpMessageSink(session));
+            McpMessageSink sink = new McpMessageSink(session);
+            mcpService.callMcp(result, sink);
+            sink.complete();
             
         } catch (Exception e) {
             log.error("Error processing MCP request", e);
