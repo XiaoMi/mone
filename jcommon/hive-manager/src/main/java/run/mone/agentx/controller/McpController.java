@@ -3,7 +3,6 @@ package run.mone.agentx.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.agentx.service.McpService;
 import run.mone.hive.common.Result;
@@ -35,7 +34,7 @@ public class McpController {
      * @return 消息流
      */
     @PostMapping(value = "/call", consumes = "text/event-stream", produces = "text/event-stream")
-    public Flux<Message> callMcp(@RequestBody(required = false) String requestBody) {
+    public Flux<Message> call(@RequestBody(required = false) String requestBody) {
         log.info("调用MCP服务，请求参数: {}", requestBody);
         
         McpRequest request;
