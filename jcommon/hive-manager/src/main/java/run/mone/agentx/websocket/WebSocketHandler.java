@@ -7,14 +7,10 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import run.mone.agentx.service.JwtService;
-import run.mone.agentx.service.UserService;
 import run.mone.agentx.service.McpService;
-import run.mone.agentx.entity.User;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Result;
-import java.util.List;
 import java.util.Map;
 import java.net.URI;
 import java.util.HashMap;
@@ -24,65 +20,28 @@ import java.util.HashMap;
 @RequiredArgsConstructor
 public class WebSocketHandler extends TextWebSocketHandler {
 
-    private final JwtService jwtService;
-    private final UserService userService;
     private final McpService mcpService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         try {
-            // 从 WebSocket 握手请求的 headers 中获取 token
-            Map<String, List<String>> headers = session.getHandshakeHeaders();
-            List<String> authHeaders = headers.get("Authorization");
-            
-            // 获取对话ID，可以从URL参数中获取
-            String conversationId = extractConversationId(session.getUri());
-            if (conversationId == null) {
-                log.error("No conversation ID provided");
+            // 获取对话ID，从URL参数中获取
+            String clientId = extractClientId(session.getUri());
+            if (clientId == null) {
+                log.error("No client ID provided");
                 session.close(CloseStatus.POLICY_VIOLATION);
                 return;
             }
 
-            if (authHeaders == null || authHeaders.isEmpty()) {
-                log.error("No Authorization header found");
-                session.close(CloseStatus.POLICY_VIOLATION);
-                return;
-            }
-
-            String authHeader = authHeaders.get(0);
-            if (!authHeader.startsWith("Bearer ")) {
-                log.error("Invalid Authorization header format");
-                session.close(CloseStatus.POLICY_VIOLATION);
-                return;
-            }
-
-            String jwt = authHeader.substring(7);
-            String username = jwtService.extractUsername(jwt);
-
-            if (username == null) {
-                log.error("Could not extract username from token");
-                session.close(CloseStatus.POLICY_VIOLATION);
-                return;
-            }
-
-            User user = userService.findByUsername(username).block();
-            if (user == null || !jwtService.isTokenValid(jwt, user)) {
-                log.error("Invalid token or user not found");
-                session.close(CloseStatus.POLICY_VIOLATION);
-                return;
-            }
-
-            // 存储用户信息和对话ID
-            session.getAttributes().put("user", user);
-            session.getAttributes().put("conversationId", conversationId);
+            // 存储对话ID
+            session.getAttributes().put("clientId", clientId);
             
             // 使用对话ID存储session
-            WebSocketHolder.addSession(conversationId, session);
+            WebSocketHolder.addSession(clientId, session);
             
-            log.info("WebSocket connection established for conversation: {}, user: {}", 
-                    conversationId, user.getUsername());
+            log.info("WebSocket connection established for clientId: {}", clientId);
         } catch (Exception e) {
-            log.error("Error during WebSocket authentication", e);
+            log.error("Error during WebSocket connection establishment", e);
             session.close(CloseStatus.SERVER_ERROR);
             throw e;
         }
@@ -91,8 +50,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        User user = (User) session.getAttributes().get("user");
-        log.info("Received message from user: {}, payload: {}", user.getUsername(), payload);
+        log.info("Received message, payload: {}", payload);
         
         try {
             // 解析MCP请求
@@ -121,22 +79,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String conversationId = (String) session.getAttributes().get("conversationId");
-        User user = (User) session.getAttributes().get("user");
-        if (conversationId != null) {
-            WebSocketHolder.removeSession(conversationId);
-            log.info("WebSocket connection closed for conversation: {}, user: {}, status: {}", 
-                    conversationId, user != null ? user.getUsername() : "unknown", status);
+        String clientId = (String) session.getAttributes().get("clientId");
+        if (clientId != null) {
+            WebSocketHolder.removeSession(clientId);
+            log.info("WebSocket connection closed for clientId: {}, status: {}",
+                    clientId, status);
         }
     }
 
-    private String extractConversationId(URI uri) {
+    private String extractClientId(URI uri) {
         String query = uri.getQuery();
         if (query != null) {
             String[] params = query.split("&");
             for (String param : params) {
-                if (param.startsWith("conversationId=")) {
-                    return param.substring("conversationId=".length());
+                if (param.startsWith("clientId=")) {
+                    return param.substring("clientId=".length());
                 }
             }
         }
