@@ -1,3 +1,3 @@
 - Mainly some basic libraries that ozhera relies on (such as logging, rpc, etc.)
 - Some code needs to be compiled using java20.
-- ozhera mainly relies on rcurve+docean+rpc.
+- ozhera mainly relies on rcurve+docean+rpc. 
