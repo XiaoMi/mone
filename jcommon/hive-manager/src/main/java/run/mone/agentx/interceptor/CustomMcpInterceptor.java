@@ -28,7 +28,6 @@ public class CustomMcpInterceptor extends MonerMcpInterceptor {
         String ip = NetUtils.getLocalHost();
         toolArguments.put("athenaPluginIp", ip);
         //mcp 需要 知道返回给那个项目的Athena
-        toolArguments.put(Const.OWNER_ID, "hive-manager" + "_" + ip);
         return true;
     }
 
