@@ -9,30 +9,38 @@ interface McpRequest {
   }
 }
 
-export const streamChat = async (message: string, callback: (data: any) => void) => {
+export const streamChat = async (message: string, clientId: string, callback: (data: any) => void) => {
   const request: McpRequest = {
     outerTag: "use_mcp_tool",
     content: {
       server_name: "chat-mcp",
       tool_name: "stream_minzai_chat",
-      arguments: JSON.stringify({ message })
+      arguments: JSON.stringify({ message, clientId, __owner_id__: clientId })
     }
   };
 
   try {
+    let preIndex = -1;
     const response = await axios({
       method: 'post',
       url: '/api/manager/v1/mcp/call',
       data: request,
-      responseType: 'text',
+      responseType: 'stream',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Accept': 'text/event-stream',
         'Content-Type': 'text/event-stream'
       },
       onDownloadProgress: (progressEvent) => {
-        console.log("progressEvent", progressEvent.event?.target?.response)
-        callback?.(progressEvent.event?.target?.response)
+        const xhr = progressEvent.event?.target;
+        if (xhr?.responseText) {
+          xhr?.responseText.split('data:').forEach((chunk: string, index: number) => {
+            if (index > preIndex) {
+              callback?.(chunk);
+              preIndex = index;
+            }
+          });
+        }
       }
     });
 

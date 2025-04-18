@@ -9,6 +9,11 @@ export interface Agent {
   agentUrl: string
   isPublic: boolean
   image: string
+  group: string
+  version: string
+  instances: Array<object>
+  toolMap?: string
+  mcpToolMap?: string
 }
 
 export interface CreateAgentRequest {

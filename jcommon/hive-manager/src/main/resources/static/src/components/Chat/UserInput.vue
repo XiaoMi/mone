@@ -59,17 +59,25 @@
                 <span v-if="isEnter" style="color: aqua">Enter</span><span v-else style="color: aqua">Shift+Enter</span>
               </div>
             </div> -->
+            <div class="sc-user-input--hcbutton">
+              <div>
+                <el-radio-group v-model="sendMethod" @change="toggleSendMethod">
+                  <el-radio label="sse">SSE</el-radio>
+                  <el-radio label="ws">WebSocket</el-radio>
+                </el-radio-group>
+              </div>
+            </div>
           </div>
           <div class="sc-user-input--buttons h-100">
             <!-- <div v-if="vision" class="sc-user-input--button">
               <Recoder @submit="submitAudio" />
             </div> -->
-            <div v-if="vision" class="sc-user-input--button test">
+            <div class="sc-user-input--button test">
               <ImageUpload :limit="1" v-model="images" />
             </div>
-            <!-- <div v-if="vision" class="sc-user-input--button">
+            <div class="sc-user-input--button">
               <Screenshot v-model="screenshotImages" />
-            </div> -->
+            </div>
             <div class="sc-user-input--button test">
               <PasteImage v-model="screenshotImages" />
             </div>
@@ -240,6 +248,10 @@ export default {
       type: Function,
       required: true,
     },
+    changeSendMethod: {
+      type: Function,
+      required: true,
+    },
   },
   watch: {
     text(newValue, oldValue) {
@@ -352,7 +364,8 @@ export default {
       highlightedIndex: 0,
       gitTimer: 0,
       composerConfig: ['bugfix', 'bizJar', 'Codebase', 'Analyze', 'Knowledge', 'UnitTest'],
-      composerList: []
+      composerList: [],
+      sendMethod: 'sse',
     };
   },
   computed: {
@@ -486,13 +499,14 @@ export default {
         }
       }
     },
-    toggleSendMethod() {
-      if (this.isEnter) {
-        localStorage.setItem("isEnter", "false");
-      } else {
-        localStorage.setItem("isEnter", "true");
-      }
-      this.isEnter = !this.isEnter;
+    toggleSendMethod(val: string) {
+      this.$props.changeSendMethod(val)
+      // if (this.isEnter) {
+      //   localStorage.setItem("isEnter", "false");
+      // } else {
+      //   localStorage.setItem("isEnter", "true");
+      // }
+      // this.isEnter = !this.isEnter;
     },
     filterJavaFile(list: Array<IItems>) {
       if (this.rootKey == TYPE_LIST.file) {
@@ -1265,7 +1279,7 @@ export default {
   color: #fff;
 
   &:hover {
-    background-color: #565867;
+    // background-color: #565867;
     // border-radius: 2px;
   }
 }

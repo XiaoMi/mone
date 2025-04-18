@@ -244,3 +244,50 @@
 .el-select-dropdown__item.selected {
   background-color: rgba(22, 27, 34, 1) !important;  /* 选中项的背景颜色 */
 }
+.code-block-body {
+  padding: 0 12px;
+}
+.markdown-body .code-block-wrapper {
+  /* padding: 0 12px !important; */
+}
+.image-preview .el-upload-list--picture .el-upload-list__item {
+  padding: 0;
+  margin: 0;
+}
+.image-preview .el-upload-list--picture .el-upload-list__item-status-label {
+  z-index: 1;
+}
+.status-tag {
+  display: flex;
+  align-items: center;
+}
+.el-tag {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+}
+.el-tag.el-tag--info {
+  background: rgba(135, 135, 135, 0.1);
+  color: #747474;
+  border: 1px solid #747474;
+}
+.el-popper {
+  background: rgb(13, 17, 23) !important;
+  color: #00f0ff !important;
+  border-color: #00f0ff !important;
+}
+.el-popper.is-light.el-popover .el-popper__arrow::before {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: transparent !important;
+}
+.sc-user-input--hcbutton .el-radio__input.is-checked+.el-radio__label {
+  color: #00f0ff !important;
+}
+.sc-user-input--hcbutton .el-radio__input+.el-radio__label {
+  color: #fff !important;
+}
+.sc-user-input--hcbutton .el-radio__input {
+  display: none;
+}

@@ -2,7 +2,6 @@
   margin: 10px 0;
   border: none;
   border-radius: 8px;
-  background: #1e1e1e;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   line-height: 0;
   overflow: hidden;
@@ -11,13 +10,12 @@
     display: flex;
     align-items: center;
     padding: 20px 15px;
-    background: #2d2d2d;
+    background: rgba(0, 0, 0, 0.5);
     cursor: pointer;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    border-bottom: 1px solid #3d3d3d;
 
     i {
       font-size: 16px;
@@ -63,8 +61,8 @@
   margin: 10px 0;
   border: none;
   border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  // background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   line-height: 0;
 
@@ -115,11 +113,12 @@
     .arguments {
       margin: 0;
       padding: 15px;
-      background: #1e1e1e;
+      // background: #1e1e1e;
 
       pre {
         margin: 0;
         white-space: pre-wrap;
+        background-color: transparent;
         
         code {
           font-family: 'JetBrains Mono', Consolas, Monaco, monospace;

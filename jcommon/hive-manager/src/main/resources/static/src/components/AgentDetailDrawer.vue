@@ -31,6 +31,14 @@
             </div>
           </div>
           <div class="detail-item">
+            <div class="label">tools</div>
+            <div class="value">{{ agentDetail.toolMap }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">mcpTools</div>
+            <div class="value">{{ agentDetail.mcpToolMap }}</div>
+          </div>
+          <div class="detail-item">
             <div class="label">创建时间</div>
             <div class="value">{{ formatDate(agentDetail.ctime) }}</div>
           </div>

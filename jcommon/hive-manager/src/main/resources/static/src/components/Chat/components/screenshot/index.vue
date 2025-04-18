@@ -1,14 +1,7 @@
 <template>
   <div class="screenshot">
-    <div class="button-icon" @click="callScreenshot">
+    <!-- <div class="button-icon" @click="callScreenshot">
       <font-awesome-icon color="#FFF" :icon="['fas', 'scissors']" />
-    </div>
-    <!-- <div class="image-preview" v-if="props.modelValue.length">
-      <div class="image-item">
-        <el-image
-          style="width: 148px; height: 148px"
-          :src="props.modelValue[0].url" />
-      </div>
     </div> -->
     <div class="image-preview" v-if="props.modelValue.length">
       <ul class="el-upload-list el-upload-list--picture">
@@ -72,29 +65,24 @@ function deleteImage() {
 }
 
 async function callScreenshot() {
-  await util.callScreenshot()
-  // console.log("callScreenshot", res);
-  // emits("update:modelValue", [{
-  //   mediaType: res.mediaType,
-  //   input: res.input,
-  // }]);
+  // await util.pasteImage()
 }
 
 onMounted(() => {
-  window.setScreenshot = (res: string) => {
-    console.log("callScreenshot", res);
-    try {
-      const jRes = JSON.parse(decodeURIComponent(res));
-      console.log(jRes);
-      emits("update:modelValue", [{
-        mediaType: jRes.mediaType,
-        input: jRes.input,
-        url: `data:${jRes.mediaType};base64,${jRes.input}`
-      }]);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  // window.setScreenshot = (res: string) => {
+  //   console.log("callScreenshot", res);
+  //   try {
+  //     const jRes = JSON.parse(decodeURIComponent(res));
+  //     console.log(jRes);
+  //     emits("update:modelValue", [{
+  //       mediaType: jRes.mediaType,
+  //       input: jRes.input,
+  //       url: `data:${jRes.mediaType};base64,${jRes.input}`
+  //     }]);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 });
 </script>
 
@@ -113,12 +101,11 @@ onMounted(() => {
 
 .image-preview {
   position: absolute;
-  width: 104px;
+  // width: 104px;
   // left: 10px;
   right: -43px;
   bottom: 43px;
   display: inline-block;
-  margin: 10px;
 }
 
 .image-preview img {

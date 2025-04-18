@@ -52,6 +52,7 @@
       @onType="$emit('onType', $event)"
       @edit="$emit('edit', $event)"
       :initCodePrompt="initCodePrompt"
+      :changeSendMethod="changeSendMethod"
     />
   </div>
 </template>
@@ -103,6 +104,10 @@ export default {
     },
     alwaysScrollToBottom: {
       type: Boolean,
+      required: true,
+    },
+    changeSendMethod: {
+      type: Function,
       required: true,
     },
   },

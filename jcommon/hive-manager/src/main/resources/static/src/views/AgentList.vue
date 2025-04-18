@@ -58,6 +58,27 @@
               </div>
             </div>
 
+            <div class="status" @click.stop>
+              <template v-if="agent.instances?.length > 0">
+                <el-popover
+                  placement="right"
+                  trigger="hover"
+                  width="auto"
+                >
+                  <template #reference>
+                    <el-tag type="success"><div class="status-tag">runing&nbsp;<el-icon><InfoFilled /></el-icon></div></el-tag>
+                  </template>
+                  <Instances :agent="agent" />
+                </el-popover>
+              </template>
+              <el-tag v-else type="info">stop</el-tag>
+            </div>
+
+            <div class="group">
+              <time>{{agent.group}}</time><br/>
+              <time>{{agent.version}}</time>
+            </div>
+
             <div class="activity">
               <span>创建时间：</span>
               <time>{{formatDate(agent.ctime)}}</time><br/>
@@ -143,7 +164,7 @@ import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { v4 as uuidv4 } from "uuid";
-
+import Instances from '@/components/Instances.vue'
 const agentList = ref<Agent[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -489,7 +510,7 @@ onMounted(() => {
   padding: 20px;
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 4fr 1fr 1fr 1fr 2fr 2fr;
   gap: 20px;
   align-items: center;
   transition: all 0.3s;
@@ -522,6 +543,9 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.agent-details {
+  width: calc(100% - 50px);
 }
 
 .agent-logo-placeholder {
@@ -585,7 +609,7 @@ onMounted(() => {
 }
 
 .badge {
-  padding: 6px 12px;
+  padding: 2px 8px;
   border-radius: 4px;
   font-size: 14px;
   background: rgba(255, 255, 255, 0.1);

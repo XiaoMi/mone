@@ -767,7 +767,7 @@
     color: #FFF;
 
     &:hover {
-      background-color: #565867;
+      // background-color: #565867;
       // border-radius: 2px;
     }
   }

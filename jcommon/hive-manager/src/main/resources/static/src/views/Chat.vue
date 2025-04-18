@@ -11,6 +11,7 @@
       :onUserInputSubmit="sendMessage"
       :initCodePrompt="initCodePrompt"
       @scrollToTop="scrollToTop"
+      :changeSendMethod="toggleSendMethod"
     />
   </div>
 </template>
@@ -21,7 +22,7 @@ import {
   useChatContextStore,
   type Message,
 } from "@/stores/chat-context";
-import { onMounted, onBeforeUnmount, computed } from "vue"
+import { onMounted, onBeforeUnmount, computed, ref } from "vue"
 import { getAgentDetail } from '@/api/agent'
 import { useRoute } from 'vue-router'
 import { connectWebSocket } from '@/api/wsConnect'
@@ -33,9 +34,28 @@ const { getChatContext, setMessageList, addMessage, setProject, setModule, setLo
   useChatContextStore();
 const { user, setAgent } = useUserStore();
 
+const socket = ref<WebSocket | null>(null)
+const uuid = ref<string>(route.query.conversationId as string);
+const messageId = ref<string>('');
+const sendMethod = ref<string>('sse');
 const list = computed(() => {
   return messageList
 })
+
+const toggleSendMethod = (val: string) => {
+  sendMethod.value = val
+  if (val === 'ws') {
+    // 连接websocket
+    socket.value = connectWebSocket(uuid.value,() => {
+      console.log('WebSocket connection closed');
+    }, (data: any) => {
+      fluxCodeHandler(data, messageId.value)
+    });
+  } else {
+    // 断开websocket
+    socket.value?.close();
+  }
+}
 
   const scrollToTop = () => {
     // 滚动到顶部
@@ -47,22 +67,25 @@ const list = computed(() => {
   const sendMessage = async (message: Message) => {
     addMessage(message);
     try {
-      const uuid = uuidv4();
-      streamChat(message.data.text as string, (data: any) => {
-        if (data) {
-          // 处理 SSE 数据流
-          const messages = data
-            .split('\n')
-            .filter((line: string) => line.startsWith('data:'))
-            .map((line: string) => line.slice(5))
-            .filter(Boolean);
-          // 打印消息
-          messages.forEach((msg: any) => {
-            fluxCodeHandler(msg, uuid)
-          });
-        }
-      });
-      
+      messageId.value = uuidv4();
+      if (sendMethod.value === "sse") {
+        // sse发送消息
+        streamChat(message.data.text as string, uuid.value, (data: any) => {
+          if (data) {
+            fluxCodeHandler(data, messageId.value)
+          }
+        });
+      } else {
+        // ws发送消息
+        socket.value?.send(JSON.stringify({
+          outerTag: "use_mcp_tool",
+          content: {
+            server_name: "minzai-mcp",
+            tool_name: "stream_minzai_chat",
+            arguments: JSON.stringify({ message:message.data.text, clientId: uuid.value, __owner_id__: uuid.value })
+          }
+        }));
+      }
     } catch (error) {
       console.error('发送消息失败:', error);
     }
@@ -179,6 +202,7 @@ onBeforeUnmount(() => {
 })
 onMounted(async () => {
     try {
+      // 获取Agent详情
       const { data } = await getAgentDetail(Number(route.query.serverAgentId))
       if (data.code === 200) {
         const agent = data.data
@@ -197,9 +221,6 @@ onMounted(async () => {
                 text: `你好，我是 ${agent.name}，有什么可以帮你的吗？`,
             },
         });
-        // connectWebSocket(() => {
-        //     console.log('WebSocket connection closed');
-        // });
       }
     } catch (error) {
       console.error('获取Agent详情失败:', error)

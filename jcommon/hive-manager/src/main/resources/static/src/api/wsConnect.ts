@@ -1,24 +1,25 @@
-const WS_HOST = 'ws://0.0.0.0:8080/ws/agent/chat';
+const WS_HOST = '/api/manager/ws/agent/chat';
 
-export function connectWebSocket(onClose: () => void) {
-    const socket = new WebSocket(WS_HOST);
+export function connectWebSocket(uuid: string,onClose: () => void, onMessage: (data: any) => void) {
+    const storedToken = localStorage.getItem('token'); // 获取存储的token
+    const socket = new WebSocket(WS_HOST + "?clientId=" + uuid);
     let heartbeatInterval: any;
 
     const startHeartbeat = () => {
-        heartbeatInterval = setInterval(() => {
-            try {
-                if (socket?.readyState === WebSocket.OPEN) {
-                    socket?.send('ping');
-                } else {
-                    socket?.close();
-                    clearInterval(heartbeatInterval);
-                }
-            } catch (error) {
-                console.error('心跳包发送失败:', error);
-                socket?.close();
-                clearInterval(heartbeatInterval);
-            }
-        }, 10000); // 每30秒发送一次心跳包
+        // heartbeatInterval = setInterval(() => {
+        //     try {
+        //         if (socket?.readyState === WebSocket.OPEN) {
+        //             socket?.send('ping');
+        //         } else {
+        //             socket?.close();
+        //             clearInterval(heartbeatInterval);
+        //         }
+        //     } catch (error) {
+        //         console.error('心跳包发送失败:', error);
+        //         socket?.close();
+        //         clearInterval(heartbeatInterval);
+        //     }
+        // }, 10000); // 每30秒发送一次心跳包
     };
 
     socket.onopen = () => {
@@ -27,8 +28,7 @@ export function connectWebSocket(onClose: () => void) {
     };
 
     socket.onmessage = (event) => {
-        console.log(event.data);
-        // resultCodeHandler(event.data, host)
+        onMessage(event.data);
         // 处理接收到的消息
     };
 

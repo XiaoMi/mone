@@ -434,11 +434,13 @@ onMounted(() => {
   padding: 20px;
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 20px;
   align-items: center;
   transition: all 0.3s;
   cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 .task-card:hover {

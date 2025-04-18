@@ -23,6 +23,14 @@ export default defineConfig({
   server: {
     port: 5175,
     proxy: {
+      "/api/manager/ws/": {
+        target: "http://0.0.0.0:8080/ws/",
+        ws: true, // 启用websocket代理
+        changeOrigin: true,
+        rewrite: (path) => {
+          return path.replace(/^\/api\/manager\/ws\//, "/");
+        },
+      },
       "/api/manager/": {
         target: "http://0.0.0.0:8080/api/",
         ws: true, // 启用websocket代理

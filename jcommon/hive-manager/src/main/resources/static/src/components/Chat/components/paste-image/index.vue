@@ -9,8 +9,41 @@
 <script setup lang="ts">
 import util from '@/libs/util';
 
+const emits = defineEmits(['update:modelValue']);
+
 async function callScreenshot() {
   // await util.pasteImage()
+  try {
+    const supportedImageTypes = [
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+    ];
+
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      // 检查是否包含支持的图片类型
+      const imageType = item.types.find(type => supportedImageTypes.includes(type));
+      if (imageType) {
+        const blob = await item.getType(imageType);
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64String = reader.result as string;
+          console.log(base64String);
+          // 移除 data:image/* 前缀
+          const base64Data = base64String.split(',')[1];
+          emits("update:modelValue", [{
+            mediaType: imageType,
+            input: base64Data,
+            url: base64String
+          }]);
+        };
+        reader.readAsDataURL(blob);
+      }
+    }
+  } catch (error) {
+    console.error('读取剪贴板失败:', error);
+  }
 }
 </script>
 
