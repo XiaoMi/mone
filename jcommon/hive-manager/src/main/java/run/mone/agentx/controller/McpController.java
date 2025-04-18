@@ -29,7 +29,7 @@ public class McpController {
     private final McpService mcpService;
 
     /**
-     * 调用MCP服务
+     * 调用MCP服务(后边其实是一个Agent,只是通过mcp这个协议来调用)
      *
      * @param requestBody 请求体
      * @return 消息流

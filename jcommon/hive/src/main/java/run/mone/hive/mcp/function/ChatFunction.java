@@ -2,7 +2,6 @@ package run.mone.hive.mcp.function;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
@@ -13,14 +12,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-@Component
+
+/**
+ * 每个Agent都具备chat能力
+ */
 @RequiredArgsConstructor
 @Data
 public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private final RoleService roleService;
 
-    private String agentName = "minzai";
+    private final String agentName;
 
 
     private static final String TOOL_SCHEMA = """
