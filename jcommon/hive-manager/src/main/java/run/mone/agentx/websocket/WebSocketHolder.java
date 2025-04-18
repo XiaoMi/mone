@@ -50,4 +50,17 @@ public class WebSocketHolder {
         WebSocketSession session = sessions.get(conversationId);
         return session != null && session.isOpen();
     }
+
+    // 安全地发送消息
+    public static void sendMessageSafely(WebSocketSession session, String message) {
+        if (session != null && session.isOpen()) {
+            try {
+                synchronized (session) {
+                    session.sendMessage(new TextMessage(message));
+                }
+            } catch (Exception e) {
+                log.error("Failed to send message to session", e);
+            }
+        }
+    }
 }

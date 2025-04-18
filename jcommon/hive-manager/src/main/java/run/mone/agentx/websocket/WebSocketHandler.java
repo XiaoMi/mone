@@ -9,11 +9,15 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import run.mone.agentx.service.JwtService;
 import run.mone.agentx.service.UserService;
+import run.mone.agentx.service.McpService;
 import run.mone.agentx.entity.User;
-
+import run.mone.agentx.dto.McpRequest;
+import run.mone.hive.common.GsonUtils;
+import run.mone.hive.common.Result;
 import java.util.List;
 import java.util.Map;
 import java.net.URI;
+import java.util.HashMap;
 
 @Component
 @Slf4j
@@ -22,6 +26,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final JwtService jwtService;
     private final UserService userService;
+    private final McpService mcpService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -88,7 +93,30 @@ public class WebSocketHandler extends TextWebSocketHandler {
         String payload = message.getPayload();
         User user = (User) session.getAttributes().get("user");
         log.info("Received message from user: {}, payload: {}", user.getUsername(), payload);
-        // 处理消息...
+        
+        try {
+            // 解析MCP请求
+            McpRequest request = GsonUtils.gson.fromJson(payload, McpRequest.class);
+            
+            // 构建MCP调用参数
+            Map<String, String> keyValuePairs = new HashMap<>();
+            keyValuePairs.put("outerTag", request.getOuterTag());
+            if (request.getContent() != null) {
+                keyValuePairs.put("server_name", request.getContent().getServer_name());
+                keyValuePairs.put("tool_name", request.getContent().getTool_name());
+                keyValuePairs.put("arguments", request.getContent().getArguments());
+            }
+            
+            // 创建Result对象
+            Result result = new Result("mcp_request", keyValuePairs);
+            
+            // 创建消息适配器并直接调用MCP服务
+            mcpService.callMcp(result, new McpMessageSink(session));
+            
+        } catch (Exception e) {
+            log.error("Error processing MCP request", e);
+            session.sendMessage(new TextMessage("{\"error\": \"" + e.getMessage() + "\"}"));
+        }
     }
 
     @Override
