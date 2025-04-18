@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.bo.RegInfoDto;
+import run.mone.hive.mcp.service.IHiveManagerService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
-public class HiveManagerService {
+public class HiveManagerService implements IHiveManagerService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final AtomicReference<String> token = new AtomicReference<>();

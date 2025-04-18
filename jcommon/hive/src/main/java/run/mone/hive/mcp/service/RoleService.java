@@ -1,10 +1,9 @@
 package run.mone.hive.mcp.service;
 
-import com.google.common.collect.Lists;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
@@ -14,14 +13,10 @@ import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.roles.ReactorRole;
-import run.mone.hive.roles.tool.AskTool;
-import run.mone.hive.roles.tool.AttemptCompletionTool;
-import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,15 +26,16 @@ import java.util.concurrent.CountDownLatch;
  * @author goodjava@qq.com
  * @date 2025/4/9 09:49
  */
-@Service
+@RequiredArgsConstructor
 public class RoleService {
 
-    @Resource
-    private LLM llm;
+    private final LLM llm;
 
-    @Resource
-    private GrpcServerTransport grpcServerTransport;
-    
+    private final GrpcServerTransport grpcServerTransport;
+
+    private final List<ITool> toolList;
+
+    private final IHiveManagerService hiveManagerService;
 
     @Value("${mcp.hub.path:}")
     private String mcpPath;
@@ -59,21 +55,23 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool());
-        ReactorRole role = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, tools) {
+        ReactorRole role = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, this.toolList) {
             @Override
             public void reg(RegInfo info) {
                 // 直接传递传入的RegInfo对象
+                hiveManagerService.register(info);
             }
 
             @Override
             public void unreg(RegInfo regInfo) {
                 // 直接传递传入的RegInfo对象
+                hiveManagerService.unregister(regInfo);
             }
 
             @Override
             public void health(HealthInfo healthInfo) {
                 // 直接传递传入的HealthInfo对象
+                hiveManagerService.heartbeat(healthInfo);
             }
         };
         role.setOwner(owner);
@@ -90,10 +88,10 @@ public class RoleService {
         if (!roleMap.containsKey(from)) {
             roleMap.putIfAbsent(from, createRole(from, message.getClientId()));
         }
-        ReactorRole minzai = roleMap.get(from);
+        ReactorRole role = roleMap.get(from);
         return Flux.create(sink -> {
             message.setSink(sink);
-            minzai.putMessage(message);
+            role.putMessage(message);
         });
     }
 
