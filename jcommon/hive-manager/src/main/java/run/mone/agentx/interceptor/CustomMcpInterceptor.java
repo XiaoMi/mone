@@ -1,7 +1,6 @@
 package run.mone.agentx.interceptor;
 
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.utils.NetUtils;
@@ -24,7 +23,6 @@ public class CustomMcpInterceptor extends MonerMcpInterceptor {
     @Override
     public boolean before(String toolName, Map<String, Object> toolArguments) {
         log.info("自定义拦截器 - 调用 MCP 工具前: {}, 参数: {}", toolName, toolArguments);
-
         String ip = NetUtils.getLocalHost();
         toolArguments.put("athenaPluginIp", ip);
         //mcp 需要 知道返回给那个项目的Athena
@@ -40,8 +38,5 @@ public class CustomMcpInterceptor extends MonerMcpInterceptor {
     @Override
     public void after(String toolName, McpSchema.CallToolResult toolRes) {
         log.info("自定义拦截器 - 调用 MCP 工具后: {}, 结果: {}", toolName, toolRes);
-        
-        // 在这里添加您的自定义逻辑
-        // 例如：处理结果、记录日志等
     }
 } 
