@@ -12,6 +12,7 @@ import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.repository.AgentAccessRepository;
 import run.mone.agentx.repository.AgentRepository;
 import run.mone.agentx.repository.AgentInstanceRepository;
+import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
 
@@ -85,6 +86,23 @@ public class AgentService {
         // Combine all sources and remove duplicates
         return Flux.concat(ownedAgents, publicAgents, accessibleAgents)
                 .distinct(Agent::getId);
+    }
+
+    /**
+     * 获取用户可访问的Agent列表，并包含每个Agent的实例列表
+     * @param userId 用户ID
+     * @return 包含AgentInstance列表的Agent流
+     */
+    public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId) {
+        return findAccessibleAgents(userId)
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
     }
 
     public Mono<Agent> updateAgent(Agent agent) {
@@ -303,5 +321,22 @@ public class AgentService {
             // 记录异常但不抛出，避免定时任务中断
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 获取单个Agent及其实例列表
+     * @param agentId Agent ID
+     * @return 包含AgentInstance列表的Agent
+     */
+    public Mono<AgentWithInstancesDTO> findAgentWithInstances(Long agentId) {
+        return findById(agentId)
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
     }
 }
