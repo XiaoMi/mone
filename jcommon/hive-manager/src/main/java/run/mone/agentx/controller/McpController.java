@@ -1,6 +1,7 @@
 package run.mone.agentx.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +17,7 @@ import run.mone.hive.schema.Message;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * MCP控制器
@@ -52,7 +54,7 @@ public class McpController {
         return Flux.create(sink -> {
             CompletableFuture.runAsync(() -> {
                 //这里本质是当Agent调用的
-                mcpService.callMcp(request.getAgentId(), result, sink);
+                mcpService.callMcp(request.getAgentId(), request.getAgentInstance(), result, sink);
                 sink.onDispose(() -> {
                     log.info("MCP流已结束");
                 });
