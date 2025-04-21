@@ -9,9 +9,9 @@ import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
@@ -31,9 +31,9 @@ public class RoleService {
 
     private final LLM llm;
 
-    private final GrpcServerTransport grpcServerTransport;
-
     private final List<ITool> toolList;
+
+    private final List<McpSchema.Tool> mcpToolList;
 
     private final IHiveManagerService hiveManagerService;
 
@@ -55,7 +55,7 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole role = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, this.toolList) {
+        ReactorRole role = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList) {
             @Override
             public void reg(RegInfo info) {
                 // 直接传递传入的RegInfo对象

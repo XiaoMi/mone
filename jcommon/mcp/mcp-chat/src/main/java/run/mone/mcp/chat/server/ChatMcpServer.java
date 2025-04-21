@@ -1,4 +1,3 @@
-
 package run.mone.mcp.chat.server;
 
 import org.springframework.stereotype.Component;
@@ -35,7 +34,7 @@ public class ChatMcpServer {
                 .sync();
 
         var toolStreamRegistration = new ToolStreamRegistration(
-                new Tool(chatFunction.getName(), chatFunction.getDesc(), chatFunction.getToolScheme()), chatFunction
+                new Tool(chatFunction.getName(), chatFunction.getDesc("minzai"), chatFunction.getToolScheme()), chatFunction
         );
 
         syncServer.addStreamTool(toolStreamRegistration);

@@ -1,21 +1,21 @@
 package run.mone.agentx.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.scheduling.annotation.Scheduled;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentAccess;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.repository.AgentAccessRepository;
-import run.mone.agentx.repository.AgentRepository;
 import run.mone.agentx.repository.AgentInstanceRepository;
+import run.mone.agentx.repository.AgentRepository;
+import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -85,6 +85,23 @@ public class AgentService {
         // Combine all sources and remove duplicates
         return Flux.concat(ownedAgents, publicAgents, accessibleAgents)
                 .distinct(Agent::getId);
+    }
+
+    /**
+     * 获取用户可访问的Agent列表，并包含每个Agent的实例列表
+     * @param userId 用户ID
+     * @return 包含AgentInstance列表的Agent流
+     */
+    public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId) {
+        return findAccessibleAgents(userId)
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
     }
 
     public Mono<Agent> updateAgent(Agent agent) {
@@ -178,6 +195,25 @@ public class AgentService {
                 agent.setUtime(System.currentTimeMillis());
                 agent.setState(1);
                 agent.setIsPublic(false);
+                
+                // 设置 toolMap 和 mcpToolMap
+                if (regInfoDto.getToolMap() != null) {
+                    agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
+                }
+                if (regInfoDto.getMcpToolMap() != null) {
+                    agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
+                }
+                
+                agent = agentRepository.save(agent).block();
+            } else {
+                // 如果Agent已存在，更新 toolMap 和 mcpToolMap
+                if (regInfoDto.getToolMap() != null) {
+                    agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
+                }
+                if (regInfoDto.getMcpToolMap() != null) {
+                    agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
+                }
+                agent.setUtime(System.currentTimeMillis());
                 agent = agentRepository.save(agent).block();
             }
             
@@ -303,5 +339,22 @@ public class AgentService {
             // 记录异常但不抛出，避免定时任务中断
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 获取单个Agent及其实例列表
+     * @param agentId Agent ID
+     * @return 包含AgentInstance列表的Agent
+     */
+    public Mono<AgentWithInstancesDTO> findAgentWithInstances(Long agentId) {
+        return findById(agentId)
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
     }
 }

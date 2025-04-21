@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import run.mone.hive.common.GsonUtils;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.ITool;
 
 import java.io.Serializable;
@@ -59,7 +61,7 @@ public class RegInfoDto implements Serializable {
         regInfo.setToolMap(toolMap);
         
         // 同样处理 mcpToolMap
-        Map<String, ITool> mcpToolMap = new HashMap<>();
+        Map<String, McpSchema.Tool> mcpToolMap = new HashMap<>();
         if (this.mcpToolMap != null) {
             for (Map.Entry<String, String> entry : this.mcpToolMap.entrySet()) {
                 String toolName = entry.getKey();
@@ -92,7 +94,7 @@ public class RegInfoDto implements Serializable {
                 String toolName = entry.getKey();
                 ITool tool = entry.getValue();
                 if (tool != null) {
-                    toolMap.put(toolName, tool.getName());
+                    toolMap.put(toolName, GsonUtils.gson.toJson(tool));
                 } else {
                     toolMap.put(toolName, toolName);
                 }
@@ -103,11 +105,11 @@ public class RegInfoDto implements Serializable {
         // 同样处理 mcpToolMap
         Map<String, String> mcpToolMap = new HashMap<>();
         if (regInfo.getMcpToolMap() != null) {
-            for (Map.Entry<String, ITool> entry : regInfo.getMcpToolMap().entrySet()) {
+            for (Map.Entry<String, McpSchema.Tool> entry : regInfo.getMcpToolMap().entrySet()) {
                 String toolName = entry.getKey();
-                ITool tool = entry.getValue();
+                McpSchema.Tool tool = entry.getValue();
                 if (tool != null) {
-                    mcpToolMap.put(toolName, tool.getName());
+                    mcpToolMap.put(toolName, GsonUtils.gson.toJson(tool));
                 } else {
                     mcpToolMap.put(toolName, toolName);
                 }
