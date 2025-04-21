@@ -70,7 +70,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
-            mcpService.callMcp(request.getAgentId(), result, sink);
+            mcpService.callMcp(request.getAgentId(), request.getAgentInstance(), result, sink);
             sink.complete();
             
         } catch (Exception e) {

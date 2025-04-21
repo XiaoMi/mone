@@ -32,8 +32,8 @@ public class WebConfig implements WebMvcConfigurer {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         // 添加对text/event-stream的支持
         List<MediaType> mediaTypes = new ArrayList<>(converter.getSupportedMediaTypes());
-//        mediaTypes.add(MediaType.valueOf("text/event-stream"));
-//        mediaTypes.add(MediaType.valueOf("text/event-stream;charset=UTF-8"));
+        mediaTypes.add(MediaType.valueOf("text/event-stream"));
+        mediaTypes.add(MediaType.valueOf("text/event-stream;charset=UTF-8"));
         converter.setSupportedMediaTypes(mediaTypes);
         return converter;
     }
