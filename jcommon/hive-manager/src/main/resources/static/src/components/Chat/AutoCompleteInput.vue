@@ -50,11 +50,11 @@ const userInputRef = ref<HTMLDivElement | null>(null);
 onMounted(() => {
   init();
   // @ts-ignore
-  window.setUserCode = function (code: string) {
-    updateModelValue(window.decodeURIComponent(code));
-    focusUserInput();
-    props.setInputActive(true);
-  };
+  // window.setUserCode = function (code: string) {
+  //   updateModelValue(window.decodeURIComponent(code));
+  //   focusUserInput();
+  //   props.setInputActive(true);
+  // };
 });
 
 onBeforeUnmount(() => {
@@ -68,8 +68,36 @@ function init() {
   }
 }
 
+function getFormattedContent(element: HTMLElement) {
+  // 用临时元素来处理
+  const temp = document.createElement('div');
+  temp.innerHTML = element.innerHTML;
+  
+  // 将<br>转换为换行符
+  temp.querySelectorAll('br').forEach(br => {
+    br.replaceWith('\n');
+  });
+  
+  // 将div/p转换为换行符
+  temp.querySelectorAll('div, p').forEach(el => {
+    el.replaceWith('\n' + el.textContent);
+  });
+  
+  // 处理空格（&nbsp;）
+  return temp.textContent?.replace(/\u00A0/g, ' ');
+}
+
 function handleInput(event: InputEvent) {
-  updateModelValue((event.target as HTMLElement).textContent || "");
+  
+  // const content = (event.target as HTMLElement).textContent || "";
+  // updateModelValue(content);
+  const content = getFormattedContent(event.target as HTMLElement) || "";
+  updateModelValue(content);
+  
+  // 检查内容是否为空，如果为空，确保div仍然保持为空
+  if (!content && userInputRef.value) {
+    userInputRef.value.textContent = '';
+  }
 }
 
 function updateModelValue(text: string) {

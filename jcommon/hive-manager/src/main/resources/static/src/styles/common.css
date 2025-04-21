@@ -250,12 +250,17 @@
 .markdown-body .code-block-wrapper {
   /* padding: 0 12px !important; */
 }
-.image-preview .el-upload-list--picture .el-upload-list__item {
-  padding: 0;
+.el-upload-list--picture .el-upload-list__item {
   margin: 0;
+  border: none;
+  background: rgba(15, 15, 35, 0.7);
 }
-.image-preview .el-upload-list--picture .el-upload-list__item-status-label {
+.el-upload-list--picture .el-upload-list__item-status-label {
   z-index: 1;
+}
+.el-upload-list--picture .el-upload-list__item  .el-icon--close {
+  z-index: 10;
+  color: var(--el-color-danger);
 }
 .status-tag {
   display: flex;

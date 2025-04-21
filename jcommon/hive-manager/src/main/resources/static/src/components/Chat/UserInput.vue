@@ -254,6 +254,16 @@ export default {
     },
   },
   watch: {
+    images(newValue) {
+      if (newValue.length > 0 && this.screenshotImages.length > 0) {
+        this.screenshotImages = []
+      }
+    },
+    screenshotImages(newValue) {
+      if (this.images.length > 0 && newValue.length > 0) {
+        this.images = []
+      }
+    },
     text(newValue, oldValue) {
       if (newValue?.trim() == "@") {
         this.toggleKnowledgeBase(true);
@@ -444,10 +454,10 @@ export default {
   },
   mounted() {
     const that = this;
-    window.useSubmitText = (text: string) => {
-      that.text = text;
-      that.submitText();
-    };
+    // window.useSubmitText = (text: string) => {
+    //   that.text = text;
+    //   that.submitText();
+    // };
   },
   methods: {
     handleClickOutside() {
@@ -607,7 +617,6 @@ export default {
       const highlightedIndex = this.highlightedIndex;
       const suggestionVisible = this.suggestionVisible;
       // const cKnowledgeBasesVisible = this.cKnowledgeBasesVisible;
-      console.log(event.key);
       if (event.key === "Delete" || event.key === "Backspace") {
         if (
           this.text == "" &&
@@ -640,7 +649,9 @@ export default {
         (event.key === "Enter" && event.shiftKey && !this.isEnter) ||
         (event.key === "Enter" && !event.shiftKey && this.isEnter)
       ) {
-        this.submitText();
+        if (this.text.trim() !== "" || this.images.length > 0 || this.screenshotImages.length > 0) {
+          this.submitText();
+        }
         event.preventDefault();
         event.stopPropagation();
         this.close();

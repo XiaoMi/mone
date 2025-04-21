@@ -62,7 +62,6 @@ import MessageList from "./MessageList.vue";
 // 202408261版本之后使用
 import UserInput from "./UserInput.vue";
 // 202408261版本之前使用
-import UserInputOld from "./UserInputOld.vue";
 import { useIdeaInfoStore } from "@/stores/idea-info";
 import { mapState } from "pinia";
 import { useEditStore } from "@/stores/edit";
@@ -70,8 +69,7 @@ import util from "@/libs/util";
 export default {
   components: {
     MessageList,
-    UserInput,
-    UserInputOld,
+    UserInput
   },
   props: {
     onUserInputSubmit: {

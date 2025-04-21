@@ -99,7 +99,7 @@ onMounted(() => {
   position: absolute;
   // width: 104px;
   // left: 10px;
-  right: -43px;
+  right: -98px;
   bottom: 43px;
   display: inline-block;
 }
