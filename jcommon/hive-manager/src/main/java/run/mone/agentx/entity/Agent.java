@@ -2,6 +2,7 @@ package run.mone.agentx.entity;
 
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,4 +22,10 @@ public class Agent extends BaseEntity {
     private Long createdBy;
     private Boolean isPublic;
     private byte[] image;
+
+    @Column("tool_map")
+    private String toolMap;
+
+    @Column("mcp_tool_map")
+    private String mcpToolMap;
 }
