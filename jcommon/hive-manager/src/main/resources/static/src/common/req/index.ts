@@ -45,7 +45,7 @@ Service.interceptors.request.use((config) => {
     config.data = qs.stringify(config.data)
   }
   const storedToken = localStorage.getItem('token')
-  if (storedToken) {
+  if (storedToken && config.url !== '/v1/users/login' && config.url !== '/v1/users/register') {
     config.headers['Authorization'] = `Bearer ${storedToken}`
   }
   return config
