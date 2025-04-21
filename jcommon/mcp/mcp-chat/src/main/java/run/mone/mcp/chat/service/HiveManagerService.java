@@ -65,7 +65,7 @@ public class HiveManagerService implements IHiveManagerService {
                 log.error("Invalid response format: {}", response);
             }
         } catch (Exception e) {
-            log.error("Error during login: {}", e.getMessage(), e);
+            log.error("Error during login: {}", e.getMessage());
         }
     }
     
