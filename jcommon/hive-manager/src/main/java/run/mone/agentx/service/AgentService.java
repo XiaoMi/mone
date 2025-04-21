@@ -304,7 +304,7 @@ public class AgentService {
                 .then();
     }
 
-    @Scheduled(fixedRate = 60000) // 每分钟检查一次
+//    @Scheduled(fixedRate = 60000) // 每分钟检查一次
     public void checkHeartbeats() {
         try {
             long currentTime = System.currentTimeMillis();

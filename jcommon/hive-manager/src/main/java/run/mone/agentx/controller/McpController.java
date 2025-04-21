@@ -34,8 +34,9 @@ public class McpController {
      * @return 消息流
      */
     @PostMapping(value = "/call", consumes = "text/event-stream", produces = "text/event-stream")
-    public Flux<Message> call(@RequestBody McpRequest request) {
-
+    public Flux<Message> call(@RequestBody(required = false) String requestBody) {
+        log.info("调用MCP服务，请求参数: {}", requestBody);
+        McpRequest request = GsonUtils.gson.fromJson(requestBody, McpRequest.class);
         Map<String, String> keyValuePairs = new HashMap<>();
         keyValuePairs.put("outerTag", request.getOuterTag());
         if (request.getContent() != null) {
@@ -51,7 +52,7 @@ public class McpController {
         return Flux.create(sink -> {
             CompletableFuture.runAsync(() -> {
                 //这里本质是当Agent调用的
-                mcpService.callMcp(result, sink);
+                mcpService.callMcp(request.getAgentId(), result, sink);
                 sink.onDispose(() -> {
                     log.info("MCP流已结束");
                 });

@@ -9,6 +9,10 @@ import run.mone.agentx.entity.AgentInstance;
  */
 @Data
 public class McpRequest {
+
+    private Long agentId;
+
+    private AgentInstance agentInstance;
     /**
      * 外部标签
      */
@@ -23,10 +27,6 @@ public class McpRequest {
 
 
     private String clientId;
-
-    private Agent agent;
-
-    private AgentInstance agentInstance;
     
     /**
      * MCP内容
