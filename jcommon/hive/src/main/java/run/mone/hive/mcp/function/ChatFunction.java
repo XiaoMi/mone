@@ -45,6 +45,7 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         String ownerId = arguments.get(Const.OWNER_ID).toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();
         String message = (String) arguments.get("message");
+        String voiceBase64 = arguments.get("voiceBase64") == null ? null : (String) arguments.get("voiceBase64");
         if ("/clear".equalsIgnoreCase(message.trim())) {
             roleService.clearHistory(Message.builder().sentFrom(clientId).build());
             return Flux.just(new McpSchema.CallToolResult(
@@ -61,6 +62,7 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
                             .sentFrom(ownerId)
                             .content(message)
                             .data(message)
+                            .voiceBase64(voiceBase64)
                             .build())
                     .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
