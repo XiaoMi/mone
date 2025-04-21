@@ -1,83 +1,64 @@
 <template>
   <div class="task-list-container">
-    <el-card class="box-card custom-card">
-      <template #header>
-        <div class="card-header">
-          <span>任务列表</span>
-          <el-button 
-            class="create-btn custom-btn" 
-            type="primary" 
-            @click="handleCreate"
-          >
-            创建任务
-          </el-button>
-        </div>
-      </template>
+    <div class="cyber-grid"></div>
+    <div class="circuit-point point-1"></div>
+    <div class="circuit-point point-2"></div>
+    <div class="dashboard-header">
+      <div class="title-container">
+        <h1>⚡ 任务控制中心</h1>
+        <div class="animated-underline"></div>
+      </div>
+      <div class="header-actions">
+        <button class="create-btn" @click="handleCreate">+ 创建任务</button>
+      </div>
+    </div>
 
-      <div class="future-table">
-        <div class="table-header">
-          <div class="header-cell" style="width: 80px">ID</div>
-          <div class="header-cell flex-1">名称</div>
-          <div class="header-cell flex-1">描述</div>
-          <div class="header-cell" style="width: 120px">状态</div>
-          <div class="header-cell" style="width: 180px">创建时间</div>
-          <!-- <div class="header-cell" style="width: 200px">操作</div> -->
+    <div class="table-container">
+      <div class="task-table">
+        <div v-if="loading" class="loading-container">
+          <div class="loading-spinner"></div>
+          <span>加载中...</span>
         </div>
-        
-        <TransitionGroup 
-          name="list" 
-          tag="div" 
-          class="table-body"
-        >
-          <div 
-            v-if="taskList.length === 0" 
-            :key="'empty'" 
-            class="empty-state"
-          >
+        <TransitionGroup name="list" tag="div" v-else>
+          <div v-if="taskList.length === 0" :key="'empty'" class="empty-state">
             <div class="empty-content">
-              <span class="empty-text">暂无任务数据</span>
+              <span class="empty-text">暂无任务数据</span><br/>
+              <button class="create-btn" @click="handleCreate">+ 创建任务</button>
             </div>
           </div>
-          <div 
-            v-for="task in taskList" 
-            :key="task.id" 
-            class="table-row"
-            :class="{'hover-effect': true}"
-          >
-            <div class="cell" style="width: 80px">
-              <div class="id-badge">{{task.id}}</div>
-            </div>
-            <div class="cell flex-1">
-              <div class="name-container">
-                <span 
-                  class="task-name"
-                  @click="handleShowDetail(task)"
-                >
-                  {{task.title}}
-                </span>
+          
+          <div v-for="task in taskList" 
+               :key="task.id" 
+               class="task-card"
+               @click="handleShowDetail(task)">
+            <div class="task-info">
+              <div class="task-avatar">
+                <div class="task-logo-placeholder">
+                  {{ task.title.charAt(0).toUpperCase() }}
+                </div>
+              </div>
+              <div class="task-details">
+                <h4>{{task.title}}</h4>
+                <p>{{task.description}}</p>
               </div>
             </div>
-            <div class="cell flex-1">{{task.description}}</div>
-            <div class="cell" style="width: 120px">
-              <el-tag type="primary">
+
+            <div class="task-status">
+              <span class="badge" :class="task.status.toLowerCase()">
                 {{task.status}}
-              </el-tag>
+              </span>
             </div>
-            <div class="cell" style="width: 180px">
-              {{formatDate(task.ctime)}}
+
+            <div class="activity">
+              <span>创建时间：</span>
+              <time>{{formatDate(task.ctime)}}</time><br/>
+              <span>更新时间：</span>
+              <time>{{formatDate(task.utime)}}</time>
             </div>
-            <!-- <div class="cell actions" style="width: 200px">
-              <el-button 
-                class="custom-btn edit"
-                @click="handleShowDetail(task)"
-              >
-                详情
-              </el-button>
-            </div> -->
           </div>
         </TransitionGroup>
       </div>
-    </el-card>
+    </div>
 
     <!-- 任务详情抽屉 -->
     <task-detail-drawer
@@ -179,418 +160,414 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 更新任务列表容器样式 */
 .task-list-container {
-  padding: 20px;
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
   min-height: 100vh;
+  background: #0d1117;
+  color: #fff;
+  padding: 20px;
   position: relative;
   overflow: hidden;
 }
 
-/* 添加网格背景 */
-.task-list-container::before {
-  content: '';
+.cyber-grid {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
   background-size: 40px 40px;
+  animation: gridMove 20s linear infinite;
+  transform-origin: center;
+  opacity: 0.3;
   pointer-events: none;
 }
 
-/* 更新卡片样式 */
-.custom-card {
-  background: rgba(13, 17, 23, 0.5);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(48, 54, 61, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  border-radius: 16px;
+@keyframes gridMove {
+  0% {
+    transform: perspective(500px) rotateX(60deg) translateY(0);
+  }
+  100% {
+    transform: perspective(500px) rotateX(60deg) translateY(40px);
+  }
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #ffffff;
-  font-size: 1.2em;
-  text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
-}
-
-/* 更新抽屉样式 */
-:deep(.el-drawer) {
-  background: rgba(13, 17, 23, 0.7);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(48, 54, 61, 0.2);
-}
-
-:deep(.el-drawer__header) {
-  color: #ffffff;
-  margin-bottom: 20px;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
-  padding-bottom: 20px;
-}
-
-/* 更新任务详情样式 */
-.task-detail {
-  padding: 20px;
-  color: #ffffff;
-}
-
-.detail-item {
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-}
-
-.detail-item label {
-  width: 120px;
-  color: #31e8f9;
-  font-weight: 500;
-}
-
-.detail-item span {
-  color: #ffffff;
-}
-
-/* 更新表格样式 */
-.future-table {
-  background: rgba(13, 17, 23, 0.4);
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(48, 54, 61, 0.2);
-  position: relative;
-}
-
-/* 添加扫描线动画 */
-.future-table::before {
-  content: '';
+.circuit-point {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    rgba(99, 179, 237, 0) 0%,
-    rgba(99, 179, 237, 0.8) 50%,
-    rgba(99, 179, 237, 0) 100%
-  );
-  /* animation: scanline 3s linear infinite; */
-}
-
-.table-header {
-  display: flex;
-  background: linear-gradient(90deg, rgba(22, 27, 34, 0.4) 0%, rgba(28, 33, 40, 0.4) 100%);
-  padding: 16px;
-  color: #31e8f9;
-  font-weight: 500;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
-}
-
-.header-cell {
-  padding: 0 12px;
-}
-
-.table-body {
-  position: relative;
-}
-
-.table-row {
-  display: flex;
-  padding: 16px;
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  color: #ffffff;
-}
-
-/* 表格行悬停效果 */
-.table-row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent 0%,
-    rgba(99, 179, 237, 0.1) 50%,
-    transparent 100%
-  );
-  transform: translateX(-100%);
-  transition: transform 0.5s ease;
-}
-
-.table-row:hover::before {
-  transform: translateX(100%);
-}
-
-.hover-effect:hover {
-  transform: translateX(4px) scale(1.01);
-  background: rgba(48, 54, 61, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.cell {
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  color: #ffffff;
-}
-
-.flex-1 {
-  flex: 1;
-}
-
-/* 更新任务名称样式 */
-.task-name {
-  cursor: pointer;
-  color: #31e8f9;
-  transition: all 0.3s ease;
-}
-
-.task-name:hover {
-  text-shadow: 0 0 10px rgba(49, 232, 249, 0.5);
-  text-decoration: underline;
-}
-
-/* 空状态样式 */
-.empty-state {
-  padding: 60px 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.empty-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.empty-text {
-  color: #ffffff;
-  font-size: 16px;
-  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
-}
-
-/* 动画关键帧 */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-/* 列表动画 */
-.list-enter-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.list-leave-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  position: absolute;
-  width: 100%;
-}
-
-.list-enter-from {
+  width: 6px;
+  height: 6px;
+  background: #00f0ff;
+  border-radius: 50%;
+  filter: blur(1px);
+  box-shadow: 
+    0 0 10px #00f0ff,
+    0 0 20px #00f0ff,
+    0 0 30px rgba(0, 240, 255, 0.5);
   opacity: 0;
-  transform: translateX(-50px) scale(0.9);
+  z-index: 0;
 }
 
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(50px) scale(0.9);
-}
-
-/* 修改操作按钮样式 */
-.custom-btn {
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.custom-btn::before {
+.circuit-point::before {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%) rotate(45deg) scale(0);
-  transition: transform 0.6s ease;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 50%;
+  filter: blur(2px);
 }
 
-.custom-btn:hover::before {
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
+.circuit-point::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 50%;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(
+    270deg,
+    rgba(0, 240, 255, 0.8),
+    rgba(0, 240, 255, 0)
+  );
+  transform-origin: right center;
+  transform: translateY(-50%);
+  filter: blur(1px);
 }
 
-.edit {
-  background: linear-gradient(135deg, #238636 0%, #1b6b2c 100%);
+.point-1 {
+  bottom: 40px;
+  left: 40px;
+  animation: movePoint1 15s linear infinite;
 }
 
-/* 创建按钮样式 */
-.create-btn {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%) !important;
-  border: none !important;
-  padding: 10px 24px !important;
-  border-radius: 8px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.5px;
+.point-1::after {
+  animation: tailRotate1 15s linear infinite;
+}
+
+.point-2 {
+  bottom: 40px;
+  right: 40px;
+  animation: movePoint2 15s linear infinite;
+}
+
+.point-2::after {
+  animation: tailRotate2 15s linear infinite;
+}
+
+@keyframes movePoint1 {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  15% {
+    transform: translate(0, -160px);
+  }
+  30% {
+    transform: translate(120px, -160px);
+  }
+  45% {
+    transform: translate(120px, -320px);
+  }
+  60% {
+    transform: translate(240px, -320px);
+  }
+  75% {
+    transform: translate(240px, -480px);
+  }
+  90% {
+    transform: translate(360px, -480px);
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate(360px, -480px);
+    opacity: 0;
+  }
+}
+
+@keyframes movePoint2 {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  15% {
+    transform: translate(0, -200px);
+  }
+  30% {
+    transform: translate(-160px, -200px);
+  }
+  45% {
+    transform: translate(-160px, -360px);
+  }
+  60% {
+    transform: translate(-280px, -360px);
+  }
+  75% {
+    transform: translate(-280px, -520px);
+  }
+  90% {
+    transform: translate(-400px, -520px);
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-400px, -520px);
+    opacity: 0;
+  }
+}
+
+@keyframes tailRotate1 {
+  0%, 15% { transform: translateY(-50%) rotate(-90deg); }
+  15.1%, 30% { transform: translateY(-50%) rotate(0deg); }
+  30.1%, 45% { transform: translateY(-50%) rotate(-90deg); }
+  45.1%, 60% { transform: translateY(-50%) rotate(0deg); }
+  60.1%, 75% { transform: translateY(-50%) rotate(-90deg); }
+  75.1%, 90% { transform: translateY(-50%) rotate(0deg); }
+}
+
+@keyframes tailRotate2 {
+  0%, 15% { transform: translateY(-50%) rotate(-90deg); }
+  15.1%, 30% { transform: translateY(-50%) rotate(180deg); }
+  30.1%, 45% { transform: translateY(-50%) rotate(-90deg); }
+  45.1%, 60% { transform: translateY(-50%) rotate(180deg); }
+  60.1%, 75% { transform: translateY(-50%) rotate(-90deg); }
+  75.1%, 90% { transform: translateY(-50%) rotate(180deg); }
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.title-container {
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(35, 166, 213, 0.3);
+}
+
+.animated-underline {
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    #00f0ff 0%,
+    #b400ff 50%,
+    #00f0ff 100%
+  );
+  animation: progressLine 3s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+@keyframes progressLine {
+  0% {
+    width: 0;
+    opacity: 0.6;
+    left: 0;
+  }
+  50% {
+    width: 100%;
+    opacity: 1;
+    left: 0;
+  }
+  51% {
+    width: 100%;
+    opacity: 1;
+    left: 0;
+  }
+  100% {
+    width: 0;
+    opacity: 0.6;
+    left: 100%;
+  }
+}
+
+.dashboard-header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: #0d1117;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(35, 166, 213, 0.4);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
 }
 
-.create-btn::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%) rotate(45deg) scale(0);
-  transition: transform 0.6s ease;
+.task-card {
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+  transition: all 0.3s;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
-.create-btn:hover::before {
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
+.task-card:hover {
+  transform: translateX(4px);
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
 }
 
-/* 对话框样式 */
+.task-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.task-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+}
+
+.task-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #0d1117;
+}
+
+.task-details h4 {
+  font-size: 18px;
+  margin-bottom: 5px;
+  color: #00f0ff;
+}
+
+.task-details p {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  display: inline-block;
+}
+
+.badge.running {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
+}
+
+.badge.completed {
+  background: rgba(0, 255, 136, 0.1);
+  color: #00ff88;
+  border: 1px solid #00ff88;
+}
+
+.badge.failed {
+  background: rgba(255, 85, 85, 0.1);
+  color: #ff5555;
+  border: 1px solid #ff5555;
+}
+
+.badge.pending {
+  background: rgba(255, 184, 0, 0.1);
+  color: #ffb800;
+  border: 1px solid #ffb800;
+}
+
+.empty-state {
+  width: 240px;
+  height: 80px;
+  margin: 120px auto 0;
+  display: flex;
+  align-items: center;
+}
+
+.empty-state .empty-text {
+  display: inline-block;
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: center;
+}
+
+/* 保持原有的抽屉和对话框样式 */
+:deep(.el-drawer),
 :deep(.el-dialog) {
   background: rgba(13, 17, 23, 0.7);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(48, 54, 61, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
+  border: 1px solid rgba(0, 240, 255, 0.2);
 }
 
-:deep(.el-dialog__header) {
-  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
-  padding: 20px;
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .task-card {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
 }
 
-:deep(.el-dialog__title) {
-  color: #fff;
-  font-size: 1.2em;
-  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #00f0ff;
 }
 
-:deep(.el-dialog__body) {
-  color: #ffffff;
-  padding: 30px 20px;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  border: 3px solid rgba(0, 240, 255, 0.1);
+  border-top: 3px solid #00f0ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-:deep(.el-form-item__label) {
-  color: #fff;
-}
-
-:deep(.el-input__wrapper) {
-  background: rgba(22, 27, 34, 0.4);
-  border: 1px solid rgba(49, 232, 249, 0.3);
-  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
-  transition: all 0.3s ease;
-}
-
-:deep(.el-input__wrapper:hover) {
-  border-color: rgba(49, 232, 249, 0.8);
-  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  border-color: #31e8f9;
-  box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
-}
-
-:deep(.el-input__inner) {
-  color: #ffffff;
-}
-
-:deep(.el-textarea__inner) {
-  background: rgba(22, 27, 34, 0.4);
-  border: 1px solid rgba(49, 232, 249, 0.3);
-  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
-  color: #ffffff;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-textarea__inner:hover) {
-  border-color: rgba(49, 232, 249, 0.8);
-  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
-}
-
-:deep(.el-textarea__inner:focus) {
-  border-color: #31e8f9;
-  box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
-}
-
-
-/* 弹窗按钮样式 */
-:deep(.el-dialog__footer .el-button) {
-  border: none;
-  padding: 8px 20px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-:deep(.el-dialog__footer .el-button--default) {
-  background: rgba(48, 54, 61, 0.5);
-  color: #ffffff;
-  border: 1px solid rgba(49, 232, 249, 0.3);
-}
-
-:deep(.el-dialog__footer .el-button--default:hover) {
-  background: rgba(48, 54, 61, 0.7);
-  border-color: rgba(49, 232, 249, 0.8);
-  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
-  transform: translateY(-2px);
-}
-
-:deep(.el-dialog__footer .el-button--primary) {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
-  border: none;
-  box-shadow: 0 4px 15px rgba(35, 166, 213, 0.3);
-}
-
-:deep(.el-dialog__footer .el-button--primary:hover) {
-  box-shadow: 0 6px 20px rgba(35, 166, 213, 0.4);
-  transform: translateY(-2px);
-}
-
-:deep(.el-dialog__footer .el-button::before) {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%) rotate(45deg) scale(0);
-  transition: transform 0.6s ease;
-}
-
-:deep(.el-dialog__footer .el-button:hover::before) {
-  transform: translate(-50%, -50%) rotate(45deg) scale(1);
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
