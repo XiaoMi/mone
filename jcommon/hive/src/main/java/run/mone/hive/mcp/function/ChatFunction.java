@@ -22,8 +22,6 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
 
     private final RoleService roleService;
 
-    private final String agentName;
-
 
     private static final String TOOL_SCHEMA = """
             {
@@ -71,16 +69,16 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         }
     }
 
-    public String getName() {
+    public static String getName() {
         return "stream_minzai_chat";
     }
 
-    public String getDesc() {
+    public static String getDesc(String agentName) {
         return "和%s聊天，问问%s问题。支持各种形式如：'%s'、'请%s告诉我'、'让%s帮我看看'、'%s你知道吗'等。支持上下文连续对话。使用 '/clear' 可以清空聊天历史。"
                 .formatted(agentName, agentName, agentName, agentName, agentName, agentName);
     }
 
-    public String getToolScheme() {
+    public static String getToolScheme() {
         return TOOL_SCHEMA;
     }
 

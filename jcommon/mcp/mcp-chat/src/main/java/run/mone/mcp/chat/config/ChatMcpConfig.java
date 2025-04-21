@@ -1,4 +1,3 @@
-
 package run.mone.mcp.chat.config;
 
 import com.google.common.collect.Lists;
@@ -12,6 +11,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.RoleService;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
@@ -20,8 +20,6 @@ import run.mone.mcp.chat.tool.DocumentProcessingTool;
 import run.mone.mcp.chat.tool.SystemInfoTool;
 
 import javax.annotation.Resource;
-
-import static run.mone.hive.llm.ClaudeProxy.*;
 
 
 @Configuration
@@ -60,12 +58,23 @@ public class ChatMcpConfig {
 
 
     @Bean
-    RoleService roleService(LLM llm, GrpcServerTransport grpcServerTransport) {
-        return new RoleService(llm, grpcServerTransport, Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool(), new DocumentProcessingTool(), new SystemInfoTool()), hiveManagerService);
+    RoleService roleService(LLM llm) {
+        return new RoleService(llm,
+                Lists.newArrayList(
+                        new ChatTool(),
+                        new AskTool(),
+                        new AttemptCompletionTool(),
+                        new DocumentProcessingTool(),
+                        new SystemInfoTool()),
+                Lists.newArrayList(
+                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc("minzai"), ChatFunction.getToolScheme())
+                ),
+                hiveManagerService);
     }
 
     @Bean
     ChatFunction chatFunction(RoleService roleService) {
-        return new ChatFunction(roleService, "minzai");
+        return new ChatFunction(roleService);
     }
+
 }
