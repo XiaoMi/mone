@@ -13,6 +13,19 @@
     <netty.version>4.1.97.Final</netty.version>
   </properties>
   <dependencies>
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
@@ -49,6 +62,16 @@
       <artifactId>activation</artifactId>
       <version>1.1</version>
       <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+      <version>3.5.10</version>
+    </dependency>
+    <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams</artifactId>
+      <version>1.0.4</version>
     </dependency>
   </dependencies>
   <build>

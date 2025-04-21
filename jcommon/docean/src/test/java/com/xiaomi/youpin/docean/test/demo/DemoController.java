@@ -29,6 +29,8 @@ import com.xiaomi.youpin.docean.test.anno.TAnno;
 import com.xiaomi.youpin.docean.test.bo.M;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.Resource;
 import java.nio.file.Files;
@@ -49,14 +51,11 @@ public class DemoController {
 
     public void init() {
         log.info("init controller");
-
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             Safe.runAndLog(() -> WebSocketContext.ins().getChannelMap().forEach((k, v) -> {
                 WebSocketContext.ins().sendMessage(k, "server_ping");
             }));
         }, 0, 5, TimeUnit.SECONDS);
-
-
     }
 
     @RequestMapping(path = "/test")
@@ -67,10 +66,41 @@ public class DemoController {
         return vo;
     }
 
-    @RequestMapping(path = "/ws")
+
+    //测试mono
+    @RequestMapping(path = "/mono")
+    public Mono<String> testMono() {
+        return Mono.create(sink->{
+            sink.success("mono");
+        });
+    }
+
+    @RequestMapping(path = "/flux")
+    public Flux<String> testFlux() {
+        return Flux.create(sink->{
+            sink.next("a");
+            sink.next("b");
+            sink.complete();
+        });
+    }
+
+
+
+//    @RequestMapping(path = "/ws")
     public String test(String req) {
         return "ws:" + req;
     }
+
+    @RequestMapping(path = "/ws")
+    public Flux<String> ws(String req) {
+        return Flux.create(sink->{
+            sink.next("a");
+            sink.next("b");
+            sink.complete();
+        });
+    }
+
+
 
     @RequestMapping(path = "/header")
     public DemoVo header(MvcContext context) {
