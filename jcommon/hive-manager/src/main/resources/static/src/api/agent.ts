@@ -48,7 +48,10 @@ export interface CreateSkillRequest {
 
 // 获取Agent列表
 export const getAgentList = () => {
-  return Service<IResponse<Agent[]>>({
+  return Service<IResponse<{
+    agent: Agent,
+    instances: Array<any>
+}[]>>({
     url: '/v1/agents/list',
     method: 'get'
   })
@@ -82,7 +85,10 @@ export const deleteAgent = (id: number) => {
 
 // 获取Agent详情
 export const getAgentDetail = (id: number) => {
-  return Service<IResponse<Agent>>({
+  return Service<IResponse<{
+    agent: Agent,
+    instances: Array<any>
+  }>>({
     url: `/v1/agents/${id}`,
     method: 'get'
   })

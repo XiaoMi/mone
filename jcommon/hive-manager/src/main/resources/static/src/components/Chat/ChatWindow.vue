@@ -1,5 +1,6 @@
 <template>
   <div class="sc-chat-window" :class="{ opened: isOpen, closed: !isOpen }">
+    <InstanceSelect/>
     <MessageList
       :messages="messages"
       :always-scroll-to-bottom="alwaysScrollToBottom"
@@ -66,10 +67,12 @@ import { useIdeaInfoStore } from "@/stores/idea-info";
 import { mapState } from "pinia";
 import { useEditStore } from "@/stores/edit";
 import util from "@/libs/util";
+import InstanceSelect from "./InstanceSelect.vue";
 export default {
   components: {
     MessageList,
-    UserInput
+    UserInput,
+    InstanceSelect
   },
   props: {
     onUserInputSubmit: {

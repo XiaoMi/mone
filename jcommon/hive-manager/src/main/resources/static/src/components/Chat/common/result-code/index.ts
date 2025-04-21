@@ -287,8 +287,16 @@ export function fluxCodeHandler(res: string, uuid: string) {
           return text.replace(/(<\/boltArtifact>)(?![\n\r])/g, '$1\n');
         },
       },
+      {
+        // thinking标签格式处理
+        match: (text: string) => text.includes("<") && text.includes("thinking"),
+        replace: (text: string) => {
+          return text
+            .replace(/<[\s\r\n]+thinking/g, '<thinking')
+            .replace(/thinking[\s\r\n]+>/g, 'thinking>');
+        },
+      },
     ];
-
     for (const handler of formatHandlers) {
       if (handler.match(existData.data.text)) {
         existData.data.text = handler.replace(existData.data.text);

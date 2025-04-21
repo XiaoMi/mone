@@ -9,14 +9,15 @@ interface McpRequest {
   }
 }
 
-export const streamChat = async (message: string, clientId: string, callback: (data: any) => void) => {
+export const streamChat = async (params: any, callback: (data: any) => void) => {
   const request: McpRequest = {
-    outerTag: "use_mcp_tool",
-    content: {
-      server_name: "chat-mcp",
-      tool_name: "stream_minzai_chat",
-      arguments: JSON.stringify({ message, clientId, __owner_id__: clientId })
-    }
+    // outerTag: "use_mcp_tool",
+    // content: {
+    //   server_name: "chat-mcp",
+    //   tool_name: "stream_minzai_chat",
+    //   arguments: JSON.stringify({ message, clientId, __owner_id__: clientId })
+    // }
+    ...params
   };
 
   try {

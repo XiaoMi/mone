@@ -1,6 +1,6 @@
 <template>
   <div class="instances">
-    <pre>{{agent.instances}}</pre>
+    <pre>{{instances}}</pre>
   </div>
 </template>
 
@@ -8,7 +8,7 @@
 import type { Agent } from '@/api/agent'
 
 defineProps<{
-  agent: Agent
+  instances: Array<any>
 }>()
 </script>
 
