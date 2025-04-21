@@ -43,6 +43,7 @@ public class MonerSystemPrompt {
 
     public static String mcpPrompt(String from, String name, String customInstructions, List<ITool> tools) {
         Map<String, Object> data = new HashMap<>();
+        data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
         data.put("name", name);
         data.put("osName", MonerSystemPrompt.getSystemName());
@@ -88,6 +89,11 @@ public class MonerSystemPrompt {
         return serverList;
     }
 
+    public static final String TOOL_USE_INFO = """
+             You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
+            (任何工具每次只使用一个,不要一次返回多个工具,不管是mcp tool 还是 tool,你必须严格遵守这个条款,不然系统会崩溃 thx)
+            """;
+
     // mcp 调用的会使用这个prompt
     public static final String MCP_PROMPT = """
             You are ${name}, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
@@ -96,7 +102,7 @@ public class MonerSystemPrompt {
             
             TOOL USE
             
-            You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
+            ${tool_use_info}
             
             # Tool Use Formatting
             

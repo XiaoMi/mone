@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.grpc.CallToolRequest;
@@ -166,6 +167,26 @@ public class GrpcClientTransport implements ClientMcpTransport {
         });
     }
 
+
+    private synchronized void recreateChannel() {
+        if (channel != null && !channel.isShutdown()) {
+            try {
+                channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        this.channel = ManagedChannelBuilder.forAddress(host, port)
+                .usePlaintext()
+                .enableRetry()
+                // 其他设置
+                .build();
+        this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
+        this.asyncStub = McpServiceGrpc.newStub(channel);
+    }
+
+
     @Override
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
@@ -240,16 +261,13 @@ public class GrpcClientTransport implements ClientMcpTransport {
             @Override
             public void onError(Throwable t) {
                 log.error("连接错误: " + t.getMessage() + "，5秒后重连...");
+                Safe.run(() -> Thread.sleep(5000));
 
-                // 5秒后重连
-                try {
-                    Thread.sleep(5000);
-                    log.info("正在重新连接...");
-                    observer(observer);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    observer.onError(e);
+                if (t.getMessage() != null && t.getMessage().contains("UNAVAILABLE: Channel shutdown invoked")) {
+                    recreateChannel();  // 重建通道
                 }
+                log.info("正在重新连接...");
+                observer(observer);
             }
 
             @Override
@@ -368,7 +386,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                         return new McpSchema.TextContent(it.getText().getText(), it.getText().getData());
                     }
                     if (it.hasImage()) {
-                        return new McpSchema.ImageContent(it.getImage().getData(),it.getImage().getMimeType());
+                        return new McpSchema.ImageContent(it.getImage().getData(), it.getImage().getMimeType());
                     }
                     return null;
                 }).collect(Collectors.toUnmodifiableList()), false);

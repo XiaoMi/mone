@@ -1,0 +1,227 @@
+.agent-detail-drawer {
+    background: rgba(13, 17, 23, 0.8);
+  }
+
+  .agent-detail-drawer .el-drawer__header {
+    margin-bottom: 0;
+    padding: 20px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.2);
+    /* background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%); */
+  }
+  .agent-detail-drawer .el-drawer__header .el-drawer__title {
+    color: #ffffff;
+    font-size: 1.2em;
+    text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
+  }
+  .agent-detail-drawer .el-drawer__body {
+    padding: 0;
+    /* background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%); */
+    backdrop-filter: blur(20px);
+  }
+  .agent-detail-drawer .el-drawer__body::before {
+    /* content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; */
+  }
+  .agent-detail-drawer .el-drawer__body::-webkit-scrollbar{
+    display: none;
+  }
+
+
+
+
+
+
+/* 添加自定义对话框样式 */
+.skill-dialog.el-dialog {
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(48, 54, 61, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+}
+
+.skill-dialog .el-dialog__header {
+  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
+  padding: 20px;
+}
+
+.skill-dialog .el-dialog__title {
+  color: #fff;
+  font-size: 1.2em;
+  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
+}
+
+.skill-dialog .el-dialog__body {
+  color: #ffffff;
+  padding: 30px 20px;
+}
+
+.skill-dialog .el-form-item__label {
+  color: #fff;
+}
+
+.skill-dialog .el-input__wrapper {
+  background: rgba(22, 27, 34, 0.4);
+  border: 1px solid rgba(49, 232, 249, 0.3);
+  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
+  transition: all 0.3s ease;
+}
+
+.skill-dialog .el-input__wrapper:hover {
+  border-color: rgba(49, 232, 249, 0.8);
+  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
+}
+
+.skill-dialog .el-input__wrapper.is-focus {
+  border-color: #31e8f9;
+  box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
+}
+
+.skill-dialog .el-input__inner {
+  color: #ffffff;
+}
+
+.skill-dialog .el-textarea__inner {
+  background: rgba(22, 27, 34, 0.4);
+  border: 1px solid rgba(49, 232, 249, 0.3);
+  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.skill-dialog .el-textarea__inner:hover {
+  border-color: rgba(49, 232, 249, 0.8);
+  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
+}
+
+.skill-dialog .el-textarea__inner:focus {
+  border-color: #31e8f9;
+  box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
+}
+
+.skill-dialog .el-dialog__footer {
+  border-top: 1px solid rgba(48, 54, 61, 0.2);
+  padding: 20px;
+}
+
+.skill-dialog .el-switch__core {
+  border-color: rgba(48, 54, 61, 0.4);
+  background: rgba(22, 27, 34, 0.4);
+}
+
+.skill-dialog .el-switch.is-checked .el-switch__core {
+  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
+}
+
+/* 弹窗按钮样式 */
+.skill-dialog .el-dialog__footer .el-button {
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-dialog .el-dialog__footer .el-button--default {
+  background: rgba(48, 54, 61, 0.5);
+  color: #ffffff;
+  border: 1px solid rgba(49, 232, 249, 0.3);
+}
+
+.skill-dialog .el-dialog__footer .el-button--default:hover {
+  background: rgba(48, 54, 61, 0.7);
+  border-color: rgba(49, 232, 249, 0.8);
+  box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);
+  transform: translateY(-2px);
+}
+
+.skill-dialog .el-dialog__footer .el-button--primary {
+  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(35, 166, 213, 0.3);
+}
+
+.skill-dialog .el-dialog__footer .el-button--primary:hover {
+  box-shadow: 0 6px 20px rgba(35, 166, 213, 0.4);
+  transform: translateY(-2px);
+}
+
+.skill-dialog .el-dialog__footer .el-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  height: 150%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%) rotate(45deg) scale(0);
+  transition: transform 0.6s ease;
+}
+
+.skill-dialog .el-dialog__footer .el-button:hover::before {
+  transform: translate(-50%, -50%) rotate(45deg) scale(1);
+}
+
+.skill-detail {
+  padding: 20px;
+}
+
+.skill-list .el-table__body td {
+  background: rgba(22, 27, 34, 0.4);
+}
+.skill-detail dl {
+  display: flex;
+}
+.skill-detail dl dt {
+  display: inline-block;
+  width: 60px;
+  color: #e4e4e4;
+  text-align: right;
+  margin-right: 12px;
+}
+.skill-detail dl dd {
+  display: inline-block;
+  flex: 1;
+  color: #ffffff;
+}
+
+
+.el-select,.el-select .el-select__wrapper {
+  background-color: rgba(22, 27, 34, 0.4);  /* 下拉框背景颜色 */
+  border: 1px solid rgba(49, 232, 249, 0.3);
+  border-radius: 3px;
+  box-shadow: none;
+}
+.el-select .el-select__wrapper:hover {
+  box-shadow: none;
+}
+.el-select .el-select__wrapper.is-focused {
+  border: none;
+}
+.el-select-dropdown, .el-select__popper {
+  background-color: rgba(22, 27, 34,1) !important;  /* 下拉面板背景颜色 */
+  border: 1px solid rgba(49, 232, 249, 0.3)  !important;
+}
+
+.el-select-dropdown__item {
+  background-color: rgba(22, 27, 34, 1) !important;  /* 选项默认背景颜色 */
+  color: #ffffff;  /* 选项文字颜色 */
+}
+
+.el-select-dropdown__item.hover {
+  background-color: rgba(22, 27, 34, 1) !important;  /* 鼠标悬停时的背景颜色 */
+}
+
+.el-select-dropdown__item.selected {
+  background-color: rgba(22, 27, 34, 1) !important;  /* 选中项的背景颜色 */
+}
