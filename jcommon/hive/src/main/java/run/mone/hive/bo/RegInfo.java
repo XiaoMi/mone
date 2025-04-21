@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.ITool;
 
 import java.io.Serializable;
@@ -31,6 +32,6 @@ public class RegInfo implements Serializable {
 
     private Map<String, ITool> toolMap;
 
-    private Map<String, ITool> mcpToolMap;
+    private Map<String, McpSchema.Tool> mcpToolMap;
 
 }

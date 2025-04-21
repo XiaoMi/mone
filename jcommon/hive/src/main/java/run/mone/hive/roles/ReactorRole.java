@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
@@ -54,6 +53,10 @@ public class ReactorRole extends Role {
 
     private Map<String, ITool> toolMap = new HashMap<>();
 
+    private List<McpSchema.Tool> mcpTools = new ArrayList<>();
+
+    private Map<String, McpSchema.Tool> mcpToolMap = new HashMap<>();
+
     private Consumer<ReactorRole> scheduledTaskHandler;
 
     private ScheduledExecutorService scheduler;
@@ -75,6 +78,11 @@ public class ReactorRole extends Role {
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
+    }
+
+    public void addMcpTool(McpSchema.Tool tool) {
+        this.mcpTools.add(tool);
+        this.mcpToolMap.put(tool.name(), tool);
     }
 
     private String customRules = """
@@ -99,10 +107,6 @@ public class ReactorRole extends Role {
             "请选择你要使用的Tool:\n";
 
 
-    public ReactorRole(String name, LLM llm) {
-        this(name, null, llm);
-    }
-
     public void reg(RegInfo info) {
         log.info("reg info:{}", info);
     }
@@ -116,17 +120,18 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", 0, countDownLatch, llm, Lists.newArrayList());
+        this(name, "", "", 0, countDownLatch, llm, Lists.newArrayList(), Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools) {
+    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
         super(name);
         this.group = group;
         this.version = version;
         this.grpcPort = port;
         tools.forEach(this::addTool);
+        mcpTools.forEach(this::addMcpTool);
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
@@ -137,7 +142,7 @@ public class ReactorRole extends Role {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
 
         //注册到agent注册中心
-        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).toolMap(this.toolMap).build());
+        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {

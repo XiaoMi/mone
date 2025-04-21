@@ -31,13 +31,10 @@ public class McpController {
     /**
      * 调用MCP服务(后边其实是一个Agent,只是通过mcp这个协议来调用)
      *
-     * @param requestBody 请求体
      * @return 消息流
      */
     @PostMapping(value = "/call", consumes = "text/event-stream", produces = "text/event-stream")
-    public Flux<Message> call(@RequestBody(required = false) String requestBody) {
-        log.info("调用MCP服务，请求参数: {}", requestBody);
-        McpRequest request = GsonUtils.gson.fromJson(requestBody, McpRequest.class);
+    public Flux<Message> call(@RequestBody McpRequest request) {
 
         Map<String, String> keyValuePairs = new HashMap<>();
         keyValuePairs.put("outerTag", request.getOuterTag());
