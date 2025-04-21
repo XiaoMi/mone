@@ -6,20 +6,17 @@ import org.springframework.web.socket.WebSocketSession;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxSink;
 import reactor.util.context.Context;
-import run.mone.hive.common.GsonUtils;
-import run.mone.hive.schema.Message;
 import java.util.function.LongConsumer;
 
 @Slf4j
 @RequiredArgsConstructor
-public class McpMessageSink implements FluxSink<Message> {
+public class McpMessageSink implements FluxSink<String> {
     private final WebSocketSession session;
 
     @Override
-    public FluxSink<Message> next(Message message) {
+    public FluxSink<String> next(String message) {
         try {
-            String jsonMessage = GsonUtils.gson.toJson(message);
-            WebSocketHolder.sendMessageSafely(session, jsonMessage);
+            WebSocketHolder.sendMessageSafely(session, message);
         } catch (Exception e) {
             log.error("Error sending message through WebSocket", e);
         }
@@ -65,18 +62,18 @@ public class McpMessageSink implements FluxSink<Message> {
 
 
     @Override
-    public FluxSink<Message> onRequest(LongConsumer consumer) {
+    public FluxSink<String> onRequest(LongConsumer consumer) {
         // 这里可以处理背压，但在WebSocket场景下通常不需要
         return this;
     }
 
     @Override
-    public FluxSink<Message> onCancel(Disposable disposable) {
+    public FluxSink<String> onCancel(Disposable disposable) {
         return null;
     }
 
     @Override
-    public FluxSink<Message> onDispose(Disposable disposable) {
+    public FluxSink<String> onDispose(Disposable disposable) {
         return null;
     }
 } 
