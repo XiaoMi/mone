@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
@@ -20,6 +21,7 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
@@ -284,7 +286,7 @@ public class ReactorRole extends Role {
 
             String name = it.getTag();
             if (this.toolMap.containsKey(name)) {// 执行tool
-                callTool(name, it, res, sink);
+                callTool(name, it, res, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
@@ -299,6 +301,14 @@ public class ReactorRole extends Role {
         return CompletableFuture.completedFuture(Message.builder().build());
     }
 
+    private Map<String, String> buildToolExtraParam(Message msg) {
+        Map<String, String> extraParam = new HashMap<>();
+        if(StringUtils.isNotEmpty(msg.getVoiceBase64())){
+            extraParam.put("voiceBase64", msg.getVoiceBase64());
+        }
+        return extraParam;
+    }
+
     private void callMcp(Result it, FluxSink sink) {
         McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
         McpSchema.Content content = result.getContent();
@@ -309,15 +319,24 @@ public class ReactorRole extends Role {
         }
     }
 
-    private void callTool(String name, Result it, String res, FluxSink sink) {
+    private void callTool(String name, Result it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
+            ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(params);
-            res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
-            if (null != sink && tool.show()) {
-                sink.next(res);
+            if(toolRes.has("toolMsgType")){
+                // 说明需要调用方做特殊处理
+                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
+                if (null != sink && tool.show()) {
+                    sink.next(toolRes.toString());
+                }
+            }else {
+                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
+                if (null != sink && tool.show()) {
+                    sink.next(res);
+                }
             }
         }
         if (tool.completed()) {

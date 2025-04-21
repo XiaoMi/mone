@@ -39,6 +39,8 @@ public class Message implements Serializable {
 
     private String clientId;
 
+    private String voiceBase64;
+
     public Message(String content) {
         this(content, "user", null, null);
     }

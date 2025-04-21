@@ -27,6 +27,11 @@ public class SpeechToTextTool implements ITool {
     }
 
     @Override
+    public boolean show() {
+        return true;
+    }
+
+    @Override
     public String description() {
         return """
             A tool designed to convert speech into text.

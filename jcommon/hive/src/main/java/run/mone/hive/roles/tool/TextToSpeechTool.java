@@ -28,6 +28,11 @@ public class TextToSpeechTool implements ITool {
     }
 
     @Override
+    public boolean show() {
+        return true;
+    }
+
+    @Override
     public String description() {
         return """
             A tool designed to convert text into speech.
@@ -105,7 +110,8 @@ public class TextToSpeechTool implements ITool {
             // 将音频数据编码为Base64字符串
             String base64Audio = Base64.getEncoder().encodeToString(audioData);
             result.addProperty("result", base64Audio);
-            
+            result.addProperty("toolMsgType", ToolMsgType.VOICE);
+
             log.info("文字转语音处理成功，生成的音频数据大小：{} 字节", audioData.length);
             return result;
         } catch (IOException e) {
