@@ -72,11 +72,11 @@
             <!-- <div v-if="vision" class="sc-user-input--button">
               <Recoder @submit="submitAudio" />
             </div> -->
-            <div class="sc-user-input--button test">
-              <ImageUpload :limit="1" v-model="images" />
-            </div>
             <div class="sc-user-input--button">
               <Screenshot v-model="screenshotImages" />
+            </div>
+            <div class="sc-user-input--button test">
+              <ImageUpload :limit="1" v-model="images" />
             </div>
             <div class="sc-user-input--button test">
               <PasteImage v-model="screenshotImages" />
@@ -971,8 +971,8 @@ export default {
           const image = this.images[0] || this.screenshotImages[0];
           this.onSubmit({
             type: "image",
-            mete: {
-              role: "IDEA",
+            meta: {
+              role: "USER",
             },
             author: {
               username: this.user.username,

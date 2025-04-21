@@ -271,7 +271,6 @@ util.stopWs = function () {
   });
 
 util.myVision = function (data: Record<string, string>): Promise<string> {
-  console.log(data);
   return ideaCmd(
     "vision",
     {
