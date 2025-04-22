@@ -1,4 +1,4 @@
-package run.mone.mcp.chat.service;
+package run.mone.hive.mcp.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.bo.RegInfoDto;
-import run.mone.hive.mcp.service.IHiveManagerService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
-public class HiveManagerService implements IHiveManagerService {
+public class HiveManagerService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final AtomicReference<String> token = new AtomicReference<>();
@@ -33,11 +32,19 @@ public class HiveManagerService implements IHiveManagerService {
     @Value("${hive.manager.password:123456}")
     private String password;
 
+    @Value("${hive.manager.reg.switch:false}")
+    private Boolean enableRegHiveManager;
+
     /**
      * 每10分钟登录一次，获取新的token
      */
     @Scheduled(fixedRate = 600000) // 10分钟
     public void login() {
+
+        if (!enableRegHiveManager) {
+            return;
+        }
+
         try {
             log.info("Logging in to get token");
             HttpHeaders headers = new HttpHeaders();
@@ -73,6 +80,11 @@ public class HiveManagerService implements IHiveManagerService {
      * 注册Agent
      */
     public void register(RegInfo regInfo) {
+
+        if (!enableRegHiveManager) {
+            return;
+        }
+
         try {
             String currentToken = token.get();
             if (currentToken == null) {
@@ -107,6 +119,11 @@ public class HiveManagerService implements IHiveManagerService {
      * 注销Agent
      */
     public void unregister(RegInfo regInfo) {
+
+        if (!enableRegHiveManager) {
+            return;
+        }
+
         try {
             String currentToken = token.get();
             if (currentToken == null) {
@@ -141,6 +158,11 @@ public class HiveManagerService implements IHiveManagerService {
      * 发送心跳
      */
     public void heartbeat(HealthInfo healthInfo) {
+
+        if (!enableRegHiveManager) {
+            return;
+        }
+
         try {
             String currentToken = token.get();
             if (currentToken == null) {
