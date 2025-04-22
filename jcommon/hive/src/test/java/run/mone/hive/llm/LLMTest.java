@@ -175,7 +175,6 @@ class LLMTest {
         String prompt = """
                 hi 
                 """;
-
         String res = llm.chat(prompt);
         System.out.println(res);
     }
