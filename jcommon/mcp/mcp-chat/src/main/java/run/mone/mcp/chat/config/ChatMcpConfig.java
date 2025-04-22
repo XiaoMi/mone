@@ -30,6 +30,9 @@ public class ChatMcpConfig {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
+    @Value("${mcp.agent.name:}")
+    private String agentName;
+
     @Resource
     private HiveManagerService hiveManagerService;
 
@@ -71,7 +74,7 @@ public class ChatMcpConfig {
                         new DocumentProcessingTool(),
                         new SystemInfoTool()),
                 Lists.newArrayList(
-                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc("minzai"), ChatFunction.getToolScheme())
+                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc(agentName), ChatFunction.getToolScheme())
                 ),
                 hiveManagerService);
     }

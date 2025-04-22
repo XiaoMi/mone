@@ -23,6 +23,9 @@ import run.mone.mcp.idea.composer.service.IdeaService;
 @Component
 public class IdeaComposerMcpServer {
 
+    @Value("${mcp.agent.name:}")
+    private String agentName;
+
     private ServerMcpTransport transport;
 
     private McpSyncServer syncServer;
@@ -55,7 +58,7 @@ public class IdeaComposerMcpServer {
         ChatFunction chatFunction = new ChatFunction(roleService);
 
 
-        var toolStreamRegistrationForComposer = new ToolStreamRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
+        var toolStreamRegistrationForComposer = new ToolStreamRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(agentName), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
         var toolRegistrationForGitPush = new McpServer.ToolRegistration(new Tool(gitPushFunction.getName(), gitPushFunction.getDesc(), gitPushFunction.getToolScheme()), gitPushFunction);
         var toolStreamRegistration = new ToolStreamRegistration(
                 new Tool(chatFunction.getName(), chatFunction.getDesc("minzai"), chatFunction.getToolScheme()), chatFunction
