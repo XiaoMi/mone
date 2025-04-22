@@ -20,6 +20,7 @@ import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.*;
+import run.mone.mcp.idea.composer.function.ComposerFunction;
 
 import javax.annotation.Resource;
 
@@ -30,6 +31,9 @@ public class IdeaComposerMcpConfig {
 
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
+
+    @Value("${mcp.agent.name:}")
+    private String agentName;
 
     @Resource
     private HiveManagerService hiveManagerService;
@@ -51,23 +55,6 @@ public class IdeaComposerMcpConfig {
 //        return new LLM(config);
     }
 
-//    @Bean
-//    @ConditionalOnProperty(name = "stdio.enabled", havingValue = "true")
-//    StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
-//        return new StdioServerTransport(mapper);
-//    }
-
-//    @Bean
-//    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
-//    SseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
-//        return new SseServerTransport(mapper, "/mcp/message");
-//    }
-//
-//    @Bean
-//    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
-//    RouterFunction<ServerResponse> mcpRouterFunction(SseServerTransport transport) {
-//        return transport.getRouterFunction();
-//    }
 
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
@@ -85,7 +72,8 @@ public class IdeaComposerMcpConfig {
                         new SpeechToTextTool(),
                         new TextToSpeechTool()),
                 Lists.newArrayList(
-                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc("minzai"), ChatFunction.getToolScheme())
+                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc(agentName), ChatFunction.getToolScheme()),
+                        new McpSchema.Tool(ComposerFunction.getName(), ComposerFunction.getDesc(agentName), ComposerFunction.getToolScheme())
                 ),
                 hiveManagerService);
     }
