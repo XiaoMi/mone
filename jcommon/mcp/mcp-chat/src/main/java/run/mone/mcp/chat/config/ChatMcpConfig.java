@@ -10,6 +10,7 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.AskTool;
@@ -17,7 +18,6 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.SpeechToTextTool;
 import run.mone.hive.roles.tool.TextToSpeechTool;
-import run.mone.mcp.chat.service.HiveManagerService;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
 import run.mone.mcp.chat.tool.SystemInfoTool;
 
@@ -41,8 +41,8 @@ public class ChatMcpConfig {
 //                .version(getClaudeVersion())
 //                .maxTokens(getClaudeMaxToekns())
 //                .build();
-////        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
-////        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
 //        return new LLM(config);
 
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();

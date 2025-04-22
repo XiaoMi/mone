@@ -35,7 +35,7 @@ public class RoleService {
 
     private final List<McpSchema.Tool> mcpToolList;
 
-    private final IHiveManagerService hiveManagerService;
+    private final HiveManagerService hiveManagerService;
 
     @Value("${mcp.hub.path:}")
     private String mcpPath;
