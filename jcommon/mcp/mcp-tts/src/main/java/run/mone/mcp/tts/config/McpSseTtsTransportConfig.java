@@ -1,27 +1,36 @@
 package run.mone.mcp.tts.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.function.RouterFunction;
-import org.springframework.web.servlet.function.ServerResponse;
-import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.server.transport.StdioServerTransport;
 
 
 /**
  * @author 龚文
  */
 @Configuration
-@ConditionalOnProperty(name = "sse.enabled", havingValue = "true")
 public class McpSseTtsTransportConfig {
+    @Value("${mcp.grpc.port:9999}")
+    private int grpcPort;
+
+    /**
+     * stdio 通信
+     * @param mapper
+     * @return
+     */
     @Bean
-    WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
-        return new WebMvcSseServerTransport(mapper, "/mcp/message");
+    @ConditionalOnProperty(name = "stdio.enabled", havingValue = "true")
+    StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
+        return new StdioServerTransport(mapper);
     }
 
     @Bean
-    RouterFunction<ServerResponse> mcpRouterFunction(WebMvcSseServerTransport transport) {
-        return transport.getRouterFunction();
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
+    GrpcServerTransport grpcServerTransport() {
+        return new GrpcServerTransport(grpcPort);
     }
 }
