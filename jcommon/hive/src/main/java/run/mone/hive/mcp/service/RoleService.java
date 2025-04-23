@@ -1,6 +1,8 @@
 package run.mone.hive.mcp.service;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,20 +40,30 @@ public class RoleService {
     private final HiveManagerService hiveManagerService;
 
     @Value("${mcp.hub.path:}")
+    @Setter
+    @Getter
     private String mcpPath;
 
     @Value("${mcp.agent.name:}")
+    @Setter
+    @Getter
     private String agentName;
 
     @Value("${mcp.agent.group:}")
+    @Setter
+    @Getter
     private String agentGroup;
 
     @Value("${mcp.agent.version:}")
+    @Setter
+    @Getter
     private String agentversion;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
     @Value("${mcp.grpc.port:9999}")
+    @Setter
+    @Getter
     private int grpcPort;
 
     @PostConstruct
