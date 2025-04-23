@@ -1,7 +1,6 @@
 package run.mone.agentx.dto;
 
 import lombok.Data;
-import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 
 /**
