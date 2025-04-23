@@ -5,6 +5,7 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.ClientCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.GetPromptRequest;
@@ -162,6 +163,10 @@ public class McpSyncClient implements AutoCloseable {
 	 */
 	public McpSchema.CallToolResult callTool(McpSchema.CallToolRequest callToolRequest) {
 		return this.delegate.callTool(callToolRequest).block();
+	}
+
+	public Flux<McpSchema.CallToolResult> callToolStream(McpSchema.CallToolRequest callToolRequest) {
+		return this.delegate.callToolStream(callToolRequest);
 	}
 
 	/**

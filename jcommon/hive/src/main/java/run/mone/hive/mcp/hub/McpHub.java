@@ -2,10 +2,14 @@ package run.mone.hive.mcp.hub;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.client.transport.StdioClientTransport;
+import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -14,6 +18,9 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @Data
 @Slf4j
@@ -23,11 +30,25 @@ public class McpHub {
     private WatchService watchService;
     private volatile boolean isConnecting = false;
 
+    //使用grpc连接mcp
+    private Consumer<Object> msgConsumer = msg -> {
+    };
+
     public McpHub(Path settingsPath) throws IOException {
+        this(settingsPath, msg -> {
+        });
+    }
+
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
         this.settingsPath = settingsPath;
         this.watchService = FileSystems.getDefault().newWatchService();
+        this.msgConsumer = msgConsumer;
         initializeWatcher();
         initializeMcpServers();
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping())));
+        }, 5, 5, TimeUnit.SECONDS);
     }
 
     // 局部刷新
@@ -78,7 +99,6 @@ public class McpHub {
             updateServerConnections(config);
         } catch (IOException e) {
             log.error("Failed to initialize MCP servers: ", e);
-            System.err.println("Failed to initialize MCP servers: " + e.getMessage());
         }
     }
 
@@ -109,7 +129,7 @@ public class McpHub {
         for (String name : currentNames) {
             if (!newNames.contains(name)) {
                 deleteConnection(name);
-                System.out.println("Deleted MCP server: " + name);
+                log.info("Deleted MCP server: " + name);
             }
         }
 
@@ -124,17 +144,16 @@ public class McpHub {
                 try {
                     connectToServer(name, config);
                 } catch (Exception e) {
-                    log.error("Failed to connect to new MCP server: {}", name, e);
-                    System.err.println("Failed to connect to new MCP server " + name + ": " + e.getMessage());
+                    log.error("Failed to connect to new MCP server " + name + ": " + e.getMessage());
                 }
             } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
                 // Existing server with changed config
                 try {
                     deleteConnection(name);
                     connectToServer(name, config);
-                    System.out.println("Reconnected MCP server with updated config: " + name);
+                    log.info("Reconnected MCP server with updated config: " + name);
                 } catch (Exception e) {
-                    System.err.println("Failed to reconnect MCP server " + name + ": " + e.getMessage());
+                    log.error("Failed to reconnect MCP server " + name + ": " + e.getMessage());
                 }
             }
         }
@@ -164,9 +183,9 @@ public class McpHub {
                 try {
                     deleteConnection(name);
                     connectToServer(name, config);
-                    System.out.println("Reconnected MCP server with updated config: " + name);
+                    log.info("Reconnected MCP server with updated config: " + name);
                 } catch (Exception e) {
-                    System.err.println("Failed to reconnect MCP server " + name + ": " + e.getMessage());
+                    log.error("Failed to reconnect MCP server " + name + ": " + e.getMessage());
                 }
             }
         }
@@ -175,9 +194,27 @@ public class McpHub {
     }
 
     private void connectToServer(String name, ServerParameters config) {
-        ClientMcpTransport transport = new StdioClientTransport(config);
+        ClientMcpTransport transport = null;
+        switch (config.getType().toLowerCase()) {
+            case "grpc":
+                transport = new GrpcClientTransport(config);
+                break;
+            case "stdio":
+                transport = new StdioClientTransport(config);
+                break;
+            case "sse":
+                if (!config.isSseRemote()) {
+                    startSseServer(config);
+                }
+                transport = new HttpClientSseClientTransport(config.getUrl());
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported transport type: " + config.getType());
+        }
+
         McpSyncClient client = McpClient.using(transport)
-                .requestTimeout(Duration.ofSeconds(15))
+                .requestTimeout(Duration.ofSeconds(120))
+                .msgConsumer(msgConsumer)
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
@@ -185,7 +222,7 @@ public class McpHub {
 
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
-        McpConnection connection = new McpConnection(server, client, transport);
+        McpConnection connection = new McpConnection(server, client, transport, McpType.fromString(config.getType()));
         connections.put(name, connection);
 
         try {
@@ -205,6 +242,23 @@ public class McpHub {
             } catch (Exception closeEx) {
                 log.warn("Failed to clean up connection resources for {}: {}", name, closeEx.getMessage());
             }
+        }
+    }
+
+    private void startSseServer(ServerParameters config) {
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        List<String> fullCommand = new ArrayList<>();
+        fullCommand.add(config.getCommand());
+        fullCommand.addAll(config.getArgs());
+
+        processBuilder.command(fullCommand);
+        processBuilder.environment().putAll(config.getEnv());
+        try {
+            Process process = processBuilder.start();
+            // process.waitFor();
+            TimeUnit.SECONDS.sleep(10); // FIXME: 需要优化
+        } catch (Throwable e) {
+            log.error("Failed to start SSE server: ", e);
         }
     }
 
@@ -250,6 +304,16 @@ public class McpHub {
         }
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callTool(request);
+    }
+
+    public Flux<McpSchema.CallToolResult> callToolStream(String serverName, String
+            toolName, Map<String, Object> toolArguments) {
+        McpConnection connection = connections.get(serverName);
+        if (connection == null) {
+            throw new IllegalArgumentException("No connection found for server: " + serverName);
+        }
+        McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
+        return connection.getClient().callToolStream(request);
     }
 
     public void dispose() {

@@ -279,13 +279,25 @@ public class Role {
         //自己决策用那个action
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
             //需要使用llm来选择action
-            int i = 0;
-            while (this.think() > 0 && i++ < 15) {
-                res = this.act(ac).join();
-            }
+            doReact(ac);
         }
         postReact(ac);
         return CompletableFuture.completedFuture(res);
+    }
+
+
+    private int doReactNum = 15;
+
+    /**
+     * react实际执行的逻辑， 可以重写
+     * @param ac
+     */
+    protected void doReact(ActionContext ac) {
+        // 默认最多执行15次, 可以重写这里的逻辑
+        int i = 0;
+        while (this.think() > 0 && i++ < doReactNum) {
+            this.act(ac).join();
+        }
     }
 
 
@@ -399,14 +411,25 @@ public class Role {
     }
 
     /**
-     * 在react之后执行
+     * 在react之后执行的hook, 可以重写
+     * @param ac
      */
     protected void postReact(ActionContext ac) {
         //子类可以重写此方法
     }
 
     public void putMessage(Message message) {
+        if (0 == message.getCreateTime()) {
+            message.setCreateTime(System.currentTimeMillis());
+        }
         this.rc.news.offer(message);
+    }
+
+    public void putMemory(Message message) {
+        if (0 == message.getCreateTime()) {
+            message.setCreateTime(System.currentTimeMillis());
+        }
+        this.rc.getMemory().add(message);
     }
 
     @Override
@@ -419,5 +442,14 @@ public class Role {
 
     public void sendMessage(Message msg) {
         log.info("msg:{}, ", msg);
+    }
+
+    /**
+     * Clears all messages from the role's memory
+     */
+    public void clearMemory() {
+        if (this.rc != null && this.rc.getMemory() != null) {
+            this.rc.getMemory().clear();
+        }
     }
 }

@@ -5,7 +5,11 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.junit.Test;
 
 import java.io.FileOutputStream;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static run.mone.excel.ExportExcel.HSSFWorkbook4Map;
 
@@ -33,6 +37,25 @@ public class ExcelTest {
         HSSFWorkbook sheets = HSSFWorkbook4Map(dataList, "");
         FileOutputStream fos = new FileOutputStream("/tmp/abc.xls");
         sheets.write(fos);
+    }
+
+
+    @Test
+    public void exportExcel() throws IOException {
+        List<Map<String, Object>> exportData = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", "name" + i);
+            map.put("age", i);
+            map.put("sex", i % 2 == 0 ? "男" : "女");
+            map.put("address", "address" + i);
+            map.put("phone", "phone" + i);
+            map.put("email", "email" + i);
+            exportData.add(map);
+        }
+        HSSFWorkbook excel = ExportExcel.HSSFWorkbook4Map(exportData, "用户信息表");
+        FileOutputStream fos = new FileOutputStream("/tmp/user.xls");
+        excel.write(fos);
     }
 
 }

@@ -59,7 +59,7 @@ public class FileInfoCache {
 
     @SneakyThrows
     public void shutdown() {
-        log.info("cache shutdown size:{}", cache.size());
+//        log.info("cache shutdown size:{}", cache.size());
         String str = gson.toJson(cache);
         FileWriter writer = new FileWriter(filePath, false);
         writer.append(str);

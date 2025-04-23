@@ -3,6 +3,7 @@ package run.mone.hive.mcp.spec;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
@@ -47,6 +48,11 @@ public interface McpTransport {
 	 */
 	Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler);
 
+
+	default String getClientId() {
+		return "";
+	}
+
 	/**
 	 * Closes the transport connection and releases any associated resources.
 	 *
@@ -76,7 +82,11 @@ public interface McpTransport {
 	 * @param message the {@link JSONRPCMessage} to be sent to the server
 	 * @return a {@link Mono<Void>} that completes when the message has been sent
 	 */
-	Mono<Void> sendMessage(JSONRPCMessage message);
+	Mono<Object> sendMessage(JSONRPCMessage message);
+
+	default Flux<Object> sendStreamMessage(JSONRPCMessage message) {
+		return Flux.empty();
+	}
 
 	/**
 	 * Unmarshals the given data into an object of the specified type.

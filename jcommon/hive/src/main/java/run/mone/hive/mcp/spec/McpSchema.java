@@ -47,6 +47,8 @@ public final class McpSchema {
 
     public static final String METHOD_TOOLS_CALL = "tools/call";
 
+    public static final String METHOD_TOOLS_STREAM = "tools/streamCall";
+
     public static final String METHOD_NOTIFICATION_TOOLS_LIST_CHANGED = "notifications/tools/list_changed";
 
     // Resources Methods
@@ -130,13 +132,14 @@ public final class McpSchema {
 
     /**
      * Deserializes a JSON string into a JSONRPCMessage object.
+     *
      * @param objectMapper The ObjectMapper instance to use for deserialization
-     * @param jsonText The JSON string to deserialize
+     * @param jsonText     The JSON string to deserialize
      * @return A JSONRPCMessage instance using either the {@link JSONRPCRequest},
      * {@link JSONRPCNotification}, or {@link JSONRPCResponse} classes.
-     * @throws IOException If there's an error during deserialization
+     * @throws IOException              If there's an error during deserialization
      * @throws IllegalArgumentException If the JSON structure doesn't match any known
-     * message type
+     *                                  message type
      */
     public static JSONRPCMessage deserializeJsonRpcMessage(ObjectMapper objectMapper, String jsonText)
             throws IOException {
@@ -169,7 +172,14 @@ public final class McpSchema {
 			@JsonProperty("jsonrpc") String jsonrpc,
 			@JsonProperty("method") String method,
 			@JsonProperty("id") Object id,
-			@JsonProperty("params") Object params) implements JSONRPCMessage {
+			@JsonProperty("params") Object params,
+			 @JsonProperty("clientId") String clientId
+								  ) implements JSONRPCMessage {
+
+		public JSONRPCRequest(String jsonrpc,String method,Object id,Object params) {
+			this(jsonrpc,method,id,params,null);
+		}
+
 	} // @formatter:on
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -179,12 +189,25 @@ public final class McpSchema {
 			@JsonProperty("params") Map<String, Object> params) implements JSONRPCMessage {
 	} // @formatter:on
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     public record JSONRPCResponse( // @formatter:off
 			@JsonProperty("jsonrpc") String jsonrpc,
 			@JsonProperty("id") Object id,
 			@JsonProperty("result") Object result,
-			@JsonProperty("error") JSONRPCError error) implements JSONRPCMessage {
+			@JsonProperty("error") JSONRPCError error,
+            @JsonProperty("complete") Boolean complete,
+								   @JsonProperty("clientId") String clientId,
+								   @JsonProperty("project") String project
+								   ) implements JSONRPCMessage {
+
+        public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error) {
+            this(jsonrpc, id, result, error, null,null,null);
+        }
+
+		public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error, Boolean complete) {
+			this(jsonrpc, id, result, error, complete,null,null);
+		}
 
 		@JsonInclude(JsonInclude.Include.NON_ABSENT)
 		public record JSONRPCError(
@@ -653,7 +676,7 @@ public final class McpSchema {
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record JsonSchema( // @formatter:off
+    public record JsonSchema( // @formatter:off
 		@JsonProperty("type") String type, 
 		@JsonProperty("properties") Map<String, Object> properties, 
 		@JsonProperty("required") List<String> required,
@@ -954,7 +977,9 @@ public final class McpSchema {
 		@JsonProperty("audience") List<Role> audience,
 		@JsonProperty("priority") Double priority,
 		@JsonProperty("type") String type,
-		@JsonProperty("text") String text) implements Content { // @formatter:on
+		@JsonProperty("text") String text,
+		@JsonProperty("data") String data
+	) implements Content { // @formatter:on
 
         public TextContent {
             type = "text";
@@ -965,11 +990,12 @@ public final class McpSchema {
         }
 
         public TextContent(String content) {
-            this(null, null, "text", content);
+            this(null, null, null, content, "");
         }
 
-        public TextContent(String type, String content) {
-            this(null, null, type, content);
+
+        public TextContent(String content, String data) {
+            this(null, null, null, content, data);
         }
     }
 
@@ -983,6 +1009,10 @@ public final class McpSchema {
 
         public ImageContent {
             type = "image";
+        }
+
+        public ImageContent(String data, String mimeType) {
+            this(null, null, null, data, mimeType);
         }
 
         public String type() {

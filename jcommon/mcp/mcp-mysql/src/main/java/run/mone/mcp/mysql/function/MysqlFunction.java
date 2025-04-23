@@ -3,6 +3,7 @@ package run.mone.mcp.mysql.function;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.sql.*;
@@ -12,9 +13,9 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class MysqlFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class MysqlFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private String name = "mysql_executor";
+    private String name = "stream_mysql_executor";
 
     private String desc = "Execute MySQL operations (query, update, DDL)";
 
@@ -83,7 +84,7 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     @SneakyThrows
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         String type = (String) args.get("type");
         String sql = (String) args.get("sql");
         if (sql == null || sql.trim().isEmpty()) {
@@ -110,7 +111,7 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
     }
 
 
-    private McpSchema.CallToolResult executeQuery(String sql) throws SQLException {
+    private Flux<McpSchema.CallToolResult> executeQuery(String sql) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             stmt.setMaxRows(100);
             ResultSet rs = stmt.executeQuery(sql);
@@ -133,25 +134,26 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
             }
 
             log.info("Successfully executed query");
-            return new McpSchema.CallToolResult(
+
+            return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(result.toString())),
                     false
-            );
+            ));
         }
     }
 
-    private McpSchema.CallToolResult executeUpdate(String sql) throws SQLException {
+    private Flux<McpSchema.CallToolResult> executeUpdate(String sql) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             int affected = stmt.executeUpdate(sql);
             log.info("Successfully executed update. Affected rows: {}", affected);
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Affected rows: " + affected)),
                     false
-            );
+            ));
         }
     }
 
-    private McpSchema.CallToolResult executeDDL(String sql) throws SQLException {
+    private Flux<McpSchema.CallToolResult> executeDDL(String sql) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
             boolean result = stmt.execute(sql);
             if (result) {
@@ -168,18 +170,17 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
                     stringBuilder.append("\n");
                 }
                 log.info("Successfully executed DDL with result set");
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(stringBuilder.toString())),
                         false
-                );
+                ));
             } else {
                 int affected = stmt.getUpdateCount();
                 log.info("Successfully executed UPDATE query. Affected rows: {}", affected);
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("Affected rows: " + affected)),
-
                         false
-                );
+                ));
             }
         }
     }
