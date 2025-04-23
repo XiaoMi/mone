@@ -29,4 +29,8 @@ public class McpHubHolder {
     public static McpHub get(String from){
         return FROM_MCP_HUB.get(from);
     }
+
+    public static Boolean containsKey(String from) {
+        return FROM_MCP_HUB.containsKey(from);
+    }
 }

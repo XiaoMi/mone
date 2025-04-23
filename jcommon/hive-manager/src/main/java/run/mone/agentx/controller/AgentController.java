@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
@@ -35,18 +36,18 @@ public class AgentController {
     }
 
     @GetMapping("/list")
-    public Mono<ApiResponse<List<Agent>>> getAgents(@AuthenticationPrincipal User user) {
-        return agentService.findAccessibleAgents(user.getId()).collectList().map(ApiResponse::success);
+    public Mono<ApiResponse<List<AgentWithInstancesDTO>>> getAgents(@AuthenticationPrincipal User user) {
+        return agentService.findAccessibleAgentsWithInstances(user.getId()).collectList().map(ApiResponse::success);
     }
 
     @GetMapping("/{id}")
-    public Mono<ApiResponse<Agent>> getAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
+    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
         return agentService.hasAccess(id, user.getId())
             .flatMap(hasAccess -> {
                 if (Boolean.TRUE.equals(hasAccess)) {
-                    return agentService.findById(id).map(ApiResponse::success);
+                    return agentService.findAgentWithInstances(id).map(ApiResponse::success);
                 } else {
-                    return Mono.just(ApiResponse.<Agent>error(403, "Unauthorized access to agent"));
+                    return Mono.just(ApiResponse.<AgentWithInstancesDTO>error(403, "Unauthorized access to agent"));
                 }
             });
     }

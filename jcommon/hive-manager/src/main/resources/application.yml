@@ -6,6 +6,8 @@ mcp:
     type: grpc
   grpc:
     port: 9286
+  hub:
+    path: /Users/dingpei/mcp_config/mcp.json
 
 spring:
   profiles:

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 
 const router = createRouter({
-  history: createWebHistory('/page/'),
+  history: createWebHistory('/agent-manager/'),
   routes: [
     {
       path: "/login",
@@ -18,6 +18,12 @@ const router = createRouter({
       path: "/about",
       name: "About",
       component: () => import("@/views/About.vue"),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: "/chat",
+      name: "Chat",
+      component: () => import("@/views/Chat.vue"),
       meta: { requiresAuth: true }
     },
     {

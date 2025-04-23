@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
@@ -21,6 +21,7 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
@@ -54,6 +55,10 @@ public class ReactorRole extends Role {
 
     private Map<String, ITool> toolMap = new HashMap<>();
 
+    private List<McpSchema.Tool> mcpTools = new ArrayList<>();
+
+    private Map<String, McpSchema.Tool> mcpToolMap = new HashMap<>();
+
     private Consumer<ReactorRole> scheduledTaskHandler;
 
     private ScheduledExecutorService scheduler;
@@ -75,6 +80,11 @@ public class ReactorRole extends Role {
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
+    }
+
+    public void addMcpTool(McpSchema.Tool tool) {
+        this.mcpTools.add(tool);
+        this.mcpToolMap.put(tool.name(), tool);
     }
 
     private String customRules = """
@@ -99,10 +109,6 @@ public class ReactorRole extends Role {
             "请选择你要使用的Tool:\n";
 
 
-    public ReactorRole(String name, LLM llm) {
-        this(name, null, llm);
-    }
-
     public void reg(RegInfo info) {
         log.info("reg info:{}", info);
     }
@@ -116,17 +122,18 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", 0, countDownLatch, llm, Lists.newArrayList());
+        this(name, "", "", 0, countDownLatch, llm, Lists.newArrayList(), Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools) {
+    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
         super(name);
         this.group = group;
         this.version = version;
         this.grpcPort = port;
         tools.forEach(this::addTool);
+        mcpTools.forEach(this::addMcpTool);
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
@@ -137,7 +144,7 @@ public class ReactorRole extends Role {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
 
         //注册到agent注册中心
-        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).toolMap(this.toolMap).build());
+        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
@@ -279,7 +286,7 @@ public class ReactorRole extends Role {
 
             String name = it.getTag();
             if (this.toolMap.containsKey(name)) {// 执行tool
-                callTool(name, it, res, sink);
+                callTool(name, it, res, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
@@ -294,6 +301,14 @@ public class ReactorRole extends Role {
         return CompletableFuture.completedFuture(Message.builder().build());
     }
 
+    private Map<String, String> buildToolExtraParam(Message msg) {
+        Map<String, String> extraParam = new HashMap<>();
+        if(StringUtils.isNotEmpty(msg.getVoiceBase64())){
+            extraParam.put("voiceBase64", msg.getVoiceBase64());
+        }
+        return extraParam;
+    }
+
     private void callMcp(Result it, FluxSink sink) {
         McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
         McpSchema.Content content = result.getContent();
@@ -304,15 +319,24 @@ public class ReactorRole extends Role {
         }
     }
 
-    private void callTool(String name, Result it, String res, FluxSink sink) {
+    private void callTool(String name, Result it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
+            ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(params);
-            res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
-            if (null != sink && tool.show()) {
-                sink.next(res);
+            if(toolRes.has("toolMsgType")){
+                // 说明需要调用方做特殊处理
+                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
+                if (null != sink && tool.show()) {
+                    sink.next(toolRes.toString());
+                }
+            }else {
+                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
+                if (null != sink && tool.show()) {
+                    sink.next(res);
+                }
             }
         }
         if (tool.completed()) {

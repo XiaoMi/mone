@@ -1,17 +1,16 @@
-
 package run.mone.mcp.chat.server;
 
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.mcp.chat.function.ChatFunction;
 
 @Component
 public class ChatMcpServer {
@@ -35,7 +34,7 @@ public class ChatMcpServer {
                 .sync();
 
         var toolStreamRegistration = new ToolStreamRegistration(
-                new Tool(chatFunction.getName(), chatFunction.getDesc(), chatFunction.getToolScheme()), chatFunction
+                new Tool(chatFunction.getName(), chatFunction.getDesc("minzai"), chatFunction.getToolScheme()), chatFunction
         );
 
         syncServer.addStreamTool(toolStreamRegistration);

@@ -134,6 +134,7 @@ public class DoceanHttpServer {
                     ch.pipeline().addLast(httpHandler);
 
                     if (config.isWebsocket()) {
+                        //目前只支持一个ws,写死的
                         ch.pipeline().addLast(new WebSocketServerProtocolHandler(Cons.WebSocketPath));
                         ch.pipeline().addLast(new TextWebSocketHandler());
                     }

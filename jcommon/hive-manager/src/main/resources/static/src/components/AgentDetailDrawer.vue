@@ -31,6 +31,14 @@
             </div>
           </div>
           <div class="detail-item">
+            <div class="label">tools</div>
+            <div class="value">{{ agentDetail.toolMap }}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">mcpTools</div>
+            <div class="value">{{ agentDetail.mcpToolMap }}</div>
+          </div>
+          <div class="detail-item">
             <div class="label">创建时间</div>
             <div class="value">{{ formatDate(agentDetail.ctime) }}</div>
           </div>
@@ -41,7 +49,7 @@
           
           <!-- 添加技能列表组件 -->
           <div class="skills-section">
-            <SkillList :agent-id="agentDetail.id" />
+            <SkillList :agent-id="agent.id" />
           </div>
         </div>
       </template>

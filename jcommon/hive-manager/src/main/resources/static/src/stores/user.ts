@@ -1,3 +1,4 @@
+import type { Agent } from '@/api/agent'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -10,6 +11,7 @@ interface User {
 export const useUserStore = defineStore('user', () => {
   const token = ref('')
   const user = ref<User | null>(null)
+  const agent = ref<Agent | null>(null)
 
   function setToken(newToken: string) {
     token.value = newToken
@@ -19,6 +21,10 @@ export const useUserStore = defineStore('user', () => {
   function setUser(newUser: User) {
     user.value = newUser
     localStorage.setItem('user', JSON.stringify(newUser))
+  }
+
+  function setAgent(newAgent: Agent) {
+    agent.value = newAgent
   }
 
   function clearUser() {
@@ -40,8 +46,10 @@ export const useUserStore = defineStore('user', () => {
   }
 
   return {
+    setAgent,
     token,
     user,
+    agent,
     setToken,
     setUser,
     clearUser,
