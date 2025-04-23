@@ -2,7 +2,7 @@
   <div class="microphone-container">
     <div class="microphone">
       <div class="mic-icon">
-        <el-icon size="30px"><Mic /></el-icon>
+        <el-icon size="50px"><Mic /></el-icon>
       </div>
       <div class="wave-container">
         <div class="wave"></div>
@@ -34,7 +34,7 @@ const sessionUpdate = {
     "session": {
         "modalities": ["audio"],
         "instructions": "在你的声音中注入情感，经常大笑",
-        "voice": "female-yujie",
+        "voice": "female-yujie-jingpin",
         "input_audio_format": "pcm16",
         "output_audio_format": "pcm16",
         "temperature": 0.8,
@@ -163,9 +163,9 @@ onUnmounted(() => {
 .microphone {
   position: relative;
   text-align: center;
-  width: 100px;
-  height: 100px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.01) 80%, rgba(255, 255, 255, 0.1) 50%, #1a1a1a 100%);
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -173,7 +173,7 @@ onUnmounted(() => {
 }
 
 .mic-icon {
-  color: rgba(255, 255, 255, 0.8);
+  color: #f79c52;
   z-index: 2;
   position: relative;
   display: flex;
@@ -189,8 +189,8 @@ onUnmounted(() => {
 }
 
 .wave {
-  width: 50px;
-  height: 50px;
+  width: 200px;
+  height: 200px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   position: absolute;
@@ -211,13 +211,13 @@ onUnmounted(() => {
 
 @keyframes wave {
   0% {
-    width: 30px;
-    height: 30px;
+    width: 50px;
+    height: 50px;
     opacity: 1;
   }
   100% {
-    width: 90px;
-    height: 90px;
+    width: 200px;
+    height: 200px;
     opacity: 0;
   }
 }

@@ -305,3 +305,6 @@
   backdrop-filter: blur(20px);
   border-color: rgba(13, 17, 23, 0.8);
 }
+.el-popper.sc-message--ops {
+  padding: 4px;
+}

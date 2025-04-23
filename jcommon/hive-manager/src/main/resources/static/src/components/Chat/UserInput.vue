@@ -69,11 +69,11 @@
             </div>
           </div>
           <div class="sc-user-input--buttons h-100">
-            <!-- <div v-if="vision" class="sc-user-input--button">
-              <Recoder @submit="submitAudio" />
-            </div> -->
             <div class="sc-user-input--button">
               <Screenshot v-model="screenshotImages" />
+            </div>
+            <div class="sc-user-input--button">
+              <Recoder @submit="submitAudio" />
             </div>
             <div class="sc-user-input--button test">
               <ImageUpload :limit="1" v-model="images" />
@@ -185,7 +185,7 @@ import { ElMessage } from "element-plus";
 import AddDoc from "./components/add-doc/index.vue";
 import KnowledgeIcon from "./components/knowledge-icon/index.vue";
 import { vClickOutside } from '@/plugins/click-outside'
-
+import { voiceToText } from "@/api/audio";
 const { disableContext, enableContext, setMaxNum, setKnowledgeLoading } =
   useChatContextStore();
 
@@ -912,40 +912,9 @@ export default {
       this.inputActive = onoff;
     },
     async submitAudio(url: string, base64: string) {
-      // console.log("submitAudio", url, base64);
-      // await this.onSubmit({
-      //   type: "audio",
-      //   mete: {
-      //     role: "IDEA",
-      //   },
-      //   author: {
-      //     username: this.user.username,
-      //     cname: this.user.cname,
-      //     avatar: this.user.avatar,
-      //   },
-      //   data: {
-      //     text: url,
-      //   },
-      // });
-      // await this.onSubmit({
-      //   type: "audio",
-      //   mete: {
-      //     role: "IDEA",
-      //   },
-      //   author: {
-      //     username: this.user.username,
-      //     cname: this.user.cname,
-      //     avatar: this.user.avatar,
-      //   },
-      //   data: {
-      //     text: "data:audio/mpeg;base64," + base64,
-      //   },
-      // });
-      try {
-        await util.sendSound(base64);
-      } catch (e) {
-        console.error(e);
-      }
+      const res = await voiceToText(base64)
+      this.text = res.data.data
+      this.submitText()
     },
     updateText(text: string) {
       console.log("updateText", text);
