@@ -42,10 +42,6 @@ public class AgentService {
                 }));
     }
 
-    public Flux<Agent> findByCreatedBy(Long userId) {
-        return agentRepository.findByCreatedBy(userId);
-    }
-
     public Mono<Agent> findById(Long id) {
         return agentRepository.findById(id);
     }
@@ -194,7 +190,7 @@ public class AgentService {
                 agent.setCtime(System.currentTimeMillis());
                 agent.setUtime(System.currentTimeMillis());
                 agent.setState(1);
-                agent.setIsPublic(false);
+                agent.setIsPublic(true);
                 
                 // 设置 toolMap 和 mcpToolMap
                 if (regInfoDto.getToolMap() != null) {
@@ -304,7 +300,7 @@ public class AgentService {
                 .then();
     }
 
-//    @Scheduled(fixedRate = 60000) // 每分钟检查一次
+    @Scheduled(fixedRate = 60000) // 每分钟检查一次
     public void checkHeartbeats() {
         try {
             long currentTime = System.currentTimeMillis();
