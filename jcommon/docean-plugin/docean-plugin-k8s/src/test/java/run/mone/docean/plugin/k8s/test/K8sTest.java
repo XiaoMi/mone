@@ -36,8 +36,8 @@ public class K8sTest {
     @SneakyThrows
     @Test
     public void testKill() {
-        String podName = "wangzhidong1-nacostestclient-930391-f44c9db7d-zxnb2";
-        String namespace = "wangzhidong1";
-        K8sPlugin.KillContainer(namespace,podName,"toolbox");
+        String podName = "kibana-7f5fb9c49b-4gzck";
+        String namespace = "xxx";
+        K8sPlugin.KillContainer(namespace, podName,"kibana");
     }
 }

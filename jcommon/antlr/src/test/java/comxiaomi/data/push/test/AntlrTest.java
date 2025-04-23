@@ -98,6 +98,7 @@ public class AntlrTest {
     }
 
 
+
     @Test
     public void testAntlr3() {
         String str = "111";
@@ -112,6 +113,72 @@ public class AntlrTest {
         Map data = (Map) Expr.params(str, "params.toMap()");
         System.out.println(data);
         System.out.println(data.get("name"));
+    }
+
+    @Test
+    public void testAntlr5() {
+        String str = "{\n" +
+                "    \"code\": 0,\n" +
+                "    \"status\": \"success\",\n" +
+                "    \"result\": {\n" +
+                "        \"list\": [\n" +
+                "            {\n" +
+                "                \"group_id\": \"231116031247010100000142\",\n" +
+                "                \"group_name\": \"幻境\",\n" +
+                "                \"cover_url\": \"\",\n" +
+                "                \"introduce\": \"----\",\n" +
+                "                \"homepage_display\": 1,\n" +
+                "                \"status\": 11\n" +
+                "            },\n" +
+                "            {\n" +
+                "                \"group_id\": \"231116031734010100000142\",\n" +
+                "                \"group_name\": \"空间\",\n" +
+                "                \"cover_url\": \"\",\n" +
+                "                \"introduce\": \"----\",\n" +
+                "                \"homepage_display\": 1,\n" +
+                "                \"status\": 11\n" +
+                "            }\n" +
+                "        ],\n" +
+                "        \"count\": 7\n" +
+                "    },\n" +
+                "    \"msg\": \"backend_toast_public_success\"\n" +
+                "}";
+        Object res = Expr.params(str, "params.json().get(result).get(list).toList()[0].get(group_id)");
+        Object res1 = Expr.params(str, "params.toMap(){result}{list::[0]}{group_id}");
+
+        System.out.println(res);
+    }
+
+    @Test
+    public void testAntlr6() {
+        String str = "{\n" +
+                "    \"code\": 0,\n" +
+                "    \"status\": \"success\",\n" +
+                "    \"list\": {\n" +
+                "        \"list\": [\n" +
+                "            {\n" +
+                "                \"group_id\": \"231116031247010100000142\",\n" +
+                "                \"group_name\": \"幻境\",\n" +
+                "                \"cover_url\": \"\",\n" +
+                "                \"introduce\": \"----\",\n" +
+                "                \"homepage_display\": 1,\n" +
+                "                \"status\": 11\n" +
+                "            },\n" +
+                "            {\n" +
+                "                \"group_id\": \"231116031734010100000142\",\n" +
+                "                \"group_name\": \"空间\",\n" +
+                "                \"cover_url\": \"\",\n" +
+                "                \"introduce\": \"----\",\n" +
+                "                \"homepage_display\": 1,\n" +
+                "                \"status\": 11\n" +
+                "            }\n" +
+                "        ],\n" +
+                "        \"count\": 7\n" +
+                "    },\n" +
+                "    \"msg\": \"backend_toast_public_success\"\n" +
+                "}";
+        Object res = Expr.params(str, "params.toMap(){list}{list::[0]}{group_id}");
+        System.out.println(res);
     }
 
 

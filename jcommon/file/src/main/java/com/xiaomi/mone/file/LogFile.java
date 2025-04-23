@@ -1,13 +1,11 @@
 package com.xiaomi.mone.file;
 
 import com.google.common.collect.Lists;
-import com.xiaomi.mone.file.common.FileUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,10 +17,10 @@ import java.util.concurrent.TimeUnit;
  * @author goodjava@qq.com
  */
 @Slf4j
-public class LogFile implements ILogFile {
+public class LogFile implements ILogFile{
 
     @Getter
-    private String file;
+    private  String file;
 
     private MoneRandomAccessFile raf;
 
@@ -37,24 +35,20 @@ public class LogFile implements ILogFile {
     @Setter
     private volatile boolean reFresh;
 
-    private volatile boolean exceptionFinish;
-
     @Getter
     private int beforePointerHashCode;
 
-    @Getter
-    private volatile long pointer;
+    private long pointer;
 
     //行号
     private long lineNumber;
 
     //每次读取时文件的最大偏移量
-    @Getter
-    private volatile long maxPointer;
+    private long maxPointer;
 
     private String md5;
 
-    //    private static final int LINE_MAX_LENGTH = 50000;
+    private static final int LINE_MAX_LENGTH = 50000;
 
     public LogFile() {
 
@@ -77,14 +71,14 @@ public class LogFile implements ILogFile {
 
     private void open() {
         try {
-            //日志文件进行切分时，减少FileNotFoundException概率,这个应该删掉了,在使用前保证就好了，由于历史原因,降低了休眠时间
-//            TimeUnit.SECONDS.sleep(1);
+            //日志文件进行切分时，减少FileNotFoundException概率
+            TimeUnit.SECONDS.sleep(5);
             //4kb
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
             reFresh = false;
-//        } catch (InterruptedException e) {
-//            log.error("open file InterruptedException", e);
+        } catch (InterruptedException e) {
+            log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
             log.error("open file FileNotFoundException", e);
         } catch (IOException e) {
@@ -92,13 +86,12 @@ public class LogFile implements ILogFile {
         }
     }
 
-    @Override
-    public void readLine() throws Exception {
+    public void readLine() throws IOException {
         while (true) {
             open();
             //兼容文件切换时，缓存的pointer
             try {
-                log.info("open file:{},pointer:{},fileKey:{}", file, pointer, FileUtils.fileKey(new File(file)));
+                log.info("open file:{},pointer:{}", file, raf.getFilePointer());
                 if (pointer > raf.length()) {
                     pointer = 0;
                     lineNumber = 0;
@@ -107,11 +100,9 @@ public class LogFile implements ILogFile {
                 log.error("file.length() IOException, file:{}", this.file, e);
             }
             raf.seek(pointer);
-            log.info("start readLine file:{},pointer:{}", file, pointer);
 
             while (true) {
                 String line = raf.getNextLine();
-
                 if (null != line && lineNumber == 0 && pointer == 0) {
                     String hashLine = line.length() > 100 ? line.substring(0, 100) : line;
                     beforePointerHashCode = hashLine.hashCode();
@@ -120,19 +111,16 @@ public class LogFile implements ILogFile {
                 line = lineCutOff(line);
 
                 if (reFresh) {
-                    log.info("readline reFresh:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
                     break;
                 }
 
                 if (reOpen) {
-                    log.info("readline reOpen:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
                     pointer = 0;
                     lineNumber = 0;
                     break;
                 }
 
                 if (stop) {
-                    log.info("readline stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
                     break;
                 }
 
@@ -141,12 +129,11 @@ public class LogFile implements ILogFile {
                     reOpen = true;
                     pointer = 0;
                     lineNumber = 0;
-                    log.info("readline file:{} content have been cut, goto reOpen file,pointer:{},lineNumber:{},fileKey:{}", file, pointer, lineNumber, FileUtils.fileKey(new File(file)));
+                    log.warn("file:{} content have been cut, goto reOpen file", file);
                     break;
                 }
 
                 if (listener.isContinue(line)) {
-                    log.debug("readline isBreak:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
                     continue;
                 }
 
@@ -168,7 +155,6 @@ public class LogFile implements ILogFile {
             }
             raf.close();
             if (stop) {
-                log.info("read file stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
                 break;
             }
         }
@@ -181,16 +167,6 @@ public class LogFile implements ILogFile {
         this.listener = listener;
         this.pointer = pointer;
         this.lineNumber = lineNumber;
-    }
-
-    @Override
-    public void setExceptionFinish() {
-        exceptionFinish = true;
-    }
-
-    @Override
-    public boolean getExceptionFinish() {
-        return exceptionFinish;
     }
 
     private String lineCutOff(String line) {
@@ -228,7 +204,6 @@ public class LogFile implements ILogFile {
         //针对大文件,排除掉局部内容删除的情况,更准确识别内容整体切割的场景（误判重复采集成本较高）
         long mPointer = maxPointer > 70000 ? maxPointer - 700 : maxPointer;
         if (currentFileMaxPointer < mPointer) {
-            maxPointer = currentFileMaxPointer;
             return true;
         }
 
@@ -263,7 +238,7 @@ public class LogFile implements ILogFile {
         md.update(msg.getBytes());
         byte[] digest = md.digest();
         StringBuilder sb = new StringBuilder(2 * digest.length);
-        for (byte b : digest) {
+        for(byte b : digest) {
             sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString().toUpperCase();

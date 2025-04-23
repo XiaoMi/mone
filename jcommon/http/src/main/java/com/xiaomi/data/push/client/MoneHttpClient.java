@@ -77,7 +77,7 @@ public class MoneHttpClient {
     }
 
     public Call getCall(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout, OkHttpReq okHttpReq) {
-        ConnectionPool groupPool = poolMap.computeIfAbsent(String.valueOf(group.hashCode() % poolNum), (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
+        ConnectionPool groupPool = poolMap.computeIfAbsent(String.valueOf((group.hashCode() & Integer.MAX_VALUE) % poolNum), (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
         OkHttpClient.Builder clientBuilder = this.client.newBuilder()
                 .connectionPool(groupPool)
                 .callTimeout(timeout, TimeUnit.MILLISECONDS);

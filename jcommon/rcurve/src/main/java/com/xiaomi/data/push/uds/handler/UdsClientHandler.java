@@ -84,7 +84,6 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
             } else {
                 handleNormalResponse(command);
             }
-
         }
     }
 
@@ -107,7 +106,6 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
             }
         }
     }
-
 
     private void handleNormalResponse(UdsCommand command) {
         // 保持原有的处理逻辑不变
@@ -133,8 +131,6 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
             }
         });
     }
-
-
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
