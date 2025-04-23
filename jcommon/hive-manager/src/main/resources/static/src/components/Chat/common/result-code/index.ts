@@ -159,6 +159,16 @@ export function resultCodeHandler(res: string) {
               ),
           },
           {
+            // chat和thinking标签格式处理
+            match: (text: string) => 
+              (text.includes("<") && (text.includes("chat") || text.includes("thinking"))),
+            replace: (text: string) => {
+              return text
+                .replace(/<[\s\r\n]+(chat|thinking)/g, '<$1')
+                .replace(/(chat|thinking)[\s\r\n]+>/g, '$1>');
+            },
+          },
+          {
             // MCP工具格式处理
             match: (text: string) => text.includes("<use_mcp_tool>"),
             replace: (text: string) => {
@@ -224,6 +234,16 @@ export function fluxCodeHandler(res: string, uuid: string) {
     // 处理特殊格式
     const formatHandlers = [
       {
+        // chat和thinking标签格式处理
+        match: (text: string) => 
+          (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact"))),
+        replace: (text: string) => {
+          return text
+            .replace(/<[\s\r\n]+(chat|thinking|use_mcp_tool|boltArtifact)/g, '<$1')
+            .replace(/(chat|thinking|use_mcp_tool|boltArtifact)[\s\r\n]+>/g, '$1>');
+        },
+      },
+      {
         // XML格式处理
         match: (text: string) =>
           text.includes("```xml") && text.includes("<use_mcp_tool>"),
@@ -288,7 +308,6 @@ export function fluxCodeHandler(res: string, uuid: string) {
         },
       },
     ];
-
     for (const handler of formatHandlers) {
       if (handler.match(existData.data.text)) {
         existData.data.text = handler.replace(existData.data.text);

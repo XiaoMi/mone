@@ -29,7 +29,6 @@ async function callScreenshot() {
         const reader = new FileReader();
         reader.onload = () => {
           const base64String = reader.result as string;
-          console.log(base64String);
           // 移除 data:image/* 前缀
           const base64Data = base64String.split(',')[1];
           emits("update:modelValue", [{

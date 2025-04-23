@@ -7,7 +7,7 @@
       <ul class="el-upload-list el-upload-list--picture">
         <li class="el-upload-list__item is-success" tabindex="0">
           <img class="el-upload-list__item-thumbnail" :src="props.modelValue[0].url" alt="">
-          <div class="el-upload-list__item-info">
+          <!-- <div class="el-upload-list__item-info">
             <a class="el-upload-list__item-name">
               <i class="el-icon el-icon--document">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
@@ -17,8 +17,8 @@
                 </svg>
               </i>
               <span class="el-upload-list__item-file-name" title=""></span>
-            </a><!--v-if-->
-          </div>
+            </a>
+          </div> -->
           <label class="el-upload-list__item-status-label">
             <i class="el-icon el-icon--upload-success el-icon--check">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
@@ -29,11 +29,7 @@
             </i>
           </label>
           <i class="el-icon el-icon--close" @click="deleteImage">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-              <path fill="currentColor"
-                d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.752 512 214.528 764.224a31.936 31.936 0 1 0 45.12 45.184L512 557.184l252.288 252.288a31.936 31.936 0 0 0 45.12-45.12L557.12 512.064l252.288-252.352a31.936 31.936 0 1 0-45.12-45.184z">
-              </path>
-            </svg>
+            <svg t="1745204247360" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2424" width="12" height="12"><path d="M544.448 499.2l284.576-284.576a32 32 0 0 0-45.248-45.248L499.2 453.952 214.624 169.376a32 32 0 0 0-45.248 45.248l284.576 284.576-284.576 284.576a32 32 0 0 0 45.248 45.248l284.576-284.576 284.576 284.576a31.904 31.904 0 0 0 45.248 0 32 32 0 0 0 0-45.248L544.448 499.2z" fill="currentColor" p-id="2425"></path></svg>
           </i>
           <!-- Due to close btn only appears when li gets focused disappears after li gets blurred, thus keyboard navigation can never reach close btn--><!-- This is a bug which needs to be fixed --><!-- TODO: Fix the incorrect navigation interaction -->
           <i class="el-icon--close-tip">press delete to remove</i>
@@ -103,13 +99,17 @@ onMounted(() => {
   position: absolute;
   // width: 104px;
   // left: 10px;
-  right: -43px;
+  right: -98px;
   bottom: 43px;
   display: inline-block;
 }
 
 .image-preview img {
-  max-width: 200px;
-  max-height: 200px;
+  width: fit-content;
+}
+
+.image-preview .el-icon--close {
+  z-index: 10;
+  color: var(--el-color-danger);
 }
 </style>
