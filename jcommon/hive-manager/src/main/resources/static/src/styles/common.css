@@ -300,3 +300,8 @@
 .sc-user-input--hcbutton .el-radio__input {
   display: none;
 }
+.el-message {
+  background: rgba(13, 17, 23, 0.8);
+  backdrop-filter: blur(20px);
+  border-color: rgba(13, 17, 23, 0.8);
+}
