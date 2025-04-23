@@ -16,8 +16,10 @@
 
 package com.xiaomi.data.push.context;
 
+import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.rpc.netty.AgentChannel;
-import io.netty.channel.Channel;
+import com.xiaomi.data.push.rpc.netty.AgentEventListener;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +32,9 @@ public class AgentContext {
 
     public ConcurrentHashMap<String, AgentChannel> map = new ConcurrentHashMap<>();
 
-    private AgentContext(){
+    private static final List<AgentEventListener> listeners = new ArrayList<>();
+
+    private AgentContext() {
 
     }
 
@@ -48,4 +52,22 @@ public class AgentContext {
         return LazyHolder.ins;
     }
 
+    public void addListener(AgentEventListener listener) {
+        listeners.add(listener);
+    }
+
+    public void put(String remoteAddr, AgentChannel agentChannel) {
+        map.put(remoteAddr, agentChannel);
+        if (!CollectionUtils.isEmpty(listeners)) {
+            listeners.forEach(lis -> SafeRun.run(() -> lis.onPut(remoteAddr, agentChannel)));
+        }
+    }
+
+    public AgentChannel remove(String remoteAddr) {
+        AgentChannel agentChannel = map.remove(remoteAddr);
+        if (!CollectionUtils.isEmpty(listeners)) {
+            listeners.forEach(lis -> SafeRun.run(() -> lis.onRemove(remoteAddr, agentChannel)));
+        }
+        return agentChannel;
+    }
 }
