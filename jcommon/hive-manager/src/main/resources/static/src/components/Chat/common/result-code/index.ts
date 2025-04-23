@@ -224,6 +224,24 @@ export function fluxCodeHandler(res: string, uuid: string) {
     // 处理特殊格式
     const formatHandlers = [
       {
+        // chat标签格式处理
+        match: (text: string) => text.includes("<") && text.includes("chat"),
+        replace: (text: string) => {
+          return text
+            .replace(/<[\s\r\n]+chat/g, '<chat')
+            .replace(/chat[\s\r\n]+>/g, 'chat>');
+        },
+      },
+      {
+        // thinking标签格式处理
+        match: (text: string) => text.includes("<") && text.includes("thinking"),
+        replace: (text: string) => {
+          return text
+            .replace(/<[\s\r\n]+thinking/g, '<thinking')
+            .replace(/thinking[\s\r\n]+>/g, 'thinking>');
+        },
+      },
+      {
         // XML格式处理
         match: (text: string) =>
           text.includes("```xml") && text.includes("<use_mcp_tool>"),
@@ -285,15 +303,6 @@ export function fluxCodeHandler(res: string, uuid: string) {
         match: (text: string) => text.includes("</boltArtifact"),
         replace: (text: string) => {
           return text.replace(/(<\/boltArtifact>)(?![\n\r])/g, '$1\n');
-        },
-      },
-      {
-        // thinking标签格式处理
-        match: (text: string) => text.includes("<") && text.includes("thinking"),
-        replace: (text: string) => {
-          return text
-            .replace(/<[\s\r\n]+thinking/g, '<thinking')
-            .replace(/thinking[\s\r\n]+>/g, 'thinking>');
         },
       },
     ];

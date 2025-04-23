@@ -42,6 +42,7 @@ export type Message = {
   data: {
     isLast?: boolean;
     flowData?: any;
+    content?: string;
     cmd?: {
       id: string;
       label: string;

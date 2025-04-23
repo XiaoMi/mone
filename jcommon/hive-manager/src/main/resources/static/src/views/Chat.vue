@@ -66,9 +66,22 @@ const toggleSendMethod = (val: string) => {
     }
   const sendMessage = async (message: Message) => {
     addMessage(message);
+    let text = message.data.text;
+    let image = null;
+    if(message.type === "image") {
+      text = message.data.content;
+      image = message.data.text?.split("base64,")[1];
+    }
     try {
       const agent = getAgent();
       messageId.value = uuidv4();
+      let params = {
+        message: text,
+        __owner_id__: uuid.value,
+      }
+      if (image) {
+        params.images = image;
+      }
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
@@ -78,7 +91,7 @@ const toggleSendMethod = (val: string) => {
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}`,
             tool_name: "stream_minzai_chat",
-            arguments: JSON.stringify({ message: message.data.text, clientId: uuid.value, __owner_id__: uuid.value })
+            arguments: JSON.stringify(params)
           }
         }, (data: any) => {
           if (data) {
@@ -88,11 +101,13 @@ const toggleSendMethod = (val: string) => {
       } else {
         // ws发送消息
         socket.value?.send(JSON.stringify({
+          agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
+          agentInstance: getSelectedInstance(),
           content: {
-            server_name: "minzai-mcp",
+            server_name: `${agent.name}:${agent.group}:${agent.version}`,
             tool_name: "stream_minzai_chat",
-            arguments: JSON.stringify({ message:message.data.text, clientId: uuid.value, __owner_id__: uuid.value })
+            arguments: JSON.stringify(params)
           }
         }));
       }

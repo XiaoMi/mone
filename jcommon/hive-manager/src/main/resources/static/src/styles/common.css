@@ -1,3 +1,7 @@
+*::-webkit-scrollbar {
+  display: none;
+}
+
 .agent-detail-drawer {
     background: rgba(13, 17, 23, 0.8);
   }
