@@ -3,7 +3,6 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
-import vueDevTools from 'vite-plugin-vue-devtools'
 
 process.env.NODE_ENV = 'development'
 const isDev = process.env.NODE_ENV === 'development'
@@ -24,10 +23,21 @@ export default defineConfig({
   server: {
     port: 5175,
     proxy: {
-      "/api": {
-        target: "http://10.38.219.242:8080",
+      "/api/manager/ws/": {
+        target: "http://0.0.0.0:8080/ws/",
         ws: true, // 启用websocket代理
         changeOrigin: true,
+        rewrite: (path) => {
+          return path.replace(/^\/api\/manager\/ws\//, "/");
+        },
+      },
+      "/api/manager/": {
+        target: "http://0.0.0.0:8080/api/",
+        ws: true, // 启用websocket代理
+        changeOrigin: true,
+        rewrite: (path) => {
+          return path.replace(/^\/api\/manager\//, "/");
+        },
       },
     },
   },

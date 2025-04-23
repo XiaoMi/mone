@@ -35,10 +35,19 @@ public class RoleService {
 
     private final List<McpSchema.Tool> mcpToolList;
 
-    private final IHiveManagerService hiveManagerService;
+    private final HiveManagerService hiveManagerService;
 
     @Value("${mcp.hub.path:}")
     private String mcpPath;
+
+    @Value("${mcp.agent.name:}")
+    private String agentName;
+
+    @Value("${mcp.agent.group:}")
+    private String agentGroup;
+
+    @Value("${mcp.agent.version:}")
+    private String agentversion;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
@@ -55,7 +64,7 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole role = new ReactorRole("minzai", "staging", "0.0.1", grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList) {
+        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList) {
             @Override
             public void reg(RegInfo info) {
                 // 直接传递传入的RegInfo对象

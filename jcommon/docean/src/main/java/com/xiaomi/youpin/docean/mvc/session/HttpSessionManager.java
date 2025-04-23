@@ -20,6 +20,7 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
@@ -99,7 +100,7 @@ public class HttpSessionManager {
     }
 
 
-    public static void setSessionId(MvcContext context, boolean exists, FullHttpResponse response) {
+    public static void setSessionId(MvcContext context, boolean exists, HttpResponse response) {
         if (!context.getSessionId().equals("")) {
             Cookie cookie = new DefaultCookie(HttpSession.SESSIONID, context.getSessionId());
             cookie.setPath("/");

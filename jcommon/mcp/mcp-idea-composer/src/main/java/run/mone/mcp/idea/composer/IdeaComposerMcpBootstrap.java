@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.idea.composer")
+@ComponentScan(basePackages = {"run.mone.mcp.idea.composer", "run.mone.hive.mcp.service"})
 public class IdeaComposerMcpBootstrap {
 
     public static void main(String[] args) {

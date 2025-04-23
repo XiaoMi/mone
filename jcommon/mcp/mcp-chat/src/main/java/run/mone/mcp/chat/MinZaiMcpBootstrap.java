@@ -6,7 +6,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.chat")
+@ComponentScan(basePackages = {"run.mone.mcp.chat", "run.mone.hive.mcp.service"})
 @EnableScheduling
 public class MinZaiMcpBootstrap {
 

@@ -10,6 +10,7 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.AskTool;
@@ -30,6 +31,9 @@ public class ChatMcpConfig {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
+    @Value("${mcp.agent.name:}")
+    private String agentName;
+
     @Resource
     private HiveManagerService hiveManagerService;
 
@@ -41,8 +45,8 @@ public class ChatMcpConfig {
 //                .version(getClaudeVersion())
 //                .maxTokens(getClaudeMaxToekns())
 //                .build();
-////        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
-////        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
 //        return new LLM(config);
 
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
@@ -71,7 +75,7 @@ public class ChatMcpConfig {
                         new DocumentProcessingTool(),
                         new SystemInfoTool()),
                 Lists.newArrayList(
-                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc("minzai"), ChatFunction.getToolScheme())
+                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc(agentName), ChatFunction.getToolScheme())
                 ),
                 hiveManagerService);
     }

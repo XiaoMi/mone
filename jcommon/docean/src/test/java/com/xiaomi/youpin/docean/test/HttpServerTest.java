@@ -55,20 +55,8 @@ public class HttpServerTest {
 
     @Test
     public void testHttpServer() throws InterruptedException {
-//        LinkedHashMap<Class, EnhanceInterceptor> m = new LinkedHashMap<>();
-//        m.put(RequestMapping.class, new EnhanceInterceptor() {
-//            @Override
-//            public void before(AopContext aopContext, Method method, Object[] args) {
-//                MvcContext mvcContext = ContextHolder.getContext().get();
-//                HttpSession session = mvcContext.session();
-//                if (session.getAttribute("name") == null) {
-//                    log.info("set name");
-//                    session.setAttribute("name", "zzy:" + new Date() + ":" + System.currentTimeMillis());
-//                }
-//            }
-//        });
-//        Aop.ins().init(m);
-//        Aop.ins().getInterceptorMap().put(TAnno.class, new TAInterceptor());
+//        aop();
+        log.info("http server");
         Ioc ioc = Ioc.ins();
         ioc.putBean(ioc).init("com.xiaomi.youpin.docean");
 
@@ -77,8 +65,6 @@ public class HttpServerTest {
             log.error(er.getMessage());
             System.exit(-1);
         }
-
-
         Ioc.ins().putBean("$response-original-value", "true").putBean("$openStaticFile", "true").putBean("$staticFilePath", "/tmp/");
 //        Ioc.ins().putBean("$ssl_domain", "zzy.com");
 //        Ioc.ins().putBean("$ssl_self_sign", "false");
@@ -96,6 +82,25 @@ public class HttpServerTest {
         server.start();
     }
 
+    private static void aop() {
+        LinkedHashMap<Class, EnhanceInterceptor> m = new LinkedHashMap<>();
+        m.put(RequestMapping.class, new EnhanceInterceptor() {
+            @Override
+            public void before(AopContext aopContext, Method method, Object[] args) {
+                MvcContext mvcContext = ContextHolder.getContext().get();
+                HttpSession session = mvcContext.session();
+                if (session.getAttribute("name") == null) {
+                    log.info("set name");
+                    session.setAttribute("name", "zzy:" + new Date() + ":" + System.currentTimeMillis());
+                }
+            }
+        });
+        Aop.ins().init(m);
+        Aop.ins().getInterceptorMap().put(TAnno.class, new TAInterceptor());
+    }
+
+
+    //websocket server
     @SneakyThrows
     @Test
     public void testWebSocketServer() {
@@ -116,8 +121,7 @@ public class HttpServerTest {
     @Test
     public void testWebSocketClient() {
         OkHttpClient client = new OkHttpClient();
-//        Request request = new Request.Builder().url("ws://127.0.0.1:8899/ws").build();
-        Request request = new Request.Builder().url("").build();
+        Request request = new Request.Builder().url("ws://127.0.0.1:8899/ws").build();
         WebSocketListener listener = new WebSocketListener() {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
