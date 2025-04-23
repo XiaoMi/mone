@@ -18,7 +18,6 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.SpeechToTextTool;
 import run.mone.hive.roles.tool.TextToSpeechTool;
-import run.mone.mcp.chat.service.HiveManagerService;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
 import run.mone.mcp.chat.tool.SystemInfoTool;
 
