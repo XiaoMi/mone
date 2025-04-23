@@ -134,10 +134,12 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
 //        config.setModel("deepseek-r1");
-        config.setLlmProvider(LLMProvider.GROK);
+//        config.setLlmProvider(LLMProvider.GROK);
 
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
+
+        config.setLlmProvider(LLMProvider.MINIMAX);
 
         //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -173,7 +175,7 @@ class LLMTest {
     @Test
     public void test99() {
         String prompt = """
-                hi 
+                陈毅最好的3首诗词是? 给我完整版本 thx
                 """;
         String res = llm.chat(prompt);
         System.out.println(res);
@@ -198,15 +200,15 @@ class LLMTest {
         JsonArray array = new JsonArray();
 
         JsonObject obj1 = new JsonObject();
-        obj1.addProperty("type","text");
+        obj1.addProperty("type", "text");
         obj1.addProperty("text", prompt);
         array.add(obj1);
 
         JsonObject obj2 = new JsonObject();
-        obj2.addProperty("type","image_url");
+        obj2.addProperty("type", "image_url");
         JsonObject img = new JsonObject();
-        img.addProperty("url","data:image/png;base64,"+llm.imageToBase64("/tmp/abcd.png", "png"));
-        obj2.add("image_url",img);
+        img.addProperty("url", "data:image/png;base64," + llm.imageToBase64("/tmp/abcd.png", "png"));
+        obj2.add("image_url", img);
         array.add(obj2);
 
         req.add("content", array);
@@ -319,15 +321,15 @@ class LLMTest {
             JsonArray array = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
-            obj1.addProperty("type","text");
-            obj1.addProperty("text",text);
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", text);
             array.add(obj1);
 
             JsonObject obj2 = new JsonObject();
-            obj2.addProperty("type","image_url");
+            obj2.addProperty("type", "image_url");
             JsonObject img = new JsonObject();
-            img.addProperty("url","data:image/jpeg;base64,"+llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
-            obj2.add("image_url",img);
+            img.addProperty("url", "data:image/jpeg;base64," + llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
+            obj2.add("image_url", img);
             array.add(obj2);
 
             req.add("content", array);
@@ -690,7 +692,7 @@ class LLMTest {
                     }
                 },
                 line -> log.info("Received line: {}", line)
-        , "");
+                , "");
 
         latch.await();
 
