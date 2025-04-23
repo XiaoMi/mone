@@ -316,11 +316,11 @@ public class AgentService {
                             return agentInstanceRepository.deleteById(instance.getId())
                                     .then(agentInstanceRepository.findByAgentId(instance.getAgentId()).count()
                                             .flatMap(count -> {
-                                                // 检查此agent_id的t_agent_instance记录数是否为0
-                                                if (count == 0) {
-                                                    // 如果为0，删除t_agent记录
-                                                    return agentRepository.deleteById(instance.getAgentId());
-                                                }
+//                                                // 检查此agent_id的t_agent_instance记录数是否为0
+//                                                if (count == 0) {
+//                                                    // 如果为0，删除t_agent记录
+//                                                    return agentRepository.deleteById(instance.getAgentId());
+//                                                }
                                                 return Mono.empty();
                                             }));
                         } else {
