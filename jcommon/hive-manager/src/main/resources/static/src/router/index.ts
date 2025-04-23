@@ -62,10 +62,12 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore();
   const isExpired = isTokenExpired();
-  if (isExpired) {
+  if (isExpired && to.path !== "/login") {
     userStore.clearUser();
     next("/login");
-  }else if (!userStore.initUser()) {
+    return
+  }
+  if (!userStore.initUser()) {
     if (to.path === "/login") {
       userStore.clearUser();
       next();
