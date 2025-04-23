@@ -14,13 +14,13 @@ public class DoubleDefaultAdapter implements JsonSerializer<Double>, JsonDeseria
 
     @Override
     public Double deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        if (json.getAsString().equals("")) {
+        if ("".equals(json.getAsString())) {
             return null;
         }
         try {
             return json.getAsDouble();
         } catch (NumberFormatException e) {
-            throw new JsonSyntaxException(e);
+            return null;
         }
     }
 
