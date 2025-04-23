@@ -8,6 +8,7 @@ import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.schema.Message;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -46,6 +47,11 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         String clientId = arguments.get(Const.CLIENT_ID).toString();
         String message = (String) arguments.get("message");
         String voiceBase64 = arguments.get("voiceBase64") == null ? null : (String) arguments.get("voiceBase64");
+        List<String> images = null;
+        if (arguments.get("images") != null) {
+            String imagesStr = arguments.get("images").toString();
+            images = Arrays.asList(imagesStr.split(","));
+        }
         if ("/clear".equalsIgnoreCase(message.trim())) {
             roleService.clearHistory(Message.builder().sentFrom(clientId).build());
             return Flux.just(new McpSchema.CallToolResult(
@@ -62,6 +68,7 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
                             .sentFrom(ownerId)
                             .content(message)
                             .data(message)
+                            .images(images)
                             .voiceBase64(voiceBase64)
                             .build())
                     .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
