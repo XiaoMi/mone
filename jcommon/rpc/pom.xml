@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rpc</artifactId>
-    <version>1.7-clustering-SNAPSHOT</version>
+    <version>1.7.1-SNAPSHOT</version>
 
 
     <dependencies>
