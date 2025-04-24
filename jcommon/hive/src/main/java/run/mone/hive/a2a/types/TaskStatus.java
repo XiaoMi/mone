@@ -11,6 +11,18 @@ import java.time.ZonedDateTime;
  */
 @Data
 public class TaskStatus {
+    /**
+     * 任务状态值常量
+     */
+    public static final String PENDING = "PENDING";
+    public static final String RUNNING = "RUNNING";
+    public static final String COMPLETED = "COMPLETED";
+    public static final String FAILED = "FAILED";
+    public static final String CANCELED = "CANCELED";
+    
+    /**
+     * 任务状态值
+     */
     @JsonProperty("state")
     private TaskState state;
     
