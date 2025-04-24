@@ -42,6 +42,7 @@ export type Message = {
   data: {
     isLast?: boolean;
     flowData?: any;
+    content?: string;
     cmd?: {
       id: string;
       label: string;
@@ -111,9 +112,9 @@ const db = new LowSync<{
 });
 
 export const useChatContextStore = defineStore("chat-context", () => {
-  db.read();
+  // db.read();
   const data = db.data;
-  console.log("db data:", data);
+  // console.log("db data:", data);
 
   const messageList = ref<MessageList>([]);
   const knowledgeData = ref<any>();
@@ -153,8 +154,8 @@ export const useChatContextStore = defineStore("chat-context", () => {
       let _d = JSON.parse(str);
       console.log(_d);
       knowledgeData.value = _d;
-      db.data.knowledgeData = _d;
-      db.write();
+      // db.data.knowledgeData = _d;
+      // db.write();
     } catch (error) {
       //
     }
@@ -162,21 +163,21 @@ export const useChatContextStore = defineStore("chat-context", () => {
 
   function setLoading(bool: boolean) {
     isLoading.value = bool;
-    db.data.isLoading = bool;
-    db.write();
+    // db.data.isLoading = bool;
+    // db.write();
   }
 
   function setKnowledgeLoading(bool: boolean) {
     knowledgeLoading.value = bool;
-    db.data.knowledgeLoading = bool;
-    db.write();
+    // db.data.knowledgeLoading = bool;
+    // db.write();
   }
 
   function setMaxNum(num: number) {
     chatContext.value.maxNum = num;
 
-    db.data.chatContext.maxNum = num;
-    db.write();
+    // db.data.chatContext.maxNum = num;
+    // db.write();
   }
 
   function addMessage(message: Message) {
@@ -194,8 +195,8 @@ export const useChatContextStore = defineStore("chat-context", () => {
   function disableContext() {
     chatContext.value.isAllow = false;
 
-    db.data.chatContext.isAllow = false;
-    db.write();
+    // db.data.chatContext.isAllow = false;
+    // db.write();
   }
 
   function setProject(project: string) {
@@ -209,8 +210,8 @@ export const useChatContextStore = defineStore("chat-context", () => {
   function enableContext() {
     chatContext.value.isAllow = true;
 
-    db.data.chatContext.isAllow = true;
-    db.write();
+    // db.data.chatContext.isAllow = true;
+    // db.write();
   }
 
   function clearContext() {

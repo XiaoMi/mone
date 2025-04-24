@@ -78,7 +78,7 @@
   const fetchAgentDetail = async () => {
     try {
       const { data } = await getAgentDetail(props.agent.id)
-      agentDetail.value = data.data || null
+      agentDetail.value = data.data?.agent || null
     } catch (error) {
       console.error('获取Agent详情失败:', error)
     }
