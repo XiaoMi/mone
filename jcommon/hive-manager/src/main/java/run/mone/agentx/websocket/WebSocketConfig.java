@@ -9,6 +9,8 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 
 @Configuration
 @EnableWebSocket
@@ -26,11 +28,24 @@ public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBro
         registry.addHandler(webSocketHandler, "/ws/agent/chat")
                .setAllowedOriginPatterns("*");
         
-        registry.addHandler(realtimeWebSocketHandler, "/ws/realtime")
+        registry.addHandler(realtimeWebSocketHandler, "/ws/realtime/minimaxi")
                .setAllowedOriginPatterns("*");
     }
 
-     @Bean
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic", "/queue");
+        config.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws")
+               .setAllowedOriginPatterns("*")
+               .withSockJS();
+    }
+
+    @Bean
     public ServletServerContainerFactoryBean createWebSocketContainer() {
         ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
         container.setMaxTextMessageBufferSize(2 * 1024 * 1024);
