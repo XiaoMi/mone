@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.chaos")
+@ComponentScan({"run.mone.mcp.chaos","run.mone.hive.mcp.service"})
 public class ChaosMcpBootstrap {
     public static void main(String[] args) {
         SpringApplication.run(ChaosMcpBootstrap.class, args);
