@@ -54,7 +54,7 @@ public class AgentService {
                         return Mono.just(true);
                     }
                     return agentAccessRepository.findByAgentIdAndAccessApp(agentId, accessApp)
-                            .map(access -> access.getAccessKey().equals(accessKey) && access.getStatus() == 1)
+                            .map(access -> access.getAccessKey().equals(accessKey) && access.getState() == 1)
                             .defaultIfEmpty(false);
                 })
                 .defaultIfEmpty(false);
