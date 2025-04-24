@@ -7,14 +7,12 @@ import com.tencent.core.ws.Credential;
 import com.tencent.core.ws.SpeechClient;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
 import java.io.FileInputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author 龚文
@@ -30,18 +28,19 @@ public class TencentAsrService {
     private Long sleepTime;
     private String engineModelType;
     //1：pcm；4：speex(sp)；6：silk；8：mp3；10：opus；12：wav；14：m4a（
-    private String voiceFormat;
+    private Integer voiceFormat;
+    private String base64AudioFormat;
     //构造voiceFormat映射
-    private static Map<String, String> VOICE_FORMAT_MAP = new HashMap<>();
+    private static Map<String, Integer> VOICE_FORMAT_MAP = new HashMap<>();
 
     static {
-        VOICE_FORMAT_MAP.put(".pcm", "1");
-        VOICE_FORMAT_MAP.put(".speex", "4");
-        VOICE_FORMAT_MAP.put(".silk", "6");
-        VOICE_FORMAT_MAP.put(".mp3", "8");
-        VOICE_FORMAT_MAP.put(".opus", "10");
-        VOICE_FORMAT_MAP.put(".wav", "12");
-        VOICE_FORMAT_MAP.put(".m4a", "14");
+        VOICE_FORMAT_MAP.put(".pcm", 1);
+        VOICE_FORMAT_MAP.put(".speex", 4);
+        VOICE_FORMAT_MAP.put(".silk", 6);
+        VOICE_FORMAT_MAP.put(".mp3", 8);
+        VOICE_FORMAT_MAP.put(".opus", 10);
+        VOICE_FORMAT_MAP.put(".wav", 12);
+        VOICE_FORMAT_MAP.put(".m4a", 14);
     }
 
     private static Gson gson = new Gson();
@@ -59,38 +58,43 @@ public class TencentAsrService {
     }
 
 
-    public Flux<String> doAsr(String fileName) {
+    public Flux<String> doAsr(String fileName, String base64Audio) {
         return Flux.create(sink -> {
             sink.next("腾讯语音识别结果为：");
-            doAsr(fileName, sink);
+            doAsr(fileName, base64Audio, sink);
             sink.complete();
         });
     }
 
-    public void doAsr(String fileName, FluxSink<String> sink) {
-        //获取filename后缀
+    public void doAsr(String fileName, String base64Audio, FluxSink<String> sink) {
         String sessionId = UUID.randomUUID().toString();
-        String suffixName = fileName.substring(fileName.lastIndexOf("."));
-        voiceFormat = VOICE_FORMAT_MAP.getOrDefault(suffixName, "12");
-
         SpeechRecognizerRequest request = SpeechRecognizerRequest.init();
         request.setEngineModelType(engineModelType);
-        request.setVoiceFormat(Integer.valueOf(voiceFormat));
+        request.setVoiceFormat(getVoiceFormat(fileName));
         request.setNeedVad(1);
         request.setVoiceId(sessionId);
 
         SpeechRecognizer speechRecognizer = null;
         try {
-            FileInputStream fileInputStream = new FileInputStream(fileName);
-            List<byte[]> speechData = ByteUtils.subToSmallBytes(fileInputStream, Integer.parseInt(speechLength));
+            List<byte[]> speechData = new ArrayList<>();
+
+            if (StringUtils.isNotBlank(fileName)) {
+                FileInputStream fileInputStream = new FileInputStream(fileName);
+                speechData = ByteUtils.subToSmallBytes(fileInputStream, Integer.parseInt(speechLength));
+            } else if (StringUtils.isNotBlank(base64Audio)) {
+                //将base64加密的音频数据字符串base64Audio解析为字节数组
+                byte[] bytes = Base64.getDecoder().decode(base64Audio);
+                speechData.add(bytes);
+            }
+
             Credential credential = new Credential(appId, secretId, secretKey);
             speechRecognizer = new SpeechRecognizer(proxy, credential, request, getSpeechRecognizerListener(sessionId
                     , sink));
             speechRecognizer.start();
             for (byte[] speechDatum : speechData) {
-                Thread.sleep(sleepTime);
                 //发送数据
                 speechRecognizer.write(speechDatum);
+                Thread.sleep(sleepTime);
             }
             speechRecognizer.stop();
         } catch (Exception e) {
@@ -102,6 +106,17 @@ public class TencentAsrService {
         }
     }
 
+    private Integer getVoiceFormat(String fileName) {
+        Integer voiceFormat = null;
+        if (StringUtils.isNotBlank(fileName)) {
+            //获取filename后缀
+            String suffixName = fileName.substring(fileName.lastIndexOf("."));
+            voiceFormat = VOICE_FORMAT_MAP.getOrDefault(suffixName, 12);
+        } else if (StringUtils.isNotBlank(base64AudioFormat)) {
+            voiceFormat = VOICE_FORMAT_MAP.getOrDefault("." + base64AudioFormat, 12);
+        }
+        return voiceFormat;
+    }
 
     private SpeechRecognizerListener getSpeechRecognizerListener(String sessionId, FluxSink<String> sink) {
         return new SpeechRecognizerListener() {

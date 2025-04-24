@@ -2,6 +2,7 @@ package run.mone.mcp.asr.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.asr.service.AliAsrService;
@@ -32,12 +33,21 @@ public class AsrFunction implements Function<Map<String, Object>, Flux<McpSchema
                           "enum": ["tencent","ali"],
                           "description": "asr供应商：腾讯,阿里"
                       },
+                      "base64Audio": {
+                          "type": "String",
+                          "description": "base64编码音频数据"
+                      },
                       "fileName": {
                           "type": "String",
                           "description": "需要进行语音识别音频文件"
+                      },
+                      "base64AudioFormat": {
+                          "type": "String",
+                          "enum": ["pcm","mp3","wav","speex","silk","opus","m4a"],
+                          "description": "音频编码，使用base64编码音频数据时必传"
                       }
                   },
-                  "required": ["type","fileName"]
+                  "required": ["type"]
               }
             """;
 
@@ -52,10 +62,22 @@ public class AsrFunction implements Function<Map<String, Object>, Flux<McpSchema
 
         String type = (String) arguments.get("type");
         String fileName = (String) arguments.get("fileName");
+        String base64Audio = (String) arguments.get("base64Audio");
+        String base64AudioFormat = (String) arguments.get("base64AudioFormat");
+
+        if(StringUtils.isBlank(fileName) && (StringUtils.isBlank(base64Audio) || StringUtils.isBlank(base64AudioFormat))){
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("Error: fileName and base64Audio can not be null")),
+                    true
+            ));
+        }
 
         switch (type) {
             case "tencent" -> {
-                return tencentAsrService.doAsr(fileName)
+                if(StringUtils.isNotBlank(base64AudioFormat)){
+                    tencentAsrService.setBase64AudioFormat(base64AudioFormat);
+                }
+                return tencentAsrService.doAsr(fileName, base64Audio)
                         .map(message -> new McpSchema.CallToolResult(
                                 List.of(new McpSchema.TextContent(message)),
                                 false
@@ -69,7 +91,10 @@ public class AsrFunction implements Function<Map<String, Object>, Flux<McpSchema
                         });
             }
             case "ali" -> {
-                return aliAsrService.doAsr(fileName)
+                if(StringUtils.isNotBlank(base64AudioFormat)){
+                    aliAsrService.setBase64AudioFormat(base64AudioFormat);
+                }
+                return aliAsrService.doAsr(fileName, base64Audio)
                         .map(message -> new McpSchema.CallToolResult(
                                 List.of(new McpSchema.TextContent(message)),
                                 false

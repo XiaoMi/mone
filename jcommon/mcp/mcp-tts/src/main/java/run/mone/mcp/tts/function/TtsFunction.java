@@ -42,6 +42,11 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
                          "enum": ["true","false"],
                          "description": "是否播放：ture是，false否"
                      },
+                     "isOutputBase64": {
+                         "type": "string",
+                         "enum": ["true","false"],
+                         "description": "是否输出base64编码音频数据：ture是，false否"
+                     },
                      "textString": {
                          "type": "string",
                          "description": "需要合成的文本字符串内容"
@@ -69,6 +74,8 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
         String isCreateAudioFile = arguments.get("isCreateAudioFile") != null ? (String) arguments.get(
                 "isCreateAudioFile") : "false";
         String isPlay = arguments.get("isPlay") != null ? (String) arguments.get("isPlay") : "false";
+        String isOutputBase64 = arguments.get("isOutputBase64") != null ? (String) arguments.get("isOutputBase64") :
+                "false";
         String textString = (String) arguments.get("textString");
 
         log.info("textString: {}", textString);
@@ -76,6 +83,7 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
             case "tencent" -> {
                 tencentTtsService.setIsCreateAudioFile(isCreateAudioFile);
                 tencentTtsService.setIsPlay(isPlay);
+                tencentTtsService.setIsOutputBase64(isOutputBase64);
                 return tencentTtsService.doTts(textString)
                         .map(message -> new McpSchema.CallToolResult(
                                 List.of(new McpSchema.TextContent(message)),
@@ -92,6 +100,7 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
             case "ali" -> {
                 aliTtsService.setIsCreateAudioFile(isCreateAudioFile);
                 aliTtsService.setIsPlay(isPlay);
+                aliTtsService.setIsOutputBase64(isOutputBase64);
                 return aliTtsService.doTts(textString)
                         .map(message -> new McpSchema.CallToolResult(
                                 List.of(new McpSchema.TextContent(message)),
