@@ -9,15 +9,23 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.CollectionUtils;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.roles.tool.*;
+import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.hive.roles.tool.AskTool;
+import run.mone.hive.roles.tool.AttemptCompletionTool;
+import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.ITool;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -36,6 +44,7 @@ public class HiveAutoConfigure {
     private int grpcPort;
 
 
+    //大模型
     @Bean
     @ConditionalOnMissingBean
     public LLM llm() {
@@ -44,6 +53,7 @@ public class HiveAutoConfigure {
         return new LLM(config);
     }
 
+    //传输协议
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
     GrpcServerTransport grpcServerTransport() {
@@ -52,32 +62,32 @@ public class HiveAutoConfigure {
         return transport;
     }
 
+    //注册类
     @Bean
     @ConditionalOnMissingBean
     public HiveManagerService hiveManagerService() {
         return new HiveManagerService();
     }
 
+    //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService) {
-        return new RoleService(llm,
-                Lists.newArrayList(
-                        new ChatTool(),
-                        new AskTool(),
-                        new AttemptCompletionTool(),
-                        new SpeechToTextTool(),
-                        new TextToSpeechTool()),
-                Lists.newArrayList(
-                        new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc(agentName), ChatFunction.getToolScheme())
-                ),
-                hiveManagerService);
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList) {
+        if (CollectionUtils.isEmpty(toolList)) {
+            toolList.addAll(Lists.newArrayList(
+                    new ChatTool(),
+                    new AskTool(),
+                    new AttemptCompletionTool()));
+        }
+        return new RoleService(llm, toolList, functionList.stream().map(it -> new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())).toList(), hiveManagerService);
     }
 
+
+    //Mcp Server
     @Bean
-    @ConditionalOnMissingBean
-    public ChatFunction chatFunction(RoleService roleService) {
-        return new ChatFunction(roleService);
+    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, List<McpFunction> functions, Map<String, String> meta) {
+        functions.forEach(it -> it.setRoleService(roleService));
+        return new McpServer(transport, functions, meta);
     }
 
 

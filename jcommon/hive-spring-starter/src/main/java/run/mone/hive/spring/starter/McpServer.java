@@ -1,43 +1,44 @@
-package run.mone.mcp.chat.server;
-
-import org.springframework.stereotype.Component;
+package run.mone.hive.spring.starter;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import run.mone.hive.mcp.function.ChatFunction;
-import run.mone.hive.mcp.server.McpServer;
+import lombok.RequiredArgsConstructor;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 
-@Component
-public class ChatMcpServer {
+import java.util.List;
+import java.util.Map;
+
+@RequiredArgsConstructor
+public class McpServer {
 
     private final ServerMcpTransport transport;
-    private final ChatFunction chatFunction;
+
     private McpSyncServer syncServer;
 
-    public ChatMcpServer(ServerMcpTransport transport, ChatFunction chatFunction) {
-        this.transport = transport;
-        this.chatFunction = chatFunction;
-    }
+    private final List<McpFunction> functionList;
+
+    private final Map<String, String> meta;
 
     public McpSyncServer start() {
-        McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("chat_mcp", "0.0.2")
+        McpSyncServer syncServer = run.mone.hive.mcp.server.McpServer.using(transport)
+                .serverInfo(meta.getOrDefault("mcp_server_name", "mcp_server"), meta.getOrDefault("mcp_server_version", "0.0.1"))
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
                         .build())
                 .sync();
 
-        var toolStreamRegistration = new ToolStreamRegistration(
-                new Tool(chatFunction.getName(), chatFunction.getDesc("minzai"), chatFunction.getToolScheme()), chatFunction
-        );
-
-        syncServer.addStreamTool(toolStreamRegistration);
+        functionList.forEach(function -> {
+            var toolStreamRegistration = new ToolStreamRegistration(
+                    new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+            );
+            syncServer.addStreamTool(toolStreamRegistration);
+        });
 
         return syncServer;
     }
