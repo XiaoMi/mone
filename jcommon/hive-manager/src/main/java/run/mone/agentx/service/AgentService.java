@@ -17,6 +17,7 @@ import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
 
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,18 +47,14 @@ public class AgentService {
         return agentRepository.findById(id);
     }
 
-    public Mono<Boolean> hasAccess(Long agentId, Long userId) {
+    public Mono<Boolean> hasAccess(Long agentId, String accessApp, String accessKey) {
         return agentRepository.findById(agentId)
-                .flatMap(agent -> {
-                    // User has access if:
-                    // 1. They created the agent
-                    // 2. The agent is public
-                    // 3. They have been granted specific access
-                    if (agent.getCreatedBy().equals(userId) || Boolean.TRUE.equals(agent.getIsPublic())) {
+                .<Boolean>flatMap(agent -> {
+                    if (Boolean.TRUE.equals(agent.getIsPublic())) {
                         return Mono.just(true);
                     }
-                    return agentAccessRepository.findByAgentIdAndUserId(agentId, userId)
-                            .map(access -> true)
+                    return agentAccessRepository.findByAgentIdAndAccessApp(agentId, accessApp)
+                            .map(access -> access.getAccessKey().equals(accessKey) && access.getStatus() == 1)
                             .defaultIfEmpty(false);
                 })
                 .defaultIfEmpty(false);
@@ -73,13 +70,8 @@ public class AgentService {
                 .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()))
                 .filter(agent -> agent.getState() == 1);
 
-        // Find agents the user has been granted access to
-        Flux<Agent> accessibleAgents = agentAccessRepository.findByUserId(userId)
-                .flatMap(access -> agentRepository.findById(access.getAgentId()))
-                .filter(agent -> agent.getState() == 1);
-
         // Combine all sources and remove duplicates
-        return Flux.concat(ownedAgents, publicAgents, accessibleAgents)
+        return Flux.concat(ownedAgents, publicAgents)
                 .distinct(Agent::getId);
     }
 
@@ -140,7 +132,7 @@ public class AgentService {
     }
 
     public Mono<Void> grantAccess(Long agentId, Long userId) {
-        return agentAccessRepository.findByAgentIdAndUserId(agentId, userId)
+        return agentAccessRepository.findByAgentIdAndAccessApp(agentId, String.valueOf(userId))
                 .flatMap(access -> {
                     access.setState(1);
                     access.setUtime(System.currentTimeMillis());
@@ -149,7 +141,8 @@ public class AgentService {
                 .switchIfEmpty(Mono.defer(() -> {
                     AgentAccess access = new AgentAccess();
                     access.setAgentId(agentId);
-                    access.setUserId(userId);
+                    access.setAccessApp(String.valueOf(userId));
+                    access.setAccessKey(UUID.randomUUID().toString().replace("-", ""));
                     access.setState(1);
                     access.setCtime(System.currentTimeMillis());
                     access.setUtime(System.currentTimeMillis());
@@ -159,7 +152,7 @@ public class AgentService {
     }
 
     public Mono<Void> revokeAccess(Long agentId, Long userId) {
-        return agentAccessRepository.findByAgentIdAndUserId(agentId, userId)
+        return agentAccessRepository.findByAgentIdAndAccessApp(agentId, String.valueOf(userId))
                 .flatMap(access -> {
                     access.setState(0);
                     access.setUtime(System.currentTimeMillis());
@@ -168,10 +161,10 @@ public class AgentService {
                 .then();
     }
 
-    public Flux<Long> getAuthorizedUserIds(Long agentId) {
+    public Flux<String> getAuthorizedUserIds(Long agentId) {
         return agentAccessRepository.findByAgentId(agentId)
                 .filter(access -> access.getState() == 1)
-                .map(AgentAccess::getUserId);
+                .map(AgentAccess::getAccessApp);
     }
 
     public Mono<AgentInstance> register(RegInfoDto regInfoDto) {
@@ -344,6 +337,23 @@ public class AgentService {
      */
     public Mono<AgentWithInstancesDTO> findAgentWithInstances(Long agentId) {
         return findById(agentId)
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
+    }
+
+    /**
+     * 获取所有Agent列表及其实例列表，无需鉴权
+     * @return 包含AgentInstance列表的Agent流
+     */
+    public Flux<AgentWithInstancesDTO> findAllAgentsWithInstances() {
+        return agentRepository.findAll()
+                .filter(agent -> agent.getState() == 1)
                 .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
                         .collectList()
                         .map(instances -> {
