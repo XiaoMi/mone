@@ -24,6 +24,8 @@ public class AgentAccessService {
     public Mono<AgentAccess> createAgentAccess(AgentAccess agentAccess) {
         agentAccess.setAccessKey(UUID.randomUUID().toString().replace("-", ""));
         agentAccess.setState(1); // 默认启用
+        agentAccess.setCtime(System.currentTimeMillis());
+        agentAccess.setUtime(System.currentTimeMillis());
         return agentAccessRepository.save(agentAccess);
     }
 
