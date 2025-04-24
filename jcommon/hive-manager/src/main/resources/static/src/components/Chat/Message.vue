@@ -77,9 +77,9 @@
           </div>
         </div> -->
         </div>
-        <el-popover placement="right" popper-class="sc-message--ops">
+        <el-popover placement="right-start" popper-class="sc-message--ops">
           <template #reference>
-            <div class="sc-message--ops-item" style="display: flex" v-if="message.meta.role !== 'USER'">
+            <div class="sc-message--ops-item" style="height: 20px;" v-if="message.meta.role !== 'USER'">
               <el-icon size="14" color="#FFF"><More /></el-icon>
             </div>
           </template>
@@ -279,7 +279,6 @@ export default {
     .sc-message--content {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
     }
   }
 }
@@ -296,6 +295,7 @@ export default {
 .sc-message--content {
   display: inline-flex;
   max-width: 100%;
+  align-items: flex-end;
 }
 
 .sc-message--user-content {
@@ -416,7 +416,11 @@ export default {
   display: flex;
   align-items: self-end;
   font-size: 12px;
+  color: #fff !important;
 
   cursor: pointer;
+}
+.sc-message--ops-item:hover {
+  color: #00f0ff !important;
 }
 </style>

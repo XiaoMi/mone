@@ -101,6 +101,7 @@ const startRecording = async () => {
       convertToBase64(audioBlob)
       audioChunks.value = []
     }
+    wsConnect();
 
     isRecording.value = true
     mediaRecorder.value.start()
@@ -111,11 +112,20 @@ const startRecording = async () => {
 }
 
 const wsConnect = () => {
-  socket.value = wsUtil("",() => {
-    socket.value?.send(JSON.stringify(sessionUpdate));
+  socket.value = wsUtil("/api/manager/ws/realtime/minimaxi",() => {
+    // socket.value?.send(JSON.stringify(sessionUpdate));
   },() => {
     socket.value = null;
-  },(data: any) => {
+  },async (data: any) => {
+    // if (response.data.data) {
+    //   const blob = new Blob([response.data.data], { type: 'audio/mpeg' })
+    //   const audioUrl = URL.createObjectURL(blob)
+    //   const audio = new Audio(audioUrl)
+    //   audio.onended = () => {
+    //     URL.revokeObjectURL(audioUrl)
+    //   }
+    //   await audio.play()
+    // }
     console.log('WebSocket connection closed:', data)
   });
 }
@@ -123,9 +133,11 @@ const wsConnect = () => {
 const convertToBase64 = async (blob: Blob) => {
   const reader = new FileReader()
   reader.onloadend = () => {
-    audioAppend.audio = reader.result as string;
+    audioAppend.audio = (reader.result as string).split('base64,')[1];
+    console.log(audioAppend.audio);
     socket.value?.send(JSON.stringify(audioAppend));
-    console.log('音频Base64:', reader.result)
+    socket.value?.send(JSON.stringify(audioCommit));
+    socket.value?.send(JSON.stringify({type: 'response.create'}));
   }
   reader.readAsDataURL(blob)
 }
@@ -135,9 +147,20 @@ onMounted(() => {
   recordingInterval = window.setInterval(() => {
     if (mediaRecorder.value && isRecording.value) {
       mediaRecorder.value.stop()
-      mediaRecorder.value.start()
+      // mediaRecorder.value.start()
+      if (mediaRecorder.value) {
+        mediaRecorder.value.stop()
+        const tracks = mediaRecorder.value.stream.getTracks()
+        tracks.forEach(track => track.stop())
+      }
+      clearInterval(recordingInterval)
     }
-  }, 5000)
+  }, 10000)
+
+  // setInterval(() => {
+  //     socket.value?.send(JSON.stringify(audioCommit));
+  //     socket.value?.send(JSON.stringify(audioClear));
+  //   }, 15000);
 })
 
 onUnmounted(() => {

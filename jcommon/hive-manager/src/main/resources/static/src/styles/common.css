@@ -307,4 +307,6 @@
 }
 .el-popper.sc-message--ops {
   padding: 4px;
+  border: none !important;
+  background-color: rgba(112, 66, 209) !important;
 }
