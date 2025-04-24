@@ -1,8 +1,12 @@
-package run.mone.mcp.chat.config;
+package run.mone.hive.spring.starter;
 
 import com.google.common.collect.Lists;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.configs.LLMConfig;
@@ -13,41 +17,28 @@ import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.roles.tool.AskTool;
-import run.mone.hive.roles.tool.AttemptCompletionTool;
-import run.mone.hive.roles.tool.ChatTool;
-import run.mone.hive.roles.tool.SpeechToTextTool;
-import run.mone.hive.roles.tool.TextToSpeechTool;
-import run.mone.mcp.chat.tool.DocumentProcessingTool;
-import run.mone.mcp.chat.tool.SystemInfoTool;
+import run.mone.hive.roles.tool.*;
 
-import javax.annotation.Resource;
-
-
+/**
+ * @author goodjava@qq.com
+ */
 @Configuration
-public class ChatMcpConfig {
+@Slf4j
+public class HiveAutoConfigure {
+
+    @Resource
+    private ApplicationContext ac;
+
+    @Value("${agentName:hive}")
+    private String agentName;
 
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
-    @Value("${mcp.agent.name:}")
-    private String agentName;
-
-    @Resource
-    private HiveManagerService hiveManagerService;
 
     @Bean
-    LLM llm() {
-//        LLMConfig config = LLMConfig.builder()
-//                .llmProvider(LLMProvider.CLAUDE_COMPANY)
-//                .url(getClaudeUrl())
-//                .version(getClaudeVersion())
-//                .maxTokens(getClaudeMaxToekns())
-//                .build();
-//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
-//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
-//        return new LLM(config);
-
+    @ConditionalOnMissingBean
+    public LLM llm() {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         return new LLM(config);
@@ -61,18 +52,22 @@ public class ChatMcpConfig {
         return transport;
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public HiveManagerService hiveManagerService() {
+        return new HiveManagerService();
+    }
 
     @Bean
-    RoleService roleService(LLM llm) {
+    @ConditionalOnMissingBean
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService) {
         return new RoleService(llm,
                 Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool(),
                         new SpeechToTextTool(),
-                        new TextToSpeechTool(),
-                        new DocumentProcessingTool(),
-                        new SystemInfoTool()),
+                        new TextToSpeechTool()),
                 Lists.newArrayList(
                         new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc(agentName), ChatFunction.getToolScheme())
                 ),
@@ -80,8 +75,10 @@ public class ChatMcpConfig {
     }
 
     @Bean
-    ChatFunction chatFunction(RoleService roleService) {
+    @ConditionalOnMissingBean
+    public ChatFunction chatFunction(RoleService roleService) {
         return new ChatFunction(roleService);
     }
+
 
 }
