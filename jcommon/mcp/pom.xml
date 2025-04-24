@@ -57,6 +57,9 @@
         <module>mcp-high-risk-element</module>
         <module>mcp-store-data</module>
         <module>mcp-knowledge-base</module>
+        <module>mcp-chat</module>
+        <module>mcp-tts</module>
+        <module>mcp-asr</module>
     </modules>
 
     <properties>

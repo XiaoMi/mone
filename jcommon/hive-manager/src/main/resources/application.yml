@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+mcp:
+  transport:
+    type: grpc
+  grpc:
+    port: 9286
+  hub:
+    path: /Users/dingpei/mcp_config/mcp.json
+
+spring:
+  profiles:
+    active: dev
+  r2dbc:
+    url: r2dbc:mysql://localhost:3306/mone_agentx
+    username: root
+    password: 123456
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+  web:
+    resources:
+      static-locations: classpath:/static/dist/
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+jwt:
+  secret: your-secret-key-here-must-be-at-least-32-characters
+  expiration: 86400000 # 24 hours in milliseconds
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    run.mone.agentx: DEBUG
+    org.springframework.r2dbc: DEBUG
+    io.r2dbc.mysql: DEBUG

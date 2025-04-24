@@ -13,6 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>zhipu</module>
+        <module>m78</module>
         <module>moonshot</module>
         <module>google</module>
         <module>aws</module>

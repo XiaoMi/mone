@@ -6,7 +6,6 @@ import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.McpClient;
@@ -21,7 +20,9 @@ import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -32,7 +33,9 @@ import java.util.stream.IntStream;
  */
 public class GrpcTest {
 
-    private String clientId = "abc";
+    private String clientId = "jinjiding";
+
+    private String token = "minzai";
 
 
     @SneakyThrows
@@ -58,7 +61,7 @@ public class GrpcTest {
         //发送消息给123
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
             Safe.run(() -> {
-                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", HiveConst.CLIENT_ID, clientId)));
+                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", Const.CLIENT_ID, clientId)));
             });
         }, 10, 10, TimeUnit.SECONDS);
 
@@ -68,11 +71,27 @@ public class GrpcTest {
 
     @SneakyThrows
     @Test
+    public void testClientConsumer() {
+        McpConfig.ins().setClientId(clientId);
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        transport.setClientAuth(clientId, token);
+
+        McpClient.using(transport).msgConsumer(msg -> {
+            System.out.println("----->" + msg);
+        }).sync();
+
+        System.in.read();
+    }
+
+
+    @SneakyThrows
+    @Test
     public void testNotification() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        client.setClientAuth(clientId, token);
         client.connect(a -> null).subscribe();
 
-        client.initialize(InitializeRequest.newBuilder().setClientId(clientId).build());
+        client.initialize(InitializeRequest.newBuilder().build());
         client.observer(new StreamObserver<>() {
             @Override
             public void onNext(StreamResponse streamResponse) {
@@ -88,7 +107,7 @@ public class GrpcTest {
             public void onCompleted() {
 
             }
-        }, "abc");
+        });
 
 
         System.in.read();
@@ -97,15 +116,15 @@ public class GrpcTest {
 
     @Test
     public void testClientTransport() {
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         //支持meta信息
-        client.setMetaData(HiveConst.CLIENT_ID, "zzy");
-        client.connect(a -> null).subscribe();
+        transport.setClientAuth(clientId, token);
+        transport.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         //tools/call
         McpSchema.JSONRPCRequest req = new McpSchema.JSONRPCRequest("", "a", UUID.randomUUID().toString(), r, "");
-        client.sendMessage(req).subscribe(System.out::println);
+        transport.sendMessage(req).subscribe(System.out::println);
 
     }
 
@@ -127,8 +146,9 @@ public class GrpcTest {
     @Test
     public void testClient() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
-        McpSyncClient mc = McpClient.using(client).sync();
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(transport).sync();
+        transport.setClientAuth(clientId, token);
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         McpSchema.CallToolResult res = mc.callTool(req);
         System.out.println(res);
@@ -147,8 +167,9 @@ public class GrpcTest {
 
     @Test
     public void testPing() {
-        McpConfig.ins().setClientId("1212");
+        McpConfig.ins().setClientId(clientId);
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        client.setClientAuth(clientId, token);
         McpSyncClient mc = McpClient.using(client).sync();
         IntStream.range(0, 100).forEach(it -> {
             try {
@@ -187,7 +208,7 @@ public class GrpcTest {
             public void onCompleted() {
 
             }
-        }, "abc");
+        });
 
         System.in.read();
     }
@@ -209,6 +230,25 @@ public class GrpcTest {
         McpSchema.InitializeResult res = mc.initialize();
         System.out.println(res);
         System.out.println("finish");
+    }
+
+    @Test
+    public void testMap() {
+        ConcurrentHashMap<String, Map> m = new ConcurrentHashMap<String, Map>();
+        m.compute("a", (k, v) -> {
+            if (v == null) {
+                return ImmutableMap.of("a", "b");
+            }
+            return v;
+        });
+
+        m.compute("a", (k, v) -> {
+            if (v != null) {
+                return ImmutableMap.of("k", "v");
+            }
+            return v;
+        });
+        System.out.println(m);
     }
 
 }

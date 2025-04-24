@@ -1,9 +1,35 @@
 package run.mone.hive.llm;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import okio.BufferedSource;
+import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.impl.minmax.MiniMax;
+import run.mone.hive.roles.Role;
+import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -15,40 +41,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.imageio.ImageIO;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
-import lombok.Data;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okio.BufferedSource;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import run.mone.hive.configs.LLMConfig;
-
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
-
-import run.mone.hive.roles.Role;
-import run.mone.hive.schema.AiMessage;
-import run.mone.hive.schema.Message;
 
 @Data
 @Slf4j
@@ -207,6 +201,7 @@ public class LLM {
             if ((this.llmProvider == LLMProvider.OPENROUTER
                     || this.llmProvider == LLMProvider.MOONSHOT
                     || this.llmProvider == LLMProvider.DOUBAO
+                    || this.llmProvider == LLMProvider.QWEN
             ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -282,6 +277,10 @@ public class LLM {
 
     // 文本转语音
     public byte[] generateSpeech(String text) throws IOException {
+        //使用minmax
+        if (this.llmProvider.equals(LLMProvider.MINIMAX)) {
+            return new MiniMax().generateAudio(this.llmProvider.getCustomModelEnv(), this.llmProvider.getEnvName(), text);
+        }
         return generateSpeech(getToken(), text, "wenrounvsheng", null);
     }
 
@@ -405,10 +404,28 @@ public class LLM {
         );
     }
 
+    public Flux<String> compoundMsgCall(LLMCompoundMsg msg, String systemPrompt) {
+        JsonObject req = getReq(this, msg);
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        return call(messages, systemPrompt);
+    }
+
     public Flux<String> call(List<AiMessage> messages) {
-        return Flux.create(sink -> chatCompletionStream(getToken(), messages, llmProvider.getDefaultModel(), (a, b) -> {
-        }, (a) -> {
-        }, "", sink));
+        return call(messages, "");
+    }
+
+    public Flux<String> call(List<AiMessage> messages, String systemPrompt) {
+        return Flux.create(sink -> chatCompletionStream(getToken(),
+                messages,
+                llmProvider.getDefaultModel(),
+                (a, b) -> {
+                },
+                (a) -> {
+                },
+                systemPrompt,
+                sink)
+        );
     }
 
 
@@ -471,7 +488,7 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
@@ -848,4 +865,269 @@ public class LLM {
         return urls[randomIndex].trim(); // 去除可能的空白字符
     }
 
+    /*********************************** 增强的调用方法系列 ***********************************/
+    public static final String ROLE_ASSISTANT = "assistant";
+    public static final String ROLE_USER = "user";
+    public static final String TYPE_TEXT = "text";
+    public static final String TYPE_IMAGE = "image";
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LLMCompoundMsg {
+        private String role; // 角色: assistant, user
+        private String content; // 文本内容
+        private List<LLMPart> parts; // 消息内容
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LLMPart {
+        String type; // 内容类型，text, image
+        String text; // 文本内容
+        String data; // 数据内容
+        String mimeType; // 媒体类型
+    }
+
+    /**
+     * 同步调用LLM，发送文本和图像输入，并返回结果
+     *
+     * @param msg       消息
+     * @param sysPrompt 系统提示
+     * @return 结果字符串
+     */
+    public String call(LLMPart msg, String sysPrompt) {
+        JsonObject req = getReq(this, msg);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = this.chatCompletion(messages, sysPrompt);
+        log.info("{}", result);
+        return result;
+
+    }
+
+    /**
+     * 同步调用LLM，发送文本和图像输入，并返回结果
+     *
+     * @param sysPrompt 系统提示
+     * @return 结果字符串
+     */
+    public String call(LLMCompoundMsg msg, String sysPrompt) {
+        JsonObject req = getReq(this, msg);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = this.chatCompletion(messages, sysPrompt);
+        log.info("{}", result);
+        return result;
+
+    }
+
+    /**
+     * 流式调用LLM，发送文本和图像输入，并返回结果
+     *
+     * @param role         角色实例
+     * @param systemPrompt 系统提示
+     * @return 结果字符串
+     */
+    public String callStream(Role role, LLMCompoundMsg msg, String systemPrompt) {
+        JsonObject req = getReq(this, msg);
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = this.syncChat(role, messages, systemPrompt);
+        log.info("{}", result);
+        return result;
+
+    }
+
+    // TODO: 2025/2/17 实现mcp的流式调用
+    public String callStreamWithMcp(LLM llm, LLMCompoundMsg msg, String systemPrompt) {
+
+        return null;
+    }
+
+    /**
+     * 获取LLM请求对象
+     *
+     * @param llm LLM实例
+     * @return 请求对象
+     */
+    public JsonObject getReq(LLM llm, LLMCompoundMsg msg) {
+        JsonObject req = new JsonObject();
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
+            JsonArray parts = new JsonArray();
+            JsonObject obj = new JsonObject();
+            obj.addProperty("text", msg.getContent());
+            parts.add(obj);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    JsonObject objImg = new JsonObject();
+                    objImg.addProperty("mime_type", part.getMimeType());
+                    objImg.addProperty("data", part.getData());
+                    obj2.add("inline_data", objImg);
+                    parts.add(obj2);
+                });
+            }
+
+            req.add("parts", parts);
+        }
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+            req.addProperty("role", "user");
+            JsonArray array = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", msg.getContent());
+            array.add(obj1);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    obj2.addProperty("type", "image_url");
+                    JsonObject imgObj = new JsonObject();
+                    if (!part.getData().startsWith("data:image")) {
+                        imgObj.addProperty("url", "data:image/jpeg;base64," + part.getData());
+                    } else {
+                        imgObj.addProperty("url", part.getData());
+                    }
+                    obj2.add("image_url", imgObj);
+                    array.add(obj2);
+                });
+            }
+            req.add("content", array);
+        }
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", "user");
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", msg.getContent());
+            contentJsons.add(obj1);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    obj2.addProperty("type", "image");
+                    JsonObject source = new JsonObject();
+                    source.addProperty("type", "base64");
+                    source.addProperty("media_type", part.getMimeType());
+                    source.addProperty("data", part.getData());
+                    obj2.add("source", source);
+                    contentJsons.add(obj2);
+                });
+            }
+            req.add("content", contentJsons);
+        }
+        return req;
+    }
+
+    private JsonObject getReq(LLM llm, LLMPart llmPart) {
+        JsonObject req = new JsonObject();
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
+            JsonArray parts = new JsonArray();
+            JsonObject obj = new JsonObject();
+            obj.addProperty("text", llmPart.getText());
+            parts.add(obj);
+
+            if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
+                JsonObject obj2 = new JsonObject();
+                JsonObject objImg = new JsonObject();
+                objImg.addProperty("mime_type", llmPart.getMimeType());
+                objImg.addProperty("data", llmPart.getData());
+                obj2.add("inline_data", objImg);
+                parts.add(obj2);
+            }
+
+            req.add("parts", parts);
+        }
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+            req.addProperty("role", "user");
+            JsonArray array = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", TYPE_TEXT);
+            obj1.addProperty("text", llmPart.getText());
+            array.add(obj1);
+
+            if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image_url");
+                JsonObject img = new JsonObject();
+                img.addProperty("url", "data:image/jpeg;base64," + llmPart.getData());
+                obj2.add("image_url", img);
+                array.add(obj2);
+            }
+
+            req.add("content", array);
+        }
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", "user");
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", TYPE_TEXT);
+            obj1.addProperty("text", llmPart.getText());
+            contentJsons.add(obj1);
+
+            if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image");
+                JsonObject source = new JsonObject();
+                source.addProperty("type", "base64");
+                source.addProperty("media_type", llmPart.getMimeType());
+                source.addProperty("data", llmPart.getData());
+                obj2.add("source", source);
+                contentJsons.add(obj2);
+            }
+            req.add("content", contentJsons);
+        }
+
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENAICOMPATIBLE) {
+
+        }
+        return req;
+    }
+
+    private JsonObject getGeminiJsonObject(LLMPart p) {
+        JsonObject part = new JsonObject();
+        if (TYPE_IMAGE.equals(p.getType())) {
+            JsonObject inline = new JsonObject();
+            inline.addProperty("mime_type", p.getMimeType());
+            inline.addProperty("data", p.getData());
+            part.add("inline_data", inline);
+        } else {
+            part.addProperty("text", p.getText());
+        }
+        return part;
+    }
+
+    private JsonObject getOpenaiJsonObject(LLMPart p) {
+        JsonObject part = new JsonObject();
+        if (TYPE_IMAGE.equals(p.getType())) {
+            part.addProperty("type", "image_url");
+            JsonObject inline = new JsonObject();
+            inline.addProperty("url", String.format("data:%s;base64,%s", p.getMimeType(), p.getData()));
+            part.add("image_url", inline);
+        } else {
+            part.addProperty("type", "text");
+            part.addProperty("text", p.getText());
+        }
+        return part;
+    }
 }

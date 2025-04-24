@@ -99,7 +99,6 @@ public class McpHub {
             updateServerConnections(config);
         } catch (IOException e) {
             log.error("Failed to initialize MCP servers: ", e);
-            System.err.println("Failed to initialize MCP servers: " + e.getMessage());
         }
     }
 
@@ -214,7 +213,7 @@ public class McpHub {
         }
 
         McpSyncClient client = McpClient.using(transport)
-                .requestTimeout(Duration.ofSeconds(15))
+                .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msgConsumer)
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)

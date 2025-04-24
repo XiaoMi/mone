@@ -119,7 +119,7 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
-        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
+//        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
@@ -134,10 +134,12 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
 //        config.setModel("deepseek-r1");
-
+//        config.setLlmProvider(LLMProvider.GROK);
 
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
+
+        config.setLlmProvider(LLMProvider.MINIMAX);
 
         //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -147,6 +149,10 @@ class LLMTest {
         //openrouter 也需要使用代理
         if (config.getLlmProvider() == LLMProvider.OPENROUTER) {
             config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        }
+        //grok 也需要使用代理
+        if (config.getLlmProvider() == LLMProvider.GROK) {
+            config.setUrl(System.getenv("X_AI_GATEWAY"));
         }
 
         llm = new LLM(config);
@@ -169,9 +175,8 @@ class LLMTest {
     @Test
     public void test99() {
         String prompt = """
-                hi 
+                陈毅最好的3首诗词是? 给我完整版本 thx
                 """;
-
         String res = llm.chat(prompt);
         System.out.println(res);
     }
@@ -195,15 +200,15 @@ class LLMTest {
         JsonArray array = new JsonArray();
 
         JsonObject obj1 = new JsonObject();
-        obj1.addProperty("type","text");
+        obj1.addProperty("type", "text");
         obj1.addProperty("text", prompt);
         array.add(obj1);
 
         JsonObject obj2 = new JsonObject();
-        obj2.addProperty("type","image_url");
+        obj2.addProperty("type", "image_url");
         JsonObject img = new JsonObject();
-        img.addProperty("url","data:image/png;base64,"+llm.imageToBase64("/tmp/abcd.png", "png"));
-        obj2.add("image_url",img);
+        img.addProperty("url", "data:image/png;base64," + llm.imageToBase64("/tmp/abcd.png", "png"));
+        obj2.add("image_url", img);
         array.add(obj2);
 
         req.add("content", array);
@@ -310,21 +315,21 @@ class LLMTest {
             parts.add(obj2);
             req.add("parts", parts);
         }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+        // test grok-3-beta. The model does not support image input but some images are present in the request.
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT || llm.getConfig().getLlmProvider() == LLMProvider.GROK) {
             req.addProperty("role", "user");
             JsonArray array = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
-            obj1.addProperty("type","text");
-            obj1.addProperty("text",text);
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", text);
             array.add(obj1);
 
             JsonObject obj2 = new JsonObject();
-            obj2.addProperty("type","image_url");
+            obj2.addProperty("type", "image_url");
             JsonObject img = new JsonObject();
-            img.addProperty("url","data:image/jpeg;base64,"+llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
-            obj2.add("image_url",img);
+            img.addProperty("url", "data:image/jpeg;base64," + llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
+            obj2.add("image_url", img);
             array.add(obj2);
 
             req.add("content", array);
@@ -687,7 +692,7 @@ class LLMTest {
                     }
                 },
                 line -> log.info("Received line: {}", line)
-        , "");
+                , "");
 
         latch.await();
 
