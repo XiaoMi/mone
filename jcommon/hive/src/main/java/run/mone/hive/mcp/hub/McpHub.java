@@ -49,7 +49,7 @@ public class McpHub {
         this.settingsPath = settingsPath;
         this.msgConsumer = msgConsumer;
 
-        if (skipFile) {
+        if (!skipFile) {
             this.watchService = FileSystems.getDefault().newWatchService();
             initializeWatcher();
             initializeMcpServers();
