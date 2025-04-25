@@ -25,6 +25,8 @@ import run.mone.hive.roles.tool.ITool;
 import java.util.List;
 import java.util.Map;
 
+import static run.mone.hive.llm.ClaudeProxy.*;
+
 /**
  * @author goodjava@qq.com
  */
@@ -35,10 +37,24 @@ public class HiveAutoConfigure {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
+    @Value("${mcp.llm:claude35}")
+    private String llmType;
+
+
     //大模型
     @Bean
     @ConditionalOnMissingBean
     public LLM llm() {
+        if ("claude35".equals(llmType)) {
+            LLMConfig config = LLMConfig.builder()
+                    .llmProvider(LLMProvider.CLAUDE_COMPANY)
+                    .url(getClaudeUrl())
+                    .version(getClaudeVersion())
+                    .maxTokens(getClaudeMaxToekns())
+                    .build();
+            return new LLM(config);
+        }
+
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         return new LLM(config);
