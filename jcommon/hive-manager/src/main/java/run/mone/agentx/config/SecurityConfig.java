@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .antMatchers("/page/**").permitAll()
                 .antMatchers("/static/**").permitAll()
                 .antMatchers("/ws/agent/chat/**").permitAll()
+                .antMatchers("/ws/realtime/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)

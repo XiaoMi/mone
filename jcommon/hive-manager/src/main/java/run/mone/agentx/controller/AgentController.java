@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
@@ -40,16 +41,27 @@ public class AgentController {
         return agentService.findAccessibleAgentsWithInstances(user.getId()).collectList().map(ApiResponse::success);
     }
 
+    @GetMapping("/access/{id}")
+    public Mono<ApiResponse<AgentWithInstancesDTO>> getAccessAgent(
+            @PathVariable Long id,
+            @RequestParam String accessApp,
+            @RequestParam String accessKey) {
+        return agentService.hasAccess(id, accessApp, accessKey)
+                .flatMap(hasAccess -> {
+                    if (hasAccess) {
+                        return agentService.findAgentWithInstances(id)
+                                .map(ApiResponse::success);
+                    }
+                    return Mono.just(ApiResponse.<AgentWithInstancesDTO>error(403, "Access denied"));
+                });
+    }
+
     @GetMapping("/{id}")
-    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
-        return agentService.hasAccess(id, user.getId())
-            .flatMap(hasAccess -> {
-                if (Boolean.TRUE.equals(hasAccess)) {
-                    return agentService.findAgentWithInstances(id).map(ApiResponse::success);
-                } else {
-                    return Mono.just(ApiResponse.<AgentWithInstancesDTO>error(403, "Unauthorized access to agent"));
-                }
-            });
+    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@PathVariable Long id) {
+
+        return agentService.findAgentWithInstances(id)
+                .map(ApiResponse::success)
+                .defaultIfEmpty(ApiResponse.error(404, "Agent not found"));
     }
 
     @PutMapping("/{id}")
@@ -87,5 +99,14 @@ public class AgentController {
     @PostMapping("/health")
     public Mono<ApiResponse<Void>> heartbeat(@RequestBody HealthInfo healthInfo) {
         return agentService.heartbeat(healthInfo).thenReturn(ApiResponse.success(null));
+    }
+
+    @GetMapping("/{id}/check")
+    public Mono<ApiResponse<Boolean>> checkAccess(
+            @PathVariable Long id,
+            @RequestParam String accessApp,
+            @RequestParam String accessKey) {
+        return agentService.hasAccess(id, accessApp, accessKey)
+                .map(ApiResponse::success);
     }
 }
