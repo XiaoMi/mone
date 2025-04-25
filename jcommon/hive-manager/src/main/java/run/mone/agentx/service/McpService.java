@@ -59,7 +59,7 @@ public class McpService {
         //这个需要那个用户就传他的id (需要从前端拿过来) //TODO
         String clientId = "ceshi";
 
-        String groupKey = Joiner.on("_").join(instance.getIp(), instance.getPort(), clientId);
+        String groupKey = Joiner.on(":").join(getAgentKey(agentDto.getAgent()), instance.getIp(), instance.getPort());
 
         try {
             lock.lock();
@@ -77,6 +77,8 @@ public class McpService {
                 mcpHub.connectToServer(groupKey, parameters);
                 McpHubHolder.put(groupKey, mcpHub);
             }
+        } catch (Exception e) {
+            log.error("callMcp error.", e);
         } finally {
             lock.unlock();
         }
@@ -87,7 +89,9 @@ public class McpService {
 
 
     private String getAgentKey(Agent agent) {
-        return agent.getName() + ":" + agent.getGroup() + ":" + agent.getVersion();
+        return agent.getName() + ":"
+                + (agent.getGroup() == null ? "" :  agent.getGroup()) + ":"
+                + (agent.getVersion() == null ? "" : agent.getVersion());
     }
 
 
