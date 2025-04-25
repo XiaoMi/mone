@@ -127,7 +127,7 @@ public class ReactorRole extends Role {
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
         super(name);
         this.group = group;
         this.version = version;
@@ -144,7 +144,7 @@ public class ReactorRole extends Role {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
 
         //注册到agent注册中心
-        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
+        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
@@ -152,10 +152,14 @@ public class ReactorRole extends Role {
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
-                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(NetUtils.getLocalHost()).port(grpcPort).build());
+                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
                 log.info("Scheduled task executed at: {}", System.currentTimeMillis());
             });
         }, 0, 20, TimeUnit.SECONDS);
+    }
+
+    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+        this(name, group, version, port, countDownLatch, llm, tools, mcpTools, NetUtils.getLocalHost());
     }
 
     //think -> observe -> act
