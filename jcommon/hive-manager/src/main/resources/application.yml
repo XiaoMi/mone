@@ -13,9 +13,9 @@ spring:
   profiles:
     active: dev
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/mone_agentx
-    username: root
-    password: 123456
+    url: r2dbc:mysql://gaea.test.mysql02.b2c.srv:13406/mone_agentx
+    username: mone_agentx_wn
+    password: fUXUE-Xl7_A2lJNZ1owIl712xuZSfvcj
   sql:
     init:
       mode: always
