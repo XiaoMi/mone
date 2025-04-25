@@ -135,7 +135,7 @@ public class TencentTtsService {
                 }
 
                 if("true".equals(isOutputBase64)){
-                    sink.next(Base64.getEncoder().encodeToString(audio));
+                        sink.next("hiveVoiceBase64-" + Base64.getEncoder().encodeToString(audio));
                 }else{
                     sink.next("0");
                 }

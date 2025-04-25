@@ -35,17 +35,17 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
                      "isCreateAudioFile": {
                          "type": "string",
                          "enum": ["true","false"],
-                         "description": "是否创建音频文件：ture是，false否"
+                         "description": "是否创建音频文件：ture是，false否，默认为false"
                      },
                      "isPlay": {
                          "type": "string",
                          "enum": ["true","false"],
-                         "description": "是否播放：ture是，false否"
+                         "description": "是否播放：ture是，false否，默认为false"
                      },
                      "isOutputBase64": {
                          "type": "string",
                          "enum": ["true","false"],
-                         "description": "是否输出base64编码音频数据：ture是，false否"
+                         "description": "是否输出base64编码音频数据：ture是，false否，默认为ture"
                      },
                      "textString": {
                          "type": "string",
@@ -53,7 +53,6 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
                      }
                  },
                  "required": [
-                     "type",
                      "textString"
                  ]
              }
@@ -70,12 +69,12 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
 
-        String type = (String) arguments.get("type");
+        String type = (String) arguments.getOrDefault("type", "tencent");
         String isCreateAudioFile = arguments.get("isCreateAudioFile") != null ? (String) arguments.get(
                 "isCreateAudioFile") : "false";
         String isPlay = arguments.get("isPlay") != null ? (String) arguments.get("isPlay") : "false";
         String isOutputBase64 = arguments.get("isOutputBase64") != null ? (String) arguments.get("isOutputBase64") :
-                "false";
+                "true";
         String textString = (String) arguments.get("textString");
 
         log.info("textString: {}", textString);
