@@ -1,12 +1,10 @@
 package run.mone.hive.spring.starter;
 
 import com.google.common.collect.Lists;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
@@ -34,15 +32,8 @@ import java.util.Map;
 @Slf4j
 public class HiveAutoConfigure {
 
-    @Resource
-    private ApplicationContext ac;
-
-    @Value("${agentName:hive}")
-    private String agentName;
-
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
-
 
     //大模型
     @Bean
@@ -79,7 +70,13 @@ public class HiveAutoConfigure {
                     new AskTool(),
                     new AttemptCompletionTool()));
         }
-        return new RoleService(llm, toolList, functionList.stream().map(it -> new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())).toList(), hiveManagerService);
+        return new RoleService(llm,
+                toolList,
+                functionList.stream().map(it ->
+                        new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
+                ).toList(),
+                hiveManagerService
+        );
     }
 
 
