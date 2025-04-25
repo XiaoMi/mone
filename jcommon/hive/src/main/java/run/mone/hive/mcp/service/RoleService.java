@@ -17,6 +17,7 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
+import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
@@ -60,6 +61,11 @@ public class RoleService {
     @Getter
     private String agentversion;
 
+    @Value("${mcp.agent.ip:}")
+    @Setter
+    @Getter
+    private String agentIp;
+
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
     @Value("${mcp.grpc.port:9999}")
@@ -77,32 +83,32 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList) {
-            @Override
-            public void reg(RegInfo info) {
-                // 直接传递传入的RegInfo对象
-                hiveManagerService.register(info);
-            }
+        String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
+        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList, ip) {
+                @Override
+                public void reg(RegInfo info) {
+                    // 直接传递传入的RegInfo对象
+                    hiveManagerService.register(info);
+                }
 
-            @Override
-            public void unreg(RegInfo regInfo) {
-                // 直接传递传入的RegInfo对象
-                hiveManagerService.unregister(regInfo);
-            }
+                @Override
+                public void unreg(RegInfo regInfo) {
+                    // 直接传递传入的RegInfo对象
+                    hiveManagerService.unregister(regInfo);
+                }
 
-            @Override
-            public void health(HealthInfo healthInfo) {
-                // 直接传递传入的HealthInfo对象
-                hiveManagerService.heartbeat(healthInfo);
-            }
-        };
+                @Override
+                public void health(HealthInfo healthInfo) {
+                    // 直接传递传入的HealthInfo对象
+                    hiveManagerService.heartbeat(healthInfo);
+                }
+            };
         role.setOwner(owner);
         role.setClientId(clientId);
         //一直执行不会停下来
         role.run();
         return role;
     }
-
 
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
