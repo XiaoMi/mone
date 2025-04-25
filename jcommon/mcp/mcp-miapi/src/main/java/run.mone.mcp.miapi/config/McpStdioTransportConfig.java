@@ -15,6 +15,7 @@ import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.*;
+import tool.ApiInfoTool;
 
 import javax.annotation.Resource;
 
@@ -49,11 +50,7 @@ class McpStdioTransportConfig {
     RoleService roleService(LLM llm) {
         return new RoleService(llm,
                 Lists.newArrayList(
-                        new ChatTool(),
-                        new AskTool(),
-                        new AttemptCompletionTool(),
-                        new SpeechToTextTool(),
-                        new TextToSpeechTool()),
+                        new ApiInfoTool()),
                 Lists.newArrayList(
                         new McpSchema.Tool(ChatFunction.getName(), ChatFunction.getDesc(agentName), ChatFunction.getToolScheme())
                 ),

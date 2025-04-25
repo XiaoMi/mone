@@ -2,7 +2,7 @@
     <el-drawer
       v-model="visible"
       direction="rtl"
-      size="60%"
+      size="70%"
       :title="agentDetail?.name"
       :destroy-on-close="true"
       class="agent-detail-drawer"
@@ -46,7 +46,7 @@
             <div class="label">更新时间</div>
             <div class="value">{{ formatDate(agentDetail.utime) }}</div>
           </div>
-          
+          <AccessList :agent-id="agent.id" />
           <!-- 添加技能列表组件 -->
           <div class="skills-section">
             <SkillList :agent-id="agent.id" />
@@ -61,7 +61,7 @@
   import type { Agent } from '@/api/agent'
   import { getAgentDetail } from '@/api/agent'
   import SkillList from './SkillList.vue'
-  
+  import AccessList from './AccessList.vue'
   const props = defineProps<{
     modelValue: boolean
     agent: object
