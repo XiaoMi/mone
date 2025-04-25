@@ -14,6 +14,7 @@ import reactor.core.publisher.FluxSink;
 import javax.sound.sampled.LineUnavailableException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.UUID;
 
 /**
@@ -31,6 +32,7 @@ public class TencentTtsService {
 
     private String isCreateAudioFile;
     private String isPlay;
+    private String isOutputBase64;
     private byte[] audio;
     private static Gson gson = new Gson();
     private static String fileName;
@@ -50,7 +52,7 @@ public class TencentTtsService {
 
         return Flux.create(sink -> {
             try {
-                sink.next("腾讯语音合成" + codec + "音频二进制流结果为：");
+                sink.next("腾讯语音合成" + codec + "音频数据流结果为：");
                 doTts(textString, sink);
                 sink.complete();
             } catch (InterruptedException e) {
@@ -68,7 +70,7 @@ public class TencentTtsService {
         PlaybackRunnable playbackRunnable = new PlaybackRunnable(sampleRate);
         Thread playbackThread = new Thread(playbackRunnable);
 
-        if ("true".equals(isPlay)) {
+        if ("true".equals(isPlay) && !"mp3".equals(codec)) {
             try {
                 playbackRunnable.prepare();
                 log.info("Tencent TTS play ,prepare");
@@ -131,7 +133,12 @@ public class TencentTtsService {
                         Ttsutils.saveResponseToFile(audio, "./" + fileName + ".mp3");
                     }
                 }
-                sink.next("0");
+
+                if("true".equals(isOutputBase64)){
+                    sink.next(Base64.getEncoder().encodeToString(audio));
+                }else{
+                    sink.next("0");
+                }
                 audioPlayer.stop();
                 log.info("tencentTts onSynthesisEnd, audio length:" + audio.length);
             }
@@ -152,7 +159,9 @@ public class TencentTtsService {
                 }
                 audio = ByteUtils.concat(audio, data);
                 audioPlayer.put(ByteBuffer.wrap(data));
-                sink.next(Arrays.toString(data).replace("[", "").replace("]", ", "));
+                if("false".equals(isOutputBase64)){
+                    sink.next(Arrays.toString(data).replace("[", "").replace("]", ", "));
+                }
             }
 
             @Override

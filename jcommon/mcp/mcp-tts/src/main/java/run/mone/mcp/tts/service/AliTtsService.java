@@ -18,10 +18,7 @@ import reactor.core.publisher.FluxSink;
 import javax.sound.sampled.LineUnavailableException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author 龚文
@@ -41,6 +38,7 @@ public class AliTtsService {
 
     private String isCreateAudioFile;
     private String isPlay;
+    private String isOutputBase64;
     private byte[] audio;
     private static Gson gson = new Gson();
     private static String fileName;
@@ -77,7 +75,7 @@ public class AliTtsService {
 
         return Flux.create(sink -> {
             try {
-                sink.next("腾讯语音合成" + outputFormat + "音频二进制流结果为：");
+                sink.next("阿里语音合成" + outputFormat + "音频二进制流结果为：");
                 doTts(text, sink);
                 sink.complete();
             } catch (InterruptedException e) {
@@ -95,7 +93,7 @@ public class AliTtsService {
         PlaybackRunnable playbackRunnable = new PlaybackRunnable(sampleRate.value);
         Thread playbackThread = new Thread(playbackRunnable);
 
-        if ("true".equals(isPlay)) {
+        if ("true".equals(isPlay) && !OutputFormatEnum.MP3.equals(outputFormat)) {
             try {
                 playbackRunnable.prepare();
                 log.info("Ali TTS play ,prepare");
@@ -189,7 +187,11 @@ public class AliTtsService {
                         Ttsutils.saveResponseToFile(audio, "./" + fileName + ".mp3");
                     }
                 }
-                sink.next("0");
+                if("true".equals(isOutputBase64)){
+                    sink.next(Base64.getEncoder().encodeToString(audio));
+                }else{
+                    sink.next("0");
+                }
                 audioPlayer.stop();
                 log.info("Ali Synthesis Complete, audio length:" + audio.length);
             }
@@ -202,9 +204,18 @@ public class AliTtsService {
                 if (data.length <= 1) {
                     return;
                 }
+                //若data不是偶数，则在末尾补一个0
+                if (data.length % 2 != 0) {
+                    byte[] newData = new byte[data.length + 1];
+                    System.arraycopy(data, 0, newData, 0, data.length);
+                    newData[newData.length - 1] = 0;
+                    data = newData;
+                }
                 audio = ByteUtils.concat(audio, data);
                 audioPlayer.put(ByteBuffer.wrap(data));
-                sink.next(Arrays.toString(data).replace("[", "").replace("]", ", "));
+                if("false".equals(isOutputBase64)){
+                    sink.next(Arrays.toString(data).replace("[", "").replace("]", ", "));
+                }
             }
 
             //收到语音合成的增量音频时间戳
