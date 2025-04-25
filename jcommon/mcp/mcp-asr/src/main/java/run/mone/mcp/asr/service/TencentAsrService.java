@@ -107,7 +107,6 @@ public class TencentAsrService {
     }
 
     private Integer getVoiceFormat(String fileName) {
-        Integer voiceFormat = null;
         if (StringUtils.isNotBlank(fileName)) {
             //获取filename后缀
             String suffixName = fileName.substring(fileName.lastIndexOf("."));
