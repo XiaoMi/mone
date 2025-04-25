@@ -31,8 +31,10 @@ public class AgentAccessController {
     private final AgentAccessService agentAccessService;
 
     @GetMapping("/list/{agentId}")
-    public Flux<AgentAccess> getAccessList(@PathVariable Long agentId) {
-        return agentAccessService.getAgentAccessList(agentId);
+    public Mono<ApiResponse<List<AgentAccess>>> getAccessList(@PathVariable Long agentId) {
+        return agentAccessService.getAgentAccessList(agentId)
+                .collectList()
+                .map(ApiResponse::success);
     }
 
     @PostMapping("/create")
