@@ -30,36 +30,36 @@
             </div>
           </div>
           
-          <div v-for="agent in agentList" 
-               :key="agent.id" 
+          <div v-for="item in agentList" 
+               :key="item.agent.id" 
                class="agent-card"
-               @click.stop="handleChat(agent)">
+               @click.stop="handleChat(item)">
             <div class="agent-info">
               <div class="agent-avatar">
-                <img v-if="agent.image" 
-                     :src="`data:image/jpeg;base64,${agent.image}`" 
+                <img v-if="item.agent.image" 
+                     :src="`data:image/jpeg;base64,${item.agent.image}`" 
                      class="agent-logo" 
                      alt="agent logo"/>
                 <div v-else class="agent-logo-placeholder">
-                  {{ agent.name.charAt(0).toUpperCase() }}
+                  {{ item.agent.name.charAt(0).toUpperCase() }}
                 </div>
               </div>
               <div class="agent-details">
-                <h4 @click.stop="handleShowDetail(agent)">{{agent.name}}</h4>
-                <p>{{agent.description}}</p>
+                <h4 @click.stop="handleShowDetail(item.agent)">{{item.agent.name}}</h4>
+                <p>{{item.agent.description}}</p>
               </div>
             </div>
 
             <div class="agent-status">
               <div class="visibility">
-                <span class="badge" :class="{'public': agent.isPublic}">
-                  {{agent.isPublic ? '公开' : '私有'}}
+                <span class="badge" :class="{'public': item.agent.isPublic}">
+                  {{item.agent.isPublic ? '公开' : '私有'}}
                 </span>
               </div>
             </div>
 
             <div class="status" @click.stop>
-              <template v-if="agent.instances?.length > 0">
+              <template v-if="item.instances?.length > 0">
                 <el-popover
                   placement="right"
                   trigger="hover"
@@ -68,28 +68,28 @@
                   <template #reference>
                     <el-tag type="success"><div class="status-tag">runing&nbsp;<el-icon><InfoFilled /></el-icon></div></el-tag>
                   </template>
-                  <Instances :agent="agent" />
+                  <Instances :instances="item.instances" />
                 </el-popover>
               </template>
               <el-tag v-else type="info">stop</el-tag>
             </div>
 
             <div class="group">
-              <time>{{agent.group}}</time><br/>
-              <time>{{agent.version}}</time>
+              <time>{{item.agent.group}}</time><br/>
+              <time>{{item.agent.version}}</time>
             </div>
 
             <div class="activity">
               <span>创建时间：</span>
-              <time>{{formatDate(agent.ctime)}}</time><br/>
+              <time>{{formatDate(item.agent.ctime)}}</time><br/>
               <span>更新时间：</span>
-              <time>{{formatDate(agent.utime)}}</time>
+              <time>{{formatDate(item.agent.utime)}}</time>
             </div>
 
             <div class="control-buttons">
-              <button class="edit-btn" @click.stop="handleEdit(agent)">编辑</button>
-              <button class="delete-btn" @click.stop="handleDelete(agent)">删除</button>
-              <button class="task-btn" @click.stop="handleTask(agent)">任务</button>
+              <button class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
+              <button class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
+              <button class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
             </div>
           </div>
         </TransitionGroup>
@@ -165,7 +165,10 @@ import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { v4 as uuidv4 } from "uuid";
 import Instances from '@/components/Instances.vue'
-const agentList = ref<Agent[]>([])
+const agentList = ref<{
+  agent: Agent,
+  instances: Array<any>
+}[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const dialogType = ref<'create' | 'edit'>('create')
@@ -305,11 +308,15 @@ const handleTask = (agent: Agent) => {
   })
 }
 
-const handleChat = (agent: Agent) => {
-  router.push({
-    path: '/chat',
-    query: { serverAgentId: agent.id, conversationId: uuidv4() }
-  })
+const handleChat = (item: any) => {
+  if(item.instances?.length > 0) {  
+    router.push({
+      path: '/chat',
+      query: { serverAgentId: item.agent.id, conversationId: uuidv4() }
+    })
+  } else {
+    ElMessage.warning('Agent未启动')
+  }
 }
 
 const beforeImageUpload = (file: File) => {
@@ -428,6 +435,11 @@ onMounted(() => {
     opacity: 0.6;
     left: 100%;
   }
+}
+
+.table-container {
+  height: calc(100vh - 140px);
+  overflow-y: auto;
 }
 
 .dashboard-header h1 {

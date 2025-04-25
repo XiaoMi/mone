@@ -1,6 +1,6 @@
 <template>
   <div class="recorder" @click="handleStartOrStop">
-    <el-icon :color="recording ? 'red' : ''" :size="20">
+    <el-icon :color="recording ? 'red' : 'white'" :size="20">
       <Mic />
     </el-icon>
   </div>

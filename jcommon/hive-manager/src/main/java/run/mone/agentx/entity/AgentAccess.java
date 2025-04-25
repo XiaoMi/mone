@@ -10,5 +10,8 @@ import lombok.EqualsAndHashCode;
 @Table("t_agent_access")
 public class AgentAccess extends BaseEntity {
     private Long agentId;
-    private Long userId;
+    private String accessApp;
+    private String accessKey;
+    private String description;
+    // 0: 禁用, 1: 启用
 } 

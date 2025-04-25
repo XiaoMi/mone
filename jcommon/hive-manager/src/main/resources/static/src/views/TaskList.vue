@@ -399,6 +399,12 @@ onMounted(() => {
   }
 }
 
+
+.table-container {
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
   font-size: 2rem;

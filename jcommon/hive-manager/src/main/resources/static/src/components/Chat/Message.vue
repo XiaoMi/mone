@@ -77,7 +77,42 @@
           </div>
         </div> -->
         </div>
-        <div v-if="message.data.sound">
+        <el-popover placement="right" popper-class="sc-message--ops">
+          <template #reference>
+            <div class="sc-message--ops-item" style="display: flex" v-if="message.meta.role !== 'USER'">
+              <el-icon size="14" color="#FFF"><More /></el-icon>
+            </div>
+          </template>
+          <div>
+            <div
+              v-if="message.type === 'md' || message.type === 'hello'"
+              class="sc-message--ops-item"
+              @click="handlePlay(message.data.text)"
+            >
+              <span style="margin-left: 4px">播放</span>
+            </div>
+            <!-- <div
+              class="sc-message--ops-item"
+              @click="onMessageCmd('delete', message)"
+            >
+              <el-icon :size="14" color="#FFF">
+                <font-awesome-icon icon="fa-solid fa-trash" />
+              </el-icon>
+              <span style="margin-left: 4px">删除</span>
+            </div>
+            <div
+              v-if="message.type === 'audio'"
+              class="sc-message--ops-item"
+              @click="onMessageCmd('text', message)"
+            >
+              <el-icon :size="14" color="#FFF">
+                <font-awesome-icon icon="fa-solid fa-file-lines" />
+              </el-icon>
+              <span style="margin-left: 4px">文字</span>
+            </div> -->
+          </div>
+        </el-popover>
+        <!-- <div v-if="message.data.sound">
           <audio ref="audio" :src="message.data.sound" autoplay />
         </div>
         <div class="sc-message--ops">
@@ -90,8 +125,10 @@
               <font-awesome-icon icon="fa-solid fa-rotate" />
             </el-icon>
           </div>
-          <div v-else></div>
-          <!-- <el-popover placement="right">
+          <div v-else>
+            
+          </div>
+          <el-popover placement="right">
             <template #reference>
               <div class="sc-message--ops-item" style="display: flex">
                 <el-icon :size="14" color="#FFF">
@@ -110,16 +147,6 @@
                 <span style="margin-left: 4px">删除</span>
               </div>
               <div
-                v-if="message.type === 'md' || message.type === 'hello'"
-                class="sc-message--ops-item"
-                @click="onMessageCmd('audio', message)"
-              >
-                <el-icon :size="14" color="#FFF">
-                  <font-awesome-icon icon="fa-solid fa-volume-high" />
-                </el-icon>
-                <span style="margin-left: 4px">朗读</span>
-              </div>
-              <div
                 v-if="message.type === 'audio'"
                 class="sc-message--ops-item"
                 @click="onMessageCmd('text', message)"
@@ -130,8 +157,8 @@
                 <span style="margin-left: 4px">文字</span>
               </div>
             </div>
-          </el-popover> -->
-        </div>
+          </el-popover>
+        </div> -->
       </div>
     </div>
   </div>
@@ -148,6 +175,8 @@ import UnknownMessage from "./messages/UnknownMessage.vue";
 import ListMessage from "./messages/ListMessage.vue";
 import FlowData from "./FlowData/index.vue";
 import AudioPlayer from "@/components/audio-player/index.vue";
+import { ElMessage } from "element-plus";
+import { textToVoice } from "@/api/audio";
 
 export default {
   components: {
@@ -193,6 +222,29 @@ export default {
     },
   },
   methods: {
+     async handlePlay (text: string) {
+      if (text?.trim()) {
+        try {
+          const response = await textToVoice(text)
+          if (response.data.data) {
+            // 创建 Blob 对象
+            const blob = new Blob([response.data.data], { type: 'audio/mpeg' })
+            // 创建临时 URL
+            const audioUrl = URL.createObjectURL(blob)
+            // 创建音频实例
+            const audio = new Audio(audioUrl)
+            // 播放完成后释放 URL
+            audio.onended = () => {
+              URL.revokeObjectURL(audioUrl)
+            }
+            // 播放音频
+            await audio.play()
+          }
+        } catch (error) {
+          ElMessage.error('音频播放失败')
+        }
+      }
+    },
     playAudio(cmd: string, message: Record<string, any>) {
       if (message.data.sound) {
         const audio = this.$refs.audio;
@@ -243,7 +295,6 @@ export default {
 }
 .sc-message--content {
   display: inline-flex;
-  flex-direction: column;
   max-width: 100%;
 }
 
@@ -361,8 +412,9 @@ export default {
 
 .sc-message--ops-item {
   padding: 5px 0;
+  margin-left: 4px;
   display: flex;
-  align-items: center;
+  align-items: self-end;
   font-size: 12px;
 
   cursor: pointer;
