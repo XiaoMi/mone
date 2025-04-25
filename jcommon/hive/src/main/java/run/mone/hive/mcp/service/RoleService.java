@@ -39,6 +39,7 @@ public class RoleService {
 
     private final HiveManagerService hiveManagerService;
 
+
     @Value("${mcp.hub.path:}")
     @Setter
     @Getter

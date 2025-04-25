@@ -32,7 +32,7 @@ import { fluxCodeHandler } from '@/components/Chat/common/result-code';
 const route = useRoute()
 const { getChatContext, setMessageList, addMessage, setProject, setModule, setLoading, messageList } =
   useChatContextStore();
-const { user, setAgent } = useUserStore();
+const { user, setAgent, setInstance, getSelectedInstance, getAgent} = useUserStore();
 
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string);
@@ -66,11 +66,34 @@ const toggleSendMethod = (val: string) => {
     }
   const sendMessage = async (message: Message) => {
     addMessage(message);
+    let text = message.data.text;
+    let image = null;
+    if(message.type === "image") {
+      text = message.data.content;
+      image = message.data.text?.split("base64,")[1];
+    }
     try {
+      const agent = getAgent();
       messageId.value = uuidv4();
+      let params = {
+        message: text,
+        __owner_id__: uuid.value,
+      }
+      if (image) {
+        params.images = image;
+      }
       if (sendMethod.value === "sse") {
         // sse发送消息
-        streamChat(message.data.text as string, uuid.value, (data: any) => {
+        streamChat({
+          agentId: route.query.serverAgentId,
+          outerTag: "use_mcp_tool",
+          agentInstance: getSelectedInstance(),
+          content: {
+            server_name: `${agent.name}:${agent.group}:${agent.version}`,
+            tool_name: "stream_minzai_chat",
+            arguments: JSON.stringify(params)
+          }
+        }, (data: any) => {
           if (data) {
             fluxCodeHandler(data, messageId.value)
           }
@@ -78,11 +101,13 @@ const toggleSendMethod = (val: string) => {
       } else {
         // ws发送消息
         socket.value?.send(JSON.stringify({
+          agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
+          agentInstance: getSelectedInstance(),
           content: {
-            server_name: "minzai-mcp",
+            server_name: `${agent.name}:${agent.group}:${agent.version}`,
             tool_name: "stream_minzai_chat",
-            arguments: JSON.stringify({ message:message.data.text, clientId: uuid.value, __owner_id__: uuid.value })
+            arguments: JSON.stringify(params)
           }
         }));
       }
@@ -198,6 +223,8 @@ const messageClick = async (item: { type: string; text: string; params: any }) =
       }
     }
 onBeforeUnmount(() => {
+    setAgent(null)
+    setInstance(null)
     initCodePrompt()
 })
 onMounted(async () => {
@@ -205,8 +232,9 @@ onMounted(async () => {
       // 获取Agent详情
       const { data } = await getAgentDetail(Number(route.query.serverAgentId))
       if (data.code === 200) {
-        const agent = data.data
+        const agent = data.data?.agent
         setAgent(agent)
+        setInstance(data.data?.instances)
         addMessage({
             type: "md",
             author: {

@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.impl.minmax.MiniMax;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
@@ -276,6 +277,10 @@ public class LLM {
 
     // 文本转语音
     public byte[] generateSpeech(String text) throws IOException {
+        //使用minmax
+        if (this.llmProvider.equals(LLMProvider.MINIMAX)) {
+            return new MiniMax().generateAudio(this.llmProvider.getCustomModelEnv(), this.llmProvider.getEnvName(), text);
+        }
         return generateSpeech(getToken(), text, "wenrounvsheng", null);
     }
 
@@ -890,7 +895,6 @@ public class LLM {
     /**
      * 同步调用LLM，发送文本和图像输入，并返回结果
      *
-     * @param llm       LLM实例
      * @param msg       消息
      * @param sysPrompt 系统提示
      * @return 结果字符串
@@ -1126,5 +1130,4 @@ public class LLM {
         }
         return part;
     }
-    /***************************************************************************************/
 }

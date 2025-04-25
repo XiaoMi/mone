@@ -24,7 +24,7 @@ export default defineConfig({
     port: 5175,
     proxy: {
       "/api/manager/ws/": {
-        target: "http://0.0.0.0:8080/ws/",
+        target: "http://:8080/ws/",
         ws: true, // 启用websocket代理
         changeOrigin: true,
         rewrite: (path) => {
@@ -32,7 +32,7 @@ export default defineConfig({
         },
       },
       "/api/manager/": {
-        target: "http://0.0.0.0:8080/api/",
+        target: "http://:8080/api/",
         ws: true, // 启用websocket代理
         changeOrigin: true,
         rewrite: (path) => {
