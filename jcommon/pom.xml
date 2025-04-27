@@ -95,6 +95,7 @@
         <module>mcp</module>
         <module>hive-manager</module>
         <module>hive-spring-starter</module>
+        <module>hive-mind</module>
     </modules>
 
 <!--    <distributionManagement>-->

@@ -24,14 +24,6 @@ spring:
     resources:
       static-locations: classpath:/static/dist/
 
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-  
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
