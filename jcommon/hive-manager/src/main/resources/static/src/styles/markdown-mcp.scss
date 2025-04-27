@@ -215,9 +215,10 @@
   border: none;
   border-radius: 8px;
   background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   line-height: 0;
   overflow: hidden;
+  background: transparent;
 
   .followup-header {
     display: flex;
@@ -242,7 +243,6 @@
     padding: 16px 24px;
     color: #e1e1e1;
     line-height: 1.6;
-    background: #1e1e1e;
 
     p {
       margin: 0.5rem 0;

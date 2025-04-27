@@ -14,7 +14,7 @@
         </div>
       </slot>
       <div class="sc-message--content">
-        <div class="sc-message--user-content">
+        <div class="sc-message--user-content" :class="{'sc-message--user-content-audio': message.type === 'audio'}">
           <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message">
             <template v-slot:default="scopedProps">
               <slot
@@ -212,6 +212,10 @@ export default {
       type: Function,
       required: true,
     },
+    onPlayAudio: {
+      type: Function,
+      required: true,
+    },
   },
   computed: {
     authorName() {
@@ -224,25 +228,7 @@ export default {
   methods: {
      async handlePlay (text: string) {
       if (text?.trim()) {
-        try {
-          const response = await textToVoice(text)
-          if (response.data.data) {
-            // 创建 Blob 对象
-            const blob = new Blob([response.data.data], { type: 'audio/mpeg' })
-            // 创建临时 URL
-            const audioUrl = URL.createObjectURL(blob)
-            // 创建音频实例
-            const audio = new Audio(audioUrl)
-            // 播放完成后释放 URL
-            audio.onended = () => {
-              URL.revokeObjectURL(audioUrl)
-            }
-            // 播放音频
-            await audio.play()
-          }
-        } catch (error) {
-          ElMessage.error('音频播放失败')
-        }
+        this.onPlayAudio(text)
       }
     },
     playAudio(cmd: string, message: Record<string, any>) {
@@ -311,6 +297,11 @@ export default {
   // background-color: rgb(39, 39, 39);
   color: #fff;
   background-color: rgba(58, 58, 58, 0.5);
+}
+
+.sc-message--user-content-audio {
+  background-color: transparent;
+  padding: 0;
 }
 
 .sc-message--footer {
