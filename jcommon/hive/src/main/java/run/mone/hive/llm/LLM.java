@@ -736,8 +736,8 @@ public class LLM {
             if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
             } else if (type.equals("finish") || type.equals("failure")) {
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
                 latch.countDown();
-                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).build());
             } else {
                 sb.append(o.get("content").getAsString());
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
