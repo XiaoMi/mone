@@ -30,6 +30,8 @@ public class SecurityConfig {
                 .antMatchers("/error").permitAll()
                 .antMatchers("/agent-manager/**").permitAll()
                 .antMatchers("/assets/**").permitAll()
+                .antMatchers("/api/manager/ws/agent/chat/**").permitAll()
+                .antMatchers("/api/manager/ws/realtime/**").permitAll()
                 .antMatchers("/ws/agent/chat/**").permitAll()
                 .antMatchers("/ws/realtime/**").permitAll()
                 .anyRequest().authenticated()
