@@ -57,9 +57,9 @@ public class McpService {
         }
 
         //这个需要那个用户就传他的id (需要从前端拿过来) //TODO
-        String clientId = "ceshi";
+        String clientId = getAgentKey(agentDto.getAgent());
 
-        String groupKey = Joiner.on(":").join(getAgentKey(agentDto.getAgent()), instance.getIp(), instance.getPort());
+        String groupKey = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
 
         try {
             lock.lock();
