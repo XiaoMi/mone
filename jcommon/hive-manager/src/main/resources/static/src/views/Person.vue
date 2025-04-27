@@ -89,6 +89,7 @@ const messageHistory = ref<Array<{
   type: string;
   content: string;
   timestamp: number;
+  audio: string;
 }>>([])
 
 const addMessage = (type: string, content: string, audio?: string) => {
