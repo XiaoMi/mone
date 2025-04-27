@@ -46,6 +46,16 @@ export interface CreateSkillRequest {
   outputSchema: string
 }
 
+export interface Access {
+  id: number
+  agentId: number
+  accessApp: string
+  description: string
+  accessKey: string
+  ctime: number
+  utime: number
+}
+
 // 获取Agent列表
 export const getAgentList = () => {
   return Service<IResponse<{
@@ -123,6 +133,40 @@ export const updateSkill = (skillId: number, data: Partial<Skill>) => {
 export const createSkill = (agentId: number, data: CreateSkillRequest) => {
   return Service<IResponse<Skill>>({
     url: `/v1/agents/${agentId}/skills`,
+    method: 'post',
+    data
+  })
+}
+
+// 获取access列表
+export const accessList = (agentId: number, params: {
+  agentId: number
+  accessApp: string
+  description: string
+}) => {
+  return Service<IResponse<Access[]>>({
+    url: `/agent/access/list/${agentId}`,
+    method: 'get',
+    params,
+  })
+}
+
+// 删除access
+export const deleteAccess = (agentId: number) => {
+  return Service<IResponse<any>>({
+    url: `/agent/access/${agentId}`,
+    method: 'delete',
+  })
+}
+
+// 创建access
+export const createAccess = (data: {
+  agentId: number
+  accessApp: string
+  description: string
+}) => {
+  return Service<IResponse<Access>>({
+    url: `/agent/access/create`,
     method: 'post',
     data
   })

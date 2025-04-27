@@ -5,6 +5,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
@@ -17,11 +18,14 @@ import run.mone.mcp.miapi.function.MiApiFunction;
 @Component
 public class MiApiMcpServer {
 
-    private ServerMcpTransport transport;
+    private final ServerMcpTransport transport;
+
+    private final ChatFunction chatFunction;
     private McpSyncServer syncServer;
 
-    public MiApiMcpServer(ServerMcpTransport transport) {
+    public MiApiMcpServer(ServerMcpTransport transport, ChatFunction chatFunction) {
         this.transport = transport;
+        this.chatFunction = chatFunction;
     }
 
     public McpSyncServer start() {
@@ -33,12 +37,11 @@ public class MiApiMcpServer {
                         .build())
                 .sync();
 
-        MiApiFunction function = new MiApiFunction();
-        var toolRegistration = new ToolRegistration(
-                new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+        var toolStreamRegistration = new McpServer.ToolStreamRegistration(
+                new Tool(chatFunction.getName(), chatFunction.getDesc("miapi_agent"), chatFunction.getToolScheme()), chatFunction
         );
 
-        syncServer.addTool(toolRegistration);
+        syncServer.addStreamTool(toolStreamRegistration);
 
         return syncServer;
     }

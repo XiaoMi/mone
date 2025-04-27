@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 interface McpRequest {
   outerTag: string;
@@ -36,7 +37,9 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
         const xhr = progressEvent.event?.target;
         if (xhr?.responseText) {
           xhr?.responseText.split('data:').forEach((chunk: string, index: number) => {
-            if (index > preIndex) {
+            if (chunk.includes("hiveVoiceBase64-")) {
+              textToVoice(chunk.split("hiveVoiceBase64-")[1]);
+            }else if (index > preIndex) {
               callback?.(chunk);
               preIndex = index;
             }
@@ -51,3 +54,15 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
     throw error;
   }
 };
+
+export const textToVoice = async (text: string) => {
+  try {
+    if (text) {
+      const audio = new Audio(`data:audio/mpeg;base64,${text}`);
+      await audio.play();
+    }
+  } catch (error) {
+    console.log("error", error);
+    ElMessage.error('音频播放失败')
+  }
+}

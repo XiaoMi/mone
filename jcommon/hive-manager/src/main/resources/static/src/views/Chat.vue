@@ -12,6 +12,7 @@
       :initCodePrompt="initCodePrompt"
       @scrollToTop="scrollToTop"
       :changeSendMethod="toggleSendMethod"
+      :onPlayAudio="onPlayAudio"
     />
   </div>
 </template>
@@ -26,7 +27,7 @@ import { onMounted, onBeforeUnmount, computed, ref } from "vue"
 import { getAgentDetail } from '@/api/agent'
 import { useRoute } from 'vue-router'
 import { connectWebSocket } from '@/api/wsConnect'
-import { streamChat } from '@/api/message'
+import { streamChat, textToVoice } from '@/api/message'
 import { v4 as uuidv4 } from 'uuid';
 import { fluxCodeHandler } from '@/components/Chat/common/result-code';
 const route = useRoute()
@@ -64,23 +65,13 @@ const toggleSendMethod = (val: string) => {
       setMessageList([]);
     //   this.getCodePrompt();
     }
-  const sendMessage = async (message: Message) => {
-    addMessage(message);
-    let text = message.data.text;
-    let image = null;
-    if(message.type === "image") {
-      text = message.data.content;
-      image = message.data.text?.split("base64,")[1];
-    }
+  const onPlayAudio = (text: string) => {
     try {
       const agent = getAgent();
       messageId.value = uuidv4();
       let params = {
-        message: text,
+        message: `语音合成处理以下文本内容：“${text}”`,
         __owner_id__: uuid.value,
-      }
-      if (image) {
-        params.images = image;
       }
       if (sendMethod.value === "sse") {
         // sse发送消息
@@ -89,7 +80,7 @@ const toggleSendMethod = (val: string) => {
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
           content: {
-            server_name: `${agent.name}:${agent.group}:${agent.version}`,
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
             tool_name: "stream_minzai_chat",
             arguments: JSON.stringify(params)
           }
@@ -105,7 +96,63 @@ const toggleSendMethod = (val: string) => {
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
           content: {
-            server_name: `${agent.name}:${agent.group}:${agent.version}`,
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+            tool_name: "stream_minzai_chat",
+            arguments: JSON.stringify(params)
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('发送消息失败:', error);
+    }
+  }
+  const sendMessage = async (message: Message) => {
+    addMessage(message);
+    let text = message.data.text;
+    let image = null;
+    if(message.type === "image") {
+      text = message.data.content;
+      image = message.data.text?.split("base64,")[1];
+    } else if (message.type === "audio") {
+      text = `用asr-mcp工具并且使用腾讯云语音识别这个音频文件内容`;
+    }
+    try {
+      const agent = getAgent();
+      messageId.value = uuidv4();
+      let params = {
+        message: text,
+        __owner_id__: uuid.value,
+      }
+      if (message.type === "audio") {
+        params.voiceBase64 = message.data.content?.split("base64,")[1];
+      }
+      if (image) {
+        params.images = image;
+      }
+      if (sendMethod.value === "sse") {
+        // sse发送消息
+        streamChat({
+          agentId: route.query.serverAgentId,
+          outerTag: "use_mcp_tool",
+          agentInstance: getSelectedInstance(),
+          content: {
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+            tool_name: "stream_minzai_chat",
+            arguments: JSON.stringify(params)
+          }
+        }, (data: any) => {
+          if (data) {
+            fluxCodeHandler(data, messageId.value)
+          }
+        });
+      } else {
+        // ws发送消息
+        socket.value?.send(JSON.stringify({
+          agentId: route.query.serverAgentId,
+          outerTag: "use_mcp_tool",
+          agentInstance: getSelectedInstance(),
+          content: {
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
             tool_name: "stream_minzai_chat",
             arguments: JSON.stringify(params)
           }
