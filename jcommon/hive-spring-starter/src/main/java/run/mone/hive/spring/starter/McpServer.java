@@ -1,7 +1,5 @@
 package run.mone.hive.spring.starter;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
@@ -10,6 +8,8 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
 

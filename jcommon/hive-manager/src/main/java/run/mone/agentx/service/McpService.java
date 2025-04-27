@@ -1,5 +1,6 @@
 package run.mone.agentx.service;
 
+import com.google.common.base.Joiner;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import run.mone.hive.common.Result;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
+import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 
@@ -24,6 +26,8 @@ import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @Data
@@ -38,14 +42,8 @@ public class McpService {
     @Autowired
     private AgentService agentService;
 
-//    @PostConstruct
-//    @SneakyThrows
-//    public void init() {
-//        //启用mcp (这个Agent也可以使用mcp)
-//        if (StringUtils.isNotEmpty(mcpPath)) {
-//            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
-//        }
-//    }
+    private ReentrantLock lock = new ReentrantLock();
+
 
     public void callMcp(Long agentId, AgentInstance instance, Result it, FluxSink sink) {
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
@@ -58,40 +56,42 @@ public class McpService {
             instance = agentDto.getInstances().get(0);
         }
 
-        // 构建serverConfig
-        Map<String, Object> serverConfig = new HashMap<>();
-        serverConfig.put("type", "grpc");
-        serverConfig.put("sseRemote", true);
+        //这个需要那个用户就传他的id (需要从前端拿过来) //TODO
+        String clientId = getAgentKey(agentDto.getAgent());
 
-        // 从mcpToolMap中获取env配置
-        Map<String, String> env = new HashMap<>();
-        env.put("host", instance.getIp());
-        env.put("port", String.valueOf(instance.getPort()));
-        env.put("clientId", "ceshi");
-        env.put("token", "token");
-        serverConfig.put("env", env);
+        String groupKey = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
 
-        // 更新MCP配置
-        if (McpConfigUtils.updateMcpConfig(mcpPath, getAgentKey(agentDto.getAgent()), serverConfig)) {
-            if (McpHubHolder.containsKey(Const.DEFAULT)) {
-                McpHubHolder.get(Const.DEFAULT).refreshMcpServer(getAgentKey(agentDto.getAgent()));
-            } else {
-                try {
-                    McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
-                } catch (Exception e) {
-                    log.error("init mcp hub error");
-                }
+        try {
+            lock.lock();
+            McpHub hub = McpHubHolder.get(groupKey);
+            if (Optional.ofNullable(hub).isEmpty()) {
+                McpHub mcpHub = new McpHub(null, (msg) -> {
+                }, true);
+                ServerParameters parameters = new ServerParameters();
+                parameters.setType("grpc");
+                parameters.getEnv().put("host", instance.getIp());
+                parameters.getEnv().put("port", String.valueOf(instance.getPort()));
+                parameters.getEnv().put("token", "token");
+                parameters.getEnv().put("clientId", clientId);
+                //底下有断线从连机制,先解决连一个的问题
+                mcpHub.connectToServer(groupKey, parameters);
+                McpHubHolder.put(groupKey, mcpHub);
             }
+        } catch (Exception e) {
+            log.error("callMcp error.", e);
+        } finally {
+            lock.unlock();
         }
 
         // 调用MCP
-        MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
-
+        MonerMcpClient.mcpCall(it, groupKey, this.mcpInterceptor, sink);
     }
 
 
     private String getAgentKey(Agent agent) {
-        return agent.getName() + ":" + agent.getGroup() + ":" + agent.getVersion();
+        return agent.getName() + ":"
+                + (agent.getGroup() == null ? "" :  agent.getGroup()) + ":"
+                + (agent.getVersion() == null ? "" : agent.getVersion());
     }
 
 

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 /**
  * @author goodjava@qq.com
  * @date 2025/4/9 11:07
+ * prompt中就定义的工具
  */
 public interface ITool {
 

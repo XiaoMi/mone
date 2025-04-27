@@ -7,6 +7,7 @@
       :onMessageCmd="onMessageCmd"
       :onMessageClick="onMessageClick"
       @scrollToTop="$emit('scrollToTop')"
+      :onPlayAudio="onPlayAudio"
     >
       <template v-slot:user-avatar="scopedProps">
         <slot
@@ -108,6 +109,10 @@ export default {
       required: true,
     },
     changeSendMethod: {
+      type: Function,
+      required: true,
+    },
+    onPlayAudio: {
       type: Function,
       required: true,
     },

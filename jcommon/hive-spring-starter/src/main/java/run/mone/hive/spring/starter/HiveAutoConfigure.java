@@ -1,12 +1,10 @@
 package run.mone.hive.spring.starter;
 
 import com.google.common.collect.Lists;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
@@ -27,6 +25,8 @@ import run.mone.hive.roles.tool.ITool;
 import java.util.List;
 import java.util.Map;
 
+import static run.mone.hive.llm.ClaudeProxy.*;
+
 /**
  * @author goodjava@qq.com
  */
@@ -34,20 +34,27 @@ import java.util.Map;
 @Slf4j
 public class HiveAutoConfigure {
 
-    @Resource
-    private ApplicationContext ac;
-
-    @Value("${agentName:hive}")
-    private String agentName;
-
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
+
+    @Value("${mcp.llm:claude35}")
+    private String llmType;
 
 
     //大模型
     @Bean
     @ConditionalOnMissingBean
     public LLM llm() {
+        if ("claude35".equals(llmType)) {
+            LLMConfig config = LLMConfig.builder()
+                    .llmProvider(LLMProvider.CLAUDE_COMPANY)
+                    .url(getClaudeUrl())
+                    .version(getClaudeVersion())
+                    .maxTokens(getClaudeMaxToekns())
+                    .build();
+            return new LLM(config);
+        }
+
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         return new LLM(config);
@@ -79,7 +86,13 @@ public class HiveAutoConfigure {
                     new AskTool(),
                     new AttemptCompletionTool()));
         }
-        return new RoleService(llm, toolList, functionList.stream().map(it -> new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())).toList(), hiveManagerService);
+        return new RoleService(llm,
+                toolList,
+                functionList.stream().map(it ->
+                        new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
+                ).toList(),
+                hiveManagerService
+        );
     }
 
 

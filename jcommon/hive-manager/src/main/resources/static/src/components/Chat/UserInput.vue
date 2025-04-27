@@ -912,9 +912,22 @@ export default {
       this.inputActive = onoff;
     },
     async submitAudio(url: string, base64: string) {
-      const res = await voiceToText(base64)
-      this.text = res.data.data
-      this.submitText()
+      this.onSubmit({
+        type: "audio",
+        meta: {
+          role: "USER",
+        },
+        author: {
+          username: this.user.username,
+          cname: this.user.cname,
+          avatar: this.user.avatar,
+        },
+        data: {
+          composer_config: this.composerList,
+          text: url,
+          content: base64,
+        },
+      });
     },
     updateText(text: string) {
       console.log("updateText", text);

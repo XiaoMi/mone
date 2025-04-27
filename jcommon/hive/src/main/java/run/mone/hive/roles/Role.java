@@ -286,6 +286,7 @@ public class Role {
     }
 
 
+    //执行的最大轮数
     private int doReactNum = 15;
 
     /**
