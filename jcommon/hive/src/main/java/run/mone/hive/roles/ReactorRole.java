@@ -183,7 +183,7 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected int observe() {
-        log.info("observe");
+        log.info("{} observe", this.name);
         this.state.set(RoleState.observe);
         Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
@@ -254,7 +254,7 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
-        log.info("act");
+        log.info("{} act", this.name);
         this.state.set(RoleState.act);
         Message msg = this.rc.news.poll();
         FluxSink sink = msg.getSink();
@@ -267,18 +267,14 @@ public class ReactorRole extends Role {
 
             LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
 
-            StringBuilder sb = new StringBuilder();
             AtomicBoolean hasError = new AtomicBoolean(false);
 
             //调用大模型
-            callLlm(compoundMsg, sb, sink, hasError);
-
+            String res = callLlm(compoundMsg, sink, hasError);
+            log.info("res\n:{} hasError:{}", res, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
-
-            String res = sb.toString();
-            log.info("res\n:{}", res);
 
             // 解析工具调用(有可能是tool也可能是mcp)
             List<Result> tools = new MultiXmlParser().parse(res);
@@ -307,7 +303,7 @@ public class ReactorRole extends Role {
 
     private Map<String, String> buildToolExtraParam(Message msg) {
         Map<String, String> extraParam = new HashMap<>();
-        if(StringUtils.isNotEmpty(msg.getVoiceBase64())){
+        if (StringUtils.isNotEmpty(msg.getVoiceBase64())) {
             extraParam.put("voiceBase64", msg.getVoiceBase64());
         }
         return extraParam;
@@ -330,13 +326,13 @@ public class ReactorRole extends Role {
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
             ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(params);
-            if(toolRes.has("toolMsgType")){
+            if (toolRes.has("toolMsgType")) {
                 // 说明需要调用方做特殊处理
                 res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
                 if (null != sink && tool.show()) {
                     sink.next(toolRes.toString());
                 }
-            }else {
+            } else {
                 res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
                 if (null != sink && tool.show()) {
                     sink.next(res);
@@ -351,7 +347,8 @@ public class ReactorRole extends Role {
         this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
     }
 
-    private void callLlm(LLMCompoundMsg compoundMsg, StringBuilder sb, FluxSink sink, AtomicBoolean hasError) {
+    private String callLlm(LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
+        StringBuilder sb = new StringBuilder();
         llm.compoundMsgCall(compoundMsg, getSystemPrompt())
                 .doOnNext(it -> {
                     sb.append(it);
@@ -363,6 +360,7 @@ public class ReactorRole extends Role {
                     log.error(error.getMessage(), error);
                     hasError.set(true);
                 }).blockLast();
+        return sb.toString();
     }
 
     private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
