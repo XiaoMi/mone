@@ -13,9 +13,9 @@ spring:
   profiles:
     active: dev
   r2dbc:
-    url: r2dbc:mysql://localhost:3306/mone_agentx
-    username: root
-    password: 123456
+    url: r2dbc:mysql://${TEST_DB_URL}/mone_agentx
+    username: ${TEST_DB_USER_NAME}
+    password: ${TEST_DB_PASSWORD}
   sql:
     init:
       mode: always
