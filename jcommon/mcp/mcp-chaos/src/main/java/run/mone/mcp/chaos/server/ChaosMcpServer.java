@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -16,10 +17,13 @@ import run.mone.mcp.chaos.function.CreateChaosFunction;
 public class ChaosMcpServer {
     private ServerMcpTransport transport;
 
+    private final ChatFunction chatFunction;
+
     private McpSyncServer syncServer;
 
-    public ChaosMcpServer(ServerMcpTransport transport) {
+    public ChaosMcpServer(ServerMcpTransport transport,ChatFunction chatFunction) {
         this.transport = transport;
+        this.chatFunction = chatFunction;
         log.info("ChaosMcpServer initialized with transport: {}", transport);
     }
 
@@ -44,6 +48,13 @@ public class ChaosMcpServer {
             var createChaosRegistration = new McpServer.ToolStreamRegistration(
                     new McpSchema.Tool(createChaosFunction.getName(), createChaosFunction.getDesc(), createChaosFunction.getChaosToolSchema()), createChaosFunction
             );
+
+            var toolStreamRegistration = new McpServer.ToolStreamRegistration(
+                    new McpSchema.Tool(chatFunction.getName(), chatFunction.getDesc("minzai"), chatFunction.getToolScheme()), chatFunction
+            );
+
+            syncServer.addStreamTool(toolStreamRegistration);
+
 
             syncServer.addStreamTool(toolRegistration);
             syncServer.addStreamTool(createChaosRegistration);

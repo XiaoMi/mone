@@ -41,7 +41,7 @@ tencent.asr.appId=
 tencent.asr.secretId=
 tencent.asr.secretKey=
 # 每次推送大小 byte
-tencent.asr.speechLength=160
+tencent.asr.speechLength=1600
 # 每次推送间隔时间 (ms)
 tencent.asr.sleepTime=50
 # 8k_zh,8k_en,8k_zh_large 
