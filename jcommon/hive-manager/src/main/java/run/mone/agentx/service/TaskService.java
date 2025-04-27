@@ -94,46 +94,26 @@ public class TaskService {
      * @return 任务实体
      */
     public Mono<Task> executeTask(run.mone.hive.a2a.types.Task taskExecutionInfo) {
-        Task task = new Task();
-        
-        // 设置任务ID，使用传入的taskId或生成新的ID
+        // 获取任务ID
         String taskId = (String) taskExecutionInfo.getId();
         if (taskId == null || taskId.isEmpty()) {
-            taskId = UUID.randomUUID().toString();
-        }
-        task.setTaskUuid(taskId);
-        
-        // 设置任务元数据
-        Map<String, Object> metadata = (Map<String, Object>) taskExecutionInfo.getMetadata();
-        if (metadata != null) {
-            // 可选: 从metadata中提取clientAgentId和serverAgentId
-            if (metadata.containsKey("clientAgentId")) {
-                task.setClientAgentId(Long.valueOf(metadata.get("clientAgentId").toString()));
-            }
-            if (metadata.containsKey("serverAgentId")) {
-                task.setServerAgentId(Long.valueOf(metadata.get("serverAgentId").toString()));
-            }
-            // 设置任务标题和描述
-            if (metadata.containsKey("title")) {
-                task.setTitle((String) metadata.get("title"));
-            }
-            if (metadata.containsKey("description")) {
-                task.setDescription((String) metadata.get("description"));
-            }
+            return Mono.error(new IllegalArgumentException("任务ID不能为空"));
         }
         
-        // 设置初始状态为PENDING
-        task.setStatus(TaskStatus.PENDING);
-        task.setCtime(System.currentTimeMillis());
-        task.setUtime(System.currentTimeMillis());
-        task.setState(1);
-        
-        // 保存任务并启动异步执行过程
-        return taskRepository.save(task)
-                .flatMap(savedTask -> {
-                    // 异步启动任务执行 - 改用Agent执行方式
-                    startTaskExecutionWithAgent(savedTask.getTaskUuid(), taskExecutionInfo);
-                    return Mono.just(savedTask);
+        // 先检查任务是否存在
+        return taskRepository.findByTaskUuid(taskId)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("任务不存在: " + taskId)))
+                .flatMap(existingTask -> {
+                    // 更新状态并启动异步执行过程
+                    existingTask.setStatus(TaskStatus.PENDING);
+                    existingTask.setUtime(System.currentTimeMillis());
+                    
+                    return taskRepository.save(existingTask)
+                            .flatMap(savedTask -> {
+                                // 异步启动任务执行 - 改用Agent执行方式
+                                startTaskExecutionWithAgent(savedTask.getTaskUuid(), taskExecutionInfo);
+                                return Mono.just(savedTask);
+                            });
                 });
     }
 
