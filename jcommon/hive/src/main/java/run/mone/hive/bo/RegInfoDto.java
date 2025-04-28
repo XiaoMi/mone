@@ -94,7 +94,7 @@ public class RegInfoDto implements Serializable {
                 String toolName = entry.getKey();
                 ITool tool = entry.getValue();
                 if (tool != null) {
-                    toolMap.put(toolName, GsonUtils.gson.toJson(tool));
+                    toolMap.put(toolName, tool.description());
                 } else {
                     toolMap.put(toolName, toolName);
                 }
