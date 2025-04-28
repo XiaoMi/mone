@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.io.File;
@@ -14,7 +15,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class SqliteFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class SqliteFunction implements McpFunction {
 
     private String name = "stream_sqlite_executor";
 
@@ -145,5 +146,10 @@ public class SqliteFunction implements Function<Map<String, Object>, Flux<McpSch
                     false
             ));
         }
+    }
+
+    @Override
+    public String getToolScheme() {
+        return sqlToolSchema;
     }
 }

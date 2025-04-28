@@ -17,7 +17,7 @@ import java.util.List;
  * @date 2025/4/24 15:07
  */
 @Configuration
-public class ToolConfig {
+public class AgentConfig {
 
     @Bean
     public RoleMeta roleMeta() {
