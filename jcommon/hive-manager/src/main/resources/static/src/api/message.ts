@@ -22,7 +22,8 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
   };
 
   try {
-    let preIndex = -1;
+    // let preIndex = -1;
+    let text = '';
     const response = await axios({
       method: 'post',
       url: '/api/manager/v1/mcp/call',
@@ -36,14 +37,24 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
       onDownloadProgress: (progressEvent) => {
         const xhr = progressEvent.event?.target;
         if (xhr?.responseText) {
+          xhr?.responseText.replace('data: ', '');
+          let allText = '';
           xhr?.responseText.split('data:').forEach((chunk: string, index: number) => {
             if (chunk.includes("hiveVoiceBase64-")) {
               textToVoice(chunk.split("hiveVoiceBase64-")[1]);
-            }else if (index > preIndex) {
-              callback?.(chunk);
-              preIndex = index;
+            }else {
+              // -2需要去掉最后一个\n
+              allText += chunk.slice(0, -2);
             }
           });
+          // console.log(allText);
+          // 新增的部分
+          const resText = allText.slice(text.length);
+          // console.log(resText);
+          text = allText;
+          if (resText) {
+            callback?.(resText);
+          }
         }
       }
     });
