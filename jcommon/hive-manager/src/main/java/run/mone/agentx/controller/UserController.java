@@ -4,11 +4,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.LoginRequest;
 import run.mone.agentx.dto.LoginResponse;
 import run.mone.agentx.entity.User;
@@ -22,6 +26,10 @@ import run.mone.agentx.service.UserService;
 public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
+    private static final String TOKEN_COOKIE_NAME = "auth_token";
+    
+    @Value("${jwt.expiration}")
+    private Long jwtExpiration;
 
     @PostMapping("/register")
     public Mono<ApiResponse<User>> register(@RequestBody User user) {
@@ -45,13 +53,28 @@ public class UserController {
     }
     
     @PostMapping("/login")
-    public Mono<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest) {
+    public Mono<ResponseEntity<ApiResponse<LoginResponse>>> login(@RequestBody LoginRequest loginRequest) {
         return userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword())
                 .map(user -> {
                     String token = jwtService.generateToken(user);
-                    return ApiResponse.success(LoginResponse.fromUser(user, token));
+                    LoginResponse loginResponse = LoginResponse.fromUser(user, token);
+                    
+                    // 创建 http-only cookie，过期时间与 JWT token 一致
+                    // 由于 JWT token 使用 UTC 时间，而 cookie 使用本地时间，需要调整时区
+                    ResponseCookie cookie = ResponseCookie.from(TOKEN_COOKIE_NAME, token)
+                            .httpOnly(true)
+                            .secure(true)  // 只在 HTTPS 下发送
+                            .path("/")
+                            .maxAge((jwtExpiration + 8 * 60 * 60 * 1000) / 1000)  // 将毫秒转换为秒，并加上 8 小时的时区差
+                            .build();
+                    
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                            .body(ApiResponse.success(loginResponse));
                 })
-                .switchIfEmpty(Mono.just(ApiResponse.error(401, "Invalid username or password")))
-                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+                .switchIfEmpty(Mono.just(ResponseEntity.ok()
+                        .body(ApiResponse.error(401, "Invalid username or password"))))
+                .onErrorResume(e -> Mono.just(ResponseEntity.ok()
+                        .body(ApiResponse.error(500, e.getMessage()))));
     }
 }

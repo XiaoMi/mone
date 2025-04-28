@@ -6,6 +6,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
+import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
@@ -41,7 +42,7 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static String mcpPrompt(String from, String name, String customInstructions, List<ITool> tools) {
+    public static String mcpPrompt(String roleDescription, String from, String name, String customInstructions, List<ITool> tools) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -51,13 +52,20 @@ public class MonerSystemPrompt {
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", "cwd");
         data.put("customInstructions", customInstructions);
+        data.put("roleDescription", roleDescription);
 
         List<Map<String, Object>> serverList = getMcpInfo(from);
         data.put("serverList", serverList);
 
         //注入工具
         data.put("toolList", tools);
-        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data, Lists.newArrayList(Pair.of("invoke", new InvokeMethodFunction())));
+        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
+                Lists.newArrayList(
+                        //反射执行
+                        Pair.of("invoke", new InvokeMethodFunction()),
+                        //可以使用默认值
+                        Pair.of("value", new DefaultValueFunction())
+                ));
     }
 
     public static List<Map<String, Object>> getMcpInfo(String from) {
@@ -94,11 +102,15 @@ public class MonerSystemPrompt {
             (任何工具每次只使用一个,不要一次返回多个工具,不管是mcp tool 还是 tool,你必须严格遵守这个条款,不然系统会崩溃 thx)
             """;
 
+
     // mcp 调用的会使用这个prompt
     public static final String MCP_PROMPT = """
-            You are ${name}, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+            You are ${name}, ${value(roleDescription,' a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.')}
             
             ====
+            
+            You are very good at using tools, these are some rules for using tools and the tools you can use.
+            
             
             TOOL USE
             

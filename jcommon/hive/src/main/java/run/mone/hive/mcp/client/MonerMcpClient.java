@@ -40,6 +40,7 @@ public class MonerMcpClient {
                                 }
                             }))
                             .blockLast();
+                    log.debug("res:{}", sb);
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                 } else {
                     // 只有当before返回true时才调用工具
