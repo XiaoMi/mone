@@ -56,7 +56,9 @@ public class HiveAutoConfigure {
                     .build();
             return new LLM(config);
         }
-
+        if ("deepseek".equals(llmType)) {
+            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
+        }
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         return new LLM(config);
