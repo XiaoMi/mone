@@ -25,11 +25,7 @@ public class McpMessageSink implements FluxSink<String> {
 
     @Override
     public void complete() {
-        try {
-            WebSocketHolder.sendMessageSafely(session, "{\"type\": \"complete\"}");
-        } catch (Exception e) {
-            log.error("Error sending complete message", e);
-        }
+        log.info("complete");
     }
 
     @Override
