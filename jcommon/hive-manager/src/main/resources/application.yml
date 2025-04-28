@@ -34,7 +34,7 @@ jwt:
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    run.mone.agentx: DEBUG
-    org.springframework.r2dbc: DEBUG
-    io.r2dbc.mysql: DEBUG
+    org.springframework.security: INFO
+    run.mone.agentx: INFO
+    org.springframework.r2dbc: INFO
+    io.r2dbc.mysql: INFO
