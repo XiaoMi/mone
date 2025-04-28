@@ -81,7 +81,7 @@ const toggleSendMethod = (val: string) => {
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: `stream_${agent.name}_chat`,
             arguments: JSON.stringify(params)
           }
         }, (data: any) => {
@@ -97,7 +97,7 @@ const toggleSendMethod = (val: string) => {
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: `stream_${agent.name}_chat`,
             arguments: JSON.stringify(params)
           }
         }));
@@ -137,7 +137,7 @@ const toggleSendMethod = (val: string) => {
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: `stream_${agent.name}_chat`,
             arguments: JSON.stringify(params)
           }
         }, (data: any) => {
@@ -153,7 +153,7 @@ const toggleSendMethod = (val: string) => {
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: `stream_${agent.name}_chat`,
             arguments: JSON.stringify(params)
           }
         }));
