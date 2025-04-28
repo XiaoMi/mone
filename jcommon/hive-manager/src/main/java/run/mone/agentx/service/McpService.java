@@ -2,30 +2,21 @@ package run.mone.agentx.service;
 
 import com.google.common.base.Joiner;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
-import run.mone.agentx.utils.McpConfigUtils;
 import run.mone.hive.common.Result;
-import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 
-import javax.annotation.PostConstruct;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -35,9 +26,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class McpService {
 
     private MonerMcpInterceptor mcpInterceptor = new CustomMcpInterceptor();
-
-    @Value("${mcp.hub.path:}")
-    private String mcpPath;
 
     @Autowired
     private AgentService agentService;

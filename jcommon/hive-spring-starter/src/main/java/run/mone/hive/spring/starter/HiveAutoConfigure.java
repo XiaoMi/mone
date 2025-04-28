@@ -42,7 +42,6 @@ public class HiveAutoConfigure {
     @Value("${mcp.llm:claude35}")
     private String llmType;
 
-
     //大模型
     @Bean
     @ConditionalOnMissingBean
@@ -83,22 +82,23 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList,@Nullable RoleMeta roleMeta) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList, @Nullable RoleMeta roleMeta) {
         if (CollectionUtils.isEmpty(toolList)) {
             toolList.addAll(Lists.newArrayList(
                     new ChatTool(),
                     new AskTool(),
-                    new AttemptCompletionTool()));
+                    new AttemptCompletionTool()
+            ));
         }
         return new RoleService(llm,
                 toolList,
                 functionList.stream().map(it ->
                         new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
                 ).toList(),
-                hiveManagerService, roleMeta
+                hiveManagerService,
+                roleMeta
         );
     }
-
 
     //Mcp Server
     @Bean
@@ -106,6 +106,5 @@ public class HiveAutoConfigure {
         functions.forEach(it -> it.setRoleService(roleService));
         return new McpServer(transport, functions, meta);
     }
-
 
 }
