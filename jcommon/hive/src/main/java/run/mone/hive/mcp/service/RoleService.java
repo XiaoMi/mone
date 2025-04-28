@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.hub.McpHub;
@@ -80,29 +81,32 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
+
+        //创建一个默认角色
+        Safe.run(() -> createRole(Const.DEFAULT, Const.DEFAULT));
     }
 
     public ReactorRole createRole(String owner, String clientId) {
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
         ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList, ip) {
-                @Override
-                public void reg(RegInfo info) {
-                    // 直接传递传入的RegInfo对象
-                    hiveManagerService.register(info);
-                }
+            @Override
+            public void reg(RegInfo info) {
+                // 直接传递传入的RegInfo对象
+                hiveManagerService.register(info);
+            }
 
-                @Override
-                public void unreg(RegInfo regInfo) {
-                    // 直接传递传入的RegInfo对象
-                    hiveManagerService.unregister(regInfo);
-                }
+            @Override
+            public void unreg(RegInfo regInfo) {
+                // 直接传递传入的RegInfo对象
+                hiveManagerService.unregister(regInfo);
+            }
 
-                @Override
-                public void health(HealthInfo healthInfo) {
-                    // 直接传递传入的HealthInfo对象
-                    hiveManagerService.heartbeat(healthInfo);
-                }
-            };
+            @Override
+            public void health(HealthInfo healthInfo) {
+                // 直接传递传入的HealthInfo对象
+                hiveManagerService.heartbeat(healthInfo);
+            }
+        };
         role.setOwner(owner);
         role.setClientId(clientId);
         //一直执行不会停下来
