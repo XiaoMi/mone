@@ -977,9 +977,7 @@ public class LLM {
             }
 
             req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
                 || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
@@ -1004,9 +1002,7 @@ public class LLM {
                 });
             }
             req.add("content", array);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
             req.addProperty("role", ROLE_USER);
             JsonArray contentJsons = new JsonArray();
 
@@ -1028,6 +1024,10 @@ public class LLM {
                 });
             }
             req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", msg.getContent());
         }
         return req;
     }

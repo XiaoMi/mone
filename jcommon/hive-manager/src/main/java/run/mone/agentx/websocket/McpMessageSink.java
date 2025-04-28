@@ -36,7 +36,7 @@ public class McpMessageSink implements FluxSink<String> {
     public void error(Throwable t) {
         try {
             log.error("Error in MCP processing", t);
-            WebSocketHolder.sendMessageSafely(session, 
+            WebSocketHolder.sendMessageSafely(session,
                 "{\"type\": \"error\", \"message\": \"" + t.getMessage() + "\"}");
         } catch (Exception e) {
             log.error("Error sending error message", e);
