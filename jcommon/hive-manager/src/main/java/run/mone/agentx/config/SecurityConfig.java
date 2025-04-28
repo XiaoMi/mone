@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .antMatchers("/api/manager/ws/realtime/**").permitAll()
                 .antMatchers("/ws/agent/chat/**").permitAll()
                 .antMatchers("/ws/realtime/**").permitAll()
+                .antMatchers("/scripts/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
