@@ -41,6 +41,8 @@ public class RoleService {
 
     private final HiveManagerService hiveManagerService;
 
+    //通过这个反向注册一些role元数据进来
+    private final RoleMeta roleMeta;
 
     @Value("${mcp.hub.path:}")
     @Setter
@@ -109,6 +111,13 @@ public class RoleService {
         };
         role.setOwner(owner);
         role.setClientId(clientId);
+
+        if (null != roleMeta) {
+            role.setProfile(roleMeta.getProfile());
+            role.setGoal(roleMeta.getGoal());
+            role.setConstraints(roleMeta.getConstraints());
+        }
+
         //一直执行不会停下来
         role.run();
         return role;

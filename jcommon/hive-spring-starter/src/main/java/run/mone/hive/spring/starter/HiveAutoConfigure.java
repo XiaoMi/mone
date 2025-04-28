@@ -14,6 +14,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
@@ -22,6 +23,7 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -79,7 +81,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList,@Nullable RoleMeta roleMeta) {
         if (CollectionUtils.isEmpty(toolList)) {
             toolList.addAll(Lists.newArrayList(
                     new ChatTool(),
@@ -91,7 +93,7 @@ public class HiveAutoConfigure {
                 functionList.stream().map(it ->
                         new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
                 ).toList(),
-                hiveManagerService
+                hiveManagerService, roleMeta
         );
     }
 
