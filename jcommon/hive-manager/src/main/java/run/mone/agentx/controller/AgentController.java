@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;

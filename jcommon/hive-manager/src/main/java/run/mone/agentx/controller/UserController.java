@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.LoginRequest;
 import run.mone.agentx.dto.LoginResponse;
 import run.mone.agentx.entity.User;
