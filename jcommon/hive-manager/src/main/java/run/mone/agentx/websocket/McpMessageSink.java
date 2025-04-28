@@ -6,6 +6,7 @@ import org.springframework.web.socket.WebSocketSession;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxSink;
 import reactor.util.context.Context;
+
 import java.util.function.LongConsumer;
 
 @Slf4j
@@ -25,19 +26,15 @@ public class McpMessageSink implements FluxSink<String> {
 
     @Override
     public void complete() {
-        try {
-            WebSocketHolder.sendMessageSafely(session, "{\"type\": \"complete\"}");
-        } catch (Exception e) {
-            log.error("Error sending complete message", e);
-        }
+        log.info("complete");
     }
 
     @Override
     public void error(Throwable t) {
         try {
             log.error("Error in MCP processing", t);
-            WebSocketHolder.sendMessageSafely(session, 
-                "{\"type\": \"error\", \"message\": \"" + t.getMessage() + "\"}");
+            WebSocketHolder.sendMessageSafely(session,
+                    "{\"type\": \"error\", \"message\": \"" + t.getMessage() + "\"}");
         } catch (Exception e) {
             log.error("Error sending error message", e);
         }
@@ -52,7 +49,6 @@ public class McpMessageSink implements FluxSink<String> {
     public boolean isCancelled() {
         return !session.isOpen();
     }
-
 
 
     @Override

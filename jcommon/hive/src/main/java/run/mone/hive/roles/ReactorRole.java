@@ -138,7 +138,7 @@ public class ReactorRole extends Role {
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
         this.llm = llm;
-        this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this);
+        this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this.getName());
 
         // Initialize scheduler with a single thread
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
