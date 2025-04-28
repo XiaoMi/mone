@@ -44,6 +44,7 @@
   "devDependencies": {
     "@tsconfig/node18": "^18.2.4",
     "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
     "@types/vue": "latest",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",

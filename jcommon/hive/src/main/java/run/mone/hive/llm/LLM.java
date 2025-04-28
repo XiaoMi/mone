@@ -128,7 +128,7 @@ public class LLM {
 
     //支持多模态
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role(ROLE_USER).content(content).build()), model, "", config);
     }
 
 
@@ -695,7 +695,7 @@ public class LLM {
         StringBuilder sb = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         String msgId = UUID.randomUUID().toString();
-        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
+        chat(Lists.newArrayList(AiMessage.builder().role(ROLE_USER).content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
         try {
             latch.await();
         } catch (InterruptedException e) {
@@ -736,8 +736,8 @@ public class LLM {
             if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
             } else if (type.equals("finish") || type.equals("failure")) {
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
                 latch.countDown();
-                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).build());
             } else {
                 sb.append(o.get("content").getAsString());
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
@@ -977,11 +977,9 @@ public class LLM {
             }
 
             req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
                 || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
-            req.addProperty("role", "user");
+            req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1004,10 +1002,8 @@ public class LLM {
                 });
             }
             req.add("content", array);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
-            req.addProperty("role", "user");
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", ROLE_USER);
             JsonArray contentJsons = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1028,6 +1024,10 @@ public class LLM {
                 });
             }
             req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", msg.getContent());
         }
         return req;
     }
@@ -1051,11 +1051,9 @@ public class LLM {
             }
 
             req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
                 || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
-            req.addProperty("role", "user");
+            req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1073,10 +1071,8 @@ public class LLM {
             }
 
             req.add("content", array);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
-            req.addProperty("role", "user");
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", ROLE_USER);
             JsonArray contentJsons = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1095,12 +1091,12 @@ public class LLM {
                 contentJsons.add(obj2);
             }
             req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", llmPart.getText());
         }
-
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENAICOMPATIBLE) {
-
-        }
+        
         return req;
     }
 

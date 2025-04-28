@@ -53,12 +53,13 @@
             </div>
             <div v-if="allSuggestions.length" class="sc-user-input--hcbutton" @click="toggleCommond">
               <div><span style="color: aqua;">/</span><span>指令</span></div>
-            </div>
-            <div class="sc-user-input--hcbutton" @click="toggleSendMethod">
-              <div>
-                <span v-if="isEnter" style="color: aqua">Enter</span><span v-else style="color: aqua">Shift+Enter</span>
-              </div>
             </div> -->
+            <div class="sc-user-input--hcbutton" @click="toggleSendShiftEnter">
+              <div>
+                <span v-if="isEnter" style="color: aqua">Enter</span>
+                <span v-else style="color: aqua">Shift+Enter</span>
+              </div>
+            </div>
             <div class="sc-user-input--hcbutton">
               <div>
                 <el-radio-group v-model="sendMethod" @change="toggleSendMethod">
@@ -508,6 +509,14 @@ export default {
           }));
         }
       }
+    },
+    toggleSendShiftEnter() {
+      if (this.isEnter) {
+        localStorage.setItem("isEnter", "false");
+      } else {
+        localStorage.setItem("isEnter", "true");
+      }
+      this.isEnter = !this.isEnter;
     },
     toggleSendMethod(val: string) {
       this.$props.changeSendMethod(val)

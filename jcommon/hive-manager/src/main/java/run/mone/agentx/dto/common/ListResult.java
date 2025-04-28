@@ -1,4 +1,4 @@
-package run.mone.agentx.dto;
+package run.mone.agentx.dto.common;
 
 
 import lombok.Data;

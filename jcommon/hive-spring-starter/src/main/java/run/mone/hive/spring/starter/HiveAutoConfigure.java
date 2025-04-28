@@ -14,6 +14,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
@@ -22,6 +23,7 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +42,6 @@ public class HiveAutoConfigure {
     @Value("${mcp.llm:claude35}")
     private String llmType;
 
-
     //大模型
     @Bean
     @ConditionalOnMissingBean
@@ -54,7 +55,9 @@ public class HiveAutoConfigure {
                     .build();
             return new LLM(config);
         }
-
+        if ("deepseek".equals(llmType)) {
+            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
+        }
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         return new LLM(config);
@@ -79,22 +82,23 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList, @Nullable RoleMeta roleMeta) {
         if (CollectionUtils.isEmpty(toolList)) {
             toolList.addAll(Lists.newArrayList(
                     new ChatTool(),
                     new AskTool(),
-                    new AttemptCompletionTool()));
+                    new AttemptCompletionTool()
+            ));
         }
         return new RoleService(llm,
                 toolList,
                 functionList.stream().map(it ->
                         new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
                 ).toList(),
-                hiveManagerService
+                hiveManagerService,
+                roleMeta
         );
     }
-
 
     //Mcp Server
     @Bean
@@ -102,6 +106,5 @@ public class HiveAutoConfigure {
         functions.forEach(it -> it.setRoleService(roleService));
         return new McpServer(transport, functions, meta);
     }
-
 
 }
