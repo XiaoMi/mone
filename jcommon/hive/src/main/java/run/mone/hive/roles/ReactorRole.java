@@ -380,7 +380,11 @@ public class ReactorRole extends Role {
 
 
     private String getSystemPrompt() {
-        String prompt = MonerSystemPrompt.mcpPrompt("default", this.name, this.customInstructions, this.tools);
+        String roleDescription = "";
+        if (StringUtils.isNotEmpty(this.goal)) {
+            roleDescription = this.profile + "\n" + this.goal + "\n" + this.constraints + "\n";
+        }
+        String prompt = MonerSystemPrompt.mcpPrompt(roleDescription, "default", this.name, this.customInstructions, this.tools);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }

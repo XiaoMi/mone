@@ -7,6 +7,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.common.ClientMeta;
@@ -16,7 +17,6 @@ import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -167,7 +167,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 StreamObserver<StreamResponse> observer = userConnections.get(clientId);
                 //直接通知到client
                 if (null != observer) {
-                    observer.onNext(StreamResponse.newBuilder().setCmd(Const.NOTIFY_MSG).setData(GsonUtils.GSON.toJson(params)).build());
+                    observer.onNext(StreamResponse.newBuilder().setCmd(Const.NOTIFY_MSG).setData(GsonUtils.gson.toJson(params)).build());
                 }
             }
         }
@@ -302,7 +302,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             List<Tool> tools = new ArrayList<>();
             mcpServer.getStreamTools().forEach(it -> {
                 McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
-                String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
+                String inputSchemaStr = GsonUtils.gson.toJson(inputSchema);
                 Tool tool = Tool.newBuilder()
                         .setName(it.tool().name()).setDescription(it.tool().description())
                         .setInputSchema(inputSchemaStr)
@@ -312,7 +312,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
             mcpServer.getTools().forEach(it -> {
                 McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
-                String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
+                String inputSchemaStr = GsonUtils.gson.toJson(inputSchema);
                 Tool tool = Tool.newBuilder()
                         .setName(it.tool().name()).setDescription(it.tool().description())
                         .setInputSchema(inputSchemaStr)

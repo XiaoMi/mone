@@ -19,7 +19,7 @@ public class PromptTest {
     @Test
     public void testPrompt() {
         List<ITool> tools = Lists.newArrayList(new ChatTool(),new AskTool(),new AttemptCompletionTool());
-        String prompt = MonerSystemPrompt.mcpPrompt("default", "zzy", "", tools);
+        String prompt = MonerSystemPrompt.mcpPrompt("","default", "zzy", "", tools);
         System.out.println(prompt);
     }
 
