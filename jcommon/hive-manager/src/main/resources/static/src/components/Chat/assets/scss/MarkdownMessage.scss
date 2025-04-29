@@ -44,6 +44,7 @@
     &-wrapper {
       position: relative;
       padding: 24px 0;
+      background: #434343;
     }
 
     &-header {
@@ -141,6 +142,7 @@
     /* 显示全部时的样式 */
     &-body.show-code {
       height: auto;
+      background: transparent;
     }
   }
 }
