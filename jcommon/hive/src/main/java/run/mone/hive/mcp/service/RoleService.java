@@ -1,9 +1,6 @@
 package run.mone.hive.mcp.service;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import lombok.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
@@ -12,6 +9,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -31,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
  * @date 2025/4/9 09:49
  */
 @RequiredArgsConstructor
+@Data
 public class RoleService {
 
     private final LLM llm;
@@ -39,41 +38,31 @@ public class RoleService {
 
     private final List<McpSchema.Tool> mcpToolList;
 
+    private final List<McpFunction> functionList;
+
     private final HiveManagerService hiveManagerService;
 
     //通过这个反向注册一些role元数据进来
     private final RoleMeta roleMeta;
 
     @Value("${mcp.hub.path:}")
-    @Setter
-    @Getter
     private String mcpPath;
 
     @Value("${mcp.agent.name:}")
-    @Setter
-    @Getter
     private String agentName;
 
     @Value("${mcp.agent.group:}")
-    @Setter
-    @Getter
     private String agentGroup;
 
     @Value("${mcp.agent.version:}")
-    @Setter
-    @Getter
     private String agentversion;
 
     @Value("${mcp.agent.ip:}")
-    @Setter
-    @Getter
     private String agentIp;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
     @Value("${mcp.grpc.port:9999}")
-    @Setter
-    @Getter
     private int grpcPort;
 
     @PostConstruct
@@ -109,6 +98,7 @@ public class RoleService {
                 hiveManagerService.heartbeat(healthInfo);
             }
         };
+        role.setFunctionList(this.functionList);
         role.setOwner(owner);
         role.setClientId(clientId);
 

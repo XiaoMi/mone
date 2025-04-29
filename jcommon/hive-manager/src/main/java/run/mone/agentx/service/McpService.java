@@ -38,13 +38,13 @@ public class McpService {
 
         if (instance == null) {
             // 获取agent详情
-            if (agentDto.getInstances() == null || agentDto.getInstances().size() == 0) {
+            if (agentDto.getInstances() == null || agentDto.getInstances().isEmpty()) {
                 return;
             }
             instance = agentDto.getInstances().get(0);
         }
 
-        //这个需要那个用户就传他的id (需要从前端拿过来) //TODO
+        //这个需要那个用户就传他的id (需要从前端拿过来)
         String clientId = getAgentKey(agentDto.getAgent());
 
         String groupKey = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
@@ -53,17 +53,7 @@ public class McpService {
             lock.lock();
             McpHub hub = McpHubHolder.get(groupKey);
             if (Optional.ofNullable(hub).isEmpty()) {
-                McpHub mcpHub = new McpHub(null, (msg) -> {
-                }, true);
-                ServerParameters parameters = new ServerParameters();
-                parameters.setType("grpc");
-                parameters.getEnv().put("host", instance.getIp());
-                parameters.getEnv().put("port", String.valueOf(instance.getPort()));
-                parameters.getEnv().put("token", "token");
-                parameters.getEnv().put("clientId", clientId);
-                //底下有断线从连机制,先解决连一个的问题
-                mcpHub.connectToServer(groupKey, parameters);
-                McpHubHolder.put(groupKey, mcpHub);
+                connectMcp(instance, clientId, groupKey);
             }
         } catch (Exception e) {
             log.error("callMcp error.", e);
@@ -72,13 +62,27 @@ public class McpService {
         }
 
         // 调用MCP
-        MonerMcpClient.mcpCall(it, groupKey, this.mcpInterceptor, sink);
+        MonerMcpClient.mcpCall(it, groupKey, this.mcpInterceptor, sink, (name) -> null);
+    }
+
+    private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
+        McpHub mcpHub = new McpHub(null, (msg) -> {
+        }, true);
+        ServerParameters parameters = new ServerParameters();
+        parameters.setType("grpc");
+        parameters.getEnv().put("host", instance.getIp());
+        parameters.getEnv().put("port", String.valueOf(instance.getPort()));
+        parameters.getEnv().put("token", "token");
+        parameters.getEnv().put("clientId", clientId);
+        //底下有断线从连机制,先解决连一个的问题
+        mcpHub.connectToServer(groupKey, parameters);
+        McpHubHolder.put(groupKey, mcpHub);
     }
 
 
     private String getAgentKey(Agent agent) {
         return agent.getName() + ":"
-                + (agent.getGroup() == null ? "" :  agent.getGroup()) + ":"
+                + (agent.getGroup() == null ? "" : agent.getGroup()) + ":"
                 + (agent.getVersion() == null ? "" : agent.getVersion());
     }
 

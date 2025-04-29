@@ -3,6 +3,7 @@ package run.mone.hive.prompt;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import run.mone.hive.bo.InternalServer;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
@@ -42,7 +43,7 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static String mcpPrompt(String roleDescription, String from, String name, String customInstructions, List<ITool> tools) {
+    public static String mcpPrompt(String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -59,6 +60,9 @@ public class MonerSystemPrompt {
 
         //注入工具
         data.put("toolList", tools);
+        //注入mcp工具
+        data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
+        data.put("mcpToolList", mcpTools);
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
                 Lists.newArrayList(
                         //反射执行
@@ -68,6 +72,7 @@ public class MonerSystemPrompt {
                 ));
     }
 
+    //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from) {
         final List<Map<String, Object>> serverList = new ArrayList<>();
         List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
@@ -92,7 +97,9 @@ public class MonerSystemPrompt {
                 server.put("tools", toolsStr);
                 serverList.add(server);
             }));
-            CacheService.ins().cacheObject(CacheService.tools_key, serverList);
+            if (!serverList.isEmpty()) {
+                CacheService.ins().cacheObject(CacheService.tools_key, serverList);
+            }
         }
         return serverList;
     }
@@ -170,6 +177,11 @@ public class MonerSystemPrompt {
             
             
             <% } %>
+            
+            # 我这里有一些内部mcp工具,如果发现内部mcp工具就可以用来解决问题,请优先使用内部mcp工具
+            ## serverName:${internalServer.name}  ${internalServer.args}
+            ### Available Tools
+            ${mcpToolList}
             
             # Tool Use Guidelines
             

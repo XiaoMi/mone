@@ -239,8 +239,8 @@ public class McpHub {
         try {
             client.initialize();
             server.setStatus("connected");
+            //放入工具(tool)
             server.setTools(client.listTools().tools());
-            // Fetch resources and resource templates if needed
         } catch (Exception e) {
             log.error("Failed to connect to MCP server {}: ", name, e);
             server.setStatus("disconnected");

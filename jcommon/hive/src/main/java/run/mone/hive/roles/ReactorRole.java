@@ -18,6 +18,7 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -53,8 +54,10 @@ public class ReactorRole extends Role {
 
     private List<ITool> tools = new ArrayList<>();
 
+    //内部工具
     private Map<String, ITool> toolMap = new HashMap<>();
 
+    //mcp工具
     private List<McpSchema.Tool> mcpTools = new ArrayList<>();
 
     private Map<String, McpSchema.Tool> mcpToolMap = new HashMap<>();
@@ -76,6 +79,8 @@ public class ReactorRole extends Role {
     private String group;
 
     private int grpcPort;
+
+    private List<McpFunction> functionList;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -132,8 +137,11 @@ public class ReactorRole extends Role {
         this.group = group;
         this.version = version;
         this.grpcPort = port;
+        //内部工具
         tools.forEach(this::addTool);
+        //mcp工具
         mcpTools.forEach(this::addMcpTool);
+
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
@@ -269,15 +277,15 @@ public class ReactorRole extends Role {
 
             AtomicBoolean hasError = new AtomicBoolean(false);
 
-            //调用大模型
-            String res = callLlm(compoundMsg, sink, hasError);
-            log.info("res\n:{} hasError:{}", res, hasError.get());
+            //调用大模型(选用合适的工具)
+            String toolRes = callLlm(compoundMsg, sink, hasError);
+            log.info("res\n:{} hasError:{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
 
             // 解析工具调用(有可能是tool也可能是mcp)
-            List<Result> tools = new MultiXmlParser().parse(res);
+            List<Result> tools = new MultiXmlParser().parse(toolRes);
 
             log.info("tools num:{}", tools.size());
 
@@ -286,7 +294,7 @@ public class ReactorRole extends Role {
 
             String name = it.getTag();
             if (this.toolMap.containsKey(name)) {// 执行tool
-                callTool(name, it, res, sink, buildToolExtraParam(msg));
+                callTool(name, it, toolRes, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
@@ -310,7 +318,7 @@ public class ReactorRole extends Role {
     }
 
     private void callMcp(Result it, FluxSink sink) {
-        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
+        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
             this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:" + textContent.text() + "\n" + "; 请继续").build());
@@ -382,9 +390,9 @@ public class ReactorRole extends Role {
     private String getSystemPrompt() {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
-            roleDescription = this.profile + "\n" + this.goal + "\n" + this.constraints + "\n";
+            roleDescription = "\nprofile:" + this.profile + "\ngoal:" + this.goal + "\nconstraints:" + this.constraints + "\n";
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(roleDescription, "default", this.name, this.customInstructions, this.tools);
+        String prompt = MonerSystemPrompt.mcpPrompt(roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }

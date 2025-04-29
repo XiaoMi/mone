@@ -95,6 +95,7 @@ public class HiveAutoConfigure {
                 functionList.stream().map(it ->
                         new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
                 ).toList(),
+                functionList,
                 hiveManagerService,
                 roleMeta
         );

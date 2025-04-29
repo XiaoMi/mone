@@ -2,22 +2,25 @@ package run.mone.hive.mcp.client;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.McpResult;
 import run.mone.hive.common.Result;
 import run.mone.hive.common.Safe;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Slf4j
 public class MonerMcpClient {
 
-
-    public static McpResult mcpCall(Result it, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink) {
+    public static McpResult mcpCall(Result it, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
         return Safe.call(() -> {
             String serviceName = it.getKeyValuePairs().get("server_name");
             String toolName = it.getKeyValuePairs().get("tool_name");
@@ -30,16 +33,32 @@ public class MonerMcpClient {
                 //流式调用
                 if (toolName.startsWith("stream")) {
                     StringBuilder sb = new StringBuilder();
-                    McpHubHolder.get(from)
-                            .callToolStream(serviceName, toolName, toolArguments)
-                            .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
-                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                                    //直接返回给前端
-                                    s.next(tc.text());
-                                    sb.append(tc.text());
-                                }
-                            }))
-                            .blockLast();
+                    //内部调用(直接调用本地的mcp)
+                    if (serviceName.equals(Const.INTERNAL_SERVER)) {
+                        log.info("call internal mcp:{}", toolName);
+                        McpFunction function = f.apply(toolName);
+                        Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
+                        flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
+                            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                //直接返回给前端
+                                s.next(tc.text());
+                                sb.append(tc.text());
+                            }
+                        })).blockLast();
+                    } else {
+                        //外部的mcp
+                        McpHubHolder.get(from)
+                                .callToolStream(serviceName, toolName, toolArguments)
+                                .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
+                                    if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                        //直接返回给前端
+                                        s.next(tc.text());
+                                        sb.append(tc.text());
+                                    }
+                                }))
+                                .blockLast();
+                    }
+
                     log.debug("res:{}", sb);
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                 } else {
