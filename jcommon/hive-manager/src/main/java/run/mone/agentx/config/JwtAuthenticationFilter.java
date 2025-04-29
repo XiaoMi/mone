@@ -32,6 +32,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = null;
         String username = null;
 
+        if (request.getRequestURI().startsWith("/agent-manager") || request.getRequestURI().startsWith("/assets") || request.getRequestURI().startsWith("/scripts")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         // 首先尝试从 Authorization header 获取 token
         final String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
