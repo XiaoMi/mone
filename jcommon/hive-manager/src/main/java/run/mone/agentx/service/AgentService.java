@@ -300,8 +300,8 @@ public class AgentService {
             long cutoffTime = currentTime - HEARTBEAT_TIMEOUT;
             long deleteTime = currentTime - HEARTBEAT_DELETE_TIMEOUT;
             
-            // 查找所有当前标记为活跃的Agent实例
-            agentInstanceRepository.findByIsActiveTrue()
+            // 查找所有Agent实例，不限制isActive状态
+            agentInstanceRepository.findAll()
                     .filter(instance -> instance.getLastHeartbeatTime() < cutoffTime)
                     .flatMap(instance -> {
                         // 如果超过10分钟没有心跳，直接删除
