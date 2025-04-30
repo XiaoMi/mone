@@ -3,19 +3,19 @@ package run.mone.mcp.miline.function;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import java.util.ArrayList;
 
 @Data
 @Slf4j
-public class MilineFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class MilineFunction implements McpFunction {
 
     private String name = "stream_miline_executor";
     private String desc = "Miline CICD platform operations including managing project members and running pipelines";
@@ -53,6 +53,11 @@ public class MilineFunction implements Function<Map<String, Object>, Flux<McpSch
     
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
+
+    @Override
+    public String getToolScheme() {
+        return toolSchema;
+    }
 
     @Data
     private static class ProjectMember {
