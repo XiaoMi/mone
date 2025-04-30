@@ -92,21 +92,13 @@ public class ReactorRole extends Role {
         this.mcpToolMap.put(tool.name(), tool);
     }
 
-    private String customRules = """
-            你是${name},是一名优秀的私人顾问.
-            """;
-
     private String userPrompt = """
             ===========
-            Rules:
-            ${rules}
-            
-            ===========
-            History:
+            History:(之前的记录)
             ${history}
             
             ===========
-            Latest Questions:
+            Latest Questions(最后的步骤):
             ${question}
             
             """ + "\n" +
@@ -269,8 +261,7 @@ public class ReactorRole extends Role {
 
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
-            String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
-            String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
+            String userPrompt = buildUserPrompt(msg, history);
             log.info("userPrompt:{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
@@ -321,9 +312,9 @@ public class ReactorRole extends Role {
         McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:" + textContent.text() + "\n" + "; 请继续").build());
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:\n" + textContent.text() + "\n").build());
         } else if (content instanceof McpSchema.ImageContent imageContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n" + "; 请继续").build());
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n").build());
         }
     }
 
@@ -397,9 +388,8 @@ public class ReactorRole extends Role {
         return prompt;
     }
 
-    public String buildUserPrompt(Message msg, String history, String customRulesReplaced) {
+    public String buildUserPrompt(Message msg, String history) {
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
-                "rules", customRulesReplaced,
                 "history", history,
                 "question", msg.getContent()));
     }

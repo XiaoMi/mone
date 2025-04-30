@@ -105,7 +105,7 @@ public class MonerSystemPrompt {
     }
 
     public static final String TOOL_USE_INFO = """
-             You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
+            You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
             (任何工具每次只使用一个,不要一次返回多个工具,不管是mcp tool 还是 tool,你必须严格遵守这个条款,不然系统会崩溃 thx)
             """;
 
