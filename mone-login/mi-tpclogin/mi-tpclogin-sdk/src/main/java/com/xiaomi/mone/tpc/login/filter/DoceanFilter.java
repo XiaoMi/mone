@@ -2,7 +2,6 @@ package com.xiaomi.mone.tpc.login.filter;
 
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 
-import java.net.MalformedURLException;
 import java.util.Map;
 
 /**

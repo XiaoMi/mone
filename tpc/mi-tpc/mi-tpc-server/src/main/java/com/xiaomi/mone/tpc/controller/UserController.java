@@ -36,7 +36,7 @@ public class UserController {
     @ArgCheck
     @RequestMapping(value = "/list")
     public ResultVo<PageDataVo<UserVo>> list(@RequestBody UserQryParam param) {
-        return userService.list(param);
+        return userService.list(param, true);
     }
 
     @ArgCheck
