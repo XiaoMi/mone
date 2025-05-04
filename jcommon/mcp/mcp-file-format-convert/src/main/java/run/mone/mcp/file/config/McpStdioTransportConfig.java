@@ -1,4 +1,4 @@
-package run.mone.mcp.git.config;
+package run.mone.mcp.file.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
