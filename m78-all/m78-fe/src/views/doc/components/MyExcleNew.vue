@@ -97,6 +97,14 @@ const initSheet = (data) => {
   const content = stox(wb)
   grid.loadData(content)
 }
+// const uploadFile = (fileV) => {  读文件不需要了
+//   if (fileV) {
+//     fileV.arrayBuffer().then((arrayBuffer) => {
+//       const content = stox(XLSX.read(arrayBuffer))
+//       grid.loadData(content)
+//     })
+//   }
+// }
 const emits = defineEmits(['uploadSuccess'])
 const uploadSuccess = (params) => {
   emits('uploadSuccess', params)
@@ -222,6 +230,11 @@ const createDiv = ({ action, text, isDivide = false }) => {
 const init = () => {
   grid = new Spreadsheet('#divExcle', options.value)
     .loadData([])
+    // .on('change', (data) => {
+    //   console.log('data chang事件', data)
+    //   // const gridData = grid.getData()
+    //   // console.log('gridData', gridData)
+    // })
     .on('cell-edited', (cell, ri, ci, state) => {
       console.log('cell cell-edited事件', cell, 'ri', ri, 'ci', ci, state)
     })

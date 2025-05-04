@@ -80,11 +80,15 @@ import { ElMessage } from 'element-plus'
 import AnalysisLoading from '@/components/AnalysisLoading.vue'
 import ExportApiTable from '@/components/export-http/ExportApiTable'
 
+// let controller = new AbortController()
+
 const dataSourceStore = useDataSourceStore()
 
 const content = ref<Record<string, string>[]>([])
+// const connectionId = ref('')
 const inputsData = ref<DataSource.ChatItem[]>([])
 const loading = ref(false)
+// let controller = new AbortController()
 const dialogVisible = ref(false)
 const hisChatList = ref<DataSource.HistoryChat[]>([])
 const treeData = ref<DataSource.Tree[]>([])

@@ -1,10 +1,25 @@
+<!--
+ * @Description:
+ * @Date: 2024-01-31 16:53:45
+ * @LastEditTime: 2025-01-21 10:34:28
+-->
 <template>
   <!-- 上传区域 -->
   <div class="pt-[10px]" id="container" ref="container">
     <el-button ref="selectfiles" id="selectfiles">上传新文件</el-button>
+    <!-- v-if="fileData.fileList.length" -->
+    <!-- <el-button
+      id="postfiles"
+      ref="postfiles"
+      type="primary"
+      size="mini"
+      @click="methods.FileUplodeOn"
+      >开始上传</el-button
+    > -->
   </div>
   <el-card v-if="fileData.fileList.length" style="margin-top: 20px">
     <el-table :data="fileData.fileList" style="width: 100%">
+      <!-- <el-table-column type="selection" width="55" /> -->
       <el-table-column prop="id" label="文件Id"></el-table-column>
       <el-table-column prop="fileName" label="文件名"></el-table-column>
       <el-table-column label="进度" v-slot="{ row }">
@@ -54,6 +69,9 @@
           >取消上传</el-button
         >
       </el-table-column>
+      <!-- <el-table-column fixed="right" label="操作" v-slot="{ row }" width="112px">
+        <el-button type="danger" size="small" @click="deleteFile(row)">删除</el-button>
+      </el-table-column> -->
     </el-table>
   </el-card>
 </template>
@@ -100,6 +118,10 @@ function send_request() {
   }
 
   if (xmlhttp != null) {
+    // const { query } = route
+    // serverUrl是 用户获取 '签名和Policy' 等信息的应用服务器的URL，请将下面的IP和Port配置为您自己的真实信息。
+    // var serverUrl =
+    //   window.location.origin + '/api/ai-plugin/z/oss/policy?knowledgeBaseId=' +props.knowledgeId
     var serverUrl =
       window.location.origin + '/api/z/oss/policy?knowledgeBaseId=' + props.knowledgeId
 
@@ -174,6 +196,7 @@ const fileData = reactive({
   fileOptions: {
     runtimes: 'html5,flash,silverlight,html4',
     browse_button: 'selectfiles',
+    //multi_selection: false,
     container: container.value,
     flash_swf_url: 'lib/plupload-2.1.2/js/Moxie.swf',
     silverlight_xap_url: 'lib/plupload-2.1.2/js/Moxie.xap',
@@ -195,7 +218,6 @@ const uploader = computed(() => {
 const methods = {
   //绑定进队列
   FilesAdded(uploader: any, files: any) {
-    console.log('files-----', files)
     let objarr = files.map((val: any) => {
       return {
         id: val.id,

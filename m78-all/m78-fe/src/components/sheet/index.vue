@@ -70,11 +70,13 @@ onMounted(async () => {
     const addedData = nData.filter(
       ({ id: nId }) => preData.value?.findIndex(({ id }) => id == nId) == -1
     )
+    // emits('insert', addedData)
     console.log(addedData)
     // remove
     const delData = preData.value?.filter(
       ({ id: oId }) => nData.findIndex(({ id }) => id == oId) == -1
     )
+    // emits('delete', delData)
     console.log(delData)
     // update
     const updateData = nData.filter((nIt) => {

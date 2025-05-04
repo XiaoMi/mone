@@ -1,12 +1,26 @@
+<!--
+ * @Description: 
+ * @Date: 2024-03-14 20:46:07
+ * @LastEditTime: 2024-07-17 11:28:46
+-->
 <template>
   <div>
     <el-tooltip :content="t('translate.read')" v-if="!isReading">
-      <el-button class="sounds-icon" @click="startRead" :disabled="props.disabled" text>
+      <el-button
+        :class="'sounds-icon ' + (props.size === 'small' ? 'small' : '')"
+        @click.stop="startRead"
+        :disabled="props.disabled"
+        text
+      >
         <i class="iconfont icon-yuyinlangdu"></i>
       </el-button>
     </el-tooltip>
     <el-tooltip :content="t('translate.stopRead')" v-else>
-      <el-button class="sounds-icon" @click="stopRead" text>
+      <el-button
+        :class="'sounds-icon ' + (props.size === 'small' ? 'small' : '')"
+        @click.stop="stopRead"
+        text
+      >
         <i class="iconfont icon-tingzhi"></i>
       </el-button>
     </el-tooltip>
@@ -30,6 +44,10 @@ const props = defineProps({
     default: ''
   },
   language: {
+    type: String,
+    default: ''
+  },
+  size: {
     type: String,
     default: ''
   }
@@ -111,6 +129,10 @@ defineExpose({
   border-radius: 50%;
   .iconfont {
     font-size: 16px;
+  }
+  &.small {
+    width: 29px;
+    height: 29px;
   }
 }
 </style>
