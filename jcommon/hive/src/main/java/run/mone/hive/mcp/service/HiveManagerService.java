@@ -189,7 +189,7 @@ public class HiveManagerService {
             String heartbeatUrl = baseUrl + "/api/v1/agents/health";
             Object response = restTemplate.postForObject(heartbeatUrl, request, Object.class);
 
-            log.debug("Heartbeat response: {}", response);
+            log.info("Heartbeat response: {}", response);
         } catch (Exception e) {
             log.error("Error during heartbeat: {}", e.getMessage(), e);
         }
