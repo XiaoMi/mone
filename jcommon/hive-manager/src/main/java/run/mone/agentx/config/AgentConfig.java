@@ -1,9 +1,11 @@
 package run.mone.agentx.config;
 
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.agentx.tools.AgentTool;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
@@ -18,6 +20,9 @@ public class AgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Autowired
+    private AgentTool agentTool;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -28,7 +33,8 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool()))
+                        new AttemptCompletionTool(),
+                        agentTool))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName)))
                 .build();

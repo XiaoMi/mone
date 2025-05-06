@@ -47,7 +47,7 @@ public class HiveAutoConfigure {
     @Bean
     @ConditionalOnMissingBean
     public LLM llm() {
-        if ("claude35".equals(llmType)) {
+        if (LLMProvider.CLAUDE_COMPANY.name().equals(llmType)) {
             LLMConfig config = LLMConfig.builder()
                     .llmProvider(LLMProvider.CLAUDE_COMPANY)
                     .url(getClaudeUrl())
