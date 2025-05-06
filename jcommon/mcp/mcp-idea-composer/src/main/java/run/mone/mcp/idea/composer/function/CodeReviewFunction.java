@@ -5,12 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.composer.service.IdeaService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * review code
@@ -18,7 +18,7 @@ import java.util.function.Function;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CodeReviewFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class CodeReviewFunction implements McpFunction {
 
     private IdeaService ideaService;
 

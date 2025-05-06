@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.composer.config.Const;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCall;
@@ -14,11 +15,10 @@ import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Data
 @Slf4j
-public class ComposerFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class ComposerFunction implements McpFunction {
 
     public ComposerFunction(String port) {
         this.ideaPort = port;
@@ -28,15 +28,15 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
 
     private static String desc = "根据需求或者需求图片，生成业务代码或者单元测试等一切涉及项目的改动，支持创建新文件、修改现有代码、重构代码结构、添加注释文档、修复bug、添加高危元素注解、更新配置文件（如pom.xml）、生成API接口、编写数据库操作逻辑等。可以处理项目中的任何文件类型，包括但不限于Java、XML、YAML、JSON、SQL等。如果有图片，无需知道图片内容，只按要求返回即可";
 
-    public static String getName() {
+    public  String getName() {
         return name;
     }
 
-    public static String getDesc(String agentName) {
+    public  String getDesc() {
         return desc;
     }
 
-    public static String getToolScheme() {
+    public  String getToolScheme() {
         return toolScheme;
     }
 
