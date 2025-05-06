@@ -49,6 +49,7 @@ public class McpController {
         
         // 创建Result对象
         Result result = new Result("mcp_request", keyValuePairs);
+        result.setFrom("hive_manager");
         
         // 使用Flux.create创建消息流
         return Flux.create(sink -> {

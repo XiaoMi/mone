@@ -78,7 +78,10 @@ public class ComposerFunction implements McpFunction {
             }
 
             req.addProperty("requirement", (String) arguments.get("requirement"));
-            req.addProperty("projectName", (String) arguments.get("projectName"));
+
+            if (arguments.containsKey("projectName")) {
+                req.addProperty("projectName", (String) arguments.get("projectName"));
+            }
 
             Safe.run(() -> {
                 if (arguments.containsKey("fileLists")) {

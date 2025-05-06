@@ -3,6 +3,7 @@ package run.mone.mcp.idea.composer.handler;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
 import run.mone.hive.actions.WriteDesign;
@@ -73,7 +74,7 @@ public class CodeGeneratorTeam {
             Object additionalData = conversationContext.getAdditionalData();
             if (additionalData != null) {
                 JsonElement element = ((JsonObject) conversationContext.getAdditionalData()).get("rules");
-                if (element != null) {
+                if (element != null && !element.isJsonNull()) {
                     rules = element.getAsString();
                 }
             }
@@ -92,8 +93,11 @@ public class CodeGeneratorTeam {
 
     private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteDesign writeDesign, PromptResult promptResult, Design design, JsonObject json) {
         writeDesign.setFunction((req, action, context) -> {
-            if (json.has(Constants.FROM)) {
-                return Message.builder().content("").role(design.getName()).build();
+            //没有项目名就不需要设计了
+            if (!json.has("projectName")) {
+                String content = "跳过项目设计,直接编写代码即可";
+                promptResult.setContent(content);
+                return Message.builder().content(content).role(design.getName()).build();
             }
 
             String res = new FunctionalAnalysisHandler(botChainCallContext).getAnalysisResponse(conversationContext.getUserQuery(), promptResult, conversationContext);
@@ -106,11 +110,14 @@ public class CodeGeneratorTeam {
     private static void setActions(ConversationContext conversationContext, PromptResult promptResult, Architect architect, JsonObject json) {
         AnalyzeArchitecture analyzeArchitecture = new AnalyzeArchitecture();
         analyzeArchitecture.setFunction((req, action, context) -> {
-            if (json.has(Constants.FROM)) {
-                return Message.builder().content("").role(architect.getName()).build();
-            }
-
             ProjectReportHandler handler = new ProjectReportHandler();
+            //从hive manager 调用过来的,没有projectName
+            if (!json.has("projectName")) {
+                conversationContext.setUserQuery(json.get("requirement").toString());
+                String report = "跳过项目信息,直接编写代码即可";
+                handler.addAiChatMessage(handler.getResDisplayPrompt(), report, Role.assistant, conversationContext);
+                return Message.builder().content(report).role(architect.getName()).build();
+            }
             String res = handler.generateProjectReport(conversationContext, json);
             promptResult.setContent(res);
             return Message.builder().content(res).role(architect.getName()).build();
