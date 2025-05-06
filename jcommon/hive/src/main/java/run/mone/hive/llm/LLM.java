@@ -150,7 +150,9 @@ public class LLM {
                 .build();
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", model);
+        if (StringUtils.isNotEmpty(model)) {
+            requestBody.addProperty("model", model);
+        }
 
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
@@ -195,6 +197,10 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+        }
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
@@ -216,7 +222,11 @@ public class LLM {
         Request.Builder requestBuilder = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                requestBuilder.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else {
+                requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -245,6 +255,12 @@ public class LLM {
                 JsonObject candidate = jsonResponse.getAsJsonArray("candidates").get(0).getAsJsonObject();
                 JsonObject content = candidate.get("content").getAsJsonObject();
                 String text = content.get("parts").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
+                return text;
+            }
+
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                JsonArray content = jsonResponse.get("content").getAsJsonArray();
+                String text = content.get(0).getAsJsonObject().get("text").getAsString();
                 return text;
             }
 
