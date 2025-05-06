@@ -23,6 +23,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
@@ -65,6 +67,11 @@ public class RoleService {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
+
+    //支持延时创建agent(单位是s)
+    @Value("${mcp.agent.delay:0}")
+    private int delay;
+
     @PostConstruct
     @SneakyThrows
     public void init() {
@@ -74,7 +81,13 @@ public class RoleService {
         }
 
         //创建一个默认角色
-        Safe.run(() -> createRole(Const.DEFAULT, Const.DEFAULT));
+        if (delay == 0) {
+            Safe.run(() -> createRole(Const.DEFAULT, Const.DEFAULT));
+        } else {
+            Safe.run(() -> Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+                createRole(Const.DEFAULT, Const.DEFAULT);
+            }, delay, TimeUnit.SECONDS));
+        }
     }
 
     public ReactorRole createRole(String owner, String clientId) {

@@ -11,7 +11,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 
 
-@Configuration
+//@Configuration
 public class AiConfig {
 
     @Value("${mcp.grpc.port:9999}")

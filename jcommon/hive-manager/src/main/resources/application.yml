@@ -2,12 +2,16 @@ server:
   port: 8080
 
 mcp:
+  llm: doubao_deepseek_v3
   transport:
     type: grpc
   grpc:
     port: 9286
   hub:
-    path: /Users/dingpei/mcp_config/mcp.json
+    path:
+  agent:
+    name: agentManager
+    delay: 8
 
 spring:
   profiles:
