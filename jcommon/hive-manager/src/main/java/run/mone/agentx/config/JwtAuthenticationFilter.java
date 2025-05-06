@@ -35,7 +35,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 如果请求路径是静态资源，则不进行 token 认证
         // 登录和注册也不需要校验
         String path = request.getRequestURI();
-        if(path.startsWith("/agent-manager") ||
+        if(path.isEmpty() ||
+                path.startsWith("/agent-manager") ||
                 path.startsWith("/assets/") ||
                 path.startsWith("/scripts/") ||
                 path.equals("/api/v1/users/register") ||
@@ -44,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/manager/v1/users/login") ||
                 path.equals("/a2a/v1/healthz") ||
                 path.equals("/ping") ||
+                path.equals("/") ||
                 path.equals("/error")) {
             filterChain.doFilter(request, response);
             return;
