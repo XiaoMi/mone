@@ -38,7 +38,7 @@
     </springProfile>
 
     <!-- 设置特定包的日志级别 -->
-    <logger name="run.mone" level="DEBUG"/>
+    <logger name="run.mone" level="INFO"/>
     <logger name="org.springframework" level="INFO"/>
     <logger name="org.hibernate" level="INFO"/>
 </configuration> 

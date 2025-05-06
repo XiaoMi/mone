@@ -3,6 +3,8 @@ server:
 
 mcp:
   llm: claude_company
+#  llm: doubao_deepseek_v3
+#  llm: grok
   transport:
     type: grpc
   grpc:

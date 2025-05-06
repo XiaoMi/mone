@@ -23,6 +23,7 @@ public class AgentConfig {
     @Autowired
     private AgentTool agentTool;
 
+    //管理agent的agent
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()

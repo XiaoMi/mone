@@ -55,7 +55,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         try {
             // 解析MCP请求
             McpRequest request = GsonUtils.gson.fromJson(payload, McpRequest.class);
-            
+
+
             // 构建MCP调用参数
             Map<String, String> keyValuePairs = new HashMap<>();
             keyValuePairs.put("outerTag", request.getOuterTag());
@@ -67,6 +68,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             
             // 创建Result对象
             Result result = new Result("mcp_request", keyValuePairs);
+            result.setFrom("hive_manager");
             
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
