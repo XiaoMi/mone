@@ -60,12 +60,12 @@ public class UserController {
                     LoginResponse loginResponse = LoginResponse.fromUser(user, token);
                     
                     // 创建 http-only cookie，过期时间与 JWT token 一致
-                    // 由于 JWT token 使用 UTC 时间，而 cookie 使用本地时间，需要调整时区
+                    // 由于 JWT token 使用 UTC 时间
                     ResponseCookie cookie = ResponseCookie.from(TOKEN_COOKIE_NAME, token)
                             .httpOnly(true)
                             .secure(true)  // 只在 HTTPS 下发送
                             .path("/")
-                            .maxAge((jwtExpiration + 8 * 60 * 60 * 1000) / 1000)  // 将毫秒转换为秒，并加上 8 小时的时区差
+                            .maxAge((jwtExpiration) / 1000)
                             .build();
                     
                     return ResponseEntity.ok()

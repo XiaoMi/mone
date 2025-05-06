@@ -38,10 +38,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = null;
         String username = null;
 
-        if (request.getRequestURI().startsWith("/agent-manager") || request.getRequestURI().startsWith("/assets") || request.getRequestURI().startsWith("/scripts")) {
+        // 如果请求路径是静态资源，则不进行 token 认证
+        // 登录和注册也不需要校验
+        String path = request.getRequestURI();
+        if(path.isEmpty() ||
+                path.startsWith("/agent-manager") ||
+                path.startsWith("/assets/") ||
+                path.startsWith("/scripts/") ||
+                path.equals("/api/v1/users/register") ||
+                path.equals("/api/manager/v1/users/register") ||
+                path.equals("/api/v1/users/login") ||
+                path.equals("/api/manager/v1/users/login") ||
+                path.equals("/a2a/v1/healthz") ||
+                path.equals("/ping") ||
+                path.equals("/") ||
+                path.equals("/error")) {
             filterChain.doFilter(request, response);
             return;
         }
+
         // 首先尝试从 Authorization header 获取 token
         final String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -60,7 +75,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (jwt == null) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"code\":403,\"message\":\"Token is required\"}");
             return;
         }
         
