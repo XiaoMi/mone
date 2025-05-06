@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.tool.ITool;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,9 +27,11 @@ public class RoleMeta {
     protected String constraints;
 
     //只可以内部调用
-    protected List<ITool> tools;
+    @Builder.Default
+    protected List<ITool> tools = new ArrayList<>();
 
     //外边用户也可以调用
-    protected List<McpFunction> mcpTools;
+    @Builder.Default
+    protected List<McpFunction> mcpTools = new ArrayList<>();
 
 }

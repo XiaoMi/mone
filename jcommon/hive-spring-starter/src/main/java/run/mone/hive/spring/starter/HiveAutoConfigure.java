@@ -82,15 +82,9 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> mcpTools, @Nullable RoleMeta roleMeta) {
-        if (null != roleMeta) {
-            if (roleMeta.getTools() != null) {
-                toolList.addAll(roleMeta.getTools());
-            }
-            if (roleMeta.getMcpTools() != null) {
-                mcpTools.addAll(roleMeta.getMcpTools());
-            }
-        }
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, @Nullable RoleMeta roleMeta) {
+        List<ITool> toolList = roleMeta.getTools();
+        List<McpFunction> mcpTools = roleMeta.getMcpTools();
 
         if (CollectionUtils.isEmpty(toolList)) {
             toolList.addAll(Lists.newArrayList(
@@ -112,10 +106,8 @@ public class HiveAutoConfigure {
 
     //Mcp Server
     @Bean
-    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, List<McpFunction> mcpTools, Map<String, String> meta, @Nullable RoleMeta roleMeta) {
-        if (null != roleMeta && null != roleMeta.getMcpTools()) {
-            mcpTools.addAll(roleMeta.getMcpTools());
-        }
+    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, @Nullable RoleMeta roleMeta) {
+        List<McpFunction> mcpTools = roleMeta.getMcpTools();
         mcpTools.forEach(it -> it.setRoleService(roleService));
         return new McpServer(transport, mcpTools, meta);
     }
