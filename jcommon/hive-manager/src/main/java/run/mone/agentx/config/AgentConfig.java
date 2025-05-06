@@ -18,6 +18,7 @@ public class AgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    //管理agent的agent
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
