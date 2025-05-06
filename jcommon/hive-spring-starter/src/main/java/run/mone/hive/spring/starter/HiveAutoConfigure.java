@@ -82,7 +82,16 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList, @Nullable RoleMeta roleMeta) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> mcpTools, @Nullable RoleMeta roleMeta) {
+        if (null != roleMeta) {
+            if (roleMeta.getTools() != null) {
+                toolList.addAll(roleMeta.getTools());
+            }
+            if (roleMeta.getMcpTools() != null) {
+                mcpTools.addAll(roleMeta.getMcpTools());
+            }
+        }
+
         if (CollectionUtils.isEmpty(toolList)) {
             toolList.addAll(Lists.newArrayList(
                     new ChatTool(),
@@ -92,10 +101,10 @@ public class HiveAutoConfigure {
         }
         return new RoleService(llm,
                 toolList,
-                functionList.stream().map(it ->
+                mcpTools.stream().map(it ->
                         new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
                 ).toList(),
-                functionList,
+                mcpTools,
                 hiveManagerService,
                 roleMeta
         );
@@ -103,9 +112,12 @@ public class HiveAutoConfigure {
 
     //Mcp Server
     @Bean
-    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, List<McpFunction> functions, Map<String, String> meta) {
-        functions.forEach(it -> it.setRoleService(roleService));
-        return new McpServer(transport, functions, meta);
+    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, List<McpFunction> mcpTools, Map<String, String> meta, @Nullable RoleMeta roleMeta) {
+        if (null != roleMeta && null != roleMeta.getMcpTools()) {
+            mcpTools.addAll(roleMeta.getMcpTools());
+        }
+        mcpTools.forEach(it -> it.setRoleService(roleService));
+        return new McpServer(transport, mcpTools, meta);
     }
 
 }

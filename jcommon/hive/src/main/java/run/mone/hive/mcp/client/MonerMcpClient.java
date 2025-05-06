@@ -47,16 +47,21 @@ public class MonerMcpClient {
                         })).blockLast();
                     } else {
                         //外部的mcp
-                        McpHubHolder.get(from)
-                                .callToolStream(serviceName, toolName, toolArguments)
-                                .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
-                                    if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                                        //直接返回给前端
-                                        s.next(tc.text());
-                                        sb.append(tc.text());
-                                    }
-                                }))
-                                .blockLast();
+                        Safe.run(()->{
+                            McpHubHolder.get(from)
+                                    .callToolStream(serviceName, toolName, toolArguments)
+                                    .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
+                                        if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                            //直接返回给前端
+                                            s.next(tc.text());
+                                            sb.append(tc.text());
+                                        }
+                                    }))
+                                    .doOnError(ex->{
+                                        sb.append(ex.getMessage());
+                                    })
+                                    .blockLast();
+                        });
                     }
 
                     log.debug("res:{}", sb);
