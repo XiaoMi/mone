@@ -488,7 +488,11 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER ||
+                    this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
+                    this.llmProvider == LLMProvider.DEEPSEEK ||
+                    this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));

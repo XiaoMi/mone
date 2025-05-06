@@ -59,6 +59,7 @@ public class MonerMcpClient {
                                     }))
                                     .doOnError(ex->{
                                         sb.append(ex.getMessage());
+                                        sink.next(ex.getMessage());
                                     })
                                     .blockLast();
                         });

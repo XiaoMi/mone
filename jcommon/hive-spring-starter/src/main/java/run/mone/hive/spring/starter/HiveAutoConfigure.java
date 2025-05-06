@@ -25,6 +25,7 @@ import run.mone.hive.roles.tool.ITool;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static run.mone.hive.llm.ClaudeProxy.*;
@@ -55,8 +56,13 @@ public class HiveAutoConfigure {
                     .build();
             return new LLM(config);
         }
-        if ("deepseek".equals(llmType)) {
+        //使用deepseek 原生的v3
+        if (LLMProvider.DEEPSEEK.name().toLowerCase(Locale.ROOT).equals(llmType)) {
             return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
+        }
+        //使用字节的deepseek v3
+        if (LLMProvider.DOUBAO_DEEPSEEK_V3.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
         }
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");

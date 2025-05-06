@@ -62,7 +62,7 @@ public class MonerSystemPrompt {
         data.put("toolList", tools);
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
-        data.put("mcpToolList", mcpTools);
+        data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
                 Lists.newArrayList(
                         //反射执行
