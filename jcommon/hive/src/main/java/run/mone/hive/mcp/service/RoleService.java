@@ -135,4 +135,12 @@ public class RoleService {
         }
     }
 
+    @Override
+    public String toString() {
+        return "RoleService{" +
+                "agentName='" + agentName + '\'' +
+                ", agentGroup='" + agentGroup + '\'' +
+                ", agentversion='" + agentversion + '\'' +
+                '}';
+    }
 }
