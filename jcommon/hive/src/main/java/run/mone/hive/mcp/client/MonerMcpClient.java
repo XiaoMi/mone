@@ -2,12 +2,10 @@ package run.mone.hive.mcp.client;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import run.mone.hive.common.GsonUtils;
-import run.mone.hive.common.McpResult;
-import run.mone.hive.common.Result;
-import run.mone.hive.common.Safe;
+import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHubHolder;
@@ -26,6 +24,11 @@ public class MonerMcpClient {
             String toolName = it.getKeyValuePairs().get("tool_name");
             String arguments = it.getKeyValuePairs().get("arguments");
             Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
+
+            if (StringUtils.isNotEmpty(it.getFrom())) {
+                toolArguments.put(Constants.FROM, it.getFrom());
+            }
+
             // 调用before方法并检查返回值
             boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
             if (shouldProceed) {
@@ -47,7 +50,7 @@ public class MonerMcpClient {
                         })).blockLast();
                     } else {
                         //外部的mcp
-                        Safe.run(()->{
+                        Safe.run(() -> {
                             McpHubHolder.get(from)
                                     .callToolStream(serviceName, toolName, toolArguments)
                                     .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
@@ -57,7 +60,7 @@ public class MonerMcpClient {
                                             sb.append(tc.text());
                                         }
                                     }))
-                                    .doOnError(ex->{
+                                    .doOnError(ex -> {
                                         sb.append(ex.getMessage());
                                         sink.next(ex.getMessage());
                                     })

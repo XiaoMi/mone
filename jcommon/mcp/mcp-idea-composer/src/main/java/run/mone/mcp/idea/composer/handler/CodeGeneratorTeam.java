@@ -7,6 +7,7 @@ import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
 import run.mone.hive.actions.WriteDesign;
 import run.mone.hive.actions.programmer.WriteCode;
+import run.mone.hive.common.Constants;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -40,7 +41,7 @@ public class CodeGeneratorTeam {
         //设计者
         Design design = new Design();
         WriteDesign writeDesign = new WriteDesign();
-        setActions(botChainCallContext, conversationContext, writeDesign, promptResult, design);
+        setActions(botChainCallContext, conversationContext, writeDesign, promptResult, design, json);
 
         //工程师
         Engineer engineer = new Engineer();
@@ -89,8 +90,12 @@ public class CodeGeneratorTeam {
         engineer.setActions(Lists.newArrayList(writeCode));
     }
 
-    private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteDesign writeDesign, PromptResult promptResult, Design design) {
+    private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteDesign writeDesign, PromptResult promptResult, Design design, JsonObject json) {
         writeDesign.setFunction((req, action, context) -> {
+            if (json.has(Constants.FROM)) {
+                return Message.builder().content("").role(design.getName()).build();
+            }
+
             String res = new FunctionalAnalysisHandler(botChainCallContext).getAnalysisResponse(conversationContext.getUserQuery(), promptResult, conversationContext);
             promptResult.setContent(res);
             return Message.builder().content(res).role(design.getName()).build();
@@ -101,6 +106,10 @@ public class CodeGeneratorTeam {
     private static void setActions(ConversationContext conversationContext, PromptResult promptResult, Architect architect, JsonObject json) {
         AnalyzeArchitecture analyzeArchitecture = new AnalyzeArchitecture();
         analyzeArchitecture.setFunction((req, action, context) -> {
+            if (json.has(Constants.FROM)) {
+                return Message.builder().content("").role(architect.getName()).build();
+            }
+
             ProjectReportHandler handler = new ProjectReportHandler();
             String res = handler.generateProjectReport(conversationContext, json);
             promptResult.setContent(res);

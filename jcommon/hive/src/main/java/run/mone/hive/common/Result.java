@@ -1,10 +1,17 @@
 package run.mone.hive.common;
 
+import lombok.Data;
+
 import java.util.Map;
 
+@Data
 public class Result {
+
     private final String tag;
+
     private final Map<String, String> keyValuePairs;
+
+    private String from;
 
     public Result(String tag, Map<String, String> keyValuePairs) {
         this.tag = tag;
