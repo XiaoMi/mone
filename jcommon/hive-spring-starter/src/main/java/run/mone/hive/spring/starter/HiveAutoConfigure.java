@@ -40,7 +40,7 @@ public class HiveAutoConfigure {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
-    @Value("${mcp.llm:claude35}")
+    @Value("${mcp.llm:claude_company}")
     private String llmType;
 
     //大模型
