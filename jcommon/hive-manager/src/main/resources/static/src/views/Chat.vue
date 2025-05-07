@@ -94,6 +94,7 @@ const toggleSendMethod = (val: string) => {
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
+          conversationId: route.query.conversationId,
           agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
@@ -150,6 +151,7 @@ const toggleSendMethod = (val: string) => {
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
+          conversationId: route.query.conversationId,
           agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
