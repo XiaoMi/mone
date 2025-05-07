@@ -3,12 +3,14 @@ package run.mone.agentx.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import run.mone.agentx.dto.McpRequest;
+import run.mone.agentx.entity.User;
 import run.mone.agentx.service.McpService;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Result;
@@ -36,8 +38,8 @@ public class McpController {
      * @return 消息流
      */
     @PostMapping(value = "/call", consumes = "text/event-stream", produces = "text/event-stream")
-    public Flux<Message> call(@RequestBody(required = false) String requestBody) {
-        log.info("调用MCP服务，请求参数: {}", requestBody);
+    public Flux<Message> call(@AuthenticationPrincipal User user, @RequestBody(required = false) String requestBody) {
+        log.info("user:{} 调用MCP服务，请求参数: {}", user.getUsername(), requestBody);
         McpRequest request = GsonUtils.gson.fromJson(requestBody, McpRequest.class);
         Map<String, String> keyValuePairs = new HashMap<>();
         keyValuePairs.put("outerTag", request.getOuterTag());
@@ -46,16 +48,16 @@ public class McpController {
             keyValuePairs.put("tool_name", request.getContent().getTool_name());
             keyValuePairs.put("arguments", request.getContent().getArguments());
         }
-        
+
         // 创建Result对象
         Result result = new Result("mcp_request", keyValuePairs);
         result.setFrom("hive_manager");
-        
+
         // 使用Flux.create创建消息流
         return Flux.create(sink -> {
             CompletableFuture.runAsync(() -> {
                 //这里本质是当Agent调用的
-                mcpService.callMcp(request.getAgentId(), request.getAgentInstance(), result, sink);
+                mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
                 sink.onDispose(() -> {
                     log.info("MCP流已结束");
                 });

@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
@@ -32,12 +33,15 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.OpenAILLM;
 import run.mone.agentx.dto.McpRequest;
 import reactor.core.publisher.FluxSink;
+
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
+
 import reactor.core.Disposable;
+
 import java.util.HashMap;
 
 @Slf4j
@@ -87,9 +91,10 @@ public class TaskService {
                     return taskRepository.save(task);
                 });
     }
-    
+
     /**
      * 执行任务
+     *
      * @param taskExecutionInfo 任务执行信息
      * @return 任务实体
      */
@@ -99,7 +104,7 @@ public class TaskService {
         if (taskId == null || taskId.isEmpty()) {
             return Mono.error(new IllegalArgumentException("任务ID不能为空"));
         }
-        
+
         // 先检查任务是否存在
         return taskRepository.findByTaskUuid(taskId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("任务不存在: " + taskId)))
@@ -107,7 +112,7 @@ public class TaskService {
                     // 更新状态并启动异步执行过程
                     existingTask.setStatus(TaskStatus.PENDING);
                     existingTask.setUtime(System.currentTimeMillis());
-                    
+
                     return taskRepository.save(existingTask)
                             .flatMap(savedTask -> {
                                 // 异步启动任务执行 - 改用Agent执行方式
@@ -124,11 +129,11 @@ public class TaskService {
                 // 更新任务状态为RUNNING
                 updateTaskStatus(taskUuid, TaskStatus.RUNNING).subscribe();
                 log.info("开始执行任务: {}", taskUuid);
-                
+
                 // 提取任务内容和要求
                 Map<String, Object> metadata = (Map<String, Object>) taskExecutionInfo.getMetadata();
                 String taskContent = extractTaskContent(taskExecutionInfo);
-                
+
                 // 获取可能的技能ID
                 Long skillId = null;
                 if (metadata != null && metadata.containsKey("skillId")) {
@@ -144,7 +149,7 @@ public class TaskService {
                 // 寻找合适的Agent
                 AgentWithInstancesDTO selectedAgent = null;
                 AgentInstance selectedInstance = null;
-                
+
                 if (serverAgentId != null) {
                     // 如果指定了Agent ID，直接使用该Agent
                     selectedAgent = agentService.findAgentWithInstances(serverAgentId).block();
@@ -163,12 +168,12 @@ public class TaskService {
                     if (agents != null && !agents.isEmpty()) {
                         // 过滤出有活跃实例的Agent
                         List<AgentWithInstancesDTO> availableAgents = agents.stream()
-                                .filter(agentWithInstances -> 
-                                    agentWithInstances.getInstances() != null && 
-                                    !agentWithInstances.getInstances().isEmpty() &&
-                                    agentWithInstances.getInstances().stream().anyMatch(AgentInstance::getIsActive))
+                                .filter(agentWithInstances ->
+                                        agentWithInstances.getInstances() != null &&
+                                                !agentWithInstances.getInstances().isEmpty() &&
+                                                agentWithInstances.getInstances().stream().anyMatch(AgentInstance::getIsActive))
                                 .collect(Collectors.toList());
-                        
+
                         if (!availableAgents.isEmpty()) {
                             // 如果有技能ID要求，尝试匹配具有该技能的Agent
                             if (skillId != null) {
@@ -188,7 +193,7 @@ public class TaskService {
                                     }
                                 }
                             }
-                            
+
                             // 如果没有找到匹配的Agent，选择第一个可用的
                             if (selectedAgent == null) {
                                 selectedAgent = availableAgents.get(0);
@@ -200,28 +205,28 @@ public class TaskService {
                         }
                     }
                 }
-                
+
                 // 如果找到合适的Agent和实例
                 if (selectedAgent != null && selectedInstance != null) {
                     // 更新任务中的serverAgentId
                     final AgentWithInstancesDTO finalSelectedAgent = selectedAgent;
                     taskRepository.findByTaskUuid(taskUuid)
-                        .flatMap(task -> {
-                            task.setServerAgentId(finalSelectedAgent.getAgent().getId());
-                            return taskRepository.save(task);
-                        }).subscribe();
-                    
+                            .flatMap(task -> {
+                                task.setServerAgentId(finalSelectedAgent.getAgent().getId());
+                                return taskRepository.save(task);
+                            }).subscribe();
+
                     // 构建MCP请求
                     McpRequest mcpRequest = new McpRequest();
                     mcpRequest.setAgentId(selectedAgent.getAgent().getId());
                     mcpRequest.setAgentInstance(selectedInstance);
                     mcpRequest.setOuterTag("task_execution");
-                    
+
                     // 构建MCP内容
                     McpRequest.McpContent content = new McpRequest.McpContent();
-                    content.setServer_name(selectedAgent.getAgent().getName()); 
+                    content.setServer_name(selectedAgent.getAgent().getName());
                     content.setTool_name("chat"); // TODO: 后续可能改成目标agent中的工具，现在交给目标agent来决策
-                    
+
                     // 构建参数，包含任务信息
                     Map<String, Object> arguments = new HashMap<>();
                     arguments.put("taskUuid", taskUuid);
@@ -229,33 +234,34 @@ public class TaskService {
                     if (metadata != null) {
                         arguments.put("metadata", metadata);
                     }
-                    
+
                     try {
                         content.setArguments(objectMapper.writeValueAsString(arguments));
                     } catch (Exception e) {
                         log.error("序列化任务参数失败", e);
                         content.setArguments("{}");
                     }
-                    
+
                     mcpRequest.setContent(content);
-                    
+
                     // 构建MCP调用参数
                     Map<String, String> keyValuePairs = new HashMap<>();
                     keyValuePairs.put("outerTag", mcpRequest.getOuterTag());
                     keyValuePairs.put("server_name", content.getServer_name());
                     keyValuePairs.put("tool_name", content.getTool_name());
                     keyValuePairs.put("arguments", content.getArguments());
-                    
+
                     // 创建Result对象
                     run.mone.hive.common.Result result = new run.mone.hive.common.Result("mcp_request", keyValuePairs);
-                    
+
                     // 创建消息接收器
                     TaskResultSink sink = new TaskResultSink(taskUuid);
-                    
+
+                    //TODO$
                     // 调用MCP服务
-                    mcpService.callMcp(mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), result, sink);
+                    mcpService.callMcp("", mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), result, sink);
                     sink.complete();
-                    
+
                     log.info("成功提交任务到Agent: {}", selectedAgent.getAgent().getName());
                 } else {
                     // 没有找到合适的Agent
@@ -263,7 +269,7 @@ public class TaskService {
                     updateTaskStatus(taskUuid, TaskStatus.FAILED).subscribe();
                     updateTaskResult(taskUuid, "{\"success\": false, \"error\": \"没有找到合适的Agent实例执行任务\"}").subscribe();
                 }
-                
+
             } catch (Exception e) {
                 log.error("任务执行过程中发生错误: {}", e.getMessage(), e);
                 updateTaskStatus(taskUuid, TaskStatus.FAILED).subscribe();
@@ -271,10 +277,11 @@ public class TaskService {
             }
         }).start();
     }
-    
+
     /**
      * 启动任务异步执行过程
-     * @param taskUuid 任务UUID
+     *
+     * @param taskUuid          任务UUID
      * @param taskExecutionInfo 任务执行信息
      */
     @UnstableApi // Team目前使用的交流方式是本地化的，需要后续修改后再启用本方式
@@ -285,17 +292,17 @@ public class TaskService {
             try {
                 // 更新任务状态为RUNNING
                 updateTaskStatus(taskUuid, TaskStatus.RUNNING).subscribe();
-                
+
                 // 构建Team并执行任务
                 Team team = buildTeam(taskExecutionInfo);
                 if (team != null) {
                     // 提取任务内容
                     String taskContent = extractTaskContent(taskExecutionInfo);
-                    
+
                     // 将任务委托给Team执行并获取结果
                     List<Message> result = team.run(10, taskContent, "*", true).join();
                     String resultJson = processTeamResult(result);
-                    
+
                     // 更新任务状态为COMPLETED
                     updateTaskStatus(taskUuid, TaskStatus.COMPLETED).subscribe();
                     // 设置执行结果
@@ -306,7 +313,7 @@ public class TaskService {
                     updateTaskStatus(taskUuid, TaskStatus.FAILED).subscribe();
                     updateTaskResult(taskUuid, "{\"success\": false, \"error\": \"无法构建执行Team，没有可用的Agent\"}").subscribe();
                 }
-                
+
             } catch (Throwable e) {
                 log.error("任务执行被中断: {}", e.getMessage(), e);
                 // 更新任务状态为FAILED
@@ -317,9 +324,10 @@ public class TaskService {
             }
         }, "task-executor-" + taskUuid).start();
     }
-    
+
     /**
      * 从任务执行信息中提取任务内容
+     *
      * @param taskExecutionInfo 任务执行信息
      * @return 任务内容
      */
@@ -333,13 +341,14 @@ public class TaskService {
                 return metadata.get("content").toString();
             }
         }
-        
+
         // 如果没有找到内容，返回任务ID作为默认内容
         return "执行任务: " + taskExecutionInfo.getId();
     }
-    
+
     /**
      * 处理Team执行结果
+     *
      * @param messages 消息列表
      * @return JSON格式的结果
      */
@@ -349,10 +358,10 @@ public class TaskService {
             if (messages != null && !messages.isEmpty()) {
                 Message lastMessage = messages.get(messages.size() - 1);
                 Map<String, Object> resultMap = Map.of(
-                    "success", true,
-                    "message", lastMessage.getContent(),
-                    "sender", lastMessage.getSentFrom(),
-                    "createTime", lastMessage.getCreateTime()
+                        "success", true,
+                        "message", lastMessage.getContent(),
+                        "sender", lastMessage.getSentFrom(),
+                        "createTime", lastMessage.getCreateTime()
                 );
                 return objectMapper.writeValueAsString(resultMap);
             } else {
@@ -363,9 +372,10 @@ public class TaskService {
             return "{\"success\": false, \"error\": \"处理执行结果出错: " + e.getMessage() + "\"}";
         }
     }
-    
+
     /**
      * 构建执行任务的Team
+     *
      * @param taskInfo 任务信息
      * @return 构建的Team实例
      */
@@ -375,44 +385,44 @@ public class TaskService {
             List<AgentWithInstancesDTO> agents = agentService.findAccessibleAgentsWithInstances(1L) // 使用系统用户ID
                     .collectList()
                     .block();
-            
+
             if (agents == null || agents.isEmpty()) {
                 log.warn("没有可用的Agent");
                 return null;
             }
-            
+
             // 选择具有活跃实例的Agent
             List<AgentWithInstancesDTO> availableAgents = agents.stream()
-                    .filter(agentWithInstances -> 
-                        agentWithInstances.getInstances() != null && 
-                        !agentWithInstances.getInstances().isEmpty() &&
-                        agentWithInstances.getInstances().stream().anyMatch(AgentInstance::getIsActive))
+                    .filter(agentWithInstances ->
+                            agentWithInstances.getInstances() != null &&
+                                    !agentWithInstances.getInstances().isEmpty() &&
+                                    agentWithInstances.getInstances().stream().anyMatch(AgentInstance::getIsActive))
                     .collect(Collectors.toList());
-            
+
             if (availableAgents.isEmpty()) {
                 log.warn("没有可用的Agent实例");
                 return null;
             }
-            
+
             // 创建默认的LLM实例
             LLMConfig llmConfig = new LLMConfig();
             LLM llm = new OpenAILLM(llmConfig);
-            
+
             // 创建Team实例
             Context context = new Context();
             context.setDefaultLLM(llm);
             Team team = new Team(context);
-            
+
             // 设置投资额度(可根据实际情况调整)
             team.invest(20.0);
-            
+
             // 选择第一个可用的Agent, 将来这里需要根据任务类型选择不同的Agent
             AgentWithInstancesDTO selectedAgent = availableAgents.get(0);
             AgentInstance selectedInstance = selectedAgent.getInstances().stream()
                     .filter(AgentInstance::getIsActive)
                     .findFirst()
                     .orElse(null);
-            
+
             if (selectedInstance != null) {
                 // 创建ReactorRole并添加到Team
                 Role agentRole = new ReactorRole(
@@ -420,14 +430,14 @@ public class TaskService {
                         null,
                         llm
                 );
-                
+
                 // 招募Agent到Team
                 team.hire(agentRole);
                 log.info("成功招募Agent: {}", selectedAgent.getAgent().getName());
-                
+
                 return team;
             }
-            
+
             return null;
         } catch (Exception e) {
             log.error("构建Team时出错: {}", e.getMessage(), e);
@@ -441,17 +451,17 @@ public class TaskService {
     private class TaskResultSink implements FluxSink<String> {
         private final String taskUuid;
         private final StringBuilder resultBuilder = new StringBuilder();
-        
+
         public TaskResultSink(String taskUuid) {
             this.taskUuid = taskUuid;
         }
-        
+
         @Override
         public FluxSink<String> next(String message) {
             try {
                 // 累积消息
                 resultBuilder.append(message).append("\n");
-                
+
                 // 实时更新任务结果
                 updateTaskResult(taskUuid, resultBuilder.toString()).subscribe();
             } catch (Exception e) {
@@ -459,7 +469,7 @@ public class TaskService {
             }
             return this;
         }
-        
+
         @Override
         public void complete() {
             try {
@@ -470,7 +480,7 @@ public class TaskService {
                 log.error("完成任务时发生错误", e);
             }
         }
-        
+
         @Override
         public void error(Throwable t) {
             try {
@@ -481,32 +491,32 @@ public class TaskService {
                 log.error("处理任务错误时发生异常", e);
             }
         }
-        
+
         @Override
         public reactor.util.context.Context currentContext() {
             return reactor.util.context.Context.empty();
         }
-        
+
         @Override
         public boolean isCancelled() {
             return false;
         }
-        
+
         @Override
         public long requestedFromDownstream() {
             return Long.MAX_VALUE;
         }
-        
+
         @Override
         public FluxSink<String> onRequest(LongConsumer consumer) {
             return this;
         }
-        
+
         @Override
         public FluxSink<String> onCancel(Disposable disposable) {
             return this;
         }
-        
+
         @Override
         public FluxSink<String> onDispose(Disposable disposable) {
             return this;
