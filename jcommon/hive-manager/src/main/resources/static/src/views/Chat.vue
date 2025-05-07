@@ -94,15 +94,15 @@ const toggleSendMethod = (val: string) => {
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
-          conversationId: route.query.conversationId,
-          agentId: route.query.serverAgentId,
-          outerTag: "use_mcp_tool",
-          agentInstance: getSelectedInstance(),
-          content: {
+          mapData: {
+            outerTag: "use_mcp_tool",
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
             arguments: JSON.stringify(params)
-          }
+          },
+          conversationId: route.query.conversationId,
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
         }, (data: any) => {
           if (data) {
             fluxCodeHandler(data, messageId.value)
@@ -111,14 +111,14 @@ const toggleSendMethod = (val: string) => {
       } else {
         // ws发送消息
         socket.value?.send(JSON.stringify({
-          agentId: route.query.serverAgentId,
-          outerTag: "use_mcp_tool",
-          agentInstance: getSelectedInstance(),
-          content: {
+          mapData: {
+            outerTag: "use_mcp_tool",
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
             arguments: JSON.stringify(params)
-          }
+          },
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
         }));
       }
     } catch (error) {
@@ -151,15 +151,15 @@ const toggleSendMethod = (val: string) => {
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
-          conversationId: route.query.conversationId,
-          agentId: route.query.serverAgentId,
-          outerTag: "use_mcp_tool",
-          agentInstance: getSelectedInstance(),
-          content: {
+          mapData: {
+            outerTag: "use_mcp_tool",
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
             arguments: JSON.stringify(params)
-          }
+          },
+          conversationId: route.query.conversationId,
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
         }, (data: any) => {
           if (data) {
             fluxCodeHandler(data, messageId.value)
@@ -168,14 +168,14 @@ const toggleSendMethod = (val: string) => {
       } else {
         // ws发送消息
         socket.value?.send(JSON.stringify({
-          agentId: route.query.serverAgentId,
-          outerTag: "use_mcp_tool",
-          agentInstance: getSelectedInstance(),
-          content: {
+          mapData: {
+            outerTag: "use_mcp_tool",
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
             arguments: JSON.stringify(params)
-          }
+          },
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
         }));
       }
     } catch (error) {
