@@ -105,7 +105,7 @@ public class AgentController {
 
     //下线agent (需要调到远程)
     @PostMapping("/offline")
-    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user, McpRequest request) {
+    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user, @RequestBody McpRequest request) {
         Result result = new Result("mcp_request", request.getMapData());
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
@@ -119,7 +119,7 @@ public class AgentController {
 
     //清空agent历史记录 (需要调到远程)
     @PostMapping("/clearHistory")
-    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user, McpRequest request) {
+    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user, @RequestBody McpRequest request) {
         Result result = new Result("mcp_request", request.getMapData());
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
