@@ -35,6 +35,11 @@ public class ApiInfoTool implements ITool {
     }
 
     @Override
+    public boolean show() {
+        return true;
+    }
+
+    @Override
     public String description() {
         return """
             This is a tool for querying interface information.
@@ -105,7 +110,7 @@ public class ApiInfoTool implements ITool {
     }
 
     private String getHost () {
-        return System.getenv().getOrDefault("API_HOST", "http://10.167.60.197:8999");
+        return System.getenv().getOrDefault("API_HOST", "http://127.0.0.1:8999");
     }
 
 } 
