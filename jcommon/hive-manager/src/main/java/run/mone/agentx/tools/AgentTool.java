@@ -43,6 +43,11 @@ public class AgentTool implements ITool {
     }
 
     @Override
+    public boolean show() {
+        return true;
+    }
+
+    @Override
     public String description() {
         return """
                 一个用于查找最合适的 agent 的工具。
@@ -66,10 +71,10 @@ public class AgentTool implements ITool {
     @Override
     public String usage() {
         return """
-                (注意：使用此工具时，必须在 <agent_info> 标签内返回 agent 信息):
+                (注意：使用此工具时，必须在 <chat> 标签内返回 agent 信息):
 
                 示例: 查找能处理数据分析任务的 agent
-                <agent_info>
+                <chat>
                   <task>需要处理大量数据并生成分析报告</task>
                   <result>
                     找到匹配的 agent:
@@ -77,7 +82,7 @@ public class AgentTool implements ITool {
                     - 描述: 专业的数据分析 agent，擅长处理大规模数据并生成分析报告
                     - 状态: 活跃
                   </result>
-                </agent_info>
+                </chat>
                 """;
     }
 
@@ -104,10 +109,10 @@ public class AgentTool implements ITool {
 
             // 过滤出有活跃实例的 agent
             List<AgentWithInstancesDTO> availableAgents = agents.stream()
-                    .filter(agent ->
-                            agent.getInstances() != null &&
-                                    !agent.getInstances().isEmpty() &&
-                                    agent.getInstances().stream().anyMatch(instance -> instance.getIsActive()))
+//                    .filter(agent ->
+//                            agent.getInstances() != null &&
+//                                    !agent.getInstances().isEmpty() &&
+//                                    agent.getInstances().stream().anyMatch(instance -> instance.getIsActive()))
                     .collect(Collectors.toList());
 
             if (availableAgents.isEmpty()) {
