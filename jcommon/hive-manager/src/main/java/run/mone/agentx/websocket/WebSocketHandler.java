@@ -68,26 +68,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
         try {
             // 解析MCP请求
             McpRequest request = GsonUtils.gson.fromJson(payload, McpRequest.class);
-
-            // 构建MCP调用参数
-            Map<String, String> keyValuePairs = new HashMap<>();
-            keyValuePairs.put("outerTag", request.getOuterTag());
-            if (request.getContent() != null) {
-                keyValuePairs.put("server_name", request.getContent().getServer_name());
-                keyValuePairs.put("tool_name", request.getContent().getTool_name());
-                keyValuePairs.put("arguments", request.getContent().getArguments());
-            }
-
             // 创建Result对象
-            Result result = new Result("mcp_request", keyValuePairs);
+            Result result = new Result("mcp_request", request.getMapData());
             result.setFrom("hive_manager");
-
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
             String userName = session.getAttributes().getOrDefault("userName", "").toString();
             mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), result, sink);
             sink.complete();
-
         } catch (Exception e) {
             log.error("Error processing MCP request", e);
             session.sendMessage(new TextMessage("{\"error\": \"" + e.getMessage() + "\"}"));

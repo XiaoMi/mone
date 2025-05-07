@@ -58,13 +58,26 @@ public class ChatFunction implements McpFunction {
             String imagesStr = arguments.get("images").toString();
             images = Arrays.asList(imagesStr.split(","));
         }
+
+        //清空历史记录
         if ("/clear".equalsIgnoreCase(message.trim())) {
-            roleService.clearHistory(Message.builder().sentFrom(clientId).build());
+            roleService.clearHistory(Message.builder().sentFrom(ownerId).build());
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("聊天历史已清空")),
                     false
             ));
         }
+
+        //退出agent
+        if ("/exit".equalsIgnoreCase(message.trim())) {
+            roleService.offlineAgent(Message.builder().sentFrom(ownerId).build());
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("agent已退出")),
+                    false
+            ));
+        }
+
+
         //会创建一个Agent instance
         try {
             return roleService.receiveMsg(run.mone.hive.schema.Message.builder()

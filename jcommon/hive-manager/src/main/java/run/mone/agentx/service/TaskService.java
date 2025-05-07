@@ -220,12 +220,6 @@ public class TaskService {
                     McpRequest mcpRequest = new McpRequest();
                     mcpRequest.setAgentId(selectedAgent.getAgent().getId());
                     mcpRequest.setAgentInstance(selectedInstance);
-                    mcpRequest.setOuterTag("task_execution");
-
-                    // 构建MCP内容
-                    McpRequest.McpContent content = new McpRequest.McpContent();
-                    content.setServer_name(selectedAgent.getAgent().getName());
-                    content.setTool_name("chat"); // TODO: 后续可能改成目标agent中的工具，现在交给目标agent来决策
 
                     // 构建参数，包含任务信息
                     Map<String, Object> arguments = new HashMap<>();
@@ -235,24 +229,8 @@ public class TaskService {
                         arguments.put("metadata", metadata);
                     }
 
-                    try {
-                        content.setArguments(objectMapper.writeValueAsString(arguments));
-                    } catch (Exception e) {
-                        log.error("序列化任务参数失败", e);
-                        content.setArguments("{}");
-                    }
-
-                    mcpRequest.setContent(content);
-
-                    // 构建MCP调用参数
-                    Map<String, String> keyValuePairs = new HashMap<>();
-                    keyValuePairs.put("outerTag", mcpRequest.getOuterTag());
-                    keyValuePairs.put("server_name", content.getServer_name());
-                    keyValuePairs.put("tool_name", content.getTool_name());
-                    keyValuePairs.put("arguments", content.getArguments());
-
                     // 创建Result对象
-                    run.mone.hive.common.Result result = new run.mone.hive.common.Result("mcp_request", keyValuePairs);
+                    run.mone.hive.common.Result result = new run.mone.hive.common.Result("mcp_request", mcpRequest.getMapData());
 
                     // 创建消息接收器
                     TaskResultSink sink = new TaskResultSink(taskUuid);
