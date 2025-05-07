@@ -8,13 +8,21 @@
                 :value="item.ip"
             />
         </el-select>
+        <div class="right-btns">
+            <el-icon title="清除历史记录" size="14px" color="var(--el-color-warning)" @click="handleClearHistory"><Delete /></el-icon>
+            <el-icon title="下线" size="16px" color="var(--el-color-danger)" @click="confirmOffline"><SwitchButton /></el-icon>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
 import { computed, ref, watch, watchEffect } from "vue";
+import { clearHistory, offlineAgent } from "@/api/agent";
+import { ElMessageBox } from 'element-plus';
+import { useChatContextStore } from "@/stores/chat-context";
 const { getInstance, setSelectedInstance } = useUserStore();
+const { setMessageList } = useChatContextStore();
 const selectedIp = ref('')
 const list = computed(() => {
     return getInstance()
@@ -30,6 +38,27 @@ watchEffect(() => {
         selectedIp.value = list.value[0].ip;
     }
 })
+
+const confirmOffline = () => {
+    ElMessageBox.confirm(
+        '确定要下线该实例吗？',
+        '确认下线',
+        {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        offlineAgent();
+    }).catch(() => {
+        // 用户取消操作
+    });
+};
+
+const handleClearHistory = () => {
+    setMessageList([]);
+    clearHistory();
+};
 </script>
 
 <style>
@@ -42,6 +71,25 @@ watchEffect(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+}
+
+.instance-select .right-btns {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.instance-select .right-btns .el-icon {
+    cursor: pointer;
+}
+
+.instance-select .right-btns .el-icon:hover {
+    transition: all 0.3s ease-in-out;
+    transform: scale(1.2);
 }
 
 .instance-select .ip-select {
