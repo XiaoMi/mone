@@ -2,7 +2,7 @@ server:
   port: 8080
 
 mcp:
-  llm: claude_company
+  llm: CLAUDE_COMPANY
 #  llm: doubao_deepseek_v3
 #  llm: grok
   transport:
