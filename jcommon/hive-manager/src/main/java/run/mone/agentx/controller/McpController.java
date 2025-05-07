@@ -59,7 +59,7 @@ public class McpController {
                 //这里本质是当Agent调用的
                 mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
                 sink.onDispose(() -> {
-                    log.info("MCP流已结束");
+                    log.info("call mcp finish");
                 });
                 sink.complete();
             });

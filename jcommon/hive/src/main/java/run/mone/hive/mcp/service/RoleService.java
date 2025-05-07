@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.Safe;
@@ -166,12 +167,23 @@ public class RoleService {
         });
     }
 
-    public void clearHistory(Message message) {
-        // Clear the role's memory
+    //下线某个Agent
+    public Mono<Void> offlineAgent(Message message) {
         String from = message.getSentFrom().toString();
-        if (roleMap.containsKey(from)) {
-            ReactorRole minzai = roleMap.get(from);
-            minzai.clearMemory();
+        ReactorRole agent = roleMap.get(from);
+        if (null != agent) {
+            message.setData(Const.ROLE_EXIT);
+            agent.putMessage(message);
+        }
+        return Mono.empty();
+    }
+
+    //清空某个Agent的记录
+    public void clearHistory(Message message) {
+        String from = message.getSentFrom().toString();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            role.clearMemory();
         }
     }
 
