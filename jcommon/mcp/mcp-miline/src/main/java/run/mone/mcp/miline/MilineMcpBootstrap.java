@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.miline")
+@ComponentScan(basePackages = {"run.mone.mcp.miline", "run.mone.hive.mcp.service"})
 public class MilineMcpBootstrap {
 
     public static void main(String[] args) {

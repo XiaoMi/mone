@@ -61,6 +61,24 @@ const toggleSendMethod = (val: string) => {
   const scrollToTop = () => {
     // 滚动到顶部
   }
+
+  const getAgentName = () => {
+    const agent = getAgent();
+    const name = `stream_${agent.name}_chat`
+    if (agent?.mcpToolMap) {
+      try {
+        const toolMap = JSON.parse(agent.mcpToolMap);
+        const item = Object.values(toolMap)[0];
+        const tool = JSON.parse(item);
+        if (tool.name === name) {
+          return tool.name;
+        }
+      } catch (error) {
+        // return "";
+      }
+    }
+    return name;
+  }
   const initCodePrompt = () => {
       setMessageList([]);
     //   this.getCodePrompt();
@@ -71,17 +89,18 @@ const toggleSendMethod = (val: string) => {
       messageId.value = uuidv4();
       let params = {
         message: `语音合成处理以下文本内容：“${text}”`,
-        __owner_id__: uuid.value,
+        __owner_id__: user?.username,
       }
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
+          conversationId: route.query.conversationId,
           agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: getAgentName(),
             arguments: JSON.stringify(params)
           }
         }, (data: any) => {
@@ -97,7 +116,7 @@ const toggleSendMethod = (val: string) => {
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: getAgentName(),
             arguments: JSON.stringify(params)
           }
         }));
@@ -121,7 +140,7 @@ const toggleSendMethod = (val: string) => {
       messageId.value = uuidv4();
       let params = {
         message: text,
-        __owner_id__: uuid.value,
+        __owner_id__: user?.username,
       }
       if (message.type === "audio") {
         params.voiceBase64 = message.data.content?.split("base64,")[1];
@@ -132,12 +151,13 @@ const toggleSendMethod = (val: string) => {
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
+          conversationId: route.query.conversationId,
           agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: getAgentName(),
             arguments: JSON.stringify(params)
           }
         }, (data: any) => {
@@ -153,7 +173,7 @@ const toggleSendMethod = (val: string) => {
           agentInstance: getSelectedInstance(),
           content: {
             server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
-            tool_name: "stream_minzai_chat",
+            tool_name: getAgentName(),
             arguments: JSON.stringify(params)
           }
         }));

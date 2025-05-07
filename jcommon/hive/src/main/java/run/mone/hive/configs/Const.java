@@ -31,4 +31,6 @@ public class Const {
 
     public static final String DEFAULT = "default";
 
+    public static final String INTERNAL_SERVER = "internalServer";
+
 }

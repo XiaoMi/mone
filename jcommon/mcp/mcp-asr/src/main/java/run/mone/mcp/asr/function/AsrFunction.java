@@ -31,9 +31,9 @@ public class AsrFunction implements Function<Map<String, Object>, Flux<McpSchema
                       "type": {
                           "type": "string",
                           "enum": ["tencent","ali"],
-                          "description": "asr供应商：腾讯,阿里"
+                          "description": "asr供应商：腾讯,阿里，不指定时默认使用腾讯"
                       },
-                      "base64Audio": {
+                      "voiceBase64": {
                           "type": "String",
                           "description": "base64编码音频数据"
                       },
@@ -44,10 +44,9 @@ public class AsrFunction implements Function<Map<String, Object>, Flux<McpSchema
                       "base64AudioFormat": {
                           "type": "String",
                           "enum": ["pcm","mp3","wav","speex","silk","opus","m4a"],
-                          "description": "音频编码，使用base64编码音频数据时必传"
+                          "description": "音频编码，使用base64编码音频数据时必传，不指定时默认为mp3"
                       }
-                  },
-                  "required": ["type"]
+                  }
               }
             """;
 
@@ -60,10 +59,10 @@ public class AsrFunction implements Function<Map<String, Object>, Flux<McpSchema
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
 
-        String type = (String) arguments.get("type");
+        String type = (String) arguments.getOrDefault("type", "tencent");
         String fileName = (String) arguments.get("fileName");
-        String base64Audio = (String) arguments.get("base64Audio");
-        String base64AudioFormat = (String) arguments.get("base64AudioFormat");
+        String base64Audio = (String) arguments.get("voiceBase64");
+        String base64AudioFormat = (String) arguments.getOrDefault("base64AudioFormat", "mp3");
 
         if(StringUtils.isBlank(fileName) && (StringUtils.isBlank(base64Audio) || StringUtils.isBlank(base64AudioFormat))){
             return Flux.just(new McpSchema.CallToolResult(

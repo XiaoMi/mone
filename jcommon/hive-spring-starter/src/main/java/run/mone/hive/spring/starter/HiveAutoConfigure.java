@@ -14,6 +14,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
@@ -23,6 +24,7 @@ import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static run.mone.hive.llm.ClaudeProxy.*;
@@ -37,15 +39,14 @@ public class HiveAutoConfigure {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
-    @Value("${mcp.llm:claude35}")
+    @Value("${mcp.llm:claude_company}")
     private String llmType;
-
 
     //大模型
     @Bean
     @ConditionalOnMissingBean
     public LLM llm() {
-        if ("claude35".equals(llmType)) {
+        if (LLMProvider.CLAUDE_COMPANY.name().equals(llmType)) {
             LLMConfig config = LLMConfig.builder()
                     .llmProvider(LLMProvider.CLAUDE_COMPANY)
                     .url(getClaudeUrl())
@@ -54,7 +55,14 @@ public class HiveAutoConfigure {
                     .build();
             return new LLM(config);
         }
-
+        //使用deepseek 原生的v3
+        if (LLMProvider.DEEPSEEK.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
+        }
+        //使用字节的deepseek v3
+        if (LLMProvider.DOUBAO_DEEPSEEK_V3.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
+        }
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         return new LLM(config);
@@ -79,29 +87,34 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, List<ITool> toolList, List<McpFunction> functionList) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta) {
+        List<ITool> toolList = roleMeta.getTools();
+        List<McpFunction> mcpTools = roleMeta.getMcpTools();
+
         if (CollectionUtils.isEmpty(toolList)) {
             toolList.addAll(Lists.newArrayList(
                     new ChatTool(),
                     new AskTool(),
-                    new AttemptCompletionTool()));
+                    new AttemptCompletionTool()
+            ));
         }
         return new RoleService(llm,
                 toolList,
-                functionList.stream().map(it ->
+                mcpTools.stream().map(it ->
                         new McpSchema.Tool(it.getName(), it.getDesc(), it.getToolScheme())
                 ).toList(),
-                hiveManagerService
+                mcpTools,
+                hiveManagerService,
+                roleMeta
         );
     }
 
-
     //Mcp Server
     @Bean
-    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, List<McpFunction> functions, Map<String, String> meta) {
-        functions.forEach(it -> it.setRoleService(roleService));
-        return new McpServer(transport, functions, meta);
+    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, RoleMeta roleMeta) {
+        List<McpFunction> mcpTools = roleMeta.getMcpTools();
+        mcpTools.forEach(it -> it.setRoleService(roleService));
+        return new McpServer(transport, mcpTools, meta);
     }
-
 
 }

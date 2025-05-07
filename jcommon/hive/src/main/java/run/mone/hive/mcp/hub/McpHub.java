@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.hub;
 
+import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,15 @@ public class McpHub {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping())));
         }, 5, 5, TimeUnit.SECONDS);
+    }
+
+    //移除废弃的连接
+    public void removeConnection(String key) {
+        McpConnection v = this.connections.remove(key);
+        log.info("remove connection:{}", v);
+        if (null != v) {
+            v.getTransport().close();
+        }
     }
 
     // 局部刷新
@@ -234,13 +244,14 @@ public class McpHub {
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
         McpConnection connection = new McpConnection(server, client, transport, McpType.fromString(config.getType()));
+        connection.setKey(name);
         connections.put(name, connection);
-
         try {
+            //这里真的会连接过去
             client.initialize();
             server.setStatus("connected");
+            //放入工具(tool)
             server.setTools(client.listTools().tools());
-            // Fetch resources and resource templates if needed
         } catch (Exception e) {
             log.error("Failed to connect to MCP server {}: ", name, e);
             server.setStatus("disconnected");
@@ -321,7 +332,10 @@ public class McpHub {
             toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
-            throw new IllegalArgumentException("No connection found for server: " + serverName);
+            return Flux.create(sink->{
+                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)),true));
+                sink.complete();
+            });
         }
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callToolStream(request);

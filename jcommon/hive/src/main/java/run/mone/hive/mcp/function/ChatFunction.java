@@ -48,6 +48,7 @@ public class ChatFunction implements McpFunction {
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
+        //这个agent的拥有者
         String ownerId = arguments.get(Const.OWNER_ID).toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();
         String message = (String) arguments.get("message");

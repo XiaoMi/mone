@@ -150,7 +150,15 @@ public class LLM {
                 .build();
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", model);
+        if (StringUtils.isNotEmpty(model)) {
+            requestBody.addProperty("model", model);
+        }
+
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+            requestBody.remove("model");
+        }
 
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
@@ -195,6 +203,10 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+        }
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
@@ -216,7 +228,11 @@ public class LLM {
         Request.Builder requestBuilder = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                requestBuilder.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else {
+                requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -246,6 +262,10 @@ public class LLM {
                 JsonObject content = candidate.get("content").getAsJsonObject();
                 String text = content.get("parts").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
                 return text;
+            }
+
+            if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                return jsonResponse.get("content").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
             }
 
             //openai那个流派的
@@ -488,7 +508,11 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER ||
+                    this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
+                    this.llmProvider == LLMProvider.DEEPSEEK ||
+                    this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
@@ -977,9 +1001,7 @@ public class LLM {
             }
 
             req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
                 || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
@@ -1004,9 +1026,7 @@ public class LLM {
                 });
             }
             req.add("content", array);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
             req.addProperty("role", ROLE_USER);
             JsonArray contentJsons = new JsonArray();
 
@@ -1028,6 +1048,10 @@ public class LLM {
                 });
             }
             req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", msg.getContent());
         }
         return req;
     }
@@ -1096,7 +1120,7 @@ public class LLM {
             req.addProperty("role", ROLE_USER);
             req.addProperty("content", llmPart.getText());
         }
-        
+
         return req;
     }
 

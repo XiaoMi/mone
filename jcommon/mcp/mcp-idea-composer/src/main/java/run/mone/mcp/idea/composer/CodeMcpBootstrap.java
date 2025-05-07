@@ -9,13 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @ComponentScan(basePackages = {"run.mone.mcp.idea.composer", "run.mone.hive.mcp.service"})
 @EnableScheduling
-public class IdeaComposerMcpBootstrap {
+public class CodeMcpBootstrap {
 
     public static void main(String[] args) {
-        try {
-            SpringApplication.run(IdeaComposerMcpBootstrap.class, args);
-        }catch (Throwable t){
-            t.printStackTrace();
-        }
+        SpringApplication.run(CodeMcpBootstrap.class, args);
     }
 }
