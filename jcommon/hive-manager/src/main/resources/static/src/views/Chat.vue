@@ -13,6 +13,8 @@
       @scrollToTop="scrollToTop"
       :changeSendMethod="toggleSendMethod"
       :onPlayAudio="onPlayAudio"
+      :onClearHistory="onClearHistory"
+      :onOffline="onOfflineAgent"
     />
   </div>
 </template>
@@ -24,7 +26,7 @@ import {
   type Message,
 } from "@/stores/chat-context";
 import { onMounted, onBeforeUnmount, computed, ref } from "vue"
-import { getAgentDetail } from '@/api/agent'
+import { getAgentDetail, clearHistory, offlineAgent } from '@/api/agent'
 import { useRoute } from 'vue-router'
 import { connectWebSocket } from '@/api/wsConnect'
 import { streamChat, textToVoice } from '@/api/message'
@@ -78,6 +80,42 @@ const toggleSendMethod = (val: string) => {
       }
     }
     return name;
+  }
+  const onClearHistory = () => {
+    const agent = getAgent();
+    let params = {
+      message: `/clear`,
+      __owner_id__: user?.username,
+    }
+    clearHistory({
+      mapData: {
+        outerTag: "use_mcp_tool",
+        server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+        tool_name: getAgentName(),
+        arguments: JSON.stringify(params)
+      },
+      conversationId: route.query.conversationId,
+      agentId: route.query.serverAgentId,
+      agentInstance: getSelectedInstance(),
+    });
+  }
+  const onOfflineAgent = () => {
+    const agent = getAgent();
+    let params = {
+      message: `/exit`,
+      __owner_id__: user?.username,
+    }
+    offlineAgent({
+      mapData: {
+        outerTag: "use_mcp_tool",
+        server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+        tool_name: getAgentName(),
+        arguments: JSON.stringify(params)
+      },
+      conversationId: route.query.conversationId,
+      agentId: route.query.serverAgentId,
+      agentInstance: getSelectedInstance(),
+    });
   }
   const initCodePrompt = () => {
       setMessageList([]);
