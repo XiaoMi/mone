@@ -173,17 +173,19 @@ export const createAccess = (data: {
 }
 
 // 下限agent
-export const offlineAgent = () => {
+export const offlineAgent = (data) => {
   return Service<IResponse<string>>({
     url: `/v1/agents/offline`,
     method: 'post',
+    data
   })
 }
 
 // 清除历史记录
-export const clearHistory = () => {
+export const clearHistory = (data) => {
   return Service<IResponse<string>>({
     url: `/v1/agents/clearHistory`,
     method: 'post',
+    data
   })
 }
