@@ -1,5 +1,6 @@
 package run.mone.agentx.service;
 
+import com.google.common.base.Joiner;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,9 @@ import run.mone.agentx.repository.AgentRepository;
 import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
+import run.mone.hive.common.Safe;
+import run.mone.hive.mcp.hub.McpHub;
+import run.mone.hive.mcp.hub.McpHubHolder;
 
 import java.util.concurrent.TimeUnit;
 import java.util.UUID;
@@ -77,6 +81,7 @@ public class AgentService {
 
     /**
      * 获取用户可访问的Agent列表，并包含每个Agent的实例列表
+     *
      * @param userId 用户ID
      * @return 包含AgentInstance列表的Agent流
      */
@@ -97,8 +102,8 @@ public class AgentService {
                 .flatMap(existingAgent -> {
                     // 检查是否修改了唯一标识字段
                     if (!existingAgent.getName().equals(agent.getName()) ||
-                        !existingAgent.getGroup().equals(agent.getGroup()) ||
-                        !existingAgent.getVersion().equals(agent.getVersion())) {
+                            !existingAgent.getGroup().equals(agent.getGroup()) ||
+                            !existingAgent.getVersion().equals(agent.getVersion())) {
                         // 如果修改了，需要检查新的组合是否已存在
                         return agentRepository.findByNameAndGroupAndVersion(agent.getName(), agent.getGroup(), agent.getVersion())
                                 .flatMap(duplicateAgent -> Mono.<Agent>error(new IllegalStateException("Agent with same name, group and version already exists")))
@@ -172,7 +177,7 @@ public class AgentService {
             // 查找Agent是否存在
             Agent agent = agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
                     .block();
-            
+
             // 如果Agent不存在，创建一个新的
             if (agent == null) {
                 agent = new Agent();
@@ -184,7 +189,7 @@ public class AgentService {
                 agent.setUtime(System.currentTimeMillis());
                 agent.setState(1);
                 agent.setIsPublic(true);
-                
+
                 // 设置 toolMap 和 mcpToolMap
                 if (regInfoDto.getToolMap() != null) {
                     agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
@@ -192,7 +197,7 @@ public class AgentService {
                 if (regInfoDto.getMcpToolMap() != null) {
                     agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
                 }
-                
+
                 agent = agentRepository.save(agent).block();
             } else {
                 // 如果Agent已存在，更新 toolMap 和 mcpToolMap
@@ -205,7 +210,7 @@ public class AgentService {
                 agent.setUtime(System.currentTimeMillis());
                 agent = agentRepository.save(agent).block();
             }
-            
+
             // 检查 ip 和 port 是否有效
             if (regInfoDto.getIp() == null || regInfoDto.getPort() <= 0) {
                 // 如果 ip 为 null 或 port 为 0，只返回一个空的 AgentInstance
@@ -219,11 +224,11 @@ public class AgentService {
                 emptyInstance.setUtime(System.currentTimeMillis());
                 return Mono.just(emptyInstance);
             }
-            
+
             // 检查AgentInstance是否已存在
             AgentInstance existingInstance = agentInstanceRepository.findByAgentIdAndIpAndPort(
                     agent.getId(), regInfoDto.getIp(), regInfoDto.getPort()).block();
-            
+
             if (existingInstance != null) {
                 // 如果AgentInstance已存在，更新最后心跳时间
                 existingInstance.setLastHeartbeatTime(System.currentTimeMillis());
@@ -248,33 +253,36 @@ public class AgentService {
     }
 
     public Mono<Void> unregister(RegInfoDto regInfoDto) {
+        //从网络上也摘除
+        Safe.run(() -> {
+            regInfoDto.getClientMap().forEach((key, value) -> {
+                String groupKey = Joiner.on(":").join(key, regInfoDto.getIp(), regInfoDto.getPort());
+                McpHub hub = McpHubHolder.remove(groupKey);
+                if (null != hub) {
+                    hub.removeConnection(groupKey);
+                }
+            });
+        });
+
         try {
             // 查找Agent是否存在
             Agent agent = agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
                     .block();
-            
+
             // 如果Agent不存在，直接返回
             if (agent == null) {
                 return Mono.empty();
             }
-            
+
             // 查找AgentInstance是否存在
             AgentInstance instance = agentInstanceRepository.findByAgentIdAndIpAndPort(
                     agent.getId(), regInfoDto.getIp(), regInfoDto.getPort()).block();
-            
+
             // 如果AgentInstance存在，删除它
             if (instance != null) {
                 agentInstanceRepository.deleteById(instance.getId()).block();
-                
-//                // 检查此agent_id的t_agent_instance记录数是否为0
-//                long count = agentInstanceRepository.findByAgentId(agent.getId()).count().block();
-//
-//                // 如果为0，删除t_agent记录
-//                if (count == 0) {
-//                    agentRepository.deleteById(agent.getId()).block();
-//                }
             }
-            
+
             return Mono.empty();
         } catch (Exception e) {
             return Mono.error(e);
@@ -299,7 +307,7 @@ public class AgentService {
             long currentTime = System.currentTimeMillis();
             long cutoffTime = currentTime - HEARTBEAT_TIMEOUT;
             long deleteTime = currentTime - HEARTBEAT_DELETE_TIMEOUT;
-            
+
             // 查找所有Agent实例，不限制isActive状态
             agentInstanceRepository.findAll()
                     .filter(instance -> instance.getLastHeartbeatTime() < cutoffTime)
@@ -332,6 +340,7 @@ public class AgentService {
 
     /**
      * 获取单个Agent及其实例列表
+     *
      * @param agentId Agent ID
      * @return 包含AgentInstance列表的Agent
      */
@@ -349,6 +358,7 @@ public class AgentService {
 
     /**
      * 获取所有Agent列表及其实例列表，无需鉴权
+     *
      * @return 包含AgentInstance列表的Agent流
      */
     public Flux<AgentWithInstancesDTO> findAllAgentsWithInstances() {

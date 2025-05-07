@@ -236,11 +236,20 @@ export function fluxCodeHandler(res: string, uuid: string) {
       {
         // chat和thinking标签格式处理
         match: (text: string) => 
-          (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact"))),
+          (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact") || text.includes("command"))),
         replace: (text: string) => {
           return text
-            .replace(/<[\s\r\n]+(chat|thinking|use_mcp_tool|boltArtifact)/g, '<$1')
-            .replace(/(chat|thinking|use_mcp_tool|boltArtifact)[\s\r\n]+>/g, '$1>');
+            .replace(/<[\s\r\n]+(chat|thinking|use_mcp_tool|boltArtifact|command)/g, '<$1')
+            .replace(/(chat|thinking|use_mcp_tool|boltArtifact|command)[\s\r\n]+>/g, '$1>');
+        },
+      },
+      {
+        // command标签格式处理
+        match: (text: string) => (text.includes("<") && text.includes("command")),
+        replace: (text: string) => {
+          return text
+            .replace(/(<command>)(?!\n)/g, '$1\n')
+            .replace(/(?<!\n)(<\/command>)/g, '\n$1');
         },
       },
       {

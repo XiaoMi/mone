@@ -33,7 +33,8 @@ public class McpService {
     private ReentrantLock lock = new ReentrantLock();
 
 
-    public void callMcp(Long agentId, AgentInstance instance, Result it, FluxSink sink) {
+    public void callMcp(String userName, Long agentId, AgentInstance instance, Result it, FluxSink sink) {
+        log.info("user:{} call mcp tool", userName);
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
 
         if (instance == null) {
@@ -47,13 +48,14 @@ public class McpService {
         //这个需要那个用户就传他的id (需要从前端拿过来)
         String clientId = getAgentKey(agentDto.getAgent());
 
-        String groupKey = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
+        //对面的ip和port 服务端的
+        String key = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
 
         try {
             lock.lock();
-            McpHub hub = McpHubHolder.get(groupKey);
+            McpHub hub = McpHubHolder.get(key);
             if (Optional.ofNullable(hub).isEmpty()) {
-                connectMcp(instance, clientId, groupKey);
+                connectMcp(instance, key, key);
             }
         } catch (Exception e) {
             log.error("callMcp error.", e);
@@ -62,7 +64,7 @@ public class McpService {
         }
 
         // 调用MCP
-        MonerMcpClient.mcpCall(it, groupKey, this.mcpInterceptor, sink, (name) -> null);
+        MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {

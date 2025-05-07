@@ -22,13 +22,19 @@ import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
 import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.OfflineDto;
 import run.mone.hive.bo.RegInfoDto;
+import run.mone.hive.mcp.service.RoleService;
+import run.mone.hive.schema.Message;
 
 @RestController
 @RequestMapping("/api/v1/agents")
 @RequiredArgsConstructor
 public class AgentController {
+
     private final AgentService agentService;
+
+    private final RoleService roleService;
 
     @PostMapping("/create")
     public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
@@ -58,7 +64,6 @@ public class AgentController {
 
     @GetMapping("/{id}")
     public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@PathVariable Long id) {
-
         return agentService.findAgentWithInstances(id)
                 .map(ApiResponse::success)
                 .defaultIfEmpty(ApiResponse.error(404, "Agent not found"));
@@ -89,6 +94,19 @@ public class AgentController {
     @PostMapping("/register")
     public Mono<ApiResponse<AgentInstance>> register(@RequestBody RegInfoDto regInfoDto) {
         return agentService.register(regInfoDto).map(ApiResponse::success);
+    }
+
+    //下线agent
+    @PostMapping("/offline")
+    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user) {
+        return roleService.offlineAgent(Message.builder().sentFrom(user.getUsername()).build()).thenReturn(ApiResponse.success("ok"));
+    }
+
+    //清空agent历史记录
+    @PostMapping("/clearHistory")
+    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user) {
+        roleService.clearHistory(Message.builder().sentFrom(user.getUsername()).build());
+        return Mono.just(ApiResponse.success("ok"));
     }
 
     @PostMapping("/unregister")

@@ -2,15 +2,20 @@ package run.mone.agentx.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.adapter.standard.StandardWebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import run.mone.agentx.entity.User;
+import run.mone.agentx.service.JwtService;
 import run.mone.agentx.service.McpService;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Result;
+
 import java.util.Map;
 import java.net.URI;
 import java.util.HashMap;
@@ -33,12 +38,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
+            String userName = "";
+            if (session instanceof StandardWebSocketSession sws) {
+                if (sws.getPrincipal() instanceof UsernamePasswordAuthenticationToken token && token.getPrincipal() instanceof User user) {
+                    userName = user.getUsername();
+                }
+            }
+            session.getAttributes().put("userName", userName);
+
             // 存储对话ID
             session.getAttributes().put("clientId", clientId);
-            
+
             // 使用对话ID存储session
             WebSocketHolder.addSession(clientId, session);
-            
+
             log.info("WebSocket connection established for clientId: {}", clientId);
         } catch (Exception e) {
             log.error("Error during WebSocket connection establishment", e);
@@ -51,11 +64,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
         log.info("Received message, payload: {}", payload);
-        
+
         try {
             // 解析MCP请求
             McpRequest request = GsonUtils.gson.fromJson(payload, McpRequest.class);
-
 
             // 构建MCP调用参数
             Map<String, String> keyValuePairs = new HashMap<>();
@@ -65,16 +77,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 keyValuePairs.put("tool_name", request.getContent().getTool_name());
                 keyValuePairs.put("arguments", request.getContent().getArguments());
             }
-            
+
             // 创建Result对象
             Result result = new Result("mcp_request", keyValuePairs);
             result.setFrom("hive_manager");
-            
+
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
-            mcpService.callMcp(request.getAgentId(), request.getAgentInstance(), result, sink);
+            String userName = session.getAttributes().getOrDefault("userName", "").toString();
+            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), result, sink);
             sink.complete();
-            
+
         } catch (Exception e) {
             log.error("Error processing MCP request", e);
             session.sendMessage(new TextMessage("{\"error\": \"" + e.getMessage() + "\"}"));

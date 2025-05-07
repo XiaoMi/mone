@@ -89,11 +89,12 @@ const toggleSendMethod = (val: string) => {
       messageId.value = uuidv4();
       let params = {
         message: `语音合成处理以下文本内容：“${text}”`,
-        __owner_id__: uuid.value,
+        __owner_id__: user?.username,
       }
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
+          conversationId: route.query.conversationId,
           agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
@@ -139,7 +140,7 @@ const toggleSendMethod = (val: string) => {
       messageId.value = uuidv4();
       let params = {
         message: text,
-        __owner_id__: uuid.value,
+        __owner_id__: user?.username,
       }
       if (message.type === "audio") {
         params.voiceBase64 = message.data.content?.split("base64,")[1];
@@ -150,6 +151,7 @@ const toggleSendMethod = (val: string) => {
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({
+          conversationId: route.query.conversationId,
           agentId: route.query.serverAgentId,
           outerTag: "use_mcp_tool",
           agentInstance: getSelectedInstance(),
