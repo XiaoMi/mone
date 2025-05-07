@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 interface McpRequest {
   outerTag: string;
@@ -21,7 +22,8 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
   };
 
   try {
-    let preIndex = -1;
+    // let preIndex = -1;
+    let text = '';
     const response = await axios({
       method: 'post',
       url: '/api/manager/v1/mcp/call',
@@ -35,12 +37,24 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
       onDownloadProgress: (progressEvent) => {
         const xhr = progressEvent.event?.target;
         if (xhr?.responseText) {
+          xhr?.responseText.replace('data: ', '');
+          let allText = '';
           xhr?.responseText.split('data:').forEach((chunk: string, index: number) => {
-            if (index > preIndex) {
-              callback?.(chunk);
-              preIndex = index;
+            if (chunk.includes("hiveVoiceBase64-")) {
+              textToVoice(chunk.split("hiveVoiceBase64-")[1]);
+            }else {
+              // -2需要去掉最后一个\n
+              allText += chunk.slice(0, -2);
             }
           });
+          // console.log(allText);
+          // 新增的部分
+          const resText = allText.slice(text.length);
+          // console.log(resText);
+          text = allText;
+          if (resText) {
+            callback?.(resText);
+          }
         }
       }
     });
@@ -51,3 +65,15 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
     throw error;
   }
 };
+
+export const textToVoice = async (text: string) => {
+  try {
+    if (text) {
+      const audio = new Audio(`data:audio/mpeg;base64,${text}`);
+      await audio.play();
+    }
+  } catch (error) {
+    console.log("error", error);
+    ElMessage.error('音频播放失败')
+  }
+}

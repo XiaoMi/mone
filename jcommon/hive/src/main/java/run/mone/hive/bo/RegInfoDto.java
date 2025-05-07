@@ -35,6 +35,8 @@ public class RegInfoDto implements Serializable {
     private Map<String, String> toolMap;
 
     private Map<String, String> mcpToolMap;
+
+    private Map<String,String> clientMap;
     
     /**
      * 将 RegInfoDto 转换为 RegInfo
@@ -86,6 +88,7 @@ public class RegInfoDto implements Serializable {
         dto.setGroup(regInfo.getGroup());
         dto.setIp(regInfo.getIp());
         dto.setPort(regInfo.getPort());
+        dto.setClientMap(regInfo.getClientMap());
         
         // 将 Map<String, ITool> 转换为 Map<String, String>
         Map<String, String> toolMap = new HashMap<>();
@@ -94,7 +97,7 @@ public class RegInfoDto implements Serializable {
                 String toolName = entry.getKey();
                 ITool tool = entry.getValue();
                 if (tool != null) {
-                    toolMap.put(toolName, GsonUtils.gson.toJson(tool));
+                    toolMap.put(toolName, tool.description());
                 } else {
                     toolMap.put(toolName, toolName);
                 }

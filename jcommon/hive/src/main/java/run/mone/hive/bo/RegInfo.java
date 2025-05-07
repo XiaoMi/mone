@@ -34,4 +34,6 @@ public class RegInfo implements Serializable {
 
     private Map<String, McpSchema.Tool> mcpToolMap;
 
+    private Map<String,String> clientMap;
+
 }

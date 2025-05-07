@@ -10,24 +10,31 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
 import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.OfflineDto;
 import run.mone.hive.bo.RegInfoDto;
+import run.mone.hive.mcp.service.RoleService;
+import run.mone.hive.schema.Message;
 
 @RestController
 @RequestMapping("/api/v1/agents")
 @RequiredArgsConstructor
 public class AgentController {
+
     private final AgentService agentService;
+
+    private final RoleService roleService;
 
     @PostMapping("/create")
     public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
@@ -40,16 +47,26 @@ public class AgentController {
         return agentService.findAccessibleAgentsWithInstances(user.getId()).collectList().map(ApiResponse::success);
     }
 
+    @GetMapping("/access/{id}")
+    public Mono<ApiResponse<AgentWithInstancesDTO>> getAccessAgent(
+            @PathVariable Long id,
+            @RequestParam String accessApp,
+            @RequestParam String accessKey) {
+        return agentService.hasAccess(id, accessApp, accessKey)
+                .flatMap(hasAccess -> {
+                    if (hasAccess) {
+                        return agentService.findAgentWithInstances(id)
+                                .map(ApiResponse::success);
+                    }
+                    return Mono.just(ApiResponse.<AgentWithInstancesDTO>error(403, "Access denied"));
+                });
+    }
+
     @GetMapping("/{id}")
-    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
-        return agentService.hasAccess(id, user.getId())
-            .flatMap(hasAccess -> {
-                if (Boolean.TRUE.equals(hasAccess)) {
-                    return agentService.findAgentWithInstances(id).map(ApiResponse::success);
-                } else {
-                    return Mono.just(ApiResponse.<AgentWithInstancesDTO>error(403, "Unauthorized access to agent"));
-                }
-            });
+    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@PathVariable Long id) {
+        return agentService.findAgentWithInstances(id)
+                .map(ApiResponse::success)
+                .defaultIfEmpty(ApiResponse.error(404, "Agent not found"));
     }
 
     @PutMapping("/{id}")
@@ -79,6 +96,19 @@ public class AgentController {
         return agentService.register(regInfoDto).map(ApiResponse::success);
     }
 
+    //下线agent
+    @PostMapping("/offline")
+    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user) {
+        return roleService.offlineAgent(Message.builder().sentFrom(user.getUsername()).build()).thenReturn(ApiResponse.success("ok"));
+    }
+
+    //清空agent历史记录
+    @PostMapping("/clearHistory")
+    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user) {
+        roleService.clearHistory(Message.builder().sentFrom(user.getUsername()).build());
+        return Mono.just(ApiResponse.success("ok"));
+    }
+
     @PostMapping("/unregister")
     public Mono<ApiResponse<Void>> unregister(@RequestBody RegInfoDto regInfoDto) {
         return agentService.unregister(regInfoDto).thenReturn(ApiResponse.success(null));
@@ -87,5 +117,14 @@ public class AgentController {
     @PostMapping("/health")
     public Mono<ApiResponse<Void>> heartbeat(@RequestBody HealthInfo healthInfo) {
         return agentService.heartbeat(healthInfo).thenReturn(ApiResponse.success(null));
+    }
+
+    @GetMapping("/{id}/check")
+    public Mono<ApiResponse<Boolean>> checkAccess(
+            @PathVariable Long id,
+            @RequestParam String accessApp,
+            @RequestParam String accessKey) {
+        return agentService.hasAccess(id, accessApp, accessKey)
+                .map(ApiResponse::success);
     }
 }

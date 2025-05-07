@@ -10,6 +10,7 @@
         :user="profile((message as TypeMessage).author)"
         :onMessageClick="onMessageClick"
         :onMessageCmd="onMessageCmd"
+        :onPlayAudio="onPlayAudio"
       >
         <template v-slot:user-avatar="scopedProps">
           <slot
@@ -96,6 +97,10 @@ export default {
     },
     alwaysScrollToBottom: {
       type: Boolean,
+      required: true,
+    },
+    onPlayAudio: {
+      type: Function,
       required: true,
     },
   },

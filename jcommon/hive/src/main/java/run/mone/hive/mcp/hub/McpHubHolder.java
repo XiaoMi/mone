@@ -26,8 +26,12 @@ public class McpHubHolder {
         FROM_MCP_HUB.put(from, mcpHub);
     }
 
-    public static McpHub get(String from){
-        return FROM_MCP_HUB.get(from);
+    public static McpHub get(String key){
+        return FROM_MCP_HUB.get(key);
+    }
+
+    public static McpHub remove(String key) {
+        return FROM_MCP_HUB.remove(key);
     }
 
     public static Boolean containsKey(String from) {

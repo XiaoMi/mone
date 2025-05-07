@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.composer.service.IdeaService;
 
@@ -17,13 +18,9 @@ import java.util.function.Function;
  */
 @Component
 @RequiredArgsConstructor
-public class CreateCommentFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class CreateCommentFunction implements McpFunction {
 
-    private IdeaService ideaService;
-
-    public CreateCommentFunction(IdeaService ideaService) {
-        this.ideaService = ideaService;
-    }
+    private final IdeaService ideaService;
 
     public String getName() {
         return "stream_CreateComment";

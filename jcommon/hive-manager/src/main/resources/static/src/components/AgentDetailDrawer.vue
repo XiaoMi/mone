@@ -2,7 +2,7 @@
     <el-drawer
       v-model="visible"
       direction="rtl"
-      size="60%"
+      size="80%"
       :title="agentDetail?.name"
       :destroy-on-close="true"
       class="agent-detail-drawer"
@@ -32,11 +32,15 @@
           </div>
           <div class="detail-item">
             <div class="label">tools</div>
-            <div class="value">{{ agentDetail.toolMap }}</div>
+            <div class="value">
+              <vue-json-pretty :data="handleParse(agentDetail.toolMap)" :deep="3" :showDoubleQuotes="true" :showIcon="true" :highlightSelectedItem="false" :highlightMouseoverNode="false" />
+            </div>
           </div>
           <div class="detail-item">
             <div class="label">mcpTools</div>
-            <div class="value">{{ agentDetail.mcpToolMap }}</div>
+            <div class="value">
+              <vue-json-pretty :data="handleParse(agentDetail.mcpToolMap)" :deep="3" :showDoubleQuotes="true" :showIcon="true" :highlightSelectedItem="false" :highlightMouseoverNode="false"/>
+            </div>
           </div>
           <div class="detail-item">
             <div class="label">创建时间</div>
@@ -46,7 +50,7 @@
             <div class="label">更新时间</div>
             <div class="value">{{ formatDate(agentDetail.utime) }}</div>
           </div>
-          
+          <AccessList :agent-id="agent.id" />
           <!-- 添加技能列表组件 -->
           <div class="skills-section">
             <SkillList :agent-id="agent.id" />
@@ -61,7 +65,9 @@
   import type { Agent } from '@/api/agent'
   import { getAgentDetail } from '@/api/agent'
   import SkillList from './SkillList.vue'
-  
+  import AccessList from './AccessList.vue'
+  import VueJsonPretty from 'vue-json-pretty'
+  import 'vue-json-pretty/lib/styles.css'
   const props = defineProps<{
     modelValue: boolean
     agent: object
@@ -98,6 +104,47 @@
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString()
   }
+
+  const handleParse = (str: string) => {
+    try {
+        // 首先尝试直接解析
+        let parsed = JSON.parse(str);
+        
+        // 检查解析后的对象中是否还有字符串类型的JSON
+        const deepParse = (obj) => {
+            if (typeof obj === 'string') {
+                // 如果是字符串，尝试再次解析
+                try {
+                    const parsedStr = JSON.parse(obj);
+                    // 如果解析成功，递归处理新解析的对象
+                    return deepParse(parsedStr);
+                } catch (e) {
+                    // 如果解析失败，保留原字符串
+                    return obj;
+                }
+            } else if (Array.isArray(obj)) {
+                // 如果是数组，递归处理每个元素
+                return obj.map(item => deepParse(item));
+            } else if (typeof obj === 'object' && obj !== null) {
+                // 如果是对象，递归处理每个属性
+                const result = {};
+                for (const key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        result[key] = deepParse(obj[key]);
+                    }
+                }
+                return result;
+            }
+            // 其他类型直接返回
+            return obj;
+        };
+        
+        return deepParse(parsed);
+    } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        return null;
+    }
+  }
   </script>
   
   <style>
@@ -132,6 +179,12 @@
       font-size: 16px;
       word-break: break-all;
       flex: 1;
+      :deep(.vjs-tree) {
+        background-color: rgba(22, 27, 34, 0.4);
+        border-radius: 8px;
+        padding: 12px;
+        color: #fff;
+      }
     }
   
     .description {

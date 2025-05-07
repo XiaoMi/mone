@@ -307,4 +307,14 @@
 }
 .el-popper.sc-message--ops {
   padding: 4px;
+  border: none !important;
+  background-color: rgba(112, 66, 209) !important;
+}
+
+.vjs-key {
+  white-space: nowrap;
+}
+
+.vjs-tree-node.is-highlight, .vjs-tree-node:hover {
+  background-color: transparent !important;
 }

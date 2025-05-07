@@ -61,7 +61,7 @@ public class CodeGenerationHandler extends AbstractBotHandler {
         String projectReport = context.getMessagesByHandler(ProjectReportHandler.name).stream()
                 .filter(it -> it.getRole().equals(Role.assistant.name()))
                 .findFirst()
-                .get()
+                .orElse(ChatMessage.builder().content("").build())
                 .getContent();
         promptBuilder.append(projectReport).append("\n");
 

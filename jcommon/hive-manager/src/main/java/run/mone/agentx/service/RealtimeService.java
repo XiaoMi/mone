@@ -2,7 +2,6 @@ package run.mone.agentx.service;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketHttpHeaders;
@@ -27,15 +26,26 @@ public class RealtimeService {
     private final Map<String, AtomicBoolean> connectionStatusMap = new ConcurrentHashMap<>();
     private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
     private static final int MAX_RECONNECT_ATTEMPTS = 5;
+    private static final int MAX_MESSAGE_SIZE = 2 * 1024 * 1024; // 1MB per chunk
 
-    @Value("${realtime.ws.url:wss://api.minimax.chat/ws/v1/realtime}")
-    private String realtimeWsUrl;
+    private static final String realtimeWsUrl = "wss://api.minimax.chat/ws/v1/realtime";
 
-    @Value("${realtime.ws.apiKey:640e0c9c5f918b4f6c4e2d58}")
-    private String apiKey;
+    private static final String apiKey = "";
 
-    @Value("${realtime.ws.model:abab6.5s-chat}")
-    private String realtimeWsModel;
+    private static final String realtimeWsModel = "abab6.5s-chat";
+
+    private static final String setttings = "{\n" +
+            "    \"type\": \"session.update\",\n" +
+            "    \"session\": {\n" +
+            "        \"modalities\": [\"text\", \"audio\"],\n" +
+            "        \"instructions\": \"你是一位优秀的健身教练，请根据用户的需求，给出专业的健身建议和训练计划。\",\n" +
+            "        \"voice\": \"female-yujie\",\n" +
+            "        \"input_audio_format\": \"pcm16\",\n" +
+            "        \"output_audio_format\": \"pcm16\",\n" +
+            "        \"temperature\": 0.8,\n" +
+            "        \"max_response_output_tokens\": \"10000\"\n" +
+            "    }\n" +
+            "}\n";
 
     @Autowired
     public RealtimeService(WebSocketSession outerSession) {
@@ -49,16 +59,23 @@ public class RealtimeService {
             WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
             headers.add("Authorization", "Bearer " + apiKey);
             
-            String url = realtimeWsUrl + "?model=" + realtimeWsModel;
+            String url = realtimeWsUrl + "?model=" + realtimeWsModel + "&maxMessageSize=" + MAX_MESSAGE_SIZE;
             
             WebSocketSession session = client.doHandshake(new TextWebSocketHandler() {
                 @Override
                 public void afterConnectionEstablished(@NotNull WebSocketSession session) {
-                    innerSessionId = session.getId();
+                    session.setTextMessageSizeLimit(MAX_MESSAGE_SIZE);
+                    String sessionId = innerSessionId = session.getId();
                     innerSession = session;
-                    connectionStatusMap.get(innerSessionId).set(true);
+                    sessionMap.put(innerSessionId, session);
+                    connectionStatusMap.put(innerSessionId, new AtomicBoolean(true));
                     reconnectAttempts.set(0);
-                    log.info("WebSocket connection established for sessionId: {}", innerSessionId);
+                   try {
+                       session.sendMessage(new TextMessage(setttings));
+                   } catch (IOException e) {
+                       log.error("afterConnectionEstablished sendMessage:", e);
+                   }
+                   log.info("WebSocket connection established for sessionId: {}", sessionId);
                 }
 
                 @Override
@@ -89,11 +106,6 @@ public class RealtimeService {
                     cleanupSession(session.getId());
                 }
             }, headers, new URI(url)).get();
-
-            this.innerSession = session;
-            this.innerSessionId = session.getId();
-            sessionMap.put(innerSessionId, session);
-            connectionStatusMap.put(innerSessionId, new AtomicBoolean(true));
 
         } catch (Exception e) {
             log.error("Error establishing WebSocket connection for sessionId {}: {}", innerSessionId, e.getMessage());
