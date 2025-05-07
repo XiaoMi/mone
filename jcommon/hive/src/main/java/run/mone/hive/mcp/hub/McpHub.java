@@ -61,6 +61,12 @@ public class McpHub {
         }, 5, 5, TimeUnit.SECONDS);
     }
 
+    //移除废弃的连接
+    public void removeConnection(String key) {
+        McpConnection v = this.connections.remove(key);
+        log.info("remove connection:{}", v);
+    }
+
     // 局部刷新
     public void refreshMcpServer(String mcpServerName) {
         try {
@@ -234,9 +240,10 @@ public class McpHub {
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
         McpConnection connection = new McpConnection(server, client, transport, McpType.fromString(config.getType()));
+        connection.setKey(name);
         connections.put(name, connection);
-
         try {
+            //这里真的会连接过去
             client.initialize();
             server.setStatus("connected");
             //放入工具(tool)

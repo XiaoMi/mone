@@ -23,7 +23,6 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -88,7 +87,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, @Nullable RoleMeta roleMeta) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta) {
         List<ITool> toolList = roleMeta.getTools();
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
 
@@ -112,7 +111,7 @@ public class HiveAutoConfigure {
 
     //Mcp Server
     @Bean
-    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, @Nullable RoleMeta roleMeta) {
+    public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, RoleMeta roleMeta) {
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
         mcpTools.forEach(it -> it.setRoleService(roleService));
         return new McpServer(transport, mcpTools, meta);

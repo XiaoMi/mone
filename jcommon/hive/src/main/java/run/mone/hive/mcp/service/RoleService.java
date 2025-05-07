@@ -1,6 +1,7 @@
 package run.mone.hive.mcp.service;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
  */
 @RequiredArgsConstructor
 @Data
+@Slf4j
 public class RoleService {
 
     private final LLM llm;
@@ -44,7 +46,7 @@ public class RoleService {
 
     private final HiveManagerService hiveManagerService;
 
-    //通过这个反向注册一些role元数据进来
+    //通过这个反向注册一些role(agent)元数据进来
     private final RoleMeta roleMeta;
 
     @Value("${mcp.hub.path:}")
@@ -72,6 +74,11 @@ public class RoleService {
     @Value("${mcp.agent.delay:0}")
     private int delay;
 
+    private ReactorRole defaultAgent;
+
+    //连接过来的客户端
+    private ConcurrentHashMap<String, String> clientMap = new ConcurrentHashMap<>();
+
     @PostConstruct
     @SneakyThrows
     public void init() {
@@ -79,36 +86,56 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
+        //创建一个默认Agent
+        createDefaultAgent();
+        //优雅关机
+        shutdownHook();
+    }
 
-        //创建一个默认角色
+    private void shutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> Safe.run(() -> {
+            RegInfo regInfo = RegInfo.builder().name(agentName).group(agentGroup).ip(NetUtils.getLocalHost()).port(grpcPort).version(agentversion).build();
+            log.info("shutdown hook unregister:{}", regInfo);
+            regInfo.setClientMap(this.clientMap);
+            hiveManagerService.unregister(regInfo);
+        })));
+    }
+
+    private void createDefaultAgent() {
         if (delay == 0) {
-            Safe.run(() -> createRole(Const.DEFAULT, Const.DEFAULT));
+            Safe.run(() -> this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT));
         } else {
             Safe.run(() -> Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-                createRole(Const.DEFAULT, Const.DEFAULT);
+                this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT);
             }, delay, TimeUnit.SECONDS));
         }
     }
 
     public ReactorRole createRole(String owner, String clientId) {
+        if (!owner.equals(Const.DEFAULT)) {
+            this.clientMap.put(clientId, clientId);
+        }
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
         ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList, ip) {
             @Override
             public void reg(RegInfo info) {
-                // 直接传递传入的RegInfo对象
-                hiveManagerService.register(info);
+                if (owner.equals(Const.DEFAULT)) {
+                    hiveManagerService.register(info);
+                }
             }
 
             @Override
             public void unreg(RegInfo regInfo) {
-                // 直接传递传入的RegInfo对象
-                hiveManagerService.unregister(regInfo);
+                if (owner.equals(Const.DEFAULT)) {
+                    hiveManagerService.unregister(regInfo);
+                }
             }
 
             @Override
             public void health(HealthInfo healthInfo) {
-                // 直接传递传入的HealthInfo对象
-                hiveManagerService.heartbeat(healthInfo);
+                if (owner.equals(Const.DEFAULT)) {
+                    hiveManagerService.heartbeat(healthInfo);
+                }
             }
         };
         role.setFunctionList(this.functionList);

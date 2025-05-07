@@ -47,6 +47,7 @@ public class McpService {
         //这个需要那个用户就传他的id (需要从前端拿过来)
         String clientId = getAgentKey(agentDto.getAgent());
 
+        //对面的ip和port 服务端的
         String groupKey = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
 
         try {

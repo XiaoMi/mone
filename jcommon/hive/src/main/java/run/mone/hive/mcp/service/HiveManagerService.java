@@ -45,7 +45,6 @@ public class HiveManagerService {
      */
     @Scheduled(fixedRate = 600000, initialDelay = 20000) // 10分钟  20秒后执行
     public void login() {
-
         if (!enableRegHiveManager) {
             return;
         }
@@ -124,7 +123,6 @@ public class HiveManagerService {
      * 注销Agent
      */
     public void unregister(RegInfo regInfo) {
-
         if (!enableRegHiveManager) {
             return;
         }
