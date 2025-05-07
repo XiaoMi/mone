@@ -119,15 +119,18 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", 0, countDownLatch, llm, Lists.newArrayList(), Lists.newArrayList());
+        this(name, "", "", "", "", "", 0, countDownLatch, llm, Lists.newArrayList(), Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
+    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
         super(name);
         this.group = group;
         this.version = version;
+        this.profile = profile;
+        this.goal = goal;
+        this.constraints = constraints;
         this.grpcPort = port;
         //内部工具
         tools.forEach(this::addTool);
@@ -144,7 +147,7 @@ public class ReactorRole extends Role {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
 
         //注册到agent注册中心
-        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
+        reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).profile(profile).goal(goal).constraints(constraints).ip(ip).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
@@ -158,8 +161,8 @@ public class ReactorRole extends Role {
         }, 0, 20, TimeUnit.SECONDS);
     }
 
-    public ReactorRole(String name, String group, String version, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
-        this(name, group, version, port, countDownLatch, llm, tools, mcpTools, NetUtils.getLocalHost());
+    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+        this(name, group, version, profile, goal, constraints, port, countDownLatch, llm, tools, mcpTools, NetUtils.getLocalHost());
     }
 
     //think -> observe -> act
