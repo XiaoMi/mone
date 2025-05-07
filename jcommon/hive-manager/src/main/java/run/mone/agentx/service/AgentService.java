@@ -257,7 +257,7 @@ public class AgentService {
         Safe.run(() -> {
             regInfoDto.getClientMap().forEach((key, value) -> {
                 String groupKey = Joiner.on(":").join(key, regInfoDto.getIp(), regInfoDto.getPort());
-                McpHub hub = McpHubHolder.get(groupKey);
+                McpHub hub = McpHubHolder.remove(groupKey);
                 if (null != hub) {
                     hub.removeConnection(groupKey);
                 }

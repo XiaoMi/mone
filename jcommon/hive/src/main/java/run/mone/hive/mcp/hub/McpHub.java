@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.hub;
 
+import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +66,9 @@ public class McpHub {
     public void removeConnection(String key) {
         McpConnection v = this.connections.remove(key);
         log.info("remove connection:{}", v);
+        if (null != v) {
+            v.getTransport().close();
+        }
     }
 
     // 局部刷新
@@ -328,7 +332,10 @@ public class McpHub {
             toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
-            throw new IllegalArgumentException("No connection found for server: " + serverName);
+            return Flux.create(sink->{
+                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)),true));
+                sink.complete();
+            });
         }
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callToolStream(request);
