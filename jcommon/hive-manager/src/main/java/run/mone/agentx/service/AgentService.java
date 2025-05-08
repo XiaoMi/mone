@@ -185,6 +185,9 @@ public class AgentService {
                 agent.setGroup(regInfoDto.getGroup());
                 agent.setVersion(regInfoDto.getVersion());
                 agent.setDescription("Auto created during registration");
+                agent.setProfile(regInfoDto.getProfile());
+                agent.setGoal(regInfoDto.getGoal());
+                agent.setConstraints(regInfoDto.getConstraints());
                 agent.setCtime(System.currentTimeMillis());
                 agent.setUtime(System.currentTimeMillis());
                 agent.setState(1);
@@ -197,6 +200,9 @@ public class AgentService {
                 if (regInfoDto.getMcpToolMap() != null) {
                     agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
                 }
+                agent.setProfile(regInfoDto.getProfile());
+                agent.setGoal(regInfoDto.getGoal());
+                agent.setConstraints(regInfoDto.getConstraints());
 
                 agent = agentRepository.save(agent).block();
             } else {
@@ -207,6 +213,9 @@ public class AgentService {
                 if (regInfoDto.getMcpToolMap() != null) {
                     agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
                 }
+                agent.setProfile(regInfoDto.getProfile());
+                agent.setGoal(regInfoDto.getGoal());
+                agent.setConstraints(regInfoDto.getConstraints());
                 agent.setUtime(System.currentTimeMillis());
                 agent = agentRepository.save(agent).block();
             }
