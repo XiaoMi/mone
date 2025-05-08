@@ -85,6 +85,7 @@ public class TaskController {
             @RequestBody run.mone.hive.a2a.types.Task taskExecutionInfo) {
         
         log.info("收到任务执行请求: {}", taskExecutionInfo);
+        taskExecutionInfo.setUserName(user.getUsername());
         
         // 调用service执行任务
         return taskService.executeTask(taskExecutionInfo)
