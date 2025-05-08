@@ -55,6 +55,16 @@
               <span>更新时间：</span>
               <time>{{formatDate(task.utime)}}</time>
             </div>
+
+            <div class="task-actions">
+              <button 
+                class="execute-btn" 
+                @click.stop="handleExecute(task)"
+                :disabled="task.status === 'running'"
+              >
+                执行
+              </button>
+            </div>
           </div>
         </TransitionGroup>
       </div>
@@ -77,7 +87,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTaskById, createTask, getTaskList } from '@/api/task'
+import { getTaskById, createTask, getTaskList, executeTask } from '@/api/task'
 import type { Task, CreateTaskRequest } from '@/api/task'
 import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
 import CreateTaskDialog from '@/components/CreateTaskDialog.vue'
@@ -94,7 +104,11 @@ const route = useRoute()
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await getTaskList(Number(route.query.serverAgentId))
+    const params: any = {}
+    if (route.query.serverAgentId) {
+      params.serverAgentId = Number(route.query.serverAgentId)
+    }
+    const response = await getTaskList(params)
     if (response.data.code === 200) {
       taskList.value = response.data.data || []
     } else {
@@ -140,6 +154,26 @@ const handleSubmit = async (form: CreateTaskRequest) => {
   }
 }
 
+const handleExecute = async (task: Task) => {
+  try {
+    const response = await executeTask({
+      id: task.taskUuid,
+      metadata:{
+        input: task.description,
+        serverAgentId: task.serverAgentId
+      }
+    })
+    if (response.data.code === 200) {
+      ElMessage.success('任务执行成功')
+      fetchTasks()
+    } else {
+      ElMessage.error(response.data.message)
+    }
+  } catch {
+    ElMessage.error('执行任务失败')
+  }
+}
+
 const formatDate = (date: string) => {
   return new Date(date).toLocaleString()
 }
@@ -164,7 +198,7 @@ onMounted(() => {
   min-height: 100vh;
   background: #0d1117;
   color: #fff;
-  padding: 20px;
+  padding: 12px 20px;
   position: relative;
   overflow: hidden;
 }
@@ -401,13 +435,13 @@ onMounted(() => {
 
 
 .table-container {
-  height: calc(100vh - 140px);
+  height: calc(100vh - 110px);
   overflow-y: auto;
 }
 
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
+  font-size: 1.6rem;
   background: linear-gradient(90deg, #00f0ff, #b400ff);
   -webkit-background-clip: text;
   background-clip: text;
@@ -420,7 +454,7 @@ onMounted(() => {
 .create-btn {
   background: linear-gradient(135deg, #00f0ff, #b400ff);
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 8px;
   color: #0d1117;
   font-weight: bold;
@@ -528,6 +562,7 @@ onMounted(() => {
   margin: 120px auto 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .empty-state .empty-text {
@@ -575,5 +610,32 @@ onMounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.task-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.execute-btn {
+  background: linear-gradient(135deg, #00f0ff, #0066ff);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: #0d1117;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.execute-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+}
+
+.execute-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #666;
 }
 </style>

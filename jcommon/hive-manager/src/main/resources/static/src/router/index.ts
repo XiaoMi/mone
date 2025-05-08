@@ -16,6 +16,24 @@ const router = createRouter({
       redirect: "/login"
     },
     {
+      path: "/",
+      component: () => import("@/components/Header.vue"),
+      children: [
+        {
+          path: "agents",
+          name: "AgentList",
+          component: () => import("@/views/AgentList.vue"),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: "tasks",
+          name: "TaskList",
+          component: () => import("@/views/TaskList.vue"),
+          meta: { requiresAuth: true }
+        }
+      ]
+    },
+    {
       path: "/about",
       name: "About",
       component: () => import("@/views/About.vue"),
@@ -37,18 +55,6 @@ const router = createRouter({
       path: "/person",
       name: "Person",
       component: () => import("@/views/Person.vue"),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: "/agents",
-      name: "AgentList",
-      component: () => import("@/views/AgentList.vue"),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: "/tasks",
-      name: "TaskList",
-      component: () => import("@/views/TaskList.vue"),
       meta: { requiresAuth: true }
     },
     {

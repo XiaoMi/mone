@@ -355,7 +355,7 @@ onMounted(() => {
   min-height: 100vh;
   background: #0d1117;
   color: #fff;
-  padding: 20px;
+  padding: 12px 20px;
   position: relative;
   overflow: hidden;
 }
@@ -438,13 +438,13 @@ onMounted(() => {
 }
 
 .table-container {
-  height: calc(100vh - 140px);
+  height: calc(100vh - 110px);
   overflow-y: auto;
 }
 
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
+  font-size: 1.6rem;
   background: linear-gradient(90deg, #00f0ff, #b400ff);
   -webkit-background-clip: text;
   background-clip: text;
@@ -502,7 +502,7 @@ onMounted(() => {
 .create-btn {
   background: linear-gradient(135deg, #00f0ff, #b400ff);
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 8px;
   color: #0d1117;
   font-weight: bold;
