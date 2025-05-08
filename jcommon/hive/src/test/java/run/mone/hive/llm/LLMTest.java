@@ -155,6 +155,11 @@ class LLMTest {
             config.setUrl(System.getenv("X_AI_GATEWAY"));
         }
 
+        if (config.getLlmProvider() == LLMProvider.QWEN3) {
+            config.setUrl("http://xxx:8000/v1/chat/completions");
+            config.setModel("Qwen3-14B");
+        }
+
         llm = new LLM(config);
 
 

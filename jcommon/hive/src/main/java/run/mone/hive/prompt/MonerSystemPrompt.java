@@ -51,7 +51,7 @@ public class MonerSystemPrompt {
         data.put("osName", MonerSystemPrompt.getSystemName());
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
-        data.put("cwd", "cwd");
+        data.put("cwd", MonerSystemPrompt.getHomeDir());
         data.put("customInstructions", customInstructions);
         data.put("roleDescription", roleDescription);
 

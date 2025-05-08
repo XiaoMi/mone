@@ -27,11 +27,8 @@ import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
 import run.mone.agentx.service.McpService;
 import run.mone.hive.bo.HealthInfo;
-import run.mone.hive.bo.OfflineDto;
 import run.mone.hive.bo.RegInfoDto;
-import run.mone.hive.common.Result;
-import run.mone.hive.mcp.service.RoleService;
-import run.mone.hive.schema.Message;
+import run.mone.hive.common.ToolDataInfo;
 
 @RestController
 @RequestMapping("/api/v1/agents")
@@ -105,8 +102,8 @@ public class AgentController {
 
     //下线agent (需要调到远程)
     @PostMapping("/offline")
-    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user, McpRequest request) {
-        Result result = new Result("mcp_request", request.getMapData());
+    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user, @RequestBody McpRequest request) {
+        ToolDataInfo result = new ToolDataInfo("mcp_request", request.getMapData());
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
@@ -119,8 +116,8 @@ public class AgentController {
 
     //清空agent历史记录 (需要调到远程)
     @PostMapping("/clearHistory")
-    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user, McpRequest request) {
-        Result result = new Result("mcp_request", request.getMapData());
+    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user, @RequestBody McpRequest request) {
+        ToolDataInfo result = new ToolDataInfo("mcp_request", request.getMapData());
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的

@@ -10,15 +10,12 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.adapter.standard.StandardWebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import run.mone.agentx.entity.User;
-import run.mone.agentx.service.JwtService;
 import run.mone.agentx.service.McpService;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.hive.common.GsonUtils;
-import run.mone.hive.common.Result;
+import run.mone.hive.common.ToolDataInfo;
 
-import java.util.Map;
 import java.net.URI;
-import java.util.HashMap;
 
 @Component
 @Slf4j
@@ -69,7 +66,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 解析MCP请求
             McpRequest request = GsonUtils.gson.fromJson(payload, McpRequest.class);
             // 创建Result对象
-            Result result = new Result("mcp_request", request.getMapData());
+            ToolDataInfo result = new ToolDataInfo("mcp_request", request.getMapData());
             result.setFrom("hive_manager");
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
