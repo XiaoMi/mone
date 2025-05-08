@@ -32,3 +32,12 @@ export const register = (data: LoginRequest) => {
     data
   })
 }
+
+
+
+export const getUserList = () => {
+  return Service<IResponse<LoginResponse>>({
+    url: '/v1/users/list',
+    method: 'get',
+  })
+}
