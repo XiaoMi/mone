@@ -8,23 +8,34 @@ export interface Task {
   createdAt: string
   clientAgentId: number
   serverAgentId: number
+  taskUuid: string
   status: string
 }
 
 
 // 获取任务列表
-export const getTaskList = (serverAgentId: number) => {
+export const getTaskList = (params) => {
     return Service<IResponse<Task[]>>({
-      url: `/v1/tasks?serverAgentId=${serverAgentId}`,
+      url: `/v1/tasks`,
       method: 'get',
-    })
-  }
+      params
+  })
+}
 
 // 根据id获取任务
 export const getTaskById = (id: number) => {
   return Service<IResponse<Task>>({
     url: `/v1/tasks/${id}`,
     method: 'get',
+  })
+}
+
+// 执行任务
+export const executeTask = (data: any) => {
+  return Service<IResponse<Task>>({
+    url: `/v1/tasks/execute`,
+    method: 'post',
+    data
   })
 }
 
