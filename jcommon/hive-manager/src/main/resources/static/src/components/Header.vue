@@ -6,8 +6,8 @@
       @select="handleSelect"
       router
     >
-      <el-menu-item index="agents">Agent 列表</el-menu-item>
-      <el-menu-item index="tasks">Task 列表</el-menu-item>
+      <el-menu-item index="agents">AGENT 列表</el-menu-item>
+      <el-menu-item index="tasks">TASK 列表</el-menu-item>
     </el-menu>
   <router-view />
 </template>
