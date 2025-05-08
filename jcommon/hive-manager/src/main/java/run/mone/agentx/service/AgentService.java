@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
+import run.mone.agentx.dto.AgentQueryRequest;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentAccess;
 import run.mone.agentx.entity.AgentInstance;
@@ -101,6 +102,27 @@ public class AgentService {
      */
     public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId) {
         return findAccessibleAgents(userId)
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
+    }
+
+    /**
+     * 获取用户可访问的Agent列表，并包含每个Agent的实例列表
+     *
+     * @param userId 用户ID
+     * @param query 查询参数
+     * @return 包含AgentInstance列表的Agent流
+     */
+    public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId, AgentQueryRequest query) {
+        return findAccessibleAgents(userId)
+                .filter(agent -> query == null || query.getName() == null || query.getName().isEmpty() || 
+                        agent.getName().toLowerCase().contains(query.getName().toLowerCase()))
                 .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
                         .collectList()
                         .map(instances -> {

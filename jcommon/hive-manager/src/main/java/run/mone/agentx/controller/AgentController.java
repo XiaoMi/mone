@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
+import run.mone.agentx.dto.AgentQueryRequest;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
@@ -50,8 +51,12 @@ public class AgentController {
     }
 
     @GetMapping("/list")
-    public Mono<ApiResponse<List<AgentWithInstancesDTO>>> getAgents(@AuthenticationPrincipal User user) {
-        return agentService.findAccessibleAgentsWithInstances(user.getId()).collectList().map(ApiResponse::success);
+    public Mono<ApiResponse<List<AgentWithInstancesDTO>>> getAgents(
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) AgentQueryRequest query) {
+        return agentService.findAccessibleAgentsWithInstances(user.getId(), query)
+                .collectList()
+                .map(ApiResponse::success);
     }
 
     @GetMapping("/access/{id}")
@@ -92,7 +97,6 @@ public class AgentController {
     @DeleteMapping("/{id}")
     public Mono<ApiResponse<Void>> deleteAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
         return agentService.findById(id)
-                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
                 .flatMap(existingAgent -> agentService.deleteAgent(id))
                 .thenReturn(ApiResponse.<Void>success(null))
                 .defaultIfEmpty(ApiResponse.<Void>error(403, "Unauthorized or agent not found"));
