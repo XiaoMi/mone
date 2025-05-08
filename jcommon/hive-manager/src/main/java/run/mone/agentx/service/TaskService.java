@@ -1,5 +1,6 @@
 package run.mone.agentx.service;
 
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,6 +25,8 @@ import com.google.common.annotations.Beta;
 import io.netty.util.internal.UnstableApi;
 // 引入run.mone.hive.Team相关类
 import run.mone.hive.Team;
+import run.mone.hive.common.McpResult;
+import run.mone.hive.common.Result;
 import run.mone.hive.context.Context;
 import run.mone.hive.schema.Message;
 import run.mone.hive.roles.Role;
@@ -52,6 +55,7 @@ public class TaskService {
     private final AgentService agentService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final McpService mcpService;
+
 
     public Mono<Task> createTask(Task task) {
         task.setTaskUuid(UUID.randomUUID().toString());
@@ -123,6 +127,7 @@ public class TaskService {
     }
 
     private void startTaskExecutionWithAgent(String taskUuid, run.mone.hive.a2a.types.Task taskExecutionInfo) {
+        String userName = taskExecutionInfo.getUserName();
         // 使用异步线程执行任务
         new Thread(() -> {
             try {
@@ -131,14 +136,9 @@ public class TaskService {
                 log.info("开始执行任务: {}", taskUuid);
 
                 // 提取任务内容和要求
-                Map<String, Object> metadata = (Map<String, Object>) taskExecutionInfo.getMetadata();
+                Map<String, Object> metadata = taskExecutionInfo.getMetadata();
                 String taskContent = extractTaskContent(taskExecutionInfo);
-
-                // 获取可能的技能ID
-                Long skillId = null;
-                if (metadata != null && metadata.containsKey("skillId")) {
-                    skillId = Long.valueOf(metadata.get("skillId").toString());
-                }
+                log.info("task content:{}", taskContent);
 
                 // 获取可能的服务Agent ID
                 Long serverAgentId = null;
@@ -150,6 +150,7 @@ public class TaskService {
                 AgentWithInstancesDTO selectedAgent = null;
                 AgentInstance selectedInstance = null;
 
+                //使用指定的Agent
                 if (serverAgentId != null) {
                     // 如果指定了Agent ID，直接使用该Agent
                     selectedAgent = agentService.findAgentWithInstances(serverAgentId).block();
@@ -159,49 +160,18 @@ public class TaskService {
                                 .findFirst()
                                 .orElse(null);
                     }
-                } else {
-                    // 查找所有可用Agent，选择最合适的
-                    List<AgentWithInstancesDTO> agents = agentService.findAccessibleAgentsWithInstances(1L) // 使用系统用户ID
-                            .collectList()
-                            .block();
-
-                    if (agents != null && !agents.isEmpty()) {
-                        // 过滤出有活跃实例的Agent
-                        List<AgentWithInstancesDTO> availableAgents = agents.stream()
-                                .filter(agentWithInstances ->
-                                        agentWithInstances.getInstances() != null &&
-                                                !agentWithInstances.getInstances().isEmpty() &&
-                                                agentWithInstances.getInstances().stream().anyMatch(AgentInstance::getIsActive))
-                                .collect(Collectors.toList());
-
-                        if (!availableAgents.isEmpty()) {
-                            // 如果有技能ID要求，尝试匹配具有该技能的Agent
-                            if (skillId != null) {
-                                for (AgentWithInstancesDTO agent : availableAgents) {
-                                    // 查询该Agent是否具有指定技能
-                                    if (agent.getAgent().getId() != null) {
-                                        // 简单示例，实际可能需要调用其他服务来查询技能匹配情况
-                                        // 这里假设技能ID与Agent ID关联 
-                                        selectedAgent = agent;
-                                        selectedInstance = agent.getInstances().stream()
-                                                .filter(AgentInstance::getIsActive)
-                                                .findFirst()
-                                                .orElse(null);
-                                        if (selectedInstance != null) {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 如果没有找到匹配的Agent，选择第一个可用的
-                            if (selectedAgent == null) {
-                                selectedAgent = availableAgents.get(0);
-                                selectedInstance = selectedAgent.getInstances().stream()
-                                        .filter(AgentInstance::getIsActive)
-                                        .findFirst()
-                                        .orElse(null);
-                            }
+                } else {// ai判断
+                    AgentWithInstancesDTO agent = agentService.findMostSuitableAgent(taskContent).block();
+                    if (agent != null) {
+                        // 查询该Agent是否具有指定技能
+                        if (agent.getAgent().getId() != null) {
+                            // 简单示例，实际可能需要调用其他服务来查询技能匹配情况
+                            // 这里假设技能ID与Agent ID关联
+                            selectedAgent = agent;
+                            selectedInstance = agent.getInstances().stream()
+                                    .filter(AgentInstance::getIsActive)
+                                    .findFirst()
+                                    .orElse(null);
                         }
                     }
                 }
@@ -221,33 +191,25 @@ public class TaskService {
                     mcpRequest.setAgentId(selectedAgent.getAgent().getId());
                     mcpRequest.setAgentInstance(selectedInstance);
 
-                    // 构建参数，包含任务信息
-                    Map<String, Object> arguments = new HashMap<>();
-                    arguments.put("taskUuid", taskUuid);
-                    arguments.put("taskContent", taskContent);
-                    if (metadata != null) {
-                        arguments.put("metadata", metadata);
-                    }
-
                     // 创建Result对象
-                    run.mone.hive.common.Result result = new run.mone.hive.common.Result("mcp_request", mcpRequest.getMapData());
+                    Result result = new Result("mcp_request", mcpRequest.getMapData());
 
                     // 创建消息接收器
                     TaskResultSink sink = new TaskResultSink(taskUuid);
 
-                    //TODO$
-                    // 调用MCP服务
-                    mcpService.callMcp("", mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), result, sink);
+                    // 调用MCP服务(本质就是调用远程Agent)
+                    McpResult res = mcpService.callMcp(userName, mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), result, sink);
                     sink.complete();
+                    log.info("成功提交任务到Agent: {} res:{}", selectedAgent.getAgent().getName(), res.getContent());
 
-                    log.info("成功提交任务到Agent: {}", selectedAgent.getAgent().getName());
+                    updateTaskStatus(taskUuid, TaskStatus.COMPLETED).subscribe();
+                    updateTaskResult(taskUuid, "{\"success\": false, \"error\": \"没有找到合适的Agent实例执行任务\"}").subscribe();
                 } else {
                     // 没有找到合适的Agent
                     log.error("没有找到合适的Agent实例执行任务: {}", taskUuid);
                     updateTaskStatus(taskUuid, TaskStatus.FAILED).subscribe();
                     updateTaskResult(taskUuid, "{\"success\": false, \"error\": \"没有找到合适的Agent实例执行任务\"}").subscribe();
                 }
-
             } catch (Exception e) {
                 log.error("任务执行过程中发生错误: {}", e.getMessage(), e);
                 updateTaskStatus(taskUuid, TaskStatus.FAILED).subscribe();
@@ -426,6 +388,7 @@ public class TaskService {
     /**
      * 任务结果接收器，用于处理MCP调用的返回结果
      */
+    @Data
     private class TaskResultSink implements FluxSink<String> {
         private final String taskUuid;
         private final StringBuilder resultBuilder = new StringBuilder();

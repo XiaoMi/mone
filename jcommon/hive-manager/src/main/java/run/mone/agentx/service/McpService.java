@@ -10,6 +10,7 @@ import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
+import run.mone.hive.common.McpResult;
 import run.mone.hive.common.Result;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
@@ -33,14 +34,14 @@ public class McpService {
     private ReentrantLock lock = new ReentrantLock();
 
 
-    public void callMcp(String userName, Long agentId, AgentInstance instance, Result it, FluxSink sink) {
+    public McpResult callMcp(String userName, Long agentId, AgentInstance instance, Result it, FluxSink sink) {
         log.info("user:{} call mcp tool", userName);
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
 
         if (instance == null) {
             // 获取agent详情
             if (agentDto.getInstances() == null || agentDto.getInstances().isEmpty()) {
-                return;
+                return null;
             }
             instance = agentDto.getInstances().get(0);
         }
@@ -64,7 +65,7 @@ public class McpService {
         }
 
         // 调用MCP
-        MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
+        return MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
