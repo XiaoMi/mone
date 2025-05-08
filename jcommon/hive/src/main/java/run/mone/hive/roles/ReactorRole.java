@@ -283,8 +283,10 @@ public class ReactorRole extends Role {
 
             AtomicBoolean hasError = new AtomicBoolean(false);
 
+            String systemPrompt = getSystemPrompt();
+
             //调用大模型(选用合适的工具)
-            String toolRes = callLlm(compoundMsg, sink, hasError);
+            String toolRes = callLlm(systemPrompt, compoundMsg, sink, hasError);
             log.info("res\n:{} hasError:{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
@@ -361,9 +363,9 @@ public class ReactorRole extends Role {
         this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
     }
 
-    private String callLlm(LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
+    private String callLlm(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
         StringBuilder sb = new StringBuilder();
-        llm.compoundMsgCall(compoundMsg, getSystemPrompt())
+        llm.compoundMsgCall(compoundMsg, systemPrompt)
                 .doOnNext(it -> {
                     sb.append(it);
                     Optional.ofNullable(sink).ifPresent(s -> s.next(it));
