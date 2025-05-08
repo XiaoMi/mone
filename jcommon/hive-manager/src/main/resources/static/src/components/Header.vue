@@ -34,12 +34,12 @@ function handleSelect(key, keyPath) {
 
 <style scoped>
 .el-menu-header {
-  background-color: rgb(13, 17, 23);
+  background-color: transparent;
   color: #fff;
   position: absolute;
   top: 0;
   z-index: 10;
-  width: 320px;
+  width: 340px;
   left: 50%;
   transform: translateX(-50%);
   border-bottom: none;
