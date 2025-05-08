@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class IntentRequest {
-    private String userMessage;
+    private String user_message;
 } 

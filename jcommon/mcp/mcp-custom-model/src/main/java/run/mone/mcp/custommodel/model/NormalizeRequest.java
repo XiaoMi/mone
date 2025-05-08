@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class NormalizeRequest {
-    private String userMessage;
+    private String user_message;
 } 

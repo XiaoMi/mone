@@ -34,7 +34,7 @@ public class CustomModelService {
 
     public String recognizeIntent(String userMessage) {
         IntentRequest request = new IntentRequest();
-        request.setUserMessage(userMessage);
+        request.setUser_message(userMessage);
 
         try {
             RequestBody body = RequestBody.create(
@@ -63,7 +63,7 @@ public class CustomModelService {
 
     public String normalizeQuestion(String userMessage) {
         NormalizeRequest request = new NormalizeRequest();
-        request.setUserMessage(userMessage);
+        request.setUser_message(userMessage);
 
         try {
             RequestBody body = RequestBody.create(
