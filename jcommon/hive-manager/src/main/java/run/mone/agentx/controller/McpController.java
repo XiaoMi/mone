@@ -1,7 +1,6 @@
 package run.mone.agentx.controller;
 
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,13 +12,10 @@ import run.mone.agentx.dto.McpRequest;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.McpService;
 import run.mone.hive.common.GsonUtils;
-import run.mone.hive.common.Result;
+import run.mone.hive.common.ToolDataInfo;
 import run.mone.hive.schema.Message;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * MCP控制器
@@ -41,7 +37,7 @@ public class McpController {
     public Flux<Message> call(@AuthenticationPrincipal User user, @RequestBody(required = false) String requestBody) {
         log.info("user:{} 调用MCP服务，请求参数: {}", user.getUsername(), requestBody);
         McpRequest request = GsonUtils.gson.fromJson(requestBody, McpRequest.class);
-        Result result = new Result("mcp_request", request.getMapData());
+        ToolDataInfo result = new ToolDataInfo("mcp_request", request.getMapData());
         result.setFrom("hive_manager");
         // 使用Flux.create创建消息流
         return Flux.create(sink -> CompletableFuture.runAsync(() -> {

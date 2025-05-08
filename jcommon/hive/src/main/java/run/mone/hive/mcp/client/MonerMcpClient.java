@@ -18,7 +18,7 @@ import java.util.function.Function;
 @Slf4j
 public class MonerMcpClient {
 
-    public static McpResult mcpCall(Result it, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
+    public static McpResult mcpCall(ToolDataInfo it, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
         return Safe.call(() -> {
             String serviceName = it.getKeyValuePairs().get("server_name");
             String toolName = it.getKeyValuePairs().get("tool_name");

@@ -18,10 +18,11 @@ import run.mone.agentx.dto.McpRequest;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.Task;
 import run.mone.agentx.repository.TaskRepository;
+import run.mone.agentx.utils.AgentKeyUtils;
 import run.mone.hive.Team;
 import run.mone.hive.a2a.types.TaskStatus;
 import run.mone.hive.common.McpResult;
-import run.mone.hive.common.Result;
+import run.mone.hive.common.ToolDataInfo;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -179,10 +180,18 @@ public class TaskService {
                     McpRequest mcpRequest = new McpRequest();
                     mcpRequest.setAgentId(selectedAgent.getAgent().getId());
                     mcpRequest.setAgentInstance(selectedInstance);
-                    mcpRequest.setMapData(ImmutableMap.of("server_name","","tool_name","","arguments",""));
 
-                    // 创建Result对象
-                    Result result = new Result("mcp_request", mcpRequest.getMapData());
+                    JsonObject arguments = new JsonObject();
+                    arguments.addProperty("message", "hi");
+                    arguments.addProperty("__owner_id__", userName);
+
+                    String serviceName = AgentKeyUtils.key(selectedAgent, selectedInstance);
+
+                    log.info("serviceName:{}", serviceName);
+
+                    mcpRequest.setMapData(ImmutableMap.of("outerTag", "use_mcp_tool", "server_name", serviceName, "tool_name", "stream_yuer_chat", "arguments", arguments.toString()));
+
+                    ToolDataInfo result = new ToolDataInfo("mcp_request", mcpRequest.getMapData());
 
                     // 创建消息接收器
                     TaskResultSink sink = new TaskResultSink(taskUuid);

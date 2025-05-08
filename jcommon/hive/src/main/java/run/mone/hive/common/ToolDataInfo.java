@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class Result {
+public class ToolDataInfo {
 
     private final String tag;
 
@@ -13,7 +13,7 @@ public class Result {
 
     private String from;
 
-    public Result(String tag, Map<String, String> keyValuePairs) {
+    public ToolDataInfo(String tag, Map<String, String> keyValuePairs) {
         this.tag = tag;
         this.keyValuePairs = keyValuePairs;
     }

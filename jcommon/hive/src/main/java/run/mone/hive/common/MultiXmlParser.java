@@ -22,20 +22,20 @@ public class MultiXmlParser {
     private static final Pattern KEY_VALUE_PATTERN = Pattern.compile("<(\\w+)>(.*?)(?:</\\1>|$)", Pattern.DOTALL);
     public static final String MULTI_MESSAGE_SPLIT_CHAR = ":·:";
 
-    public List<Result> parse(String input) {
+    public List<ToolDataInfo> parse(String input) {
         if (StringUtils.isEmpty(input)) {
             return Lists.newArrayList();
         }
         String outerTag = null;
         Matcher xmlMatcher = XML_PATTERN.matcher(input);
 
-        List<Result> list = new ArrayList<>();
+        List<ToolDataInfo> list = new ArrayList<>();
 
         while (xmlMatcher.find()) {
             outerTag = xmlMatcher.group(1);
             String xmlContent = xmlMatcher.group(2);
             Map<String, String> keyValuePairs = extractKeyValuePairs(xmlContent);
-            list.add(new Result(outerTag, keyValuePairs));
+            list.add(new ToolDataInfo(outerTag, keyValuePairs));
         }
         return list;
     }
