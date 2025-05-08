@@ -316,7 +316,7 @@ const handleTask = (agent: Agent) => {
 
 const handleChat = (item: any) => {
   if(item.instances?.length > 0) {  
-    window.open(`/chat?serverAgentId=${item.agent.id}&conversationId=${uuidv4()}`, '_blank')
+    window.open(`/agent-manager/chat?serverAgentId=${item.agent.id}&conversationId=${uuidv4()}`, '_blank')
   } else {
     ElMessage.warning('Agent未启动')
   }
