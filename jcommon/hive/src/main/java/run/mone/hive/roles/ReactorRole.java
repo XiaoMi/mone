@@ -82,6 +82,10 @@ public class ReactorRole extends Role {
 
     private List<McpFunction> functionList;
 
+    private int idlePollCount = 3;
+
+    private int defaultIdlePollCount = 3;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -171,6 +175,14 @@ public class ReactorRole extends Role {
         log.info("think");
         this.state.set(RoleState.think);
         int value = observe();
+        //发生了空轮训(默认30分钟没有沟通后,就自动退出)
+        if (value == -3) {
+            if (this.idlePollCount-- < 0) {
+                return value;
+            }
+        }
+        idlePollCount = defaultIdlePollCount;
+
         if (value == -1) {
             return observe();
         } else {
@@ -188,9 +200,9 @@ public class ReactorRole extends Role {
     protected int observe() {
         log.info("{} observe", this.name);
         this.state.set(RoleState.observe);
-        Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
+        Message msg = this.rc.getNews().poll(10, TimeUnit.MINUTES);
         if (null == msg) {
-            return -1;
+            return -3;
         }
 
         // 收到特殊指令直接退出
