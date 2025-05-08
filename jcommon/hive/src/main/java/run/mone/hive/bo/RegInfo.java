@@ -26,6 +26,12 @@ public class RegInfo implements Serializable {
 
     private String group;
 
+    private String profile;
+
+    private String goal;
+
+    private String constraints;
+
     private String ip;
 
     private int port;

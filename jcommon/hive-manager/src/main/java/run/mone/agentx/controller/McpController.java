@@ -41,28 +41,14 @@ public class McpController {
     public Flux<Message> call(@AuthenticationPrincipal User user, @RequestBody(required = false) String requestBody) {
         log.info("user:{} 调用MCP服务，请求参数: {}", user.getUsername(), requestBody);
         McpRequest request = GsonUtils.gson.fromJson(requestBody, McpRequest.class);
-        Map<String, String> keyValuePairs = new HashMap<>();
-        keyValuePairs.put("outerTag", request.getOuterTag());
-        if (request.getContent() != null) {
-            keyValuePairs.put("server_name", request.getContent().getServer_name());
-            keyValuePairs.put("tool_name", request.getContent().getTool_name());
-            keyValuePairs.put("arguments", request.getContent().getArguments());
-        }
-
-        // 创建Result对象
-        Result result = new Result("mcp_request", keyValuePairs);
+        Result result = new Result("mcp_request", request.getMapData());
         result.setFrom("hive_manager");
-
         // 使用Flux.create创建消息流
-        return Flux.create(sink -> {
-            CompletableFuture.runAsync(() -> {
-                //这里本质是当Agent调用的
-                mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
-                sink.onDispose(() -> {
-                    log.info("call mcp finish");
-                });
-                sink.complete();
-            });
-        });
+        return Flux.create(sink -> CompletableFuture.runAsync(() -> {
+            //这里本质是当Agent调用的
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            sink.onDispose(() -> log.info("call mcp finish"));
+            sink.complete();
+        }));
     }
 } 

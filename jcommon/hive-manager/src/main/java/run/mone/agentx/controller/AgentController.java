@@ -1,7 +1,9 @@
 package run.mone.agentx.controller;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,27 +16,32 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.mone.agentx.dto.McpRequest;
 import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentService;
+import run.mone.agentx.service.McpService;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.OfflineDto;
 import run.mone.hive.bo.RegInfoDto;
+import run.mone.hive.common.Result;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
 @RestController
 @RequestMapping("/api/v1/agents")
 @RequiredArgsConstructor
+@Slf4j
 public class AgentController {
 
     private final AgentService agentService;
 
-    private final RoleService roleService;
+    private final McpService mcpService;
 
     @PostMapping("/create")
     public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
@@ -96,16 +103,31 @@ public class AgentController {
         return agentService.register(regInfoDto).map(ApiResponse::success);
     }
 
-    //下线agent
+    //下线agent (需要调到远程)
     @PostMapping("/offline")
-    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user) {
-        return roleService.offlineAgent(Message.builder().sentFrom(user.getUsername()).build()).thenReturn(ApiResponse.success("ok"));
+    public Mono<ApiResponse<String>> offline(@AuthenticationPrincipal User user, @RequestBody McpRequest request) {
+        Result result = new Result("mcp_request", request.getMapData());
+        result.setFrom("hive_manager");
+        Flux.create(sink -> CompletableFuture.runAsync(() -> {
+            //这里本质是当Agent调用的
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            sink.onDispose(() -> log.info("call mcp finish"));
+            sink.complete();
+        })).subscribe();
+        return Mono.just(ApiResponse.success("ok"));
     }
 
-    //清空agent历史记录
+    //清空agent历史记录 (需要调到远程)
     @PostMapping("/clearHistory")
-    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user) {
-        roleService.clearHistory(Message.builder().sentFrom(user.getUsername()).build());
+    public Mono<ApiResponse<String>> clearHistory(@AuthenticationPrincipal User user, @RequestBody McpRequest request) {
+        Result result = new Result("mcp_request", request.getMapData());
+        result.setFrom("hive_manager");
+        Flux.create(sink -> CompletableFuture.runAsync(() -> {
+            //这里本质是当Agent调用的
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            sink.onDispose(() -> log.info("call mcp finish"));
+            sink.complete();
+        })).subscribe();
         return Mono.just(ApiResponse.success("ok"));
     }
 
