@@ -97,65 +97,13 @@ public class AgentTool implements ITool {
                 return result;
             }
 
-            // 获取所有可用的 agent
-            List<AgentWithInstancesDTO> agents = agentService.findAccessibleAgentsWithInstances(1L)
-                    .collectList()
-                    .block();
+            // 使用AgentService查找最合适的agent
+            AgentWithInstancesDTO selectedAgent = agentService.findMostSuitableAgent(task).block();
 
-            if (agents == null || agents.isEmpty()) {
+            if (selectedAgent == null) {
                 result.addProperty("error", "没有找到可用的 agent");
                 return result;
             }
-
-            // 过滤出有活跃实例的 agent
-            List<AgentWithInstancesDTO> availableAgents = agents.stream()
-//                    .filter(agent ->
-//                            agent.getInstances() != null &&
-//                                    !agent.getInstances().isEmpty() &&
-//                                    agent.getInstances().stream().anyMatch(instance -> instance.getIsActive()))
-                    .collect(Collectors.toList());
-
-            if (availableAgents.isEmpty()) {
-                result.addProperty("error", "没有找到活跃的 agent 实例");
-                return result;
-            }
-
-            // 构建所有可用 agent 的信息
-            StringBuilder agentsInfo = new StringBuilder();
-            for (AgentWithInstancesDTO agent : availableAgents) {
-                agentsInfo.append("\nAgent ").append(agent.getAgent().getName()).append(":\n");
-                agentsInfo.append("- 描述: ").append(agent.getAgent().getDescription()).append("\n");
-                if (agent.getAgent().getToolMap() != null) {
-                    agentsInfo.append("- 工具: ").append(agent.getAgent().getToolMap()).append("\n");
-                }
-                if (agent.getAgent().getMcpToolMap() != null) {
-                    agentsInfo.append("- MCP工具: ").append(agent.getAgent().getMcpToolMap()).append("\n");
-                }
-            }
-
-            // 构建提示词
-            String prompt = String.format("""
-                    请根据以下任务描述，从可用的 agents 中选择最合适的一个。请只返回最匹配的 agent 的名称。
-
-                    任务描述：%s
-
-                    可用的 agents：
-                    %s
-
-                    请只返回最匹配的 agent 的名称，不要包含其他内容。
-                    """, task, agentsInfo.toString());
-
-            // 调用 LLM 获取最匹配的 agent 名称
-            String selectedAgentName = llm.chat(List.of(AiMessage.builder()
-                    .role("user")
-                    .content(prompt)
-                    .build())).trim();
-
-            // 根据名称找到对应的 agent
-            AgentWithInstancesDTO selectedAgent = availableAgents.stream()
-                    .filter(agent -> agent.getAgent().getName().equals(selectedAgentName))
-                    .findFirst()
-                    .orElse(availableAgents.get(0)); // 如果没找到，返回第一个
 
             // 构建结果
             StringBuilder infoBuilder = new StringBuilder();

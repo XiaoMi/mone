@@ -19,9 +19,16 @@ import run.mone.hive.bo.RegInfoDto;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
+import run.mone.hive.schema.AiMessage;
 
 import java.util.concurrent.TimeUnit;
 import java.util.UUID;
+import java.util.List;
+
+import static run.mone.hive.llm.ClaudeProxy.*;
 
 @Service
 @RequiredArgsConstructor
@@ -381,5 +388,65 @@ public class AgentService {
                             dto.setInstances(instances);
                             return dto;
                         }));
+    }
+
+    /**
+     * 根据任务描述查找最合适的agent
+     * @param task 任务描述
+     * @return 最合适的agent信息
+     */
+    public Mono<AgentWithInstancesDTO> findMostSuitableAgent(String task) {
+        return findAllAgentsWithInstances()
+                .collectList()
+                .flatMap(agents -> {
+                    if (agents == null || agents.isEmpty()) {
+                        return Mono.empty();
+                    }
+
+                    // 构建所有可用 agent 的信息
+                    StringBuilder agentsInfo = new StringBuilder();
+                    for (AgentWithInstancesDTO agent : agents) {
+                        agentsInfo.append("\nAgent ").append(agent.getAgent().getName()).append(":\n");
+                        agentsInfo.append("- 描述: ").append(agent.getAgent().getDescription()).append("\n");
+                        if (agent.getAgent().getToolMap() != null) {
+                            agentsInfo.append("- 工具: ").append(agent.getAgent().getToolMap()).append("\n");
+                        }
+                        if (agent.getAgent().getMcpToolMap() != null) {
+                            agentsInfo.append("- MCP工具: ").append(agent.getAgent().getMcpToolMap()).append("\n");
+                        }
+                    }
+
+                    // 构建提示词
+                    String prompt = String.format("""
+                            请根据以下任务描述，从可用的 agents 中选择最合适的一个。请只返回最匹配的 agent 的名称。
+
+                            任务描述：%s
+
+                            可用的 agents：
+                            %s
+
+                            请只返回最匹配的 agent 的名称，不要包含其他内容。
+                            """, task, agentsInfo.toString());
+
+                    // 调用 LLM 获取最匹配的 agent 名称
+                    return Mono.fromCallable(() -> {
+                        LLM llm = new LLM(LLMConfig.builder()
+                                .llmProvider(LLMProvider.CLAUDE_COMPANY)
+                                .url(getClaudeUrl())
+                                .version(getClaudeVersion())
+                                .maxTokens(getClaudeMaxToekns())
+                                .build());
+                        return llm.chat(List.of(AiMessage.builder()
+                                .role("user")
+                                .content(prompt)
+                                .build())).trim();
+                    }).flatMap(selectedAgentName -> {
+                        // 根据名称找到对应的 agent
+                        return Mono.justOrEmpty(agents.stream()
+                                .filter(agent -> agent.getAgent().getName().equals(selectedAgentName))
+                                .findFirst()
+                                .orElse(agents.get(0))); // 如果没找到，返回第一个
+                    });
+                });
     }
 }
