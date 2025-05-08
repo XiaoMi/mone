@@ -120,9 +120,25 @@ public class AgentService {
      * @return 包含AgentInstance列表的Agent流
      */
     public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId, AgentQueryRequest query) {
-        return findAccessibleAgents(userId)
-                .filter(agent -> query == null || query.getName() == null || query.getName().isEmpty() || 
-                        agent.getName().toLowerCase().contains(query.getName().toLowerCase()))
+        Flux<Agent> agentFlux;
+        if (query != null && query.getName() != null && !query.getName().isEmpty()) {
+            // 获取用户创建的agents（带名称过滤）
+            Flux<Agent> userCreatedAgents = agentRepository.findByCreatedByAndNameContainingIgnoreCase(userId, query.getName())
+                    .filter(agent -> agent.getState() == 1);
+
+            // 获取公开的agents（带名称过滤）
+            Flux<Agent> publicAgents = agentRepository.findByNameContainingIgnoreCase(query.getName())
+                    .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()))
+                    .filter(agent -> agent.getState() == 1);
+
+            // 合并结果并去重
+            agentFlux = Flux.concat(userCreatedAgents, publicAgents)
+                    .distinct(Agent::getId);
+        } else {
+            agentFlux = findAccessibleAgents(userId);
+        }
+
+        return agentFlux
                 .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
                         .collectList()
                         .map(instances -> {

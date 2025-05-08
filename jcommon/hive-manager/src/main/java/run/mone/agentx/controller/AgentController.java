@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -53,7 +54,7 @@ public class AgentController {
     @GetMapping("/list")
     public Mono<ApiResponse<List<AgentWithInstancesDTO>>> getAgents(
             @AuthenticationPrincipal User user,
-            @RequestParam(required = false) AgentQueryRequest query) {
+            @ModelAttribute AgentQueryRequest query) {
         return agentService.findAccessibleAgentsWithInstances(user.getId(), query)
                 .collectList()
                 .map(ApiResponse::success);
