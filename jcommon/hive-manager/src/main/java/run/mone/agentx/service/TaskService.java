@@ -1,51 +1,40 @@
 package run.mone.agentx.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonObject;
+import io.netty.util.internal.UnstableApi;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import run.mone.agentx.dto.AgentWithInstancesDTO;
+import run.mone.agentx.dto.McpRequest;
+import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.Task;
 import run.mone.agentx.repository.TaskRepository;
-import run.mone.hive.a2a.types.TaskStatus;
-
-import java.util.UUID;
-import java.util.Map;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import run.mone.agentx.entity.Agent;
-import run.mone.agentx.entity.AgentInstance;
-import run.mone.agentx.dto.AgentWithInstancesDTO;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.Beta;
-
-import io.netty.util.internal.UnstableApi;
-// 引入run.mone.hive.Team相关类
 import run.mone.hive.Team;
+import run.mone.hive.a2a.types.TaskStatus;
 import run.mone.hive.common.McpResult;
 import run.mone.hive.common.Result;
-import run.mone.hive.context.Context;
-import run.mone.hive.schema.Message;
-import run.mone.hive.roles.Role;
-import run.mone.hive.roles.ReactorRole;
-import run.mone.hive.llm.LLM;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.context.Context;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.OpenAILLM;
-import run.mone.agentx.dto.McpRequest;
-import reactor.core.publisher.FluxSink;
+import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.roles.Role;
+import run.mone.hive.schema.Message;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.LongConsumer;
-
-import reactor.core.Disposable;
-
-import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -190,6 +179,7 @@ public class TaskService {
                     McpRequest mcpRequest = new McpRequest();
                     mcpRequest.setAgentId(selectedAgent.getAgent().getId());
                     mcpRequest.setAgentInstance(selectedInstance);
+                    mcpRequest.setMapData(ImmutableMap.of("server_name","","tool_name","","arguments",""));
 
                     // 创建Result对象
                     Result result = new Result("mcp_request", mcpRequest.getMapData());
@@ -200,10 +190,13 @@ public class TaskService {
                     // 调用MCP服务(本质就是调用远程Agent)
                     McpResult res = mcpService.callMcp(userName, mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), result, sink);
                     sink.complete();
-                    log.info("成功提交任务到Agent: {} res:{}", selectedAgent.getAgent().getName(), res.getContent());
 
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("success", true);
+                    obj.addProperty("data", res.toString());
+                    updateTaskResult(taskUuid, obj.toString()).subscribe();
                     updateTaskStatus(taskUuid, TaskStatus.COMPLETED).subscribe();
-                    updateTaskResult(taskUuid, "{\"success\": false, \"error\": \"没有找到合适的Agent实例执行任务\"}").subscribe();
+                    log.info("成功提交任务到Agent: {} res:{}", selectedAgent.getAgent().getName(), res.getContent());
                 } else {
                     // 没有找到合适的Agent
                     log.error("没有找到合适的Agent实例执行任务: {}", taskUuid);
