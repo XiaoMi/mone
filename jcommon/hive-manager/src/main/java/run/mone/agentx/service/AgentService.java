@@ -40,6 +40,13 @@ public class AgentService {
     private static final long HEARTBEAT_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
     private static final long HEARTBEAT_DELETE_TIMEOUT = TimeUnit.MINUTES.toMillis(10);
 
+    private static LLM llm = new LLM(LLMConfig.builder()
+            .llmProvider(LLMProvider.CLAUDE_COMPANY)
+            .url(getClaudeUrl())
+            .version(getClaudeVersion())
+            .maxTokens(getClaudeMaxToekns())
+            .build());
+
     public Mono<Agent> createAgent(Agent agent) {
         return agentRepository.findByNameAndGroupAndVersion(agent.getName(), agent.getGroup(), agent.getVersion())
                 .flatMap(existingAgent -> Mono.<Agent>error(new IllegalStateException("Agent with same name, group and version already exists")))
@@ -408,6 +415,15 @@ public class AgentService {
                     for (AgentWithInstancesDTO agent : agents) {
                         agentsInfo.append("\nAgent ").append(agent.getAgent().getName()).append(":\n");
                         agentsInfo.append("- 描述: ").append(agent.getAgent().getDescription()).append("\n");
+                        if (agent.getAgent().getProfile() != null) {
+                            agentsInfo.append("- 角色: ").append(agent.getAgent().getProfile()).append("\n");
+                        }
+                        if (agent.getAgent().getGoal() != null) {
+                            agentsInfo.append("- 目标: ").append(agent.getAgent().getGoal()).append("\n");
+                        }
+                        if (agent.getAgent().getConstraints() != null) {
+                            agentsInfo.append("- 约束: ").append(agent.getAgent().getConstraints()).append("\n");
+                        }
                         if (agent.getAgent().getToolMap() != null) {
                             agentsInfo.append("- 工具: ").append(agent.getAgent().getToolMap()).append("\n");
                         }
@@ -419,6 +435,7 @@ public class AgentService {
                     // 构建提示词
                     String prompt = String.format("""
                             请根据以下任务描述，从可用的 agents 中选择最合适的一个。请只返回最匹配的 agent 的名称。
+                            在选择时，请考虑每个agent的角色、目标、约束条件以及可用的工具。
 
                             任务描述：%s
 
@@ -430,12 +447,6 @@ public class AgentService {
 
                     // 调用 LLM 获取最匹配的 agent 名称
                     return Mono.fromCallable(() -> {
-                        LLM llm = new LLM(LLMConfig.builder()
-                                .llmProvider(LLMProvider.CLAUDE_COMPANY)
-                                .url(getClaudeUrl())
-                                .version(getClaudeVersion())
-                                .maxTokens(getClaudeMaxToekns())
-                                .build());
                         return llm.chat(List.of(AiMessage.builder()
                                 .role("user")
                                 .content(prompt)
