@@ -1,5 +1,6 @@
 import MarkdownIt from "markdown-it";
-import * as htmlparser2 from "htmlparser2";
+// import * as htmlparser2 from "htmlparser2";
+import { SimpleHtmlParser } from "./simple-html-parser";
 
 export function markdownItMcp(md: MarkdownIt) {
   if (!md.block || !md.block.ruler) {
@@ -13,65 +14,33 @@ export function markdownItMcp(md: MarkdownIt) {
     endLine: number,
     silent: boolean
   ): boolean {
+    if (silent) return true;
+
     const pos = state.bMarks[startLine] + state.tShift[startLine];
+    // 获取完整内容
+    const mcpContent = state.src.slice(pos);
 
     // 检查当前行是否包含<thinking>等标签
-    const currentLine = state.src.slice(pos, state.eMarks[startLine]);
     if (
       !(
-        currentLine.includes("<terminal>") ||
-        currentLine.includes("<use_mcp_tool>") ||
-        currentLine.includes("<thinking>") ||
-        currentLine.includes("<chat>") ||
-        currentLine.includes("<mcp_tool>") ||
-        currentLine.includes("<attempt_completion>") ||
-        currentLine.includes("<ask_followup_question>") ||
-        currentLine.includes("<mcp>") ||
-        currentLine.includes("<step>")
+        mcpContent.includes("<terminal>") ||
+        mcpContent.includes("<use_mcp_tool>") ||
+        mcpContent.includes("<thinking>") ||
+        mcpContent.includes("<chat>") ||
+        mcpContent.includes("<mcp_tool>") ||
+        mcpContent.includes("<attempt_completion>") ||
+        mcpContent.includes("<ask_followup_question>") ||
+        mcpContent.includes("<mcp>") ||
+        mcpContent.includes("<step>")
       )
     ) {
       return false;
     }
 
-    // 找到对应的结束标签
-    let line = startLine;
-    let mcpContent = '';
-    let tagFound = false;
-    
-    while (line < endLine) {
-      const lineText = state.src.slice(
-        state.bMarks[line] + state.tShift[line],
-        state.eMarks[line]
-      );
-      
-      if (lineText.includes("</terminal>") ||
-          lineText.includes("</use_mcp_tool>") ||
-          lineText.includes("</thinking>") ||
-          lineText.includes("</chat>") ||
-          lineText.includes("</mcp_tool>") ||
-          lineText.includes("</attempt_completion>") ||
-          lineText.includes("</ask_followup_question>") ||
-          lineText.includes("</mcp>") ||
-          lineText.includes("</step>")) {
-        tagFound = true;
-        mcpContent += lineText + '\n';
-        break;
-      }
-      
-      mcpContent += lineText + '\n';
-      line++;
-    }
-
-    if (!tagFound) {
-      return false;
-    }
-
-    if (silent) return true;
-
     let html = "";
     let accumulatedText = ""; // 添加文本累积变量
     let startCodeBlock = false;
-    const parser = new htmlparser2.Parser({
+    const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
         /*
          * This fires when a new tag is opened.
@@ -155,6 +124,7 @@ export function markdownItMcp(md: MarkdownIt) {
           if (startCodeBlock) {
             accumulatedText += `<${name}>`
           } else {
+            console.log("unhandled tag", name,attributes);
             html += md.utils.escapeHtml(
               `<${name} ${Object.entries(attributes)
                 .map(([key, value]) => `${key}="${value}"`)
@@ -170,7 +140,7 @@ export function markdownItMcp(md: MarkdownIt) {
          * Note that this can fire at any point within text and you might
          * have to stitch together multiple pieces.
          */
-        const lines = text.split('\n');    
+        const lines = text.split('\n');
         for (const line of lines) {
           if (line.includes('```')) {
             if (startCodeBlock) {
@@ -184,6 +154,7 @@ export function markdownItMcp(md: MarkdownIt) {
             accumulatedText += `${line}\n`;
           } else {
             html += md.utils.escapeHtml(`${line}\n`);
+            // html += md.render(`${line}\n`);
           }
         }
       },
@@ -223,24 +194,23 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "step") {
           html += `</div></div>`;
         } else {
-          if (!isImplied) {
-            html += md.utils.escapeHtml(`</${tagname}>`);
-          }
+          // if (!isImplied) {
+          //   html += md.utils.escapeHtml(`</${tagname}>`);
+          // } else {
+          //   console.log("unhandled tag", tagname);
+          // }
         }
       },
-    },
-    {
-      xmlMode: true,
     });
-    
+
     parser.write(mcpContent);
     parser.end();
 
     let token = state.push("html_block", "", 0);
     token.content = html;
-    token.map = [startLine, line + 1];
+    token.map = [startLine, endLine];
 
-    state.line = line + 1;
+    state.line = endLine;
     return true;
   }
 
