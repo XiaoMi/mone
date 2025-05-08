@@ -9,4 +9,6 @@ public interface TaskRepository extends ReactiveCrudRepository<Task, Long> {
     Mono<Task> findByTaskUuid(String taskUuid);
     Flux<Task> findByClientAgentId(Long clientAgentId);
     Flux<Task> findByServerAgentId(Long serverAgentId);
+
+    Flux<Task> findByUsername(String username);
 }

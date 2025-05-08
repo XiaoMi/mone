@@ -68,6 +68,10 @@ public class TaskService {
         return taskRepository.findByServerAgentId(serverAgentId);
     }
 
+    public Flux<Task> findByUsername(String userName) {
+        return taskRepository.findByUsername(userName);
+    }
+
     public Mono<Task> updateTaskStatus(String taskUuid, String status) {
         return taskRepository.findByTaskUuid(taskUuid)
                 .flatMap(task -> {
