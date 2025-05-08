@@ -15,7 +15,7 @@
             />
           </el-select>
         </el-form-item> -->
-        <el-form-item label="技能">
+        <!-- <el-form-item label="技能">
           <el-select v-model="taskForm.skillId" placeholder="请选择要执行的技能">
             <el-option
               v-for="skill in skillList"
@@ -24,11 +24,11 @@
               :value="skill.id"
             />
           </el-select>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="任务名称">
           <el-input v-model="taskForm.title" placeholder="请输入任务名称" />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item label="任务描述">
           <el-input v-model="taskForm.description" type="textarea" placeholder="请输入任务描述" />
         </el-form-item>
       </el-form>
@@ -69,43 +69,43 @@
     status: 'pending'
   })
   
-  const agentList = ref<Agent[]>([])
-  const skillList = ref<Skill[]>([])
+  // const agentList = ref<Agent[]>([])
+  // const skillList = ref<Skill[]>([])
   
   // 获取Agent列表
-  const fetchAgentList = async () => {
-    try {
-      const res = await getAgentList()
-      if (res.data.data) {
-        agentList.value = res.data.data
-      }
-    } catch (error) {
-      console.error('获取Agent列表失败:', error)
-    }
-  }
+  // const fetchAgentList = async () => {
+  //   try {
+  //     const res = await getAgentList()
+  //     if (res.data.data) {
+  //       agentList.value = res.data.data
+  //     }
+  //   } catch (error) {
+  //     console.error('获取Agent列表失败:', error)
+  //   }
+  // }
   
   // 获取技能列表
-  const handleServerAgentChange = async (agentId: number) => {
-    try {
-      const res = await getAgentSkills(agentId)
-      if (res.data.data) {
-        skillList.value = res.data.data
-        // 清空之前选择的技能
-        taskForm.value.skillId = null
-      }
-    } catch (error) {
-      console.error('获取技能列表失败:', error)
-    }
-  }
+  // const handleServerAgentChange = async (agentId: number) => {
+  //   try {
+  //     const res = await getAgentSkills(agentId)
+  //     if (res.data.data) {
+  //       skillList.value = res.data.data
+  //       // 清空之前选择的技能
+  //       taskForm.value.skillId = null
+  //     }
+  //   } catch (error) {
+  //     console.error('获取技能列表失败:', error)
+  //   }
+  // }
   
   onMounted(() => {
-    fetchAgentList()
+    // fetchAgentList()
     // 从URL中获取serverAgentId并设置
     const serverAgentId = Number(route.query.serverAgentId)
     if (serverAgentId) {
       taskForm.value.serverAgentId = serverAgentId
       taskForm.value.clientAgentId = serverAgentId
-      handleServerAgentChange(serverAgentId)
+      // handleServerAgentChange(serverAgentId)
     }
   })
   
@@ -122,13 +122,13 @@
   
   const resetForm = () => {
     taskForm.value = {
-      taskUuid: '1',
-      clientAgentId: 0,
-      serverAgentId: 0,
-      skillId: 0,
+      taskUuid: '',
+      clientAgentId: null,
+      serverAgentId: null,
+      skillId: null,
       title: '',
       description: '',
-      status: 'pending'
+      status: ''
     }
   }
   
