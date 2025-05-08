@@ -10,24 +10,46 @@
     >
       <template v-if="agentDetail">
         <div class="detail-content">
-          <div class="detail-item">
-            <div class="label">名称</div>
-            <div class="value">{{ agentDetail.name }}</div>
-          </div>
-          <div class="detail-item">
-            <div class="label">描述</div>
-            <div class="value description">{{ agentDetail.description }}</div>
-          </div>
-          <div class="detail-item">
-            <div class="label">Agent URL</div>
-            <div class="value url">{{ agentDetail.agentUrl }}</div>
-          </div>
-          <div class="detail-item">
-            <div class="label">是否公开</div>
-            <div class="value">
-              <el-tag :type="agentDetail.isPublic ? 'success' : 'info'">
-                {{ agentDetail.isPublic ? '是' : '否' }}
-              </el-tag>
+          <div class="detail-item-group">
+            <div class="detail-item">
+              <div class="label">名称</div>
+              <div class="value">{{ agentDetail.name || "--" }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">人设</div>
+              <div class="value description">{{ agentDetail.profile || "--" }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">描述</div>
+              <div class="value description">{{ agentDetail.description || "--" }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">目标</div>
+              <div class="value description">{{ agentDetail.goal || "--" }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">地址</div>
+              <div class="value url">{{ agentDetail.agentUrl || "--" }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">约束</div>
+              <div class="value description">{{ agentDetail.constraints || "--" }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">更新时间</div>
+              <div class="value">{{ formatDate(agentDetail.utime) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="label">公开</div>
+              <div class="value">
+                <el-tag :type="agentDetail.isPublic ? 'success' : 'info'">
+                  {{ agentDetail.isPublic ? '是' : '否' }}
+                </el-tag>
+              </div>
+            </div>
+            <div class="detail-item">
+              <div class="label">创建时间</div>
+              <div class="value">{{ formatDate(agentDetail.ctime) }}</div>
             </div>
           </div>
           <div class="detail-item">
@@ -41,14 +63,6 @@
             <div class="value">
               <vue-json-pretty :data="handleParse(agentDetail.mcpToolMap)" :deep="3" :showDoubleQuotes="true" :showIcon="true" :highlightSelectedItem="false" :highlightMouseoverNode="false"/>
             </div>
-          </div>
-          <div class="detail-item">
-            <div class="label">创建时间</div>
-            <div class="value">{{ formatDate(agentDetail.ctime) }}</div>
-          </div>
-          <div class="detail-item">
-            <div class="label">更新时间</div>
-            <div class="value">{{ formatDate(agentDetail.utime) }}</div>
           </div>
           <AccessList :agent-id="agent.id" />
           <!-- 添加技能列表组件 -->
@@ -151,9 +165,15 @@
   .detail-content {
     padding: 20px;
   }
-  
+
+  .detail-item-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
   .detail-item {
-    margin-bottom: 12px;
+    margin-bottom: 0;
     transition: all 0.3s ease;
     padding: 12px;
     border-radius: 8px;
