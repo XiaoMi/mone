@@ -199,6 +199,7 @@ public class AgentService {
                     AgentAccess access = new AgentAccess();
                     access.setAgentId(agentId);
                     access.setAccessApp(String.valueOf(userId));
+                    access.setAccessAppId(userId.intValue());
                     access.setAccessKey(UUID.randomUUID().toString().replace("-", ""));
                     access.setState(1);
                     access.setCtime(System.currentTimeMillis());
