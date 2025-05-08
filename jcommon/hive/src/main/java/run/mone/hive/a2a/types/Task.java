@@ -30,4 +30,6 @@ public class Task {
     
     @JsonProperty("metadata")
     private Map<String, Object> metadata;
+
+    private String userName;
 } 

@@ -18,4 +18,5 @@ public class Task extends BaseEntity {
     private String metadata; // json
     private String status;
     private String result;
+    private String username;
 }

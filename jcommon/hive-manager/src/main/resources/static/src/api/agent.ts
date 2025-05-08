@@ -11,6 +11,9 @@ export interface Agent {
   image: string
   group: string
   version: string
+  profile: string
+  goal: string
+  constraints: string
   instances: Array<object>
   toolMap?: string
   mcpToolMap?: string

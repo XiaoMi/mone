@@ -28,4 +28,8 @@ public class Agent extends BaseEntity {
 
     @Column("mcp_tool_map")
     private String mcpToolMap;
+
+    private String profile;
+    private String goal;
+    private String constraints;
 }

@@ -31,6 +31,7 @@ public class TaskController {
 
     @PostMapping
     public Mono<ApiResponse<Task>> createTask(@AuthenticationPrincipal User user, @RequestBody Task task) {
+        task.setUsername(user.getUsername());
         return taskService.createTask(task).map(ApiResponse::success);
     }
 
@@ -50,7 +51,7 @@ public class TaskController {
         } else if (serverAgentId != null) {
             tasks = taskService.findByServerAgentId(serverAgentId);
         } else {
-            tasks = Flux.empty();
+            tasks = taskService.findByUsername(user.getUsername());
         }
         return tasks.collectList().map(ApiResponse::success);
     }

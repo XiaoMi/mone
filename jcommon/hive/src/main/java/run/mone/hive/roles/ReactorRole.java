@@ -82,6 +82,10 @@ public class ReactorRole extends Role {
 
     private List<McpFunction> functionList;
 
+    private int idlePollCount = 3;
+
+    private int defaultIdlePollCount = 3;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -171,6 +175,14 @@ public class ReactorRole extends Role {
         log.info("think");
         this.state.set(RoleState.think);
         int value = observe();
+        //发生了空轮训(默认30分钟没有沟通后,就自动退出)
+        if (value == -3) {
+            if (this.idlePollCount-- < 0) {
+                return value;
+            }
+        }
+        idlePollCount = defaultIdlePollCount;
+
         if (value == -1) {
             return observe();
         } else {
@@ -188,9 +200,9 @@ public class ReactorRole extends Role {
     protected int observe() {
         log.info("{} observe", this.name);
         this.state.set(RoleState.observe);
-        Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
+        Message msg = this.rc.getNews().poll(10, TimeUnit.MINUTES);
         if (null == msg) {
-            return -1;
+            return -3;
         }
 
         // 收到特殊指令直接退出
@@ -214,7 +226,7 @@ public class ReactorRole extends Role {
         String lastMsgContent = lastMsg.getContent();
 
         //其实只会有一个
-        List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
+        List<ToolDataInfo> tools = new MultiXmlParser().parse(lastMsgContent);
 
         //结束
         int attemptCompletion = tools.stream().filter(it -> {
@@ -271,20 +283,22 @@ public class ReactorRole extends Role {
 
             AtomicBoolean hasError = new AtomicBoolean(false);
 
+            String systemPrompt = getSystemPrompt();
+
             //调用大模型(选用合适的工具)
-            String toolRes = callLlm(compoundMsg, sink, hasError);
+            String toolRes = callLlm(systemPrompt, compoundMsg, sink, hasError);
             log.info("res\n:{} hasError:{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
 
             // 解析工具调用(有可能是tool也可能是mcp)
-            List<Result> tools = new MultiXmlParser().parse(toolRes);
+            List<ToolDataInfo> tools = new MultiXmlParser().parse(toolRes);
 
             log.info("tools num:{}", tools.size());
 
             //直接使用最后一个工具(每次只会返回一个)
-            Result it = tools.get(tools.size() - 1);
+            ToolDataInfo it = tools.get(tools.size() - 1);
 
             String name = it.getTag();
             if (this.toolMap.containsKey(name)) {// 执行tool
@@ -311,7 +325,7 @@ public class ReactorRole extends Role {
         return extraParam;
     }
 
-    private void callMcp(Result it, FluxSink sink) {
+    private void callMcp(ToolDataInfo it, FluxSink sink) {
         McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
@@ -321,7 +335,7 @@ public class ReactorRole extends Role {
         }
     }
 
-    private void callTool(String name, Result it, String res, FluxSink sink, Map<String, String> extraParam) {
+    private void callTool(String name, ToolDataInfo it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
@@ -349,9 +363,9 @@ public class ReactorRole extends Role {
         this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
     }
 
-    private String callLlm(LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
+    private String callLlm(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
         StringBuilder sb = new StringBuilder();
-        llm.compoundMsgCall(compoundMsg, getSystemPrompt())
+        llm.compoundMsgCall(compoundMsg, systemPrompt)
                 .doOnNext(it -> {
                     sb.append(it);
                     Optional.ofNullable(sink).ifPresent(s -> s.next(it));

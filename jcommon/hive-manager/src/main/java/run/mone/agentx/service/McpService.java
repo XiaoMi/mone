@@ -10,7 +10,9 @@ import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
-import run.mone.hive.common.Result;
+import run.mone.agentx.utils.AgentKeyUtils;
+import run.mone.hive.common.McpResult;
+import run.mone.hive.common.ToolDataInfo;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.client.transport.ServerParameters;
@@ -33,23 +35,15 @@ public class McpService {
     private ReentrantLock lock = new ReentrantLock();
 
 
-    public void callMcp(String userName, Long agentId, AgentInstance instance, Result it, FluxSink sink) {
+    public McpResult callMcp(String userName, Long agentId, AgentInstance instance, ToolDataInfo it, FluxSink sink) {
         log.info("user:{} call mcp tool", userName);
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
 
-        if (instance == null) {
-            // 获取agent详情
-            if (agentDto.getInstances() == null || agentDto.getInstances().isEmpty()) {
-                return;
-            }
-            instance = agentDto.getInstances().get(0);
-        }
-
         //这个需要那个用户就传他的id (需要从前端拿过来)
-        String clientId = getAgentKey(agentDto.getAgent());
+        String clientId = AgentKeyUtils.getAgentKey(agentDto.getAgent());
 
         //对面的ip和port 服务端的
-        String key = Joiner.on(":").join(clientId, instance.getIp(), instance.getPort());
+        String key = AgentKeyUtils.key(agentDto, instance);
 
         try {
             lock.lock();
@@ -64,7 +58,7 @@ public class McpService {
         }
 
         // 调用MCP
-        MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
+        return MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
@@ -79,13 +73,6 @@ public class McpService {
         //底下有断线从连机制,先解决连一个的问题
         mcpHub.connectToServer(groupKey, parameters);
         McpHubHolder.put(groupKey, mcpHub);
-    }
-
-
-    private String getAgentKey(Agent agent) {
-        return agent.getName() + ":"
-                + (agent.getGroup() == null ? "" : agent.getGroup()) + ":"
-                + (agent.getVersion() == null ? "" : agent.getVersion());
     }
 
 
