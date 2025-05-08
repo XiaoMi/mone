@@ -60,6 +60,7 @@
         <module>mcp-chat</module>
         <module>mcp-tts</module>
         <module>mcp-asr</module>
+        <module>mcp-hera-analysis</module>
     </modules>
 
     <properties>
