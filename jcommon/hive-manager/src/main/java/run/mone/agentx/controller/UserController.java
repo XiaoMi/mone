@@ -8,6 +8,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +16,12 @@ import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.LoginRequest;
 import run.mone.agentx.dto.LoginResponse;
+import run.mone.agentx.dto.UserDTO;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.JwtService;
 import run.mone.agentx.service.UserService;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -76,5 +80,15 @@ public class UserController {
                         .body(ApiResponse.error(401, "Invalid username or password"))))
                 .onErrorResume(e -> Mono.just(ResponseEntity.ok()
                         .body(ApiResponse.error(500, e.getMessage()))));
+    }
+
+    @GetMapping("/list")
+    public Mono<ApiResponse<List<UserDTO>>> listUsers() {
+        return userService.findAllUsers()
+                .map(UserDTO::fromUser)
+                .collectList()
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("获取用户列表时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
     }
 }

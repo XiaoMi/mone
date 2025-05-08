@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.repository.UserRepository;
 
@@ -42,5 +43,9 @@ public class UserService {
     public Mono<User> authenticate(String username, String password) {
         return userRepository.findByUsername(username)
                 .filter(user -> passwordEncoder.matches(password, user.getPassword()));
+    }
+
+    public Flux<User> findAllUsers() {
+        return userRepository.findAll();
     }
 }

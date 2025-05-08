@@ -5,16 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.service.AgentService;
-import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.LLM;
-import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.roles.tool.ITool;
-import run.mone.hive.schema.AiMessage;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static run.mone.hive.llm.ClaudeProxy.*;
 
 /**
  * 用于查找最合适的 agent 的工具
@@ -24,13 +15,6 @@ public class AgentTool implements ITool {
 
     @Autowired
     private AgentService agentService;
-
-    private static LLM llm = new LLM(LLMConfig.builder()
-            .llmProvider(LLMProvider.CLAUDE_COMPANY)
-            .url(getClaudeUrl())
-            .version(getClaudeVersion())
-            .maxTokens(getClaudeMaxToekns())
-            .build());
 
     @Override
     public String getName() {
