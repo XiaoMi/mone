@@ -9,7 +9,7 @@
     <!-- Access 列表表格 -->
     <el-table :data="accessData" style="width: 100%; margin-top: 20px">
         <el-table-column prop="id" label="ID" width="50"/>
-      <el-table-column prop="accessApp" label="应用名称" />
+      <el-table-column prop="accessApp" label="调用方" />
       <el-table-column prop="description" label="描述" />
       <el-table-column prop="accessKey" label="Access Key" />
       <el-table-column prop="ctime" label="创建时间" >
@@ -40,8 +40,15 @@
     class="access-dialog"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="应用名称" prop="accessApp">
-          <el-input v-model="form.accessApp" placeholder="请输入应用名称" />
+        <el-form-item label="调用方" prop="accessAppId">
+          <el-select v-model="form.accessAppId" placeholder="请选择调用方" style="width: 100%">
+            <el-option
+              v-for="user in userList"
+              :key="user.id"
+              :label="user.username"
+              :value="user.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input v-model="form.description" type="textarea" placeholder="请输入描述" />
@@ -59,6 +66,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { accessList, createAccess, deleteAccess } from '@/api/agent'
+import { getUserList } from '@/api/user'
 import type { Access } from '@/api/agent'
 const props = defineProps<{
   agentId: number
@@ -70,20 +78,24 @@ const formRef = ref()
 const form = ref({
   agentId: 0,
   accessApp: '',
-  description: ''
+  description: '',
+  accessAppId: ''
 })
 
 const rules = {
-  accessApp: [{ required: true, message: '请输入应用名称', trigger: 'blur' }],
+  accessAppId: [{ required: true, message: '请选择调用方', trigger: 'blur' }],
   description: [{ required: true, message: '请输入描述', trigger: 'blur' }]
 }
+
+const userList = ref<any[]>([])
 
 watch(() => dialogVisible.value, (val) => {
     if (!val) {
         form.value = {
             agentId: 0,
             accessApp: '',
-            description: ''
+            description: '',
+            accessAppId: ""
         }
         formRef.value.resetFields()
     }
@@ -107,12 +119,31 @@ const fetchAccessList = async () => {
   }
 }
 
+// 获取用户列表
+const fetchUserList = async () => {
+  try {
+    const res = await getUserList()
+    if (res.data.code === 200) {
+      userList.value = res.data.data || []
+    } else {
+      ElMessage.error('获取用户列表失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取用户列表失败')
+  }
+}
+
+onMounted(() => {
+  fetchUserList()
+})
+
 // 显示创建对话框
 const showCreateDialog = () => {
   form.value = {
     agentId: props.agentId,
     accessApp: '',
-    description: ''
+    description: '',
+    accessAppId: ""
   }
   dialogVisible.value = true
 }
@@ -121,6 +152,7 @@ const showCreateDialog = () => {
 const handleCreate = async () => {
     formRef.value.validate(async(valid: boolean) => {
         if (valid) {
+          form.value.accessApp = userList.value.find(user => user.id == form.value.accessAppId)?.username
             const res = await createAccess(form.value)
             if (res.data.code === 200) {
                 ElMessage.success('创建成功')
