@@ -5,8 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.knowledge.base.entity.BaseVO;
 import run.mone.mcp.knowledge.base.entity.VectorQueryResponse;
@@ -16,25 +16,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Data
 @Slf4j
-public class KnowledgeBaseQueryFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class KnowledgeBaseQueryFunction implements McpFunction {
 
-    private String name = "stream_KnowledgeBaseQuery";
+    private String name = "stream_knowledge-base_chat";
 
     private String desc = "Query knowledge base";
 
     private String toolScheme = """
             {
                 "type": "object",
-                "properties": {"query": {
+                "properties": {"message": {
                         "type": "string",
                         "description":"Query to be executed in the knowledge base"
                     }
                 },
-                "required": ["query"]
+                "required": ["message"]
             }
             """;
 
@@ -45,7 +44,7 @@ public class KnowledgeBaseQueryFunction implements Function<Map<String, Object>,
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         return Flux.defer(() -> {
             try {
-                String query = (String) arguments.get("query");
+                String query = (String) arguments.get("message");
                 log.info("query: {}", query);
                 String result = queryKnowledgeFile(query);
                 return Flux.just(
