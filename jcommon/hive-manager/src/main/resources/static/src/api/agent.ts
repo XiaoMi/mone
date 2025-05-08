@@ -60,12 +60,12 @@ export interface Access {
 }
 
 // 获取Agent列表
-export const getAgentList = () => {
+export const getAgentList = (name: string = "") => {
   return Service<IResponse<{
     agent: Agent,
     instances: Array<any>
 }[]>>({
-    url: '/v1/agents/list',
+    url: '/v1/agents/list?name='+name,
     method: 'get'
   })
 }

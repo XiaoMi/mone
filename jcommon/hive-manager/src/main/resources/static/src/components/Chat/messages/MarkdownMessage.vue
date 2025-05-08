@@ -72,8 +72,6 @@ function highlightBlock(str: string, lang?: string) {
   return `<pre class="code-block-wrapper">
     <div class="code-block-header">
       <span class="code-block-header__lang">${lang}</span>
-      <span class="code-block-header__diff">代码比较</span>
-      <span class="code-block-header__insert">插入IDEA</span>
       <span class="code-block-header__copy">复制代码</span>
     </div>
     <code class="hljs code-block-body ${lang} hide-code show-code">${str}</code>${
@@ -203,41 +201,41 @@ export default {
       }
     },
     addApply() {
-      this.$nextTick(() =>{
-        if (this.message.data.isLast) {
-          const textRef = this.$refs.textRef as HTMLDivElement;
-          if (textRef) {
-            const applyDivs = textRef.querySelectorAll(".code-block-header");
-            applyDivs.forEach((applyDiv: any) => {
-              const applyBtn = applyDiv.querySelectorAll(".code-block-header__apply");
-              if (applyBtn.length === 0) {
-                // Insert the Apply button
-                // 创建一个新的span元素
-                var spanElement = document.createElement("span");
+      // this.$nextTick(() =>{
+      //   if (this.message.data.isLast) {
+      //     const textRef = this.$refs.textRef as HTMLDivElement;
+      //     if (textRef) {
+      //       const applyDivs = textRef.querySelectorAll(".code-block-header");
+      //       applyDivs.forEach((applyDiv: any) => {
+      //         const applyBtn = applyDiv.querySelectorAll(".code-block-header__apply");
+      //         if (applyBtn.length === 0) {
+      //           // Insert the Apply button
+      //           // 创建一个新的span元素
+      //           var spanElement = document.createElement("span");
 
-                // 为span元素设置类名
-                spanElement.className = "code-block-header__apply";
+      //           // 为span元素设置类名
+      //           spanElement.className = "code-block-header__apply";
 
-                // 设置span元素的内容
-                spanElement.textContent = "Apply";
+      //           // 设置span元素的内容
+      //           spanElement.textContent = "Apply";
 
-                // 将span元素追加到applyDiv中
-                applyDiv.appendChild(spanElement);
-              }
-            });
-          }
-        } else {
-          // Remove existing Apply buttons if isLast is false or undefined
-          const textRef = this.$refs.textRef as HTMLDivElement;
-          if (textRef) {
-            const applyButtons = textRef.querySelectorAll(
-              ".code-block-header__apply"
-            );
-            applyButtons.forEach((button) => button.remove());
-          }
-        }
-        this.addApplyEvents();
-      })
+      //           // 将span元素追加到applyDiv中
+      //           applyDiv.appendChild(spanElement);
+      //         }
+      //       });
+      //     }
+      //   } else {
+      //     // Remove existing Apply buttons if isLast is false or undefined
+      //     const textRef = this.$refs.textRef as HTMLDivElement;
+      //     if (textRef) {
+      //       const applyButtons = textRef.querySelectorAll(
+      //         ".code-block-header__apply"
+      //       );
+      //       applyButtons.forEach((button) => button.remove());
+      //     }
+      //   }
+      //   this.addApplyEvents();
+      // })
     },
     addApplyEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;

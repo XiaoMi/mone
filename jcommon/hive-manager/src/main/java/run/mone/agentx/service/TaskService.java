@@ -110,7 +110,8 @@ public class TaskService {
                     // 更新状态并启动异步执行过程
                     existingTask.setStatus(TaskStatus.PENDING);
                     existingTask.setUtime(System.currentTimeMillis());
-
+                    //其实就是用户的需求
+                    taskExecutionInfo.getMetadata().put("input", existingTask.getDescription());
                     return taskRepository.save(existingTask)
                             .flatMap(savedTask -> {
                                 // 异步启动任务执行 - 改用Agent执行方式
@@ -186,7 +187,7 @@ public class TaskService {
                     mcpRequest.setAgentInstance(selectedInstance);
 
                     JsonObject arguments = new JsonObject();
-                    arguments.addProperty("message", "hi");
+                    arguments.addProperty("message", taskExecutionInfo.getMetadata().get("input").toString());
                     arguments.addProperty("__owner_id__", userName);
 
                     String serviceName = AgentKeyUtils.key(selectedAgent, selectedInstance);

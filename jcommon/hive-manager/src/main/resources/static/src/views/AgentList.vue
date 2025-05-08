@@ -9,10 +9,14 @@
         <div class="animated-underline"></div>
       </div>
       <div class="header-actions">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            v-model="searchQuery"
+            @input="handleSearch"
+            placeholder="搜索 Agent...">
+        </div>
         <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
-        <!-- <div class="search-bar">
-          <input type="text" placeholder="搜索 Agent...">
-        </div> -->
       </div>
     </div>
 
@@ -184,11 +188,13 @@ const selectedAgent = ref<Agent | null>(null)
 const router = useRouter()
 const imageUrl = ref('')
 const imageFile = ref<File | null>(null)
+const searchQuery = ref('')
+const searchTimeout = ref<number | null>(null)
 
 const fetchAgents = async () => {
   loading.value = true
   try {
-    const response = await getAgentList() 
+    const response = await getAgentList(searchQuery.value) 
     if (response.data.code === 200) {
       agentList.value = response.data.data || []
     } else {
@@ -310,10 +316,7 @@ const handleTask = (agent: Agent) => {
 
 const handleChat = (item: any) => {
   if(item.instances?.length > 0) {  
-    router.push({
-      path: '/chat',
-      query: { serverAgentId: item.agent.id, conversationId: uuidv4() }
-    })
+    window.open(`/agent-manager/chat?serverAgentId=${item.agent.id}&conversationId=${uuidv4()}`, '_blank')
   } else {
     ElMessage.warning('Agent未启动')
   }
@@ -345,6 +348,18 @@ const handleImageError = (error: any) => {
   // 处理图片上传失败后的逻辑
 }
 
+const handleSearch = () => {
+  // 清除之前的定时器
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+  
+  // 设置新的定时器实现防抖
+  searchTimeout.value = setTimeout(() => {
+    fetchAgents()
+  }, 300) as unknown as number
+}
+
 onMounted(() => {
   fetchAgents()
 })
@@ -355,7 +370,7 @@ onMounted(() => {
   min-height: 100vh;
   background: #0d1117;
   color: #fff;
-  padding: 20px;
+  padding: 12px 20px;
   position: relative;
   overflow: hidden;
 }
@@ -438,13 +453,13 @@ onMounted(() => {
 }
 
 .table-container {
-  height: calc(100vh - 140px);
+  height: calc(100vh - 110px);
   overflow-y: auto;
 }
 
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
+  font-size: 1.6rem;
   background: linear-gradient(90deg, #00f0ff, #b400ff);
   -webkit-background-clip: text;
   background-clip: text;
@@ -473,6 +488,32 @@ onMounted(() => {
   border-radius: 8px;
   color: #fff;
   font-size: 16px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.search-bar input:focus {
+  border-color: #00f0ff;
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.2),
+              0 0 15px rgba(0, 240, 255, 0.2),
+              0 0 30px rgba(0, 240, 255, 0.1);
+  background: rgba(13, 17, 23, 0.9);
+}
+
+.search-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00f0ff, transparent);
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+}
+
+.search-bar input:focus + .search-bar::after {
+  width: 100%;
 }
 
 .scan-animation {
@@ -502,7 +543,7 @@ onMounted(() => {
 .create-btn {
   background: linear-gradient(135deg, #00f0ff, #b400ff);
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 8px;
   color: #0d1117;
   font-weight: bold;
