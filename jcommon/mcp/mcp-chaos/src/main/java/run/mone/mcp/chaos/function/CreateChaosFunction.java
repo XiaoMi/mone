@@ -3,6 +3,7 @@ package run.mone.mcp.chaos.function;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.http.HttpClient;
 
@@ -16,7 +17,7 @@ import com.google.gson.JsonObject;
 // 处理不同种类型的混沌故障演练
 @Data
 @Slf4j
-public class CreateChaosFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class CreateChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_creator";
 
@@ -165,5 +166,10 @@ public class CreateChaosFunction implements Function<Map<String, Object>, Flux<M
             case "11" -> "1";
             default -> "2";
         };
+    }
+
+    @Override
+    public String getToolScheme() {
+        return chaosToolSchema;
     }
 }

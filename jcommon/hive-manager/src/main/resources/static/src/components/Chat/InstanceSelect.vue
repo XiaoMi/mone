@@ -18,12 +18,21 @@
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
 import { computed, ref, watch, watchEffect } from "vue";
-import { clearHistory, offlineAgent } from "@/api/agent";
 import { ElMessageBox } from 'element-plus';
 import { useChatContextStore } from "@/stores/chat-context";
 const { getInstance, setSelectedInstance } = useUserStore();
 const { setMessageList } = useChatContextStore();
 const selectedIp = ref('')
+const props = defineProps({
+    onClearHistory: {
+        type: Function,
+        required: true,
+    },
+    onOffline: {
+        type: Function,
+        required: true,
+    },
+})
 const list = computed(() => {
     return getInstance()
 })
@@ -49,7 +58,7 @@ const confirmOffline = () => {
             type: 'warning',
         }
     ).then(() => {
-        offlineAgent();
+        props.onOffline?.();
     }).catch(() => {
         // 用户取消操作
     });
@@ -57,7 +66,7 @@ const confirmOffline = () => {
 
 const handleClearHistory = () => {
     setMessageList([]);
-    clearHistory();
+    props.onClearHistory?.();
 };
 </script>
 

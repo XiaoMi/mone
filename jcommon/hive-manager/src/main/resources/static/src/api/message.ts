@@ -3,6 +3,7 @@ import { ElMessage } from 'element-plus';
 
 interface McpRequest {
   outerTag: string;
+  mapData: any;
   content: {
     server_name: string;
     tool_name: string;

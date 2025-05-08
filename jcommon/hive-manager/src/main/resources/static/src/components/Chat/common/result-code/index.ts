@@ -234,6 +234,16 @@ export function fluxCodeHandler(res: string, uuid: string) {
     // 处理特殊格式
     const formatHandlers = [
       {
+        // 去除紧邻<chat>、<thinking>标签前后的```符号
+        match: (text: string) =>
+          /```[\s\r\n]*(<chat>|<thinking>|<use_mcp_tool>|<boltArtifact>|<command>)/.test(text) || /(<\/chat>|<\/thinking>|<\/use_mcp_tool>|<\/boltArtifact>|<\/command>)[\s\r\n]*```/.test(text),
+        replace: (text: string) => {
+          return text
+            .replace(/```[\s\r\n]*(<chat>|<thinking>|<use_mcp_tool>|<boltArtifact>|<command>)/g, '$1')
+            .replace(/(<\/chat>|<\/thinking>|<\/use_mcp_tool>|<\/boltArtifact>|<\/command>)[\s\r\n]*```/g, '$1');
+        },
+      },
+      {
         // chat和thinking标签格式处理
         match: (text: string) => 
           (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact") || text.includes("command"))),

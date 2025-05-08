@@ -615,10 +615,10 @@ public class LLM {
                                     continue;
                                 }
 
-                                if ("content_block_stop".equals(jsonResponse.get("type").getAsString())) {
+                                if ("message_delta".equals(jsonResponse.get("type").getAsString())) {
                                     JsonObject jsonRes = new JsonObject();
                                     jsonRes.addProperty("type", "finish");
-                                    jsonRes.addProperty("content", "[DONE]");
+                                    jsonRes.addProperty("content", jsonResponse.get("delta").getAsJsonObject().get("stop_reason").getAsString());
                                     messageHandler.accept("[DONE]", jsonRes);
                                     if (null != sink) {
                                         sink.complete();
