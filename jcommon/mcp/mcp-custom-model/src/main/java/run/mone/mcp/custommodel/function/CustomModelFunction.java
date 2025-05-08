@@ -10,19 +10,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.custommodel.service.CustomModelService;
 
 @Data
 @Slf4j
 @Component
-public class CustomModelFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class CustomModelFunction implements McpFunction {
     private static final Gson gson = new Gson();
     
     @Autowired
     private CustomModelService customModelService;
     
-    private String name = "custom_model";
+    private String name = "stream_custom_model";
     private String desc = "自定义模型接口，支持意图识别和问题标准化";
 
     @Override
@@ -73,12 +74,18 @@ public class CustomModelFunction implements Function<Map<String, Object>, Flux<M
                 "type", Map.of(
                     "type", "string",
                     "enum", new String[]{"intent", "normalize"},
-                    "default", "intent"
+                    "default", "intent",
+                    "description", "当用户要进行分类，使用intent；其他会话则使用normalize"
                 )
             ),
             "required", new String[]{"user_message"}
         );
 
         return gson.toJson(schema);
+    }
+
+    @Override
+    public String getToolScheme() {
+        return getToolSchema();
     }
 }
