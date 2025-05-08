@@ -13,4 +13,6 @@ public interface AgentRepository extends ReactiveCrudRepository<Agent, Long> {
     
     // 使用与实体类属性名匹配的方法名
     Mono<Agent> findByNameAndGroupAndVersion(String name, String group, String version);
+    Flux<Agent> findByNameContainingIgnoreCase(String name);
+    Flux<Agent> findByCreatedByAndNameContainingIgnoreCase(Long createdBy, String name);
 }

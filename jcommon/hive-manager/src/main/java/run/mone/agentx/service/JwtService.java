@@ -18,7 +18,7 @@ import run.mone.agentx.entity.User;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:your-secret-key-here-must-be-at-least-32-characters}")
     private String jwtSecret;
 
     @Value("${jwt.expiration}")

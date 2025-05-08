@@ -35,7 +35,6 @@ spring:
     time-zone: GMT+8
 
 jwt:
-  secret: your-secret-key-here-must-be-at-least-32-characters
   expiration: 86400000 # 24 hours in milliseconds
 
 logging:

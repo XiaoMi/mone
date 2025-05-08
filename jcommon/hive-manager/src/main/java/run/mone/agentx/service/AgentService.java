@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
+import run.mone.agentx.dto.AgentQueryRequest;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentAccess;
 import run.mone.agentx.entity.AgentInstance;
@@ -111,6 +112,43 @@ public class AgentService {
                         }));
     }
 
+    /**
+     * 获取用户可访问的Agent列表，并包含每个Agent的实例列表
+     *
+     * @param userId 用户ID
+     * @param query 查询参数
+     * @return 包含AgentInstance列表的Agent流
+     */
+    public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId, AgentQueryRequest query) {
+        Flux<Agent> agentFlux;
+        if (query != null && query.getName() != null && !query.getName().isEmpty()) {
+            // 获取用户创建的agents（带名称过滤）
+            Flux<Agent> userCreatedAgents = agentRepository.findByCreatedByAndNameContainingIgnoreCase(userId, query.getName())
+                    .filter(agent -> agent.getState() == 1);
+
+            // 获取公开的agents（带名称过滤）
+            Flux<Agent> publicAgents = agentRepository.findByNameContainingIgnoreCase(query.getName())
+                    .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()))
+                    .filter(agent -> agent.getState() == 1);
+
+            // 合并结果并去重
+            agentFlux = Flux.concat(userCreatedAgents, publicAgents)
+                    .distinct(Agent::getId);
+        } else {
+            agentFlux = findAccessibleAgents(userId);
+        }
+
+        return agentFlux
+                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                        .collectList()
+                        .map(instances -> {
+                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                            dto.setAgent(agent);
+                            dto.setInstances(instances);
+                            return dto;
+                        }));
+    }
+
     public Mono<Agent> updateAgent(Agent agent) {
         return agentRepository.findById(agent.getId())
                 .flatMap(existingAgent -> {
@@ -161,6 +199,7 @@ public class AgentService {
                     AgentAccess access = new AgentAccess();
                     access.setAgentId(agentId);
                     access.setAccessApp(String.valueOf(userId));
+                    access.setAccessAppId(userId.intValue());
                     access.setAccessKey(UUID.randomUUID().toString().replace("-", ""));
                     access.setState(1);
                     access.setCtime(System.currentTimeMillis());
