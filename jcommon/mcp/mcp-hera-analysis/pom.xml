@@ -9,7 +9,7 @@
         <version>1.6.1-jdk21-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mcp-chat</artifactId>
+    <artifactId>mcp-hera-analysis</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -18,43 +18,27 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>hive</artifactId>
-            <version>1.6.2-jdk21-SNAPSHOT</version>
-        </dependency>
-
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>hive-spring-starter</artifactId>
             <version>1.6.0-jdk21-SNAPSHOT</version>
         </dependency>
-
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>hive</artifactId>
+            <version>1.6.2-jdk21-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>mcp-chat</artifactId>
+            <version>1.6.1-jdk21-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
-
 
     <build>
 
         <plugins>
-
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.14</version>
-                <configuration>
-                    <mainClass>run.mone.mcp.chat.MinZaiMcpBootstrap</mainClass>
-                    <finalName>app</finalName>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
@@ -68,8 +52,25 @@
                     </compilerArguments>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.7.14</version>
+                <configuration>
+                    <mainClass>run.mone.mcp.hera.analysis.HeraAnalysisApplication</mainClass>
+                    <finalName>app</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
         </plugins>
 
     </build>
-
 </project>
