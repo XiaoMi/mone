@@ -13,4 +13,5 @@ import java.util.List;
 public class AgentWithInstancesDTO {
     private Agent agent;
     private List<AgentInstance> instances;
+    private Boolean isFavorite;
 } 
