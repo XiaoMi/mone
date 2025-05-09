@@ -194,7 +194,9 @@ public class TaskService {
 
                     log.info("serviceName:{}", serviceName);
 
-                    mcpRequest.setMapData(ImmutableMap.of("outerTag", "use_mcp_tool", "server_name", serviceName, "tool_name", "stream_yuer_chat", "arguments", arguments.toString()));
+                    String toolName = "stream_%s_chat".formatted(selectedAgent.getAgent().getName());
+
+                    mcpRequest.setMapData(ImmutableMap.of("outerTag", "use_mcp_tool", "server_name", serviceName, "tool_name", toolName, "arguments", arguments.toString()));
 
                     ToolDataInfo result = new ToolDataInfo("mcp_request", mcpRequest.getMapData());
 

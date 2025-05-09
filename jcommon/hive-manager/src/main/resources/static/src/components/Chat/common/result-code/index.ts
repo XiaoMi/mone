@@ -208,7 +208,101 @@ export function resultCodeHandler(res: string) {
   }
 }
 
-
+const formatHandlers = [
+  {
+    // chat和thinking标签格式处理
+    match: (text: string) => 
+      (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact") || text.includes("command"))),
+    replace: (text: string) => {
+      return text
+        .replace(/<[\s\r\n]+(chat|thinking|use_mcp_tool|boltArtifact|command)/g, '<$1')
+        .replace(/(chat|thinking|use_mcp_tool|boltArtifact|command)[\s\r\n]+>/g, '$1>');
+    },
+  },
+  {
+    // command标签格式处理
+    match: (text: string) => (text.includes("<") && text.includes("command")),
+    replace: (text: string) => {
+      return text
+        .replace(/(<command>)(?!\n)/g, '$1\n')
+        .replace(/(?<!\n)(<\/command>)/g, '\n$1');
+    },
+  },
+  {
+    // XML格式处理
+    match: (text: string) =>
+      text.includes("```xml") && text.includes("<use_mcp_tool>"),
+    replace: (text: string) =>
+      text.replace(
+        /```xml\s*([\s\S]*?)<use_mcp_tool>([\s\S]*?)\s*```/g,
+        "$1<use_mcp_tool>$2"
+      ),
+  },
+  {
+    // XML格式处理
+    match: (text: string) =>
+      text.includes("```xml") && text.includes("<attempt_completion>"),
+    replace: (text: string) =>
+      text.replace(
+        /```xml\s*([\s\S]*?)<attempt_completion>([\s\S]*?)\s*```/g,
+        "$1<attempt_completion>$2"
+      ),
+  },
+  {
+    // XML格式处理
+    match: (text: string) =>
+      text.includes("```xml") && text.includes("<ask_followup_question>"),
+    replace: (text: string) =>
+      text.replace(
+        /```xml\s*([\s\S]*?)<ask_followup_question>([\s\S]*?)\s*```/g,
+        "$1<ask_followup_question>$2"
+      ),
+  },
+  {
+    // XML格式处理
+    match: (text: string) =>
+      text.includes("```xml") && text.includes("<chat>"),
+    replace: (text: string) =>
+      text.replace(
+        /```xml\r?\n?([\s\S]*?)<chat>([\s\S]*?)(?=```|$)/g,
+        "$1<chat>$2"
+      ),
+  },
+  {
+    // MCP工具格式处理
+    match: (text: string) => text.includes("<use_mcp_tool>"),
+    replace: (text: string) => {
+      return text.replace(
+        /(<arguments>[\s\n]*{[\s\n]*}[\s\n]*<\/arguments>)/g,
+        "<arguments>无数据</arguments>"
+      );
+    },
+  },
+  {
+    // boltArtifact 格式处理
+    match: (text: string) => text.includes("<boltArtifact"),
+    replace: (text: string) => {
+      return text.replace(/(?<![\n\r])(<boltArtifact)/g, '\n$1');
+    },
+  },
+  {
+    // boltArtifact 格式处理
+    match: (text: string) => text.includes("</boltArtifact"),
+    replace: (text: string) => {
+      return text.replace(/(<\/boltArtifact>)(?![\n\r])/g, '$1\n');
+    },
+  },
+  {
+    // 去除紧邻<chat>、<thinking>标签前后的```符号
+    match: (text: string) =>
+      /```[\s\r\n]*(<chat>|<thinking>|<use_mcp_tool>|<boltArtifact>|<command>)/.test(text) || /(<\/chat>|<\/thinking>|<\/use_mcp_tool>|<\/boltArtifact>|<\/command>)[\s\r\n]*```/.test(text),
+    replace: (text: string) => {
+      return text
+        .replace(/```[\s\r\n]*(<chat>|<thinking>|<use_mcp_tool>|<boltArtifact>|<command>)/g, '$1')
+        .replace(/(<\/chat>|<\/thinking>|<\/use_mcp_tool>|<\/boltArtifact>|<\/command>)[\s\r\n]*```/g, '$1');
+    },
+  }
+];
 
 export function fluxCodeHandler(res: string, uuid: string) {
   const {
@@ -232,101 +326,7 @@ export function fluxCodeHandler(res: string, uuid: string) {
     existData.data.origin = existData.data.origin + res;
     existData.data.text = `${separators}${existData.data.origin}${separators}`;
     // 处理特殊格式
-    const formatHandlers = [
-      {
-        // 去除紧邻<chat>、<thinking>标签前后的```符号
-        match: (text: string) =>
-          /```[\s\r\n]*(<chat>|<thinking>|<use_mcp_tool>|<boltArtifact>|<command>)/.test(text) || /(<\/chat>|<\/thinking>|<\/use_mcp_tool>|<\/boltArtifact>|<\/command>)[\s\r\n]*```/.test(text),
-        replace: (text: string) => {
-          return text
-            .replace(/```[\s\r\n]*(<chat>|<thinking>|<use_mcp_tool>|<boltArtifact>|<command>)/g, '$1')
-            .replace(/(<\/chat>|<\/thinking>|<\/use_mcp_tool>|<\/boltArtifact>|<\/command>)[\s\r\n]*```/g, '$1');
-        },
-      },
-      {
-        // chat和thinking标签格式处理
-        match: (text: string) => 
-          (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact") || text.includes("command"))),
-        replace: (text: string) => {
-          return text
-            .replace(/<[\s\r\n]+(chat|thinking|use_mcp_tool|boltArtifact|command)/g, '<$1')
-            .replace(/(chat|thinking|use_mcp_tool|boltArtifact|command)[\s\r\n]+>/g, '$1>');
-        },
-      },
-      {
-        // command标签格式处理
-        match: (text: string) => (text.includes("<") && text.includes("command")),
-        replace: (text: string) => {
-          return text
-            .replace(/(<command>)(?!\n)/g, '$1\n')
-            .replace(/(?<!\n)(<\/command>)/g, '\n$1');
-        },
-      },
-      {
-        // XML格式处理
-        match: (text: string) =>
-          text.includes("```xml") && text.includes("<use_mcp_tool>"),
-        replace: (text: string) =>
-          text.replace(
-            /```xml\s*([\s\S]*?)<use_mcp_tool>([\s\S]*?)\s*```/g,
-            "$1<use_mcp_tool>$2"
-          ),
-      },
-      {
-        // XML格式处理
-        match: (text: string) =>
-          text.includes("```xml") && text.includes("<attempt_completion>"),
-        replace: (text: string) =>
-          text.replace(
-            /```xml\s*([\s\S]*?)<attempt_completion>([\s\S]*?)\s*```/g,
-            "$1<attempt_completion>$2"
-          ),
-      },
-      {
-        // XML格式处理
-        match: (text: string) =>
-          text.includes("```xml") && text.includes("<ask_followup_question>"),
-        replace: (text: string) =>
-          text.replace(
-            /```xml\s*([\s\S]*?)<ask_followup_question>([\s\S]*?)\s*```/g,
-            "$1<ask_followup_question>$2"
-          ),
-      },
-      {
-        // XML格式处理
-        match: (text: string) =>
-          text.includes("```xml") && text.includes("<chat>"),
-        replace: (text: string) =>
-          text.replace(
-            /```xml\r?\n?([\s\S]*?)<chat>([\s\S]*?)(?=```|$)/g,
-            "$1<chat>$2"
-          ),
-      },
-      {
-        // MCP工具格式处理
-        match: (text: string) => text.includes("<use_mcp_tool>"),
-        replace: (text: string) => {
-          return text.replace(
-            /(<arguments>[\s\n]*{[\s\n]*}[\s\n]*<\/arguments>)/g,
-            "<arguments>无数据</arguments>"
-          );
-        },
-      },
-      {
-        // boltArtifact 格式处理
-        match: (text: string) => text.includes("<boltArtifact"),
-        replace: (text: string) => {
-          return text.replace(/(?<![\n\r])(<boltArtifact)/g, '\n$1');
-        },
-      },
-      {
-        // boltArtifact 格式处理
-        match: (text: string) => text.includes("</boltArtifact"),
-        replace: (text: string) => {
-          return text.replace(/(<\/boltArtifact>)(?![\n\r])/g, '$1\n');
-        },
-      },
-    ];
+    
     for (const handler of formatHandlers) {
       if (handler.match(existData.data.text)) {
         existData.data.text = handler.replace(existData.data.text);
@@ -350,6 +350,11 @@ export function fluxCodeHandler(res: string, uuid: string) {
           text: `${separators}${res}${separators}`,
         },
       };
+      for (const handler of formatHandlers) {
+        if (handler.match(existData.data.text)) {
+          existData.data.text = handler.replace(existData.data.text);
+        }
+      }
       setMessageList([...messageList, existData]);
     } else {
       existData.meta.separators = separators;
