@@ -10,14 +10,40 @@
       </div>
       <div class="header-actions">
         <div class="search-bar">
-          <input 
+          <el-input 
             type="text" 
+            size="large"
             v-model="searchQuery"
             @input="handleSearch"
             placeholder="搜索 Agent...">
+            <template #append>
+              <el-select
+                v-model="agentType"
+                size="large"
+                class="type-search"
+              >
+                <el-option
+                  key="0"
+                  label="全部"
+                  value="0"
+                />
+                <el-option
+                  key="1"
+                  label="收藏"
+                  value="1"
+                />
+              </el-select>
+            </template>
+          </el-input>
         </div>
-        <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
+        <button class="create-btn" @click="handleCreate">创建 AGENT</button>
       </div>
+    </div>
+    <div class="agent-list-type">
+      <!-- <el-radio-group v-model="agentType" size="small" class="custom-radio-group" @change="fetchAgents">
+        <el-radio-button label="全部" value="0" />
+        <el-radio-button label="收藏" value="1" />
+      </el-radio-group> -->
     </div>
 
     <div class="table-container">
@@ -30,7 +56,7 @@
           <div v-if="agentList.length === 0" :key="'empty'" class="empty-state">
             <div class="empty-content">
               <span class="empty-text">暂无Agent数据</span><br/>
-              <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
+              <button v-if="agentType === '0'" class="create-btn" @click="handleCreate">创建 AGENT</button>
             </div>
           </div>
           
@@ -91,10 +117,17 @@
             </div>
 
             <div class="control-buttons">
-              <button class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
-              <button class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
-              <button class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
+              <button size="small" class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
+              <button size="small" class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
+              <button size="small" class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
             </div>
+
+            <div class="favorite-container">
+                <el-icon :size="16" @click.stop="handleFavorite(item, $event)">
+                  <Star v-if="!item.isFavorite" color="#6c6c6c"/>
+                  <StarFilled v-else color="#00f0ff"/>
+                </el-icon>
+              </div>
           </div>
         </TransitionGroup>
       </div>
@@ -160,18 +193,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAgentList, createAgent, updateAgent, deleteAgent } from '@/api/agent'
+import { getAgentList, createAgent, updateAgent, deleteAgent, favoriteList, addFavorite, deleteFavorite } from '@/api/agent'
 import type { Agent } from '@/api/agent'
 import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Star, StarFilled } from '@element-plus/icons-vue'
 import { v4 as uuidv4 } from "uuid";
 import Instances from '@/components/Instances.vue'
+import { useUserStore } from '@/stores/user'
+
+const {user} = useUserStore()
 const agentList = ref<{
   agent: Agent,
   instances: Array<any>
+  isFavorite: boolean
 }[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -190,17 +227,16 @@ const imageUrl = ref('')
 const imageFile = ref<File | null>(null)
 const searchQuery = ref('')
 const searchTimeout = ref<number | null>(null)
+const agentType = ref('0')
 
 const fetchAgents = async () => {
   loading.value = true
   try {
-    const response = await getAgentList(searchQuery.value) 
-    if (response.data.code === 200) {
-      agentList.value = response.data.data || []
-    } else {
-      ElMessage.error(response.data.message)
-    }
-  } catch {
+    const response = await getAgentList(searchQuery.value, agentType.value === '1')
+      if (response.data.code === 200) {
+        agentList.value = response.data.data || []
+      }
+  } catch (error) {
     ElMessage.error('获取Agent列表失败')
   } finally {
     loading.value = false
@@ -360,6 +396,36 @@ const handleSearch = () => {
   }, 300) as unknown as number
 }
 
+const handleFavorite = async (item: {agent: Agent, isFavorite: boolean}, event: Event) => {
+  event.stopPropagation()
+  try {
+    const data = {
+      userId: user?.id,
+      type: 1,
+      targetId: item.agent.id
+    }
+    
+    if (item.isFavorite) {
+      const response = await deleteFavorite(data)
+      if (response.data.code === 200) {
+        ElMessage.success('取消收藏成功')
+      }
+    } else {
+      const response = await addFavorite(data)
+      if (response.data.code === 200) {
+        ElMessage.success('收藏成功')
+      }
+    }
+    fetchAgents()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  }
+}
+
+watch(() => agentType.value, () => {
+  fetchAgents()
+})
+
 onMounted(() => {
   fetchAgents()
 })
@@ -404,9 +470,15 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
   position: relative;
   z-index: 1;
+}
+
+.agent-list-type {
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 .title-container {
@@ -480,9 +552,37 @@ onMounted(() => {
   width: 300px;
 }
 
+.search-bar:deep(.el-input-group__append ){
+  padding: 0;
+  width: 60px;
+  background-color: transparent;
+  box-shadow: none !important;
+  border: 1px solid rgba(49, 232, 249, 0.3);
+  border-left: none !important;
+}
+.type-search {
+  border: none !important;
+}
+.type-search:deep(.el-select__wrapper) {
+  padding: 0;
+  background-color: transparent;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: none !important;
+}
+
+.type-search:deep(.el-select__wrapper) .el-select__selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.type-search:deep(.el-select__wrapper) .el-select__suffix {
+  display: none;
+}
+
 .search-bar input {
   width: 100%;
-  padding: 12px 20px;
   background: rgba(13, 17, 23, 0.7);
   border: 1px solid rgba(0, 240, 255, 0.2);
   border-radius: 8px;
@@ -531,6 +631,7 @@ onMounted(() => {
   margin: 120px auto 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .empty-state .empty-text {
@@ -563,7 +664,7 @@ onMounted(() => {
   padding: 20px;
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: 4fr 1fr 1fr 1fr 2fr 2fr;
+  grid-template-columns: 4fr 1fr 1fr 1fr 2fr 1.5fr;
   gap: 20px;
   align-items: center;
   transition: all 0.3s;
@@ -582,6 +683,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.favorite-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }
 
 .agent-avatar {
@@ -680,9 +787,9 @@ onMounted(() => {
 }
 
 .control-buttons button {
-  padding: 8px 16px;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -907,5 +1014,52 @@ onMounted(() => {
   45.1%, 60% { transform: translateY(-50%) rotate(180deg); }
   60.1%, 75% { transform: translateY(-50%) rotate(-90deg); }
   75.1%, 90% { transform: translateY(-50%) rotate(180deg); }
+}
+
+/* 自定义单选按钮组样式 */
+.custom-radio-group :deep(.el-radio-button__inner) {
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.custom-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  border-color: transparent;
+  box-shadow: -1px 0 0 0 transparent;
+  color: #0d1117;
+  font-weight: bold;
+  border-right: none;
+}
+
+.custom-radio-group :deep(.el-radio-button__inner:hover) {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  color: #00f0ff;
+}
+
+.favorite-btn {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.favorite-btn:hover {
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.1);
+}
+
+.favorite-btn.is-favorite {
+  color: #00f0ff;
+}
+
+.favorite-btn.is-favorite:hover {
+  color: #ff5555;
+  background: rgba(255, 85, 85, 0.1);
 }
 </style>
