@@ -15,7 +15,17 @@ type SupportedTag =
   | 'question'
   | 'server_name'
   | 'tool_name'
-  | 'arguments';
+  | 'arguments'
+  | 'file'
+  | 'operation'
+  | 'path'
+  | 'content'
+  | 'r'
+  | 'file_operation'
+  | 'result'
+  | 'execute'
+  | 'working_directory'
+  | 'timeout';
 
 interface Position {
   line: number;    // 行号
@@ -63,7 +73,17 @@ export class SimpleHtmlParser {
       'question',
       'server_name',
       'tool_name',
-      'arguments'
+      'arguments',
+      'file',
+      'operation',
+      'path',
+      'content',
+      'r',
+      'file_operation',
+      'result',
+      'execute',
+      'working_directory',
+      'timeout'
     ]);
   }
 
