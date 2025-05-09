@@ -58,3 +58,14 @@ export const createTask = (params: CreateTaskRequest) => {
     data: params
   })
 }
+
+export const updateTask = (data: any) => {
+  return Service<IResponse<Task>>({
+    url: `/v1/tasks/${data.taskUuid}/update`,
+    method: 'put',
+    data,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
