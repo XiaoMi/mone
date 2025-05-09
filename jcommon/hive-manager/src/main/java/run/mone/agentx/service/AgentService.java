@@ -359,7 +359,18 @@ public class AgentService {
                             instance.setIsActive(true);
                             instance.setUtime(System.currentTimeMillis());
                             return agentInstanceRepository.save(instance);
-                        }))
+                        })
+                        .switchIfEmpty(Mono.defer(() -> {
+                            AgentInstance newInstance = new AgentInstance();
+                            newInstance.setAgentId(agent.getId());
+                            newInstance.setIp(healthInfo.getIp());
+                            newInstance.setPort(healthInfo.getPort());
+                            newInstance.setLastHeartbeatTime(System.currentTimeMillis());
+                            newInstance.setIsActive(true);
+                            newInstance.setCtime(System.currentTimeMillis());
+                            newInstance.setUtime(System.currentTimeMillis());
+                            return agentInstanceRepository.save(newInstance);
+                        })))
                 .then();
     }
 
