@@ -137,7 +137,7 @@ public class TaskService {
 
                 // 获取可能的服务Agent ID
                 Long serverAgentId = null;
-                if (metadata != null && metadata.containsKey("serverAgentId")) {
+                if (metadata != null && metadata.containsKey("serverAgentId") && null != metadata.get("serverAgentId")) {
                     serverAgentId = Long.valueOf(metadata.get("serverAgentId").toString());
                 }
 
