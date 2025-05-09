@@ -1,14 +1,13 @@
 package run.mone.mcp.custommodel.service;
 
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import run.mone.mcp.custommodel.model.ChatRequest;
-import run.mone.mcp.custommodel.model.ChatResponse;
 import run.mone.mcp.custommodel.model.IntentRequest;
 import run.mone.mcp.custommodel.model.NormalizeRequest;
-import com.google.gson.Gson;
-import okhttp3.*;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
