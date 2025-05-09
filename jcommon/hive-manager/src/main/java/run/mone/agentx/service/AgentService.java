@@ -97,8 +97,7 @@ public class AgentService {
 
         // Combine all sources and remove duplicates
         return Flux.concat(ownedAgents, publicAgents)
-                .distinct(Agent::getId)
-                .sort((a1, a2) -> a2.getId().compareTo(a1.getId()));
+                .distinct(Agent::getId);
     }
 
     /**
@@ -150,8 +149,7 @@ public class AgentService {
 
                         // 合并结果并去重
                         agentFlux = Flux.concat(userCreatedAgents, publicAgents)
-                                .distinct(Agent::getId)
-                                .sort((a1, a2) -> a2.getId().compareTo(a1.getId()));
+                                .distinct(Agent::getId);
                     } else {
                         agentFlux = findAccessibleAgents(userId);
                     }
@@ -163,6 +161,7 @@ public class AgentService {
 
                     // 设置收藏状态并返回结果
                     return agentFlux
+                            .sort((a1, a2) -> a2.getId().compareTo(a1.getId())) // 按id逆序排序
                             .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
                                     .collectList()
                                     .map(instances -> {
