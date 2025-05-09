@@ -47,4 +47,10 @@ public class AgentAccessService {
                 .map(access -> access.getAccessKey().equals(accessKey) && access.getState() == 1)
                 .defaultIfEmpty(false);
     }
+
+    public Mono<Boolean> validateAccess(Long agentId, String accessAppId) {
+        return agentAccessRepository.findByAgentIdAndAccessAppId(agentId, accessAppId)
+                .map(access -> true)
+                .defaultIfEmpty(false);
+    }
 } 

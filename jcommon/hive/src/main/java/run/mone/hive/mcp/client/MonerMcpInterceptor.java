@@ -12,12 +12,12 @@ import java.util.Map;
 @Slf4j
 public class MonerMcpInterceptor {
 
-    public boolean before(String toolName, Map<String, Object> toolArguments) {
+    protected boolean before(String toolName, Map<String, Object> toolArguments) {
         log.info("call mcp tool:{} params:{}", toolName, toolArguments);
         return true;
     }
 
-    public void after(String toolName, McpSchema.CallToolResult toolRes) {
+    protected void after(String toolName, McpSchema.CallToolResult toolRes) {
         log.info("call mcp tool:{} finish res:{}", toolName, toolRes);
     }
 }
