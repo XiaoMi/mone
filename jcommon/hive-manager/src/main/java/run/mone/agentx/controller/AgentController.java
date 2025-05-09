@@ -54,7 +54,10 @@ public class AgentController {
             @ModelAttribute AgentQueryRequest query) {
         return agentService.findAccessibleAgentsWithInstances(user.getId(), query)
                 .collectList()
-                .map(ApiResponse::success);
+                .map(list -> {
+                    list.sort((a1, a2) -> a2.getAgent().getId().compareTo(a1.getAgent().getId()));
+                    return ApiResponse.success(list);
+                });
     }
 
     @GetMapping("/access/{id}")

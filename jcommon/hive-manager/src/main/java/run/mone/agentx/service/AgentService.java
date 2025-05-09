@@ -161,7 +161,6 @@ public class AgentService {
 
                     // 设置收藏状态并返回结果
                     return agentFlux
-                            .sort((a1, a2) -> a2.getId().compareTo(a1.getId())) // 按id逆序排序
                             .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
                                     .collectList()
                                     .map(instances -> {
