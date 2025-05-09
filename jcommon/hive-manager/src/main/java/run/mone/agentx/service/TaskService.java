@@ -91,6 +91,17 @@ public class TaskService {
     }
 
     /**
+     * 更新任务信息
+     *
+     * @param task 需要更新的任务实体
+     * @return 更新后的任务实体
+     */
+    public Mono<Task> updateTask(Task task) {
+        task.setUtime(System.currentTimeMillis());
+        return taskRepository.save(task);
+    }
+
+    /**
      * 执行任务
      *
      * @param taskExecutionInfo 任务执行信息

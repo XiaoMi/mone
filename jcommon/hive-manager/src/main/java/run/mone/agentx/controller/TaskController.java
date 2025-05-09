@@ -121,6 +121,55 @@ public class TaskController {
                     );
                     return ApiResponse.success(statusInfo);
                 })
-                .defaultIfEmpty(ApiResponse.error(404, "任务不存在: " + taskUuid));
+                .switchIfEmpty(Mono.defer(() -> {
+                    ApiResponse<Map<String, Object>> errorResponse = new ApiResponse<>(404, "任务不存在: " + taskUuid, null);
+                    return Mono.just(errorResponse);
+                }));
+    }
+    
+    /**
+     * 更新任务描述和服务器Agent ID接口
+     * @param user 当前认证用户
+     * @param taskUuid 任务UUID
+     * @param description 新的任务描述
+     * @param serverAgentId 新的服务器Agent ID
+     * @return 更新后的任务
+     */
+    @PutMapping("/{taskUuid}/update")
+    public Mono<ApiResponse<Task>> updateTaskDescriptionAndServerAgent(
+            @AuthenticationPrincipal User user,
+            @PathVariable String taskUuid,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long serverAgentId) {
+        
+        // 先检查任务是否存在
+        return taskService.findByTaskUuid(taskUuid)
+                .flatMap(task -> {
+                    // 检查当前用户是否有权限修改该任务
+                    if (!task.getUsername().equals(user.getUsername())) {
+                        return Mono.just(ApiResponse.<Task>error(403, "无权修改此任务"));
+                    }
+                    
+                    // 更新任务描述和服务器Agent ID
+                    if (description != null && !description.isEmpty()) {
+                        task.setDescription(description);
+                    }
+                    
+                    if (serverAgentId != null) {
+                        task.setServerAgentId(serverAgentId);
+                    }
+                    
+                    // 更新修改时间
+                    task.setUtime(System.currentTimeMillis());
+                    
+                    // 保存更新后的任务
+                    return taskService.updateTask(task)
+                            .map(ApiResponse::success)
+                            .onErrorResume(e -> {
+                                log.error("更新任务失败: {}", e.getMessage(), e);
+                                return Mono.just(ApiResponse.<Task>error(500, "更新任务失败: " + e.getMessage()));
+                            });
+                })
+                .switchIfEmpty(Mono.just(ApiResponse.<Task>error(404, "任务不存在: " + taskUuid)));
     }
 }
