@@ -97,7 +97,8 @@ public class AgentService {
 
         // Combine all sources and remove duplicates
         return Flux.concat(ownedAgents, publicAgents)
-                .distinct(Agent::getId);
+                .distinct(Agent::getId)
+                .sort((a1, a2) -> a2.getId().compareTo(a1.getId()));
     }
 
     /**
@@ -149,7 +150,8 @@ public class AgentService {
 
                         // 合并结果并去重
                         agentFlux = Flux.concat(userCreatedAgents, publicAgents)
-                                .distinct(Agent::getId);
+                                .distinct(Agent::getId)
+                                .sort((a1, a2) -> a2.getId().compareTo(a1.getId()));
                     } else {
                         agentFlux = findAccessibleAgents(userId);
                     }
