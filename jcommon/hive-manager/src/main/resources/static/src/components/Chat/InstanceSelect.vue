@@ -48,6 +48,8 @@ import { computed, ref, watch, watchEffect } from "vue";
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { useChatContextStore } from "@/stores/chat-context";
 import { Setting } from '@element-plus/icons-vue';
+import { getAgentConfigs, setBatchAgentConfig, type AgentConfig } from '@/api/agent';
+
 const { getInstance, setSelectedInstance } = useUserStore();
 const { setMessageList } = useChatContextStore();
 const selectedIp = ref('')
@@ -100,9 +102,31 @@ const handleClearHistory = () => {
 // 配置相关
 const configDialogVisible = ref(false);
 const configList = ref<Array<{key: string, value: string}>>([]);
+const loading = ref(false);
 
-const handleOpenConfig = () => {
-    configDialogVisible.value = true;
+const handleOpenConfig = async () => {
+    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
+    if (!selectedInstance?.agentId) {
+        ElMessage.error('未找到当前实例对应的Agent');
+        return;
+    }
+
+    loading.value = true;
+    try {
+        const response = await getAgentConfigs(selectedInstance.agentId);
+        if (response.data?.data) {
+            configList.value = response.data.data.map(config => ({
+                key: config.key,
+                value: config.value
+            }));
+        }
+        configDialogVisible.value = true;
+    } catch (error) {
+        ElMessage.error('获取配置失败');
+        console.error('获取配置失败:', error);
+    } finally {
+        loading.value = false;
+    }
 };
 
 const addConfig = () => {
@@ -116,22 +140,36 @@ const removeConfig = (index: number) => {
     configList.value.splice(index, 1);
 };
 
-const handleSubmitConfig = () => {
+const handleSubmitConfig = async () => {
     // 验证配置是否完整
     if (configList.value.some(item => !item.key || !item.value)) {
         ElMessage.warning('请填写完整的配置信息');
         return;
     }
 
-    // Mock API调用
+    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
+    if (!selectedInstance?.agentId) {
+        ElMessage.error('未找到当前实例对应的Agent');
+        return;
+    }
+
+    // 转换配置格式
     const config = configList.value.reduce((acc, curr) => {
         acc[curr.key] = curr.value;
         return acc;
     }, {} as Record<string, string>);
 
-    console.log('提交配置:', config);
-    ElMessage.success('配置更新成功');
-    configDialogVisible.value = false;
+    loading.value = true;
+    try {
+        await setBatchAgentConfig(selectedInstance.agentId, config);
+        ElMessage.success('配置更新成功');
+        configDialogVisible.value = false;
+    } catch (error) {
+        ElMessage.error('配置更新失败');
+        console.error('配置更新失败:', error);
+    } finally {
+        loading.value = false;
+    }
 };
 </script>
 
@@ -200,6 +238,8 @@ const handleSubmitConfig = () => {
 
 .config-list {
     margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .config-item {
