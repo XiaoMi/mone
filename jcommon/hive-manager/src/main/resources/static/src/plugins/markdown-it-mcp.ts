@@ -31,7 +31,10 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<attempt_completion>") ||
         mcpContent.includes("<ask_followup_question>") ||
         mcpContent.includes("<mcp>") ||
-        mcpContent.includes("<step>")
+        mcpContent.includes("<step>") ||
+        mcpContent.includes("<file>") ||
+        mcpContent.includes("<file_operation>") ||
+        mcpContent.includes("<execute>")
       )
     ) {
       return false;
@@ -120,6 +123,32 @@ export function markdownItMcp(md: MarkdownIt) {
                 <span>步骤</span>
               </div>
               <div class="step-content">`;
+        } else if (name === "file") {
+          html += `
+            <div class="file-block">
+              <div class="file-header">
+                <i class="fa-solid fa-file"></i>
+                <span>文件操作</span>
+              </div>
+              <div class="file-content">`;
+        } else if (name === "file_operation") {
+          html += `
+            <div class="file-operation-block">
+              <div class="file-operation-header">
+                <i class="fa-solid fa-file-code"></i>
+                <span>文件操作</span>
+              </div>
+              <div class="file-operation-content">`;
+        } else if (name === "execute") {
+          html += `
+            <div class="execute-block">
+              <div class="execute-header">
+                <i class="fa-solid fa-terminal"></i>
+                <span>执行命令</span>
+              </div>
+              <div class="execute-content">`;
+        } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
+          html += `<div class="${name}-section">`;
         } else {
           if (startCodeBlock) {
             accumulatedText += `<${name}>`
@@ -193,6 +222,14 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div>`;
         } else if (tagname === "step") {
           html += `</div></div>`;
+        } else if (tagname === "file") {
+          html += `</div></div>`;
+        } else if (tagname === "file_operation") {
+          html += `</div></div>`;
+        } else if (tagname === "execute") {
+          html += `</div></div>`;
+        } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
+          html += `</div>`;
         } else {
           // if (!isImplied) {
           //   html += md.utils.escapeHtml(`</${tagname}>`);

@@ -60,12 +60,13 @@ export interface Access {
 }
 
 // 获取Agent列表
-export const getAgentList = (name: string = "") => {
+export const getAgentList = (name: string = "", isFavorite: boolean = false) => {
   return Service<IResponse<{
     agent: Agent,
     instances: Array<any>
+    isFavorite: boolean
 }[]>>({
-    url: '/v1/agents/list?name='+name,
+    url: '/v1/agents/list?name='+name+'&isFavorite='+isFavorite,
     method: 'get'
   })
 }
@@ -101,6 +102,7 @@ export const getAgentDetail = (id: number) => {
   return Service<IResponse<{
     agent: Agent,
     instances: Array<any>
+    isFavorite: boolean
   }>>({
     url: `/v1/agents/${id}`,
     method: 'get'
@@ -188,6 +190,45 @@ export const offlineAgent = (data) => {
 export const clearHistory = (data) => {
   return Service<IResponse<string>>({
     url: `/v1/agents/clearHistory`,
+    method: 'post',
+    data
+  })
+}
+
+// 获取收藏列表
+export const favoriteList = (userId: number | string, type: number | string) => {
+  return Service<IResponse<{
+    agent: Agent,
+    instances: Array<any>
+    isFavorite: boolean
+}[]>>({
+    url: `/favorite/list?userId=${userId}&type=${type}`,
+    method: 'get',
+  })
+}
+
+
+// 添加收藏
+export const addFavorite = (data: {
+  userId: number | string
+  type: number | string
+  targetId: number | string
+}) => {
+  return Service<IResponse<string>>({
+    url: `/favorite/add`,
+    method: 'post',
+    data
+  })
+}
+
+// 删除收藏
+export const deleteFavorite = (data: {
+  userId: number | string
+  type: number | string
+  targetId: number | string
+}) => {
+  return Service<IResponse<string>>({
+    url: `/favorite/remove`,
     method: 'post',
     data
   })

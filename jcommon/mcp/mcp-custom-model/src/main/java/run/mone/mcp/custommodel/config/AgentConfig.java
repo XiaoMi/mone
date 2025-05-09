@@ -10,16 +10,12 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
-import run.mone.hive.roles.tool.SpeechToTextTool;
-import run.mone.hive.roles.tool.TextToSpeechTool;
-import run.mone.mcp.chat.tool.SystemInfoTool;
 import run.mone.mcp.custommodel.function.CustomModelFunction;
 
 /**
  * @author renqingfu
  * @Date 2025/5/7 16:20
  */
-
 @Configuration
 public class AgentConfig {
 
@@ -39,10 +35,8 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool(),
-                        new SpeechToTextTool(),
-                        new SystemInfoTool(),
-                        new TextToSpeechTool()))
+                        new AttemptCompletionTool())
+                        )
                 //mcp工具
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName), customModelFunction))
                 .build();

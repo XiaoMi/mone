@@ -7,8 +7,25 @@ type SupportedTag =
   | 'mcp_tool'
   | 'attempt_completion'
   | 'ask_followup_question'
+  | 'message'
   | 'mcp'
-  | 'step';
+  | 'command'
+  | 'step'
+  | 'result'
+  | 'question'
+  | 'server_name'
+  | 'tool_name'
+  | 'arguments'
+  | 'file'
+  | 'operation'
+  | 'path'
+  | 'content'
+  | 'r'
+  | 'file_operation'
+  | 'result'
+  | 'execute'
+  | 'working_directory'
+  | 'timeout';
 
 interface Position {
   line: number;    // 行号
@@ -50,7 +67,23 @@ export class SimpleHtmlParser {
       'ask_followup_question',
       'message',
       'mcp',
-      'step'
+      'command',
+      'step',
+      'result',
+      'question',
+      'server_name',
+      'tool_name',
+      'arguments',
+      'file',
+      'operation',
+      'path',
+      'content',
+      'r',
+      'file_operation',
+      'result',
+      'execute',
+      'working_directory',
+      'timeout'
     ]);
   }
 
@@ -61,7 +94,7 @@ export class SimpleHtmlParser {
     } else {
       this.column++;
     }
-    this.offset++;
+    this.offset += char.length;
   }
 
   private getPosition(): Position {
@@ -74,11 +107,12 @@ export class SimpleHtmlParser {
 
   private parseAttributes(attributeString: string): Record<string, string> {
     const attributes: Record<string, string> = {};
-    const regex = /(\w+)="([^"]*)"/g;
+    const regex = /([a-zA-Z][\w-]*)(=(['"])([^'"]*)\3)?/g;
     let match;
 
     while ((match = regex.exec(attributeString)) !== null) {
-      attributes[match[1]] = match[2];
+      const [, name, , , value] = match;
+      attributes[name] = value || '';
     }
 
     return attributes;
@@ -141,6 +175,16 @@ export class SimpleHtmlParser {
 
             i += endTagMatch[0].length;
             continue;
+          } else {
+            // 处理不完整的结束标签
+            this.handleText('<', {
+              start: startPos,
+              end: this.getPosition(),
+              source: '<'
+            });
+            this.updatePosition('<');
+            i++;
+            continue;
           }
         } else {
           // 处理开始标签
@@ -163,6 +207,16 @@ export class SimpleHtmlParser {
             });
 
             i += startTagMatch[0].length;
+            continue;
+          } else {
+            // 处理不完整的开始标签
+            this.handleText('<', {
+              start: startPos,
+              end: this.getPosition(),
+              source: '<'
+            });
+            this.updatePosition('<');
+            i++;
             continue;
           }
         }

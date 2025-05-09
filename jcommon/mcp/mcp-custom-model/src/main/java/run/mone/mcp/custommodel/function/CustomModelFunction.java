@@ -1,10 +1,9 @@
 package run.mone.mcp.custommodel.function;
 
 import java.util.Map;
-import java.util.function.Function;
 import java.util.ArrayList;
 import java.util.List;
-import com.google.gson.Gson;
+
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,7 +17,24 @@ import run.mone.mcp.custommodel.service.CustomModelService;
 @Slf4j
 @Component
 public class CustomModelFunction implements McpFunction {
-    private static final Gson gson = new Gson();
+
+    private static final String TOOL_SCHEMA = """
+            {
+              "type": "object",
+              "properties": {
+                "user_message": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["intent", "normalize"],
+                  "default": "intent",
+                  "description": "当用户要进行分类，请使用intent；当将用户的问题进行标准化时，请选择normalize"
+                }
+              },
+              "required": ["user_message"]
+            }
+            """;
     
     @Autowired
     private CustomModelService customModelService;
@@ -66,26 +82,8 @@ public class CustomModelFunction implements McpFunction {
         });
     }
 
-    public String getToolSchema() {
-        Map<String, Object> schema = Map.of(
-            "type", "object",
-            "properties", Map.of(
-                "user_message", Map.of("type", "string"),
-                "type", Map.of(
-                    "type", "string",
-                    "enum", new String[]{"intent", "normalize"},
-                    "default", "intent",
-                    "description", "当用户要进行分类，使用intent；其他会话则使用normalize"
-                )
-            ),
-            "required", new String[]{"user_message"}
-        );
-
-        return gson.toJson(schema);
-    }
-
     @Override
     public String getToolScheme() {
-        return getToolSchema();
+        return TOOL_SCHEMA;
     }
 }

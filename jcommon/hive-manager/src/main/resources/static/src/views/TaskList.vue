@@ -64,6 +64,12 @@
               >
                 执行
               </button>
+              <button 
+                class="edit-btn" 
+                @click.stop="handleEdit(task)"
+              >
+                修改
+              </button>
             </div>
           </div>
         </TransitionGroup>
@@ -81,24 +87,65 @@
       v-model="dialogVisible"
       @submit="handleSubmit"
     />
+
+    <el-dialog
+      v-model="editDialogVisible"
+      title="修改任务"
+      width="400px"
+    >
+      <el-form :model="editForm" label-width="100px">
+        <el-form-item label="任务描述">
+          <el-input v-model="editForm.description"></el-input>
+        </el-form-item>
+        <el-form-item label="Agent">
+          <el-select v-model="editForm.serverAgentId" placeholder="请选择">
+            <el-option
+              v-for="item in agentList"
+              :key="item.agent.id"
+              :label="item.agent.name"
+              :value="item.agent.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleEditSubmit">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTaskById, createTask, getTaskList, executeTask } from '@/api/task'
+import { getTaskById, createTask, getTaskList, executeTask, updateTask } from '@/api/task'
 import type { Task, CreateTaskRequest } from '@/api/task'
 import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
 import CreateTaskDialog from '@/components/CreateTaskDialog.vue'
 import { useRoute } from 'vue-router'
+import { getAgentList } from '@/api/agent'
 
 const taskList = ref<Task[]>([])
 const loading = ref(false)
 const drawerVisible = ref(false)
 const selectedTask = ref<Task | null>(null)
 const dialogVisible = ref(false)
+const editDialogVisible = ref(false)
 const route = useRoute()
+const editForm = ref<CreateTaskRequest>({
+  taskUuid: '',
+  clientAgentId: null,
+  serverAgentId: null,
+  skillId: null,
+  title: '',
+  description: '',
+  status: ''
+})
+const agentList = ref<any[]>([])
 
 // 获取任务列表
 const fetchTasks = async () => {
@@ -174,6 +221,26 @@ const handleExecute = async (task: Task) => {
   }
 }
 
+const handleEdit = (task: Task) => {
+  editForm.value = { ...task }
+  editDialogVisible.value = true
+}
+
+const handleEditSubmit = async () => {
+  try {
+    const response = await updateTask(editForm.value)
+    if (response.data.code === 200) {
+      ElMessage.success('任务更新成功')
+      editDialogVisible.value = false
+      fetchTasks()
+    } else {
+      ElMessage.error(response.data.message)
+    }
+  } catch {
+    ElMessage.error('更新任务失败')
+  }
+}
+
 const formatDate = (date: string) => {
   return new Date(date).toLocaleString()
 }
@@ -188,8 +255,23 @@ const getStatusType = (status: string) => {
   return statusMap[status] || 'info'
 }
 
+// 获取Agent列表
+const fetchAgentList = async () => {
+  try {
+    const response = await getAgentList()
+    if (response.data.code === 200) {
+      agentList.value = response.data.data || []
+    } else {
+      ElMessage.error(response.data.message)
+    }
+  } catch {
+    ElMessage.error('获取Agent列表失败')
+  }
+}
+
 onMounted(() => {
   fetchTasks()
+  fetchAgentList()
 })
 </script>
 
@@ -637,5 +719,22 @@ onMounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
   background: #666;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: #0d1117;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-left: 10px;
+}
+
+.edit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
 }
 </style>

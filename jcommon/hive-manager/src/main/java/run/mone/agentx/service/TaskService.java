@@ -91,6 +91,17 @@ public class TaskService {
     }
 
     /**
+     * 更新任务信息
+     *
+     * @param task 需要更新的任务实体
+     * @return 更新后的任务实体
+     */
+    public Mono<Task> updateTask(Task task) {
+        task.setUtime(System.currentTimeMillis());
+        return taskRepository.save(task);
+    }
+
+    /**
      * 执行任务
      *
      * @param taskExecutionInfo 任务执行信息
@@ -137,7 +148,7 @@ public class TaskService {
 
                 // 获取可能的服务Agent ID
                 Long serverAgentId = null;
-                if (metadata != null && metadata.containsKey("serverAgentId")) {
+                if (metadata != null && metadata.containsKey("serverAgentId") && null != metadata.get("serverAgentId")) {
                     serverAgentId = Long.valueOf(metadata.get("serverAgentId").toString());
                 }
 
@@ -194,7 +205,9 @@ public class TaskService {
 
                     log.info("serviceName:{}", serviceName);
 
-                    mcpRequest.setMapData(ImmutableMap.of("outerTag", "use_mcp_tool", "server_name", serviceName, "tool_name", "stream_yuer_chat", "arguments", arguments.toString()));
+                    String toolName = "stream_%s_chat".formatted(selectedAgent.getAgent().getName());
+
+                    mcpRequest.setMapData(ImmutableMap.of("outerTag", "use_mcp_tool", "server_name", serviceName, "tool_name", toolName, "arguments", arguments.toString()));
 
                     ToolDataInfo result = new ToolDataInfo("mcp_request", mcpRequest.getMapData());
 
