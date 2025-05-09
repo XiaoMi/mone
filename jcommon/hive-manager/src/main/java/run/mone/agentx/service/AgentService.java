@@ -8,12 +8,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.dto.AgentQueryRequest;
+import run.mone.agentx.dto.enums.FavoriteType;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentAccess;
 import run.mone.agentx.entity.AgentInstance;
+import run.mone.agentx.entity.Favorite;
 import run.mone.agentx.repository.AgentAccessRepository;
 import run.mone.agentx.repository.AgentInstanceRepository;
 import run.mone.agentx.repository.AgentRepository;
+import run.mone.agentx.repository.FavoriteRepository;
 import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
@@ -28,6 +31,8 @@ import run.mone.hive.schema.AiMessage;
 import java.util.concurrent.TimeUnit;
 import java.util.UUID;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static run.mone.hive.llm.ClaudeProxy.*;
 
@@ -37,6 +42,7 @@ public class AgentService {
     private final AgentRepository agentRepository;
     private final AgentAccessRepository agentAccessRepository;
     private final AgentInstanceRepository agentInstanceRepository;
+    private final FavoriteRepository favoriteRepository;
 
     private static final long HEARTBEAT_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
     private static final long HEARTBEAT_DELETE_TIMEOUT = TimeUnit.MINUTES.toMillis(10);
@@ -120,33 +126,51 @@ public class AgentService {
      * @return 包含AgentInstance列表的Agent流
      */
     public Flux<AgentWithInstancesDTO> findAccessibleAgentsWithInstances(Long userId, AgentQueryRequest query) {
-        Flux<Agent> agentFlux;
-        if (query != null && query.getName() != null && !query.getName().isEmpty()) {
-            // 获取用户创建的agents（带名称过滤）
-            Flux<Agent> userCreatedAgents = agentRepository.findByCreatedByAndNameContainingIgnoreCase(userId, query.getName())
-                    .filter(agent -> agent.getState() == 1);
+        // 获取用户收藏的所有Agent ID
+        return favoriteRepository.findByUserIdAndType(userId.intValue(), FavoriteType.AGENT.getCode())
+                .collectList()
+                .flatMapMany(favorites -> {
+                    // 将收藏的Agent ID转换为Set，方便快速查找
+                    Set<Integer> favoriteAgentIds = favorites.stream()
+                            .map(Favorite::getTargetId)
+                            .collect(Collectors.toSet());
+                    
+                    // 构建Agent查询
+                    Flux<Agent> agentFlux;
+                    if (query != null && query.getName() != null && !query.getName().isEmpty()) {
+                        // 获取用户创建的agents（带名称过滤）
+                        Flux<Agent> userCreatedAgents = agentRepository.findByCreatedByAndNameContainingIgnoreCase(userId, query.getName())
+                                .filter(agent -> agent.getState() == 1);
 
-            // 获取公开的agents（带名称过滤）
-            Flux<Agent> publicAgents = agentRepository.findByNameContainingIgnoreCase(query.getName())
-                    .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()))
-                    .filter(agent -> agent.getState() == 1);
+                        // 获取公开的agents（带名称过滤）
+                        Flux<Agent> publicAgents = agentRepository.findByNameContainingIgnoreCase(query.getName())
+                                .filter(agent -> Boolean.TRUE.equals(agent.getIsPublic()))
+                                .filter(agent -> agent.getState() == 1);
 
-            // 合并结果并去重
-            agentFlux = Flux.concat(userCreatedAgents, publicAgents)
-                    .distinct(Agent::getId);
-        } else {
-            agentFlux = findAccessibleAgents(userId);
-        }
+                        // 合并结果并去重
+                        agentFlux = Flux.concat(userCreatedAgents, publicAgents)
+                                .distinct(Agent::getId);
+                    } else {
+                        agentFlux = findAccessibleAgents(userId);
+                    }
 
-        return agentFlux
-                .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
-                        .collectList()
-                        .map(instances -> {
-                            AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
-                            dto.setAgent(agent);
-                            dto.setInstances(instances);
-                            return dto;
-                        }));
+                    // 如果设置了收藏筛选
+                    if (query != null && Boolean.TRUE.equals(query.getIsFavorite())) {
+                        agentFlux = agentFlux.filter(agent -> favoriteAgentIds.contains(agent.getId().intValue()));
+                    }
+
+                    // 设置收藏状态并返回结果
+                    return agentFlux
+                            .flatMap(agent -> agentInstanceRepository.findByAgentId(agent.getId())
+                                    .collectList()
+                                    .map(instances -> {
+                                        AgentWithInstancesDTO dto = new AgentWithInstancesDTO();
+                                        dto.setAgent(agent);
+                                        dto.setInstances(instances);
+                                        dto.setIsFavorite(favoriteAgentIds.contains(agent.getId().intValue()));
+                                        return dto;
+                                    }));
+                });
     }
 
     public Mono<Agent> updateAgent(Agent agent) {
