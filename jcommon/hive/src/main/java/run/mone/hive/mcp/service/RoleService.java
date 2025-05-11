@@ -106,10 +106,10 @@ public class RoleService {
 
     private void createDefaultAgent() {
         if (delay == 0) {
-            Safe.run(() -> this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT));
+            Safe.run(() -> this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT, "", ""));
         } else {
             Safe.run(() -> Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-                this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT);
+                this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT, "", "");
             }, delay, TimeUnit.SECONDS));
         }
     }
@@ -175,7 +175,7 @@ public class RoleService {
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
         if (!roleMap.containsKey(from)) {
-            roleMap.putIfAbsent(from, createRole(from, message.getClientId()));
+            roleMap.putIfAbsent(from, createRole(message));
         }
         ReactorRole role = roleMap.get(from);
         return Flux.create(sink -> {
