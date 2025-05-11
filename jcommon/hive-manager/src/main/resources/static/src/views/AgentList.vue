@@ -205,6 +205,9 @@ import Instances from '@/components/Instances.vue'
 import { useUserStore } from '@/stores/user'
 
 const {user} = useUserStore()
+
+import { useTheme } from '@/styles/theme/useTheme'
+
 const agentList = ref<{
   agent: Agent,
   instances: Array<any>
@@ -228,6 +231,9 @@ const imageFile = ref<File | null>(null)
 const searchQuery = ref('')
 const searchTimeout = ref<number | null>(null)
 const agentType = ref('0')
+
+// 获取主题
+const { currentTheme } = useTheme()
 
 const fetchAgents = async () => {
   loading.value = true
@@ -435,8 +441,8 @@ onMounted(() => {
 .agent-list-container {
   width: 100%;
   min-height: 100vh;
-  background: #0d1117;
-  color: #fff;
+  background: var(--el-color-chat-background);
+  color: var(--el-color-chat-text);
   padding: 12px 20px;
   position: relative;
   overflow: hidden;
@@ -449,8 +455,8 @@ onMounted(() => {
   right: 0;
   bottom: 0;
   background-image:
-    linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
+    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: gridMove 20s linear infinite;
   transform-origin: center;
@@ -492,14 +498,9 @@ onMounted(() => {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(
-    90deg,
-    #00f0ff 0%,
-    #b400ff 50%,
-    #00f0ff 100%
-  );
+  background: var(--el-color-chat-link-color);
   animation: progressLine 3s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 10px var(--el-color-chat-link-color);
 }
 
 @keyframes progressLine {
@@ -533,10 +534,7 @@ onMounted(() => {
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1.6rem;
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--el-color-chat-link-color);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -584,21 +582,22 @@ onMounted(() => {
 
 .search-bar input {
   width: 100%;
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  padding: 12px 20px;
+  background: var(--el-color-chat-window-background);
+  border: 1px solid var(--el-color-chat-link-color);
   border-radius: 8px;
-  color: #fff;
+  color: var(--el-color-chat-text);
   font-size: 16px;
   transition: all 0.3s ease;
   outline: none;
 }
 
 .search-bar input:focus {
-  border-color: #00f0ff;
-  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.2),
-              0 0 15px rgba(0, 240, 255, 0.2),
-              0 0 30px rgba(0, 240, 255, 0.1);
-  background: rgba(13, 17, 23, 0.9);
+  border-color: var(--el-color-chat-link-color);
+  box-shadow: 0 0 0 2px var(--el-color-chat-link-color-light),
+              0 0 15px var(--el-color-chat-link-color-light),
+              0 0 30px var(--el-color-chat-link-color-light);
+  background: var(--el-color-chat-window-background);
 }
 
 .search-bar::after {
@@ -608,7 +607,7 @@ onMounted(() => {
   left: 50%;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #00f0ff, transparent);
+  background: var(--el-color-chat-link-color);
   transform: translateX(-50%);
   transition: width 0.3s ease;
 }
@@ -643,11 +642,11 @@ onMounted(() => {
 }
 
 .create-btn {
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-chat-link-color);
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
-  color: #0d1117;
+  color: var(--el-color-white);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -655,12 +654,12 @@ onMounted(() => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px var(--el-color-chat-link-color-light);
 }
 
 .agent-card {
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  background: var(--el-color-chat-window-background);
+  border: 1px solid var(--el-color-chat-link-color);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -676,8 +675,8 @@ onMounted(() => {
 
 .agent-card:hover {
   transform: translateX(4px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  border-color: var(--el-color-chat-link-color);
+  box-shadow: 0 0 20px var(--el-color-chat-link-color-light);
 }
 
 .agent-info {
@@ -697,7 +696,7 @@ onMounted(() => {
   height: 50px;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-chat-link-color);
 }
 
 .agent-logo {
@@ -723,7 +722,7 @@ onMounted(() => {
 .agent-details h4 {
   font-size: 18px;
   margin-bottom: 5px;
-  color: #63f5ff;
+  color: var(--el-color-chat-link-color);
   position: relative;
   display: inline-block;
 }
@@ -735,15 +734,12 @@ onMounted(() => {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  background: var(--el-color-chat-link-color);
   transition: width 0.3s ease;
 }
 
 .agent-details h4:hover {
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--el-color-chat-link-color-light);
 }
 
 .agent-details h4:hover::after {
@@ -751,7 +747,7 @@ onMounted(() => {
 }
 
 .agent-details p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--el-color-chat-text-secondary);
   font-size: 14px;
 }
 
@@ -773,13 +769,13 @@ onMounted(() => {
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--el-color-chat-window-background);
 }
 
 .badge.public {
-  background: rgba(0, 240, 255, 0.1);
-  color: #00f0ff;
-  border: 1px solid #00f0ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .control-buttons {
@@ -796,21 +792,21 @@ onMounted(() => {
 }
 
 .edit-btn {
-  background: rgba(0, 240, 255, 0.1);
-  color: #00f0ff;
-  border: 1px solid #00f0ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .delete-btn {
-  background: rgba(255, 85, 85, 0.1);
-  color: #ff5555;
-  border: 1px solid #ff5555;
+  background: var(--el-color-danger-light);
+  color: var(--el-color-danger);
+  border: 1px solid var(--el-color-danger);
 }
 
 .task-btn {
-  background: rgba(180, 0, 255, 0.1);
-  color: #b400ff;
-  border: 1px solid #b400ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 @keyframes scan {
@@ -848,15 +844,15 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #00f0ff;
+  color: var(--el-color-chat-link-color);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
   margin-bottom: 16px;
-  border: 3px solid rgba(0, 240, 255, 0.1);
-  border-top: 3px solid #00f0ff;
+  border: 3px solid var(--el-color-chat-link-color-light);
+  border-top: 3px solid var(--el-color-chat-link-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -870,13 +866,13 @@ onMounted(() => {
   position: absolute;
   width: 6px;
   height: 6px;
-  background: #00f0ff;
+  background: var(--el-color-chat-link-color);
   border-radius: 50%;
   filter: blur(1px);
   box-shadow:
-    0 0 10px #00f0ff,
-    0 0 20px #00f0ff,
-    0 0 30px rgba(0, 240, 255, 0.5);
+    0 0 10px var(--el-color-chat-link-color),
+    0 0 20px var(--el-color-chat-link-color),
+    0 0 30px var(--el-color-chat-link-color-light);
   opacity: 0;
   z-index: 0;
   &::before {
@@ -887,7 +883,7 @@ onMounted(() => {
     transform: translate(-50%, -50%);
     width: 12px;
     height: 12px;
-    background: rgba(0, 240, 255, 0.3);
+    background: var(--el-color-chat-link-color-light);
     border-radius: 50%;
     filter: blur(2px);
   }
@@ -900,8 +896,8 @@ onMounted(() => {
     height: 2px;
     background: linear-gradient(
       270deg,
-      rgba(0, 240, 255, 0.8),
-      rgba(0, 240, 255, 0)
+      var(--el-color-chat-link-color),
+      var(--el-color-chat-link-color-light)
     );
     transform-origin: right center;
     transform: translateY(-50%);
