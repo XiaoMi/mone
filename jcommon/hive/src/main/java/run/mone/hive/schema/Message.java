@@ -41,6 +41,10 @@ public class Message implements Serializable {
 
     private String voiceBase64;
 
+    private String userId;
+
+    private String agentId;
+
     public Message(String content) {
         this(content, "user", null, null);
     }

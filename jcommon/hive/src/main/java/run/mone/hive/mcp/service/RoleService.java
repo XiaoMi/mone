@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -23,6 +24,7 @@ import run.mone.hive.utils.NetUtils;
 import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -112,7 +114,17 @@ public class RoleService {
         }
     }
 
-    public ReactorRole createRole(String owner, String clientId) {
+    public ReactorRole createRole(Message message) {
+        String owner = message.getSentFrom().toString();
+        String clientId = message.getClientId();
+        String userId = message.getUserId();
+        String agentId = message.getAgentId();
+
+        return createRole(owner, clientId, userId, agentId);
+    }
+
+    public ReactorRole createRole(String owner, String clientId, String userId, String agentId) {
+        log.info("create role owner:{} clientId:{}", owner, clientId);
         if (!owner.equals(Const.DEFAULT)) {
             this.clientMap.put(clientId, clientId);
         }
@@ -139,14 +151,19 @@ public class RoleService {
                 }
             }
         };
+
+
         role.setFunctionList(this.functionList);
         role.setOwner(owner);
         role.setClientId(clientId);
 
-        if (null != roleMeta) {
-            role.setProfile(roleMeta.getProfile());
-            role.setGoal(roleMeta.getGoal());
-            role.setConstraints(roleMeta.getConstraints());
+        role.setProfile(roleMeta.getProfile());
+        role.setGoal(roleMeta.getGoal());
+        role.setConstraints(roleMeta.getConstraints());
+
+        if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+            Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+            role.setRoleConfig(configMap);
         }
 
         //一直执行不会停下来

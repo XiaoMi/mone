@@ -46,12 +46,16 @@ public class McpController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "用户没有权限访问该Agent");
         }
 
-        ToolDataInfo result = new ToolDataInfo("mcp_request", request.getMapData());
-        result.setFrom("hive_manager");
+        String agentId = String.valueOf(request.getAgentId());
+
+        ToolDataInfo dataInfo = new ToolDataInfo("mcp_request", request.getMapData());
+        dataInfo.setFrom("hive_manager");
+        dataInfo.setUserId(String.valueOf(user.getId()));
+        dataInfo.setAgentId(agentId);
         // 使用Flux.create创建消息流
         return Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
-            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), dataInfo, sink);
             sink.onDispose(() -> log.info("call mcp finish"));
             sink.complete();
         }));

@@ -2,6 +2,7 @@ package run.mone.agentx.controller;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +27,7 @@ import run.mone.agentx.dto.AgentQueryRequest;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.User;
+import run.mone.agentx.service.AgentConfigService;
 import run.mone.agentx.service.AgentService;
 import run.mone.agentx.service.McpService;
 import run.mone.hive.bo.HealthInfo;
@@ -41,6 +43,8 @@ public class AgentController {
     private final AgentService agentService;
 
     private final McpService mcpService;
+
+    private final AgentConfigService agentConfigService;
 
     @PostMapping("/create")
     public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
@@ -153,5 +157,19 @@ public class AgentController {
             @RequestParam String accessKey) {
         return agentService.hasAccess(id, accessApp, accessKey)
                 .map(ApiResponse::success);
+    }
+
+    @PostMapping("/config")
+    public Mono<ApiResponse<Map<String, String>>> getAgentConfig(@RequestBody Map<String, Long> request) {
+        Long agentId = request.get("agentId");
+        Long userId = request.get("userId");
+
+        if (agentId == null || userId == null) {
+            return Mono.just(ApiResponse.error(400, "Missing required parameters: agentId and userId"));
+        }
+
+        return agentConfigService.getUserConfigsAsMap(agentId, userId)
+                .map(ApiResponse::success)
+                .defaultIfEmpty(ApiResponse.success(Map.of()));
     }
 }

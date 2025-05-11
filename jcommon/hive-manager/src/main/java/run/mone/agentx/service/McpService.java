@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.AgentInstance;
+import run.mone.agentx.entity.User;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
 import run.mone.agentx.utils.AgentKeyUtils;
 import run.mone.hive.common.McpResult;
@@ -33,7 +34,7 @@ public class McpService {
     private ReentrantLock lock = new ReentrantLock();
 
 
-    public McpResult callMcp(String userName, Long agentId, AgentInstance instance, ToolDataInfo it, FluxSink sink) {
+    public McpResult callMcp(String userName, Long agentId, AgentInstance instance, ToolDataInfo toolDataInfo, FluxSink sink) {
         log.info("user:{} call mcp tool", userName);
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
 
@@ -56,7 +57,7 @@ public class McpService {
         }
 
         // 调用MCP
-        return MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
+        return MonerMcpClient.mcpCall(toolDataInfo, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {

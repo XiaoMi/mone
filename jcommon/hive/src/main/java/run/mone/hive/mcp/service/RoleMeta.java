@@ -8,7 +8,9 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.tool.ITool;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com

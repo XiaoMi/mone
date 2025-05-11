@@ -161,11 +161,9 @@ public class HiveManagerService {
      * 发送心跳
      */
     public void heartbeat(HealthInfo healthInfo) {
-
         if (!enableRegHiveManager) {
             return;
         }
-
         try {
             String currentToken = token.get();
             if (currentToken == null) {
@@ -292,6 +290,80 @@ public class HiveManagerService {
             log.error("Error during getting task status: {}", e.getMessage(), e);
             return taskStatusCache.get(taskId);
         }
+    }
+
+    /**
+     * 获取配置信息
+     *
+     * @param request 包含agentId和userId的请求参数Map
+     * @return 配置信息映射
+     */
+    public Map<String, String> getConfig(Map<String, String> request) {
+        if (!enableRegHiveManager) {
+            // 如果未启用HiveManager，返回默认配置
+            return getDefaultConfig(request);
+        }
+
+        try {
+            String currentToken = token.get();
+            if (currentToken == null) {
+                log.warn("No token available, attempting to login first");
+                login();
+                currentToken = token.get();
+                if (currentToken == null) {
+                    log.error("Failed to obtain token for getting config");
+                    return getDefaultConfig(request);
+                }
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + currentToken);
+
+            HttpEntity<Map<String, String>> httpRequest = new HttpEntity<>(request, headers);
+
+            String configUrl = baseUrl + "/api/v1/agents/config";
+            Map<String, Object> response = restTemplate.postForObject(configUrl, httpRequest, Map.class);
+
+            log.info("Config retrieval response: {}", response);
+
+            if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
+                Map<String, Object> data = (Map<String, Object>) response.get("data");
+                Map<String, String> configs = new HashMap<>();
+                // 将 Object 类型的值转换为 String 类型
+                for (Map.Entry<String, Object> entry : data.entrySet()) {
+                    configs.put(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+                return configs;
+            } else {
+                log.error("Invalid response format for config: {}", response);
+                return getDefaultConfig(request);
+            }
+        } catch (Exception e) {
+            log.error("Error during getting config: {}", e.getMessage(), e);
+            return getDefaultConfig(request);
+        }
+    }
+
+    /**
+     * 获取默认配置信息
+     * 当无法从HiveManager获取配置时使用
+     *
+     * @param request 包含agentId和userId的请求参数Map
+     * @return 默认配置信息映射
+     */
+    private Map<String, String> getDefaultConfig(Map<String, String> request) {
+        Map<String, String> defaultConfig = new HashMap<>();
+        // 从请求中获取agentId和userId
+        if (request.containsKey("agentId")) {
+            defaultConfig.put("agentId", String.valueOf(request.get("agentId")));
+        }
+        if (request.containsKey("userId")) {
+            defaultConfig.put("userId", String.valueOf(request.get("userId")));
+        }
+        defaultConfig.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        log.info("Using default config for request: {}", request);
+        return defaultConfig;
     }
 
     /**

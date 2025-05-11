@@ -13,6 +13,10 @@ public class ToolDataInfo {
 
     private String from;
 
+    private String userId;
+
+    private String agentId;
+
     public ToolDataInfo(String tag, Map<String, String> keyValuePairs) {
         this.tag = tag;
         this.keyValuePairs = keyValuePairs;
