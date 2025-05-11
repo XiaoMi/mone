@@ -5,6 +5,7 @@ export interface ThemeColors {
   danger: string
   info: string
   background: string
+  backgroundGradient: string
   textPrimary: string
   textRegular: string
   textSecondary: string

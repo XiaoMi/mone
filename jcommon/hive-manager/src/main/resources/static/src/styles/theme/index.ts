@@ -9,6 +9,7 @@ export const lightTheme: ThemeConfig = {
     danger: '#F56C6C',
     info: '#909399',
     background: '#ffffff',
+    backgroundGradient: 'linear-gradient(135deg, #ffffff 0%, #c3cfe2 100%)',
     textPrimary: '#303133',
     textRegular: '#606266',
     textSecondary: '#909399',
@@ -46,6 +47,7 @@ export const darkTheme: ThemeConfig = {
     danger: '#F56C6C',
     info: '#909399',
     background: '#141414',
+    backgroundGradient: 'linear-gradient(135deg, #141414 0%, #2d3436 100%)',
     textPrimary: '#FFFFFF',
     textRegular: '#E5EAF3',
     textSecondary: '#CFD3DC',
@@ -83,6 +85,7 @@ export const cyberpunkTheme: ThemeConfig = {
     danger: '#ff003c',
     info: '#b6b6b6',
     background: '#0d1117',
+    backgroundGradient: 'linear-gradient(135deg, rgb(0, 240, 255), rgb(180, 0, 255))',
     textPrimary: '#ffffff',
     textRegular: '#e1e1e1',
     textSecondary: '#888888',
@@ -92,8 +95,6 @@ export const cyberpunkTheme: ThemeConfig = {
     fillColor: 'rgba(22, 27, 34, 0.4)',
     fillColorLight: 'rgba(22, 27, 34, 0.6)',
     fillColorLighter: 'rgba(22, 27, 34, 0.8)',
-    //
-    agentChatLinkColor: 'linear-gradient(135deg, rgb(0, 240, 255), rgb(180, 0, 255))',
 
     // 聊天界面
     chatBackground: '#0f0f23',
