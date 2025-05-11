@@ -291,6 +291,7 @@ onMounted(() => {
 <style scoped>
 .login-container {
   display: flex;
+  flex: 1;
   justify-content: center;
   align-items: center;
   min-height: 100vh;

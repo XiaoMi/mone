@@ -69,6 +69,7 @@ import { mapState } from "pinia";
 import { useEditStore } from "@/stores/edit";
 import util from "@/libs/util";
 import InstanceSelect from "./InstanceSelect.vue";
+
 export default {
   components: {
     MessageList,
@@ -176,7 +177,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
 .sc-chat-window {
   height: 80vh;
   background: rgba(15, 15, 35, 0.7);
@@ -189,21 +190,21 @@ export default {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-}
 
-.sc-chat-window::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff);
-  background-size: 400%;
-  z-index: -1;
-  border-radius: 16px;
-  opacity: 0.7;
-  animation: glowing-border 20s linear infinite;
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff);
+    background-size: 400%;
+    z-index: -1;
+    border-radius: 16px;
+    opacity: 0.7;
+    animation: glowing-border 20s linear infinite;
+  }
 }
 
 @keyframes glowing-border {

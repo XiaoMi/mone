@@ -10,8 +10,8 @@
       </div>
       <div class="header-actions">
         <div class="search-bar">
-          <el-input 
-            type="text" 
+          <el-input
+            type="text"
             size="large"
             v-model="searchQuery"
             @input="handleSearch"
@@ -59,16 +59,16 @@
               <button v-if="agentType === '0'" class="create-btn" @click="handleCreate">创建 AGENT</button>
             </div>
           </div>
-          
-          <div v-for="item in agentList" 
-               :key="item.agent.id" 
+
+          <div v-for="item in agentList"
+               :key="item.agent.id"
                class="agent-card"
                @click.stop="handleChat(item)">
             <div class="agent-info">
               <div class="agent-avatar">
-                <img v-if="item.agent.image" 
-                     :src="`data:image/jpeg;base64,${item.agent.image}`" 
-                     class="agent-logo" 
+                <img v-if="item.agent.image"
+                     :src="`data:image/jpeg;base64,${item.agent.image}`"
+                     class="agent-logo"
                      alt="agent logo"/>
                 <div v-else class="agent-logo-placeholder">
                   {{ item.agent.name.charAt(0).toUpperCase() }}
@@ -141,21 +141,21 @@
     >
       <el-form :model="agentForm" label-width="80px">
         <el-form-item label="名称">
-          <el-input 
-            v-model="agentForm.name" 
+          <el-input
+            v-model="agentForm.name"
             placeholder="请输入Agent名称"
           />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input 
-            v-model="agentForm.description" 
-            type="textarea" 
+          <el-input
+            v-model="agentForm.description"
+            type="textarea"
             placeholder="请输入Agent描述信息"
           />
         </el-form-item>
         <el-form-item label="Agent URL">
-          <el-input 
-            v-model="agentForm.agentUrl" 
+          <el-input
+            v-model="agentForm.agentUrl"
             placeholder="请输入Agent的URL地址"
           />
         </el-form-item>
@@ -351,7 +351,7 @@ const handleTask = (agent: Agent) => {
 }
 
 const handleChat = (item: any) => {
-  if(item.instances?.length > 0) {  
+  if(item.instances?.length > 0) {
     window.open(`/agent-manager/chat?serverAgentId=${item.agent.id}&conversationId=${uuidv4()}`, '_blank')
   } else {
     ElMessage.warning('Agent未启动')
@@ -389,7 +389,7 @@ const handleSearch = () => {
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value)
   }
-  
+
   // 设置新的定时器实现防抖
   searchTimeout.value = setTimeout(() => {
     fetchAgents()
@@ -404,7 +404,7 @@ const handleFavorite = async (item: {agent: Agent, isFavorite: boolean}, event: 
       type: 1,
       targetId: item.agent.id
     }
-    
+
     if (item.isFavorite) {
       const response = await deleteFavorite(data)
       if (response.data.code === 200) {
@@ -433,6 +433,7 @@ onMounted(() => {
 
 <style scoped>
 .agent-list-container {
+  width: 100%;
   min-height: 100vh;
   background: #0d1117;
   color: #fff;
@@ -447,7 +448,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -830,12 +831,12 @@ onMounted(() => {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .header-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .search-bar {
     width: 100%;
   }
@@ -872,7 +873,7 @@ onMounted(() => {
   background: #00f0ff;
   border-radius: 50%;
   filter: blur(1px);
-  box-shadow: 
+  box-shadow:
     0 0 10px #00f0ff,
     0 0 20px #00f0ff,
     0 0 30px rgba(0, 240, 255, 0.5);

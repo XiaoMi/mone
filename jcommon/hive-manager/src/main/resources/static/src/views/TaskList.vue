@@ -26,9 +26,9 @@
               <button class="create-btn" @click="handleCreate">+ 创建任务</button>
             </div>
           </div>
-          
-          <div v-for="task in taskList" 
-               :key="task.id" 
+
+          <div v-for="task in taskList"
+               :key="task.id"
                class="task-card"
                @click="handleShowDetail(task)">
             <div class="task-info">
@@ -57,8 +57,8 @@
             </div>
 
             <div class="task-actions">
-              <button 
-                class="execute-btn" 
+              <button
+                class="execute-btn"
                 @click.stop="handleExecute(task)"
                 :disabled="task.status === 'running'"
               >
@@ -277,6 +277,7 @@ onMounted(() => {
 
 <style scoped>
 .task-list-container {
+  width: 100%;
   min-height: 100vh;
   background: #0d1117;
   color: #fff;
@@ -291,7 +292,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -317,7 +318,7 @@ onMounted(() => {
   background: #00f0ff;
   border-radius: 50%;
   filter: blur(1px);
-  box-shadow: 
+  box-shadow:
     0 0 10px #00f0ff,
     0 0 20px #00f0ff,
     0 0 30px rgba(0, 240, 255, 0.5);
