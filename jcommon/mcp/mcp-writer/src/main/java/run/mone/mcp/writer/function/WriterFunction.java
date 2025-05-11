@@ -1,24 +1,20 @@
 package run.mone.mcp.writer.function;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
-import org.springframework.stereotype.Component;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.writer.service.WriterService;
 
+import java.util.List;
+import java.util.Map;
+
 @Component
 @RequiredArgsConstructor
-public class WriterFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class WriterFunction implements McpFunction {
 
     private final WriterService writerService;
-    private final ObjectMapper objectMapper;
 
     private static final String TOOL_SCHEMA = """
             {
@@ -28,6 +24,10 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                         "type": "string",
                         "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText", "generateCreativeIdeas", "createCharacterProfile", "analyzeWritingStyle", "generateSeoContent", "createResearchSummary", "rewriteForAudience", "generateDialogue", "createMetaphorsAndAnalogies", "tellJoke"],
                         "description": "The writing operation to perform"
+                    },
+                    "originalRequest": {
+                        "type": "string",
+                        "description": "The user's original request or query to help AI better understand the intent"
                     },
                     "article": {
                         "type": "string",
@@ -105,35 +105,40 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String operation = (String) arguments.get("operation");
+        String originalRequest = (String) arguments.get("originalRequest");
 
         return Flux.defer(() -> {
             try {
                 Flux<String> result = switch (operation) {
-                    case "expandArticle" -> writerService.expandArticle((String) arguments.get("article"));
-                    case "summarizeArticle" -> writerService.summarizeArticle((String) arguments.get("article"));
-                    case "writeNewArticle" -> writerService.writeNewArticle((String) arguments.get("topic"));
+                    case "expandArticle" -> writerService.expandArticle((String) arguments.get("article"), originalRequest);
+                    case "summarizeArticle" -> writerService.summarizeArticle((String) arguments.get("article"), originalRequest);
+                    case "writeNewArticle" -> writerService.writeNewArticle((String) arguments.get("topic"), arguments);
                     case "polishArticle" -> writerService.polishArticle((String) arguments.get("article"));
                     case "suggestImprovements" -> writerService.suggestImprovements((String) arguments.get("article"));
                     case "createOutline" -> writerService.createOutline((String) arguments.get("topic"));
-                    case "editArticle" -> writerService.editArticle((String) arguments.get("article"), (String) arguments.get("instructions"));
-                    case "translateText" -> writerService.translateText((String) arguments.get("text"), (String) arguments.get("targetLanguage"));
+                    case "editArticle" ->
+                            writerService.editArticle((String) arguments.get("article"), (String) arguments.get("instructions"));
+                    case "translateText" ->
+                            writerService.translateText((String) arguments.get("text"), (String) arguments.get("targetLanguage"));
                     case "generateCreativeIdeas" -> writerService.generateCreativeIdeas(
-                            (String) arguments.get("topic"), 
+                            (String) arguments.get("topic"),
                             arguments.get("numberOfIdeas"));
-                    case "createCharacterProfile" -> writerService.createCharacterProfile((String) arguments.get("characterDescription"));
+                    case "createCharacterProfile" ->
+                            writerService.createCharacterProfile((String) arguments.get("characterDescription"));
                     case "analyzeWritingStyle" -> writerService.analyzeWritingStyle((String) arguments.get("text"));
                     case "generateSeoContent" -> writerService.generateSeoContent(
-                            (String) arguments.get("keyword"), 
+                            (String) arguments.get("keyword"),
                             (String) arguments.get("contentType"));
-                    case "createResearchSummary" -> writerService.createResearchSummary((String) arguments.get("researchText"));
+                    case "createResearchSummary" ->
+                            writerService.createResearchSummary((String) arguments.get("researchText"));
                     case "rewriteForAudience" -> writerService.rewriteForAudience(
-                            (String) arguments.get("content"), 
+                            (String) arguments.get("content"),
                             (String) arguments.get("targetAudience"));
                     case "generateDialogue" -> writerService.generateDialogue(
-                            (String) arguments.get("scenario"), 
+                            (String) arguments.get("scenario"),
                             ((Number) arguments.get("numberOfExchanges")).intValue());
                     case "createMetaphorsAndAnalogies" -> writerService.createMetaphorsAndAnalogies(
-                            (String) arguments.get("concept"), 
+                            (String) arguments.get("concept"),
                             ((String) arguments.get("count")));
                     case "tellJoke" -> writerService.tellJoke((String) arguments.get("jokeType"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);

@@ -328,10 +328,12 @@ public class ReactorRole extends Role {
     }
 
     private void callMcp(ToolDataInfo it, FluxSink sink) {
+        String toolName = it.getKeyValuePairs().get("tool_name");
+        it.setRole(this);
         McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:\n" + textContent.text() + "\n").build());
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());
         } else if (content instanceof McpSchema.ImageContent imageContent) {
             this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n").build());
         }

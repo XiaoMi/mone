@@ -1,6 +1,7 @@
 package run.mone.hive.common;
 
 import lombok.Data;
+import run.mone.hive.roles.ReactorRole;
 
 import java.util.Map;
 
@@ -16,6 +17,8 @@ public class ToolDataInfo {
     private String userId;
 
     private String agentId;
+
+    private ReactorRole role;
 
     public ToolDataInfo(String tag, Map<String, String> keyValuePairs) {
         this.tag = tag;

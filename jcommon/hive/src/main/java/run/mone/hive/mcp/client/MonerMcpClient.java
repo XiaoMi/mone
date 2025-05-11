@@ -31,6 +31,9 @@ public class MonerMcpClient {
 
             toolArguments.put(Const.USER_ID, toolDataInfo.getUserId());
             toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
+            if (null != toolDataInfo.getRole()) {
+                toolArguments.put(Const.ROLE, toolDataInfo.getRole());
+            }
 
             // 调用before方法并检查返回值
             boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
