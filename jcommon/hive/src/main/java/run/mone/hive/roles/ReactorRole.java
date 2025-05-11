@@ -341,7 +341,7 @@ public class ReactorRole extends Role {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
             ToolInterceptor.before(name, params, extraParam);
-            JsonObject toolRes = this.toolMap.get(name).execute(params);
+            JsonObject toolRes = this.toolMap.get(name).execute(this, params);
             if (toolRes.has("toolMsgType")) {
                 // 说明需要调用方做特殊处理
                 res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
@@ -400,7 +400,7 @@ public class ReactorRole extends Role {
         if (StringUtils.isNotEmpty(this.goal)) {
             roleDescription = "\nprofile:" + this.profile + "\ngoal:" + this.goal + "\nconstraints:" + this.constraints + "\n";
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
+        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }
