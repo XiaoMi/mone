@@ -82,7 +82,7 @@ const showConfigurator = () => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .theme-switcher {
   display: inline-block;
 }

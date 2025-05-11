@@ -511,17 +511,10 @@ onMounted(async () => {
   background: var(--el-color-chat-window-background);
   backdrop-filter: blur(10px);
   border-radius: 15px;
-  border: 1px solid var(--el-color-chat-link-color);
-  box-shadow: 0 0 30px var(--el-color-chat-link-color);
+  // border: 1px solid var(--el-color-chat-link-color);
+  // box-shadow: 0 0 30px var(--el-color-chat-link-color);
   position: relative;
   z-index: 2;
-
-  &:before {
-    content: '';
-    position: absolute;
-    background: var(--el-color-chat-window-before-background);
-    animation: var(--el-color-chat-window-border-glow-animation) !important;
-  }
 }
 
 /* 添加量子光环效果 */

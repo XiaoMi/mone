@@ -179,12 +179,13 @@ export default {
 
 <style lang="scss">
 .sc-chat-window {
-  height: 80vh;
-  background: rgba(15, 15, 35, 0.7);
+  // height: 80vh;
+  height: 100%;
+  background: var(--el-color-chat-window-background);
   border-radius: 15px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(100, 100, 255, 0.2);
-  box-shadow: 0 0 30px rgba(0, 100, 255, 0.3);
+  border: 1px solid var(--el-color-chat-window-border-glow);
+  box-shadow: 0 0 30px var(--el-color-chat-window-border-glow);
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -198,12 +199,12 @@ export default {
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff);
+    background: var(--el-color-chat-window-border-glow);
     background-size: 400%;
     z-index: -1;
     border-radius: 16px;
-    opacity: 0.7;
-    animation: glowing-border 20s linear infinite;
+    opacity: var(--el-color-chat-window-border-glow-opacity);
+    animation: var(--el-color-chat-window-border-glow-animation);
   }
 }
 

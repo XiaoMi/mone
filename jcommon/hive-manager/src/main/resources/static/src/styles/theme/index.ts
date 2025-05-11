@@ -27,13 +27,13 @@ export const lightTheme: ThemeConfig = {
     chatWindowBackground: 'rgba(255, 255, 255, 0.9)',
     chatGridColor: 'rgba(100, 108, 255, 0.1)',
     // 聊天窗口
-    chatWindowBorderColor: 'rgba(100, 100, 255, 0.2)',
-    chatWindowBoxShadow: '0 0 30px rgba(0, 100, 255, 0.2)',
-    chatWindowBorderGlow: 'linear-gradient(45deg, #646cff, #9499ff, #646cff, #9499ff)',
-    chatWindowBorderGlowOpacity: '0.5',
-    chatWindowBorderGlowAnimation: 'glowing-border 20s linear infinite',
-    chatWindowBeforeGradientLight: '#646cff',
-    chatWindowBeforeGradientDark: '#9499ff'
+    chatWindowBorderColor: 'rgba(0, 0, 0, 0.1)',
+    chatWindowBoxShadow: '0 0 20px rgba(0, 0, 0, 0.05)',
+    chatWindowBorderGlow: 'linear-gradient(45deg, #E4E7ED, #DCDFE6)',
+    chatWindowBorderGlowOpacity: '0.3',
+    chatWindowBorderGlowAnimation: 'none',
+    chatWindowBeforeGradientLight: '#E4E7ED',
+    chatWindowBeforeGradientDark: '#DCDFE6'
   }
 }
 
@@ -64,13 +64,13 @@ export const darkTheme: ThemeConfig = {
     chatWindowBackground: 'rgba(15, 15, 35, 0.7)',
     chatGridColor: 'rgba(100, 108, 255, 0.2)',
     // 聊天窗口
-    chatWindowBorderColor: 'rgba(100, 100, 255, 0.2)',
-    chatWindowBoxShadow: '0 0 30px rgba(0, 100, 255, 0.3)',
-    chatWindowBorderGlow: 'linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff)',
-    chatWindowBorderGlowOpacity: '0.7',
-    chatWindowBorderGlowAnimation: 'glowing-border 20s linear infinite',
-    chatWindowBeforeGradientLight: '#00dbde',
-    chatWindowBeforeGradientDark: '#fc00ff'
+    chatWindowBorderColor: 'rgba(255, 255, 255, 0.1)',
+    chatWindowBoxShadow: '0 0 20px rgba(0, 0, 0, 0.2)',
+    chatWindowBorderGlow: 'linear-gradient(45deg, #363637, #4C4D4F)',
+    chatWindowBorderGlowOpacity: '0.3',
+    chatWindowBorderGlowAnimation: 'none',
+    chatWindowBeforeGradientLight: '#363637',
+    chatWindowBeforeGradientDark: '#4C4D4F'
   }
 }
 
@@ -92,21 +92,24 @@ export const cyberpunkTheme: ThemeConfig = {
     fillColor: 'rgba(22, 27, 34, 0.4)',
     fillColorLight: 'rgba(22, 27, 34, 0.6)',
     fillColorLighter: 'rgba(22, 27, 34, 0.8)',
+    //
+    agentChatLinkColor: 'linear-gradient(135deg, rgb(0, 240, 255), rgb(180, 0, 255))',
+
     // 聊天界面
     chatBackground: '#0f0f23',
     chatBackgroundGradient: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3a 100%)',
-    chatParticleColor: '#00ff9d',
-    chatLinkColor: '#00ff9d',
-    chatBorderGlow: 'rgba(0, 255, 157, 0.2)',
-    chatWindowBackground: 'rgba(15, 15, 35, 0.8)',
-    chatGridColor: 'rgba(0, 255, 157, 0.2)',
+    chatParticleColor: '#00dbde',
+    chatLinkColor: '#00dbde',
+    chatBorderGlow: 'rgba(0, 219, 222, 0.2)',
+    chatWindowBackground: 'rgba(15, 15, 35, 0.7)',
+    chatGridColor: 'rgba(0, 219, 222, 0.2)',
     // 聊天窗口
-    chatWindowBorderColor: 'rgba(0, 255, 157, 0.3)',
-    chatWindowBoxShadow: '0 0 40px rgba(0, 255, 157, 0.4)',
-    chatWindowBorderGlow: 'linear-gradient(45deg, #00ff9d, #00b8ff, #00ff9d, #00b8ff)',
-    chatWindowBorderGlowOpacity: '0.8',
-    chatWindowBorderGlowAnimation: 'glowing-border 15s linear infinite',
-    chatWindowBeforeGradientLight: '#00ff9d',
-    chatWindowBeforeGradientDark: '#00b8ff'
+    chatWindowBorderColor: 'rgba(100, 100, 255, 0.2)',
+    chatWindowBoxShadow: '0 0 30px rgba(0, 100, 255, 0.3)',
+    chatWindowBorderGlow: 'linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff)',
+    chatWindowBorderGlowOpacity: '0.7',
+    chatWindowBorderGlowAnimation: 'glowing-border 20s linear infinite',
+    chatWindowBeforeGradientLight: '#00dbde',
+    chatWindowBeforeGradientDark: '#fc00ff'
   }
 }
