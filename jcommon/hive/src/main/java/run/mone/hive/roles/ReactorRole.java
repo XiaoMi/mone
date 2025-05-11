@@ -14,8 +14,10 @@ import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
+import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
@@ -365,7 +367,9 @@ public class ReactorRole extends Role {
 
     private String callLlm(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
         StringBuilder sb = new StringBuilder();
-        llm.compoundMsgCall(compoundMsg, systemPrompt)
+        String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
+        LLM curLLM = getLlm(llmProvider);
+        curLLM.compoundMsgCall(compoundMsg, systemPrompt)
                 .doOnNext(it -> {
                     sb.append(it);
                     Optional.ofNullable(sink).ifPresent(s -> s.next(it));
@@ -377,6 +381,16 @@ public class ReactorRole extends Role {
                     hasError.set(true);
                 }).blockLast();
         return sb.toString();
+    }
+
+    private LLM getLlm(String llmProvider) {
+        LLM curLLM = null;
+        if (StringUtils.isNotEmpty(llmProvider)) {
+            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider)).build());
+        } else {
+            curLLM = llm;
+        }
+        return curLLM;
     }
 
     private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
