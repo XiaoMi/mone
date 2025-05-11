@@ -516,7 +516,7 @@
   .execute-content {
     padding: 16px 24px;
     color: #e1e1e1;
-    line-height: 1.6;
+    // line-height: 1.6;
     background: #1e1e1e;
 
     .command-section, .working_directory-section, .timeout-section {
@@ -532,6 +532,18 @@
         font-size: 0.9em;
         margin-bottom: 4px;
         text-transform: capitalize;
+      }
+    }
+
+    .completion-command {
+      .command-header {
+        display: none;
+      }
+
+      .command-content {
+        pre {
+          padding: 0;
+        }
       }
     }
   }
