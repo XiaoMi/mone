@@ -48,7 +48,7 @@ import { computed, ref, watch, watchEffect } from "vue";
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { useChatContextStore } from "@/stores/chat-context";
 import { Setting } from '@element-plus/icons-vue';
-import { getAgentConfigs, setBatchAgentConfig, type AgentConfig } from '@/api/agent';
+import { getAgentConfigs, setBatchAgentConfig, type AgentConfig, deleteAgentConfig } from '@/api/agent';
 
 const { getInstance, setSelectedInstance } = useUserStore();
 const { setMessageList } = useChatContextStore();
@@ -136,8 +136,39 @@ const addConfig = () => {
     });
 };
 
-const removeConfig = (index: number) => {
-    configList.value.splice(index, 1);
+const removeConfig = async (index: number) => {
+    const config = configList.value[index];
+    try {
+        await ElMessageBox.confirm(
+            `确定要删除配置 "${config.key}" 吗？`,
+            '确认删除',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning',
+            }
+        );
+
+        const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
+        if (!selectedInstance?.agentId) {
+            ElMessage.error('未找到当前实例对应的Agent');
+            return;
+        }
+
+        loading.value = true;
+        try {
+            await deleteAgentConfig(selectedInstance.agentId, config.key);
+            configList.value.splice(index, 1);
+            ElMessage.success('配置删除成功');
+        } catch (error) {
+            ElMessage.error('配置删除失败');
+            console.error('配置删除失败:', error);
+        } finally {
+            loading.value = false;
+        }
+    } catch {
+        // 用户取消删除操作
+    }
 };
 
 const handleSubmitConfig = async () => {
