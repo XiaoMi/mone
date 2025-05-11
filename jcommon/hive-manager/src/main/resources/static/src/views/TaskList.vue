@@ -487,9 +487,9 @@ onMounted(() => {
   left: 0;
   width: 0;
   height: 2px;
-  background: var(--el-color-chat-link-color);
+  background: var(--el-color-background-gradient);
   animation: progressLine 3s ease-in-out infinite;
-  box-shadow: 0 0 10px var(--el-color-chat-link-color);
+  box-shadow: 0 0 10px var(--el-color-background-gradient);
 }
 
 @keyframes progressLine {
@@ -524,14 +524,15 @@ onMounted(() => {
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1.6rem;
-  color: var(--el-color-chat-link-color);
+  color: transparent;
   display: flex;
+  background: var(--el-color-background-gradient) text;
   align-items: center;
   gap: 10px;
 }
 
 .create-btn {
-  background: var(--el-color-chat-link-color);
+  background: var(--el-color-background-gradient);
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
@@ -543,7 +544,7 @@ onMounted(() => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px var(--el-color-chat-link-color-light);
+  box-shadow: 0 0 20px var(--el-color-background-gradient);
 }
 
 .task-card {
@@ -579,7 +580,7 @@ onMounted(() => {
   height: 50px;
   border-radius: 10px;
   overflow: hidden;
-  background: var(--el-color-chat-link-color);
+  background: var(--el-color-background-gradient);
 }
 
 .task-logo-placeholder {
@@ -697,7 +698,7 @@ onMounted(() => {
 }
 
 .execute-btn {
-  background: var(--el-color-chat-link-color);
+  background: var(--el-color-background-gradient);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -709,7 +710,7 @@ onMounted(() => {
 
 .execute-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 0 15px var(--el-color-chat-link-color-light);
+  box-shadow: 0 0 15px var(--el-color-background-gradient);
 }
 
 .execute-btn:disabled {

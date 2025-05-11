@@ -63,7 +63,9 @@ html,body {
 .header-left h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: var(--el-color-primary);
+  color: transparent;
+  background: var(--el-color-background-gradient) text;
+  -webkit-text-fill-color: transparent;
 }
 
 .app-main {
