@@ -23,7 +23,7 @@ public class WriterFunction implements McpFunction {
                     "operation": {
                         "type": "string",
                         "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText", "generateCreativeIdeas", "createCharacterProfile", "analyzeWritingStyle", "generateSeoContent", "createResearchSummary", "rewriteForAudience", "generateDialogue", "createMetaphorsAndAnalogies", "tellJoke"],
-                        "description": "The writing operation to perform"
+                        "description": "The writing operation to perform. 使用writeNewArticle 必须提供 originalRequest,也就是用户的原始请求"
                     },
                     "originalRequest": {
                         "type": "string",
