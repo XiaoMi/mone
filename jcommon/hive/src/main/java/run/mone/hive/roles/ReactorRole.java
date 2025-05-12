@@ -14,8 +14,10 @@ import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
+import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
@@ -38,15 +40,12 @@ import java.util.stream.Collectors;
 /**
  * @author wangyingjie
  * @author goodjava@qq.com
- * @date 2025/4/9 10:26
  * 会自己决策和行动的Role(Agent)
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
 public class ReactorRole extends Role {
-
-    private CountDownLatch countDownLatch;
 
     private LLM llm;
 
@@ -123,12 +122,12 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", "", "", "", 0, countDownLatch, llm, Lists.newArrayList(), Lists.newArrayList());
+        this(name, "", "", "", "", "", 0, llm, Lists.newArrayList(), Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
+    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
         super(name);
         this.group = group;
         this.version = version;
@@ -143,7 +142,6 @@ public class ReactorRole extends Role {
 
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
-        this.countDownLatch = countDownLatch;
         this.llm = llm;
         this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this.getName());
 
@@ -165,8 +163,8 @@ public class ReactorRole extends Role {
         }, 0, 20, TimeUnit.SECONDS);
     }
 
-    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
-        this(name, group, version, profile, goal, constraints, port, countDownLatch, llm, tools, mcpTools, NetUtils.getLocalHost());
+    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+        this(name, group, version, profile, goal, constraints, port, llm, tools, mcpTools, NetUtils.getLocalHost());
     }
 
     //think -> observe -> act
@@ -235,6 +233,7 @@ public class ReactorRole extends Role {
                 }).map(it -> toolMap.get(it.getTag()))
                 .anyMatch(ITool::completed) ? -1 : 1;
 
+        //任务已经完成
         if (attemptCompletion == -1) {
             if (null != lastMsg.getSink()) {
                 lastMsg.getSink().complete();
@@ -243,10 +242,6 @@ public class ReactorRole extends Role {
 
         if (attemptCompletion == 1) {
             this.putMessage(msg);
-        }
-
-        if (countDownLatch != null && attemptCompletion == -1) {
-            countDownLatch.countDown();
         }
         return attemptCompletion;
     }
@@ -286,8 +281,8 @@ public class ReactorRole extends Role {
             String systemPrompt = getSystemPrompt();
 
             //调用大模型(选用合适的工具)
-            String toolRes = callLlm(systemPrompt, compoundMsg, sink, hasError);
-            log.info("res\n:{} hasError:{}", toolRes, hasError.get());
+            String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
+            log.info("res\n:{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
@@ -326,10 +321,12 @@ public class ReactorRole extends Role {
     }
 
     private void callMcp(ToolDataInfo it, FluxSink sink) {
+        String toolName = it.getKeyValuePairs().get("tool_name");
+        it.setRole(this);
         McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:\n" + textContent.text() + "\n").build());
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());
         } else if (content instanceof McpSchema.ImageContent imageContent) {
             this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n").build());
         }
@@ -341,7 +338,7 @@ public class ReactorRole extends Role {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
             ToolInterceptor.before(name, params, extraParam);
-            JsonObject toolRes = this.toolMap.get(name).execute(params);
+            JsonObject toolRes = this.toolMap.get(name).execute(this, params);
             if (toolRes.has("toolMsgType")) {
                 // 说明需要调用方做特殊处理
                 res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
@@ -363,9 +360,11 @@ public class ReactorRole extends Role {
         this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
     }
 
-    private String callLlm(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
+    private String callLLM(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
         StringBuilder sb = new StringBuilder();
-        llm.compoundMsgCall(compoundMsg, systemPrompt)
+        String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
+        LLM curLLM = getLlm(llmProvider);
+        curLLM.compoundMsgCall(compoundMsg, systemPrompt)
                 .doOnNext(it -> {
                     sb.append(it);
                     Optional.ofNullable(sink).ifPresent(s -> s.next(it));
@@ -377,6 +376,16 @@ public class ReactorRole extends Role {
                     hasError.set(true);
                 }).blockLast();
         return sb.toString();
+    }
+
+    private LLM getLlm(String llmProvider) {
+        LLM curLLM = null;
+        if (StringUtils.isNotEmpty(llmProvider)) {
+            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider)).build());
+        } else {
+            curLLM = llm;
+        }
+        return curLLM;
     }
 
     private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
@@ -400,7 +409,7 @@ public class ReactorRole extends Role {
         if (StringUtils.isNotEmpty(this.goal)) {
             roleDescription = "\nprofile:" + this.profile + "\ngoal:" + this.goal + "\nconstraints:" + this.constraints + "\n";
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
+        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }

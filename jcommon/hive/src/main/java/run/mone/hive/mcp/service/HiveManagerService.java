@@ -4,18 +4,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.bo.RegInfoDto;
 import run.mone.hive.bo.TaskExecutionInfo;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -24,6 +31,7 @@ public class HiveManagerService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final AtomicReference<String> token = new AtomicReference<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     // 存储本地任务状态
     private final Map<String, TaskExecutionInfo> taskStatusCache = new ConcurrentHashMap<>();
@@ -40,10 +48,28 @@ public class HiveManagerService {
     @Value("${hive.manager.reg.switch:true}")
     private Boolean enableRegHiveManager;
 
+    @PostConstruct
+    public void init() {
+        // 20秒后开始执行，每10分钟执行一次
+        scheduler.scheduleAtFixedRate(this::login, 20, 600, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
     /**
-     * 每10分钟登录一次，获取新的token
+     * 登录获取token
      */
-    @Scheduled(fixedRate = 600000, initialDelay = 20000) // 10分钟  20秒后执行
     public void login() {
         if (!enableRegHiveManager) {
             return;
@@ -81,15 +107,34 @@ public class HiveManagerService {
     }
 
     /**
+     * 处理403错误，重新登录并重试
+     * @param operation 操作名称，用于日志
+     * @param operationFunction 需要重试的操作
+     * @return 操作结果
+     */
+    private <T> T handle403AndRetry(String operation, OperationFunction<T> operationFunction) {
+        try {
+            return operationFunction.execute();
+        } catch (HttpStatusCodeException e) {
+            if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                log.warn("Received 403 Forbidden for {}, attempting to re-login", operation);
+                login();
+                // 重试一次
+                return operationFunction.execute();
+            }
+            throw e;
+        }
+    }
+
+    /**
      * 注册Agent
      */
     public void register(RegInfo regInfo) {
-
         if (!enableRegHiveManager) {
             return;
         }
 
-        try {
+        handle403AndRetry("registration", () -> {
             String currentToken = token.get();
             if (currentToken == null) {
                 log.warn("No token available, attempting to login first");
@@ -97,7 +142,7 @@ public class HiveManagerService {
                 currentToken = token.get();
                 if (currentToken == null) {
                     log.error("Failed to obtain token for registration");
-                    return;
+                    return null;
                 }
             }
 
@@ -114,9 +159,8 @@ public class HiveManagerService {
             Object response = restTemplate.postForObject(registerUrl, request, Object.class);
 
             log.info("Registration response: {}", response);
-        } catch (Exception e) {
-            log.error("Error during registration: {}", e.getMessage(), e);
-        }
+            return null;
+        });
     }
 
     /**
@@ -161,12 +205,11 @@ public class HiveManagerService {
      * 发送心跳
      */
     public void heartbeat(HealthInfo healthInfo) {
-
         if (!enableRegHiveManager) {
             return;
         }
 
-        try {
+        handle403AndRetry("heartbeat", () -> {
             String currentToken = token.get();
             if (currentToken == null) {
                 log.warn("No token available, attempting to login first");
@@ -174,7 +217,7 @@ public class HiveManagerService {
                 currentToken = token.get();
                 if (currentToken == null) {
                     log.error("Failed to obtain token for heartbeat");
-                    return;
+                    return null;
                 }
             }
 
@@ -188,9 +231,8 @@ public class HiveManagerService {
             Object response = restTemplate.postForObject(heartbeatUrl, request, Object.class);
 
             log.info("Heartbeat response: {}", response);
-        } catch (Exception e) {
-            log.error("Error during heartbeat: {}", e.getMessage(), e);
-        }
+            return null;
+        });
     }
 
     /**
@@ -295,6 +337,80 @@ public class HiveManagerService {
     }
 
     /**
+     * 获取配置信息
+     *
+     * @param request 包含agentId和userId的请求参数Map
+     * @return 配置信息映射
+     */
+    public Map<String, String> getConfig(Map<String, String> request) {
+        if (!enableRegHiveManager) {
+            // 如果未启用HiveManager，返回默认配置
+            return getDefaultConfig(request);
+        }
+
+        try {
+            String currentToken = token.get();
+            if (currentToken == null) {
+                log.warn("No token available, attempting to login first");
+                login();
+                currentToken = token.get();
+                if (currentToken == null) {
+                    log.error("Failed to obtain token for getting config");
+                    return getDefaultConfig(request);
+                }
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + currentToken);
+
+            HttpEntity<Map<String, String>> httpRequest = new HttpEntity<>(request, headers);
+
+            String configUrl = baseUrl + "/api/v1/agents/config";
+            Map<String, Object> response = restTemplate.postForObject(configUrl, httpRequest, Map.class);
+
+            log.info("Config retrieval response: {}", response);
+
+            if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
+                Map<String, Object> data = (Map<String, Object>) response.get("data");
+                Map<String, String> configs = new HashMap<>();
+                // 将 Object 类型的值转换为 String 类型
+                for (Map.Entry<String, Object> entry : data.entrySet()) {
+                    configs.put(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+                return configs;
+            } else {
+                log.error("Invalid response format for config: {}", response);
+                return getDefaultConfig(request);
+            }
+        } catch (Exception e) {
+            log.error("Error during getting config: {}", e.getMessage(), e);
+            return getDefaultConfig(request);
+        }
+    }
+
+    /**
+     * 获取默认配置信息
+     * 当无法从HiveManager获取配置时使用
+     *
+     * @param request 包含agentId和userId的请求参数Map
+     * @return 默认配置信息映射
+     */
+    private Map<String, String> getDefaultConfig(Map<String, String> request) {
+        Map<String, String> defaultConfig = new HashMap<>();
+        // 从请求中获取agentId和userId
+        if (request.containsKey("agentId")) {
+            defaultConfig.put("agentId", String.valueOf(request.get("agentId")));
+        }
+        if (request.containsKey("userId")) {
+            defaultConfig.put("userId", String.valueOf(request.get("userId")));
+        }
+        defaultConfig.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        log.info("Using default config for request: {}", request);
+        return defaultConfig;
+    }
+
+    /**
      * 模拟异步任务执行过程
      * 这是一个内部方法，当未启用HiveManager或通信失败时使用
      *
@@ -346,5 +462,13 @@ public class HiveManagerService {
                 Thread.currentThread().interrupt();
             }
         }, "task-simulator-" + taskInfo.getTaskId()).start();
+    }
+
+    /**
+     * 操作函数接口，用于处理需要重试的操作
+     */
+    @FunctionalInterface
+    private interface OperationFunction<T> {
+        T execute();
     }
 } 

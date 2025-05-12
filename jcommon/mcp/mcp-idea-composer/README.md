@@ -38,3 +38,7 @@ GOOGLE_API_KEY=
 IDEA_PORT=30000
 STEPFUN_API_KEY=
 OPENROUTER_API_KEY=
+
+一些env配置
+cwd
+customInstructions

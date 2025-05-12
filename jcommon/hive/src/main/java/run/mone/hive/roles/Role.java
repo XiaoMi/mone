@@ -71,6 +71,9 @@ public class Role {
 
     protected String prompt;
 
+    //role的配置
+    protected Map<String, String> roleConfig = new HashMap<>();
+
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
         this.name = name;
@@ -291,6 +294,7 @@ public class Role {
 
     /**
      * react实际执行的逻辑， 可以重写
+     *
      * @param ac
      */
     protected void doReact(ActionContext ac) {
@@ -413,6 +417,7 @@ public class Role {
 
     /**
      * 在react之后执行的hook, 可以重写
+     *
      * @param ac
      */
     protected void postReact(ActionContext ac) {
@@ -431,6 +436,10 @@ public class Role {
             message.setCreateTime(System.currentTimeMillis());
         }
         this.rc.getMemory().add(message);
+    }
+
+    public Message getLastMessage() {
+        return this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
     }
 
     @Override

@@ -59,4 +59,9 @@ public class AgentConfigService {
                 .flatMap(entry -> setConfig(agentId, userId, entry.getKey(), entry.getValue()))
                 .then();
     }
+
+    public Mono<Map<String, String>> getUserConfigsAsMap(Long agentId, Long userId) {
+        return getUserConfigsByAgentId(agentId, userId)
+                .collectMap(AgentConfig::getKey, AgentConfig::getValue);
+    }
 } 

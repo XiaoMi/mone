@@ -1,12 +1,18 @@
 package run.mone.mcp.writer.service;
 
 import java.util.List;
+import java.util.Map;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
+import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.AiMessage;
 
 @Service
@@ -15,9 +21,36 @@ public class WriterService {
     @Autowired
     private LLM llm;
 
-    // TODO: 需要修改
+    public Flux<String> expandArticle(String article, String originalRequest) {
+        String prompt = getString("请扩写以下文章，增加更多细节和例子，使其更加丰富和具体：\n\n", originalRequest, article);
+
+        return Flux.create(sink -> {
+            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
+                sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
+            });
+        });
+    }
+
+    @NotNull
+    private static String getString(String prompt, String originalRequest, String article) {
+        if (originalRequest != null && !originalRequest.isEmpty()) {
+            prompt += "用户原始需求: " + originalRequest + "\n\n";
+        }
+        prompt += article;
+        return prompt;
+    }
+
+    // Overload for backward compatibility
     public Flux<String> expandArticle(String article) {
-        String prompt = "请扩写以下文章，增加更多细节和例子，使其更加丰富和具体：\n\n" + article;
+        return expandArticle(article, null);
+    }
+
+    public Flux<String> summarizeArticle(String article, String originalRequest) {
+        String prompt = getString("请对以下文章进行总结，提炼出主要观点和关键信息：\n\n", originalRequest, article);
+
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
@@ -27,22 +60,30 @@ public class WriterService {
             });
         });
     }
-
+    
+    // Overload for backward compatibility
     public Flux<String> summarizeArticle(String article) {
-        String prompt = "请对以下文章进行总结，提炼出主要观点和关键信息：\n\n" + article;
-        return Flux.create(sink -> {
-            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
-                sink.next(content);
-                if ("[DONE]".equals(content.trim())) {
-                    sink.complete();
-                }
-            });
-        });
+        return summarizeArticle(article, null);
     }
 
-    public Flux<String> writeNewArticle(String topic) {
-        String prompt = "请以'" + topic + "'为主题，写一篇详细的文章，包括引言、主要论点、结论等部分。";
-        return llm.call(List.of(new AiMessage("user", prompt)));
+    public Flux<String> writeNewArticle(String topic, Map<String, Object> arguments) {
+        String prompt = "请以'" + topic + "'为主题，写一篇详细的文章(支持 散文 诗歌 小说片段 文档 作文 周报)";
+        
+        String originalRequest = (String) arguments.get("originalRequest");
+        if (originalRequest != null && !originalRequest.isEmpty()) {
+            prompt = "用户原始需求: " + originalRequest + "\n\n" + prompt;
+        }
+        
+        LLM curLLm = llm;
+        if (arguments.containsKey(Const.ROLE)) {
+            ReactorRole role = (ReactorRole) arguments.get(Const.ROLE);
+            if (null != role && role.getRoleConfig().containsKey("agent_llm")) {
+                curLLm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(role.getRoleConfig().get("agent_llm"))).build());
+            }
+        }
+        final String finalPrompt = prompt;
+        final LLM finalLlm = curLLm;
+        return finalLlm.call(List.of(new AiMessage("user", finalPrompt)));
     }
 
     public Flux<String> polishArticle(String article) {

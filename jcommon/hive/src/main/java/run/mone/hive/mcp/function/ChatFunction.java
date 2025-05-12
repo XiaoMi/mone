@@ -50,7 +50,13 @@ public class ChatFunction implements McpFunction {
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         //这个agent的拥有者
         String ownerId = arguments.get(Const.OWNER_ID).toString();
+
         String clientId = arguments.get(Const.CLIENT_ID).toString();
+
+        //用户id
+        String userId = arguments.getOrDefault(Const.USER_ID, "").toString();
+        String agentId = arguments.getOrDefault(Const.AGENT_ID, "").toString();
+
         String message = (String) arguments.get("message");
         String voiceBase64 = arguments.get("voiceBase64") == null ? null : (String) arguments.get("voiceBase64");
         List<String> images = null;
@@ -82,6 +88,8 @@ public class ChatFunction implements McpFunction {
         try {
             return roleService.receiveMsg(run.mone.hive.schema.Message.builder()
                             .clientId(clientId)
+                            .userId(userId)
+                            .agentId(agentId)
                             .role("user")
                             .sentFrom(ownerId)
                             .content(message)

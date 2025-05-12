@@ -12,6 +12,7 @@ import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.utils.CacheService;
 
@@ -43,7 +44,17 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static String mcpPrompt(String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+    //当前工作目录
+    public static String cwd(ReactorRole role) {
+        return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
+    }
+
+    //自定义指令
+    public static String customInstructions(ReactorRole role, String customInstructions) {
+        return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+    }
+
+    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -51,8 +62,8 @@ public class MonerSystemPrompt {
         data.put("osName", MonerSystemPrompt.getSystemName());
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
-        data.put("cwd", MonerSystemPrompt.getHomeDir());
-        data.put("customInstructions", customInstructions);
+        data.put("cwd", MonerSystemPrompt.cwd(role));
+        data.put("customInstructions", MonerSystemPrompt.customInstructions(role,customInstructions));
         data.put("roleDescription", roleDescription);
 
         List<Map<String, Object>> serverList = getMcpInfo(from);

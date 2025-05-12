@@ -35,13 +35,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            String userName = "";
-            if (session instanceof StandardWebSocketSession sws) {
-                if (sws.getPrincipal() instanceof UsernamePasswordAuthenticationToken token && token.getPrincipal() instanceof User user) {
-                    userName = user.getUsername();
-                }
-            }
-            session.getAttributes().put("userName", userName);
+            //设置userId和userName
+            setUserAttributesFromSession(session);
 
             // 存储对话ID
             session.getAttributes().put("clientId", clientId);
@@ -57,6 +52,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private static void setUserAttributesFromSession(WebSocketSession session) {
+        String userName = "";
+        String userId = "";
+        if (session instanceof StandardWebSocketSession sws) {
+            if (sws.getPrincipal() instanceof UsernamePasswordAuthenticationToken token && token.getPrincipal() instanceof User user) {
+                userName = user.getUsername();
+                userId = String.valueOf(user.getId());
+            }
+        }
+        session.getAttributes().put("userId", userId);
+        session.getAttributes().put("userName", userName);
+    }
+
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
@@ -66,12 +74,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 解析MCP请求
             McpRequest request = GsonUtils.gson.fromJson(payload, McpRequest.class);
             // 创建Result对象
-            ToolDataInfo result = new ToolDataInfo("mcp_request", request.getMapData());
-            result.setFrom("hive_manager");
+            ToolDataInfo toolData = new ToolDataInfo("mcp_request", request.getMapData());
+            toolData.setFrom("hive_manager");
+            String userId = session.getAttributes().getOrDefault("userId", "").toString();
+            toolData.setUserId(userId);
+            toolData.setAgentId(String.valueOf(request.getAgentId()));
+
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
             String userName = session.getAttributes().getOrDefault("userName", "").toString();
-            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), result, sink);
+            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), toolData, sink);
             sink.complete();
         } catch (Exception e) {
             log.error("Error processing MCP request", e);
