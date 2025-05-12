@@ -30,6 +30,7 @@ import com.xiaomi.data.push.rpc.common.Pair;
 import com.xiaomi.data.push.rpc.common.RemotingUtil;
 import com.xiaomi.data.push.rpc.common.RpcServerVersion;
 import com.xiaomi.data.push.rpc.netty.AgentChannel;
+import com.xiaomi.data.push.rpc.netty.AgentEventListener;
 import com.xiaomi.data.push.rpc.netty.NettyRemotingServer;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
 import com.xiaomi.data.push.rpc.netty.NettyServerConfig;
@@ -179,6 +180,8 @@ public class RpcServer implements Service {
 
     /**
      * 注册到nacos
+     *
+     * @return 注册是否成功
      */
     public boolean registerInstance() {
         logger.info("registerInstance");
@@ -353,7 +356,7 @@ public class RpcServer implements Service {
 
     public void closeClient(String address) {
         logger.info("close client:{}", address);
-        AgentChannel ch = AgentContext.ins().map.remove(address);
+        AgentChannel ch = AgentContext.ins().remove(address);
         if (null != ch) {
             RemotingUtil.closeChannel(ch.getChannel());
         }
@@ -362,5 +365,13 @@ public class RpcServer implements Service {
     @Override
     public RemotingCommand call(RemotingCommand req) {
         return this.sendMessage(req.getAddress(), req, req.getTimeout());
+    }
+    /**
+     * 添加客户端变化监听器
+     *
+     * @param listener 监听器实例
+     */
+    public void addListener(AgentEventListener listener) {
+        AgentContext.ins().addListener(listener);
     }
 }
