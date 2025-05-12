@@ -1,29 +1,30 @@
 :root {
   // 基础变量
-  --el-color-primary: v-bind('theme.primary');
-  --el-color-success: v-bind('theme.success');
-  --el-color-warning: v-bind('theme.warning');
-  --el-color-danger: v-bind('theme.danger');
-  --el-color-info: v-bind('theme.info');
-  --el-bg-color: v-bind('theme.background');
-  --el-text-color-primary: v-bind('theme.textPrimary');
-  --el-text-color-regular: v-bind('theme.textRegular');
-  --el-text-color-secondary: v-bind('theme.textSecondary');
-  --el-border-color: v-bind('theme.borderColor');
-  --el-border-color-light: v-bind('theme.borderColorLight');
-  --el-border-color-lighter: v-bind('theme.borderColorLighter');
-  --el-fill-color: v-bind('theme.fillColor');
-  --el-fill-color-light: v-bind('theme.fillColorLight');
-  --el-fill-color-lighter: v-bind('theme.fillColorLighter');
+  --el-color-primary: v-bind('theme.colors.primary');
+  --el-color-success: v-bind('theme.colors.success');
+  --el-color-warning: v-bind('theme.colors.warning');
+  --el-color-danger: v-bind('theme.colors.danger');
+  --el-color-info: v-bind('theme.colors.info');
+  --el-bg-color: v-bind('theme.colors.background');
+  --el-text-color-primary: v-bind('theme.colors.textPrimary');
+  --el-text-color-regular: v-bind('theme.colors.textRegular');
+  --el-text-color-secondary: v-bind('theme.colors.textSecondary');
+  --el-border-color: v-bind('theme.colors.borderColor');
+  --el-border-color-light: v-bind('theme.colors.borderColorLight');
+  --el-border-color-lighter: v-bind('theme.colors.borderColorLighter');
+  --el-fill-color: v-bind('theme.colors.fillColor');
+  --el-fill-color-light: v-bind('theme.colors.fillColorLight');
+  --el-fill-color-lighter: v-bind('theme.colors.fillColorLighter');
 
   // 聊天界面
-  --el-color-chat-background: v-bind('theme.chatBackground');
-  --el-color-chat-background-gradient: v-bind('theme.chatBackgroundGradient');
-  --el-color-chat-particle-color: v-bind('theme.chatParticleColor');
-  --el-color-chat-link-color: v-bind('theme.chatLinkColor');
-  --el-color-chat-border-glow: v-bind('theme.chatBorderGlow');
-  --el-color-chat-window-background: v-bind('theme.chatWindowBackground');
-  --el-color-chat-grid-color: v-bind('theme.chatGridColor');
+  --el-color-chat-text: v-bind('theme.colors.chatText');
+  --el-color-chat-background: v-bind('theme.colors.chatBackground');
+  --el-color-chat-background-gradient: v-bind('theme.colors.chatBackgroundGradient');
+  --el-color-chat-particle-color: v-bind('theme.colors.chatParticleColor');
+  --el-color-chat-link-color: v-bind('theme.colors.chatLinkColor');
+  --el-color-chat-border-glow: v-bind('theme.colors.chatBorderGlow');
+  --el-color-chat-window-background: v-bind('theme.colors.chatWindowBackground');
+  --el-color-chat-grid-color: v-bind('theme.colors.chatGridColor');
 
   // 聊天窗口
   --chat-window-background: v-bind('theme.colors.chatWindowBackground');

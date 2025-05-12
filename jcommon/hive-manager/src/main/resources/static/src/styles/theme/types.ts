@@ -16,6 +16,7 @@ export interface ThemeColors {
   fillColorLight: string
   fillColorLighter: string
   // 聊天界面相关
+  chatText: string
   chatBackground: string
   chatBackgroundGradient: string
   chatParticleColor: string

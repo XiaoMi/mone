@@ -720,7 +720,7 @@ onMounted(() => {
 }
 
 .edit-btn {
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;

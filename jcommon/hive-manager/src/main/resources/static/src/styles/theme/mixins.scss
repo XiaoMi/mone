@@ -1,0 +1,158 @@
+// 主题颜色变量混入
+@mixin theme-colors {
+  // 基础颜色
+  --el-color-primary: v-bind('theme.colors.primary');
+  --el-color-success: v-bind('theme.colors.success');
+  --el-color-warning: v-bind('theme.colors.warning');
+  --el-color-danger: v-bind('theme.colors.danger');
+  --el-color-info: v-bind('theme.colors.info');
+  
+  // 背景和文本颜色
+  --el-bg-color: v-bind('theme.colors.background');
+  --el-text-color-primary: v-bind('theme.colors.textPrimary');
+  --el-text-color-regular: v-bind('theme.colors.textRegular');
+  --el-text-color-secondary: v-bind('theme.colors.textSecondary');
+  
+  // 边框颜色
+  --el-border-color: v-bind('theme.colors.borderColor');
+  --el-border-color-light: v-bind('theme.colors.borderColorLight');
+  --el-border-color-lighter: v-bind('theme.colors.borderColorLighter');
+  
+  // 填充颜色
+  --el-fill-color: v-bind('theme.colors.fillColor');
+  --el-fill-color-light: v-bind('theme.colors.fillColorLight');
+  --el-fill-color-lighter: v-bind('theme.colors.fillColorLighter');
+}
+
+// 聊天界面主题混入
+@mixin chat-theme {
+  // 聊天基础样式
+  --el-color-chat-text: v-bind('theme.colors.chatText');
+  --el-color-chat-background: v-bind('theme.colors.chatBackground');
+  --el-color-chat-background-gradient: v-bind('theme.colors.chatBackgroundGradient');
+  --el-color-chat-particle-color: v-bind('theme.colors.chatParticleColor');
+  --el-color-chat-link-color: v-bind('theme.colors.chatLinkColor');
+  --el-color-chat-border-glow: v-bind('theme.colors.chatBorderGlow');
+  --el-color-chat-window-background: v-bind('theme.colors.chatWindowBackground');
+  --el-color-chat-grid-color: v-bind('theme.colors.chatGridColor');
+}
+
+// 聊天窗口主题混入
+@mixin chat-window-theme {
+  --chat-window-background: v-bind('theme.colors.chatWindowBackground');
+  --chat-window-border-color: v-bind('theme.colors.chatWindowBorderColor');
+  --chat-window-box-shadow: v-bind('theme.colors.chatWindowBoxShadow');
+  --chat-window-border-glow: v-bind('theme.colors.chatWindowBorderGlow');
+  --chat-window-border-glow-opacity: v-bind('theme.colors.chatWindowBorderGlowOpacity');
+  --chat-window-border-glow-animation: v-bind('theme.colors.chatWindowBorderGlowAnimation');
+  --chat-window-before-gradient-light: v-bind('theme.colors.chatWindowBeforeGradientLight');
+  --chat-window-before-gradient-dark: v-bind('theme.colors.chatWindowBeforeGradientDark');
+}
+
+// 主题过渡效果
+@mixin theme-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+// 主题应用混入
+@mixin apply-theme {
+  @include theme-colors;
+  @include chat-theme;
+  @include chat-window-theme;
+  @include theme-transition;
+}
+
+// 主题相关的工具类
+.theme-container {
+  @include apply-theme;
+}
+
+// 聊天窗口样式
+.chat-window {
+  @include chat-window-theme;
+  background: var(--chat-window-background);
+  border: 1px solid var(--chat-window-border-color);
+  box-shadow: var(--chat-window-box-shadow);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: var(--chat-window-border-glow);
+    opacity: var(--chat-window-border-glow-opacity);
+    animation: var(--chat-window-border-glow-animation);
+    z-index: -1;
+    border-radius: inherit;
+  }
+}
+
+// 聊天网格背景
+.chat-grid-background {
+  background-image: linear-gradient(
+    var(--el-color-chat-grid-color) 1px,
+    transparent 1px
+  ),
+  linear-gradient(
+    90deg,
+    var(--el-color-chat-grid-color) 1px,
+    transparent 1px
+  );
+  background-size: 20px 20px;
+}
+
+// 主题切换动画
+@keyframes glowing-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+// 响应式主题调整
+@media (prefers-color-scheme: dark) {
+  .theme-container {
+    // 可以在这里添加暗色模式特定的样式覆盖
+  }
+}
+
+// 主题相关的工具函数
+@function get-theme-color($color-name) {
+  @return var(--el-color-#{$color-name});
+}
+
+// 主题相关的工具类
+.theme-text {
+  color: var(--el-text-color-primary);
+}
+
+.theme-background {
+  background-color: var(--el-bg-color);
+}
+
+.theme-border {
+  border-color: var(--el-border-color);
+}
+
+// 主题相关的状态类
+.theme-hover {
+  &:hover {
+    background-color: var(--el-fill-color-light);
+  }
+}
+
+.theme-active {
+  background-color: var(--el-fill-color);
+}
+
+// 主题相关的动画类
+.theme-transition {
+  @include theme-transition;
+} 

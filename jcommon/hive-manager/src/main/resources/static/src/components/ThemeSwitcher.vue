@@ -85,6 +85,24 @@ const showConfigurator = () => {
 <style lang="scss" scoped>
 .theme-switcher {
   display: inline-block;
+
+  background: var(--el-color-background-gradient);
+
+  :deep(.el-button) {
+    background-color: var(--el-color-background-gradient);
+    border-color: var(--el-color-primary);
+    color: var(--el-color-white);
+    transition: all var(--el-transition-duration);
+
+    &:hover {
+      background-color: var(--el-color-primary-light-3);
+      border-color: var(--el-color-primary-light-3);
+    }
+
+    .el-icon {
+      margin-right: 4px;
+    }
+  }
 }
 
 .theme-item {
@@ -92,9 +110,18 @@ const showConfigurator = () => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 0 8px;
+  padding: 8px 12px;
+  color: var(--el-text-color-primary);
+  transition: all var(--el-transition-duration);
 
-  color: var(--el-color-primary);
+  &:hover {
+    background-color: var(--el-color-primary-light-9);
+  }
+
+  .el-icon {
+    font-size: 16px;
+    color: var(--el-color-primary);
+  }
 }
 
 .delete-icon {
@@ -102,7 +129,11 @@ const showConfigurator = () => {
   color: var(--el-color-danger);
   font-size: 16px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all var(--el-transition-duration);
+
+  &:hover {
+    color: var(--el-color-danger-light-3);
+  }
 }
 
 .el-dropdown-item:hover .delete-icon {
@@ -112,6 +143,19 @@ const showConfigurator = () => {
 .el-dropdown-item.is-active {
   color: var(--el-color-primary);
   background-color: var(--el-color-primary-light-9);
+  font-weight: 500;
+}
+
+:deep(.el-dropdown-menu) {
+  padding: 4px 0;
+  border-radius: var(--el-border-radius-base);
+  box-shadow: var(--el-box-shadow-light);
+  border: 1px solid var(--el-border-color-light);
+}
+
+:deep(.el-dropdown-menu__item) {
+  padding: 0;
+  line-height: normal;
 }
 
 :deep(.el-dropdown-menu__item:focus) {
@@ -120,5 +164,6 @@ const showConfigurator = () => {
 
 :deep(.el-dropdown-menu__item--divided:before) {
   margin: 4px 0;
+  background-color: var(--el-border-color-lighter);
 }
 </style>
