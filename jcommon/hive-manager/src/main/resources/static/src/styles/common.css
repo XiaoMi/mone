@@ -83,6 +83,12 @@
   transition: all 0.3s ease;
 }
 
+.light .el-input__wrapper {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(49, 232, 249, 0.3);
+  box-shadow: 0 0 10px rgba(49, 232, 249, 0.1);
+}
+
 .el-input__wrapper:hover {
   border-color: rgba(49, 232, 249, 0.8);
   box-shadow: 0 0 15px rgba(49, 232, 249, 0.2);

@@ -35,7 +35,7 @@ function handleSelect(key, keyPath) {
 <style scoped>
 .el-menu-header {
   background-color: transparent;
-  color: #fff;
+  color: var(--el-color-primary);
   position: absolute;
   top: 0;
   z-index: 10;
@@ -46,18 +46,18 @@ function handleSelect(key, keyPath) {
   user-select: none;
 }
 .el-menu-header .el-menu-item {
-  color: #848484;
+  color: var(--el-color-primary);
   font-size: 18px;
   border-bottom: none !important;
   transition: transform 0.3s ease;
 }
 .el-menu-header .el-menu-item:hover {
     transform: scale(1.3);
-    color: #fff;
+    color: var(--el-color-primary);
 }
 .el-menu-header .el-menu-item.is-active {
   transform: scale(1.3);
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;

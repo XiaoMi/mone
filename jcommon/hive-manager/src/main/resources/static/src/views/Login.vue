@@ -300,6 +300,8 @@ onMounted(() => {
   font-family: 'Orbitron', sans-serif;
   position: relative;
   overflow: hidden;
+
+  flex-grow: 1;
 }
 
 .login-box {
@@ -478,5 +480,53 @@ h2 {
 }
 .btn-item:deep(.el-button) {
   margin: 0 auto;
+}
+
+.light #particles-js {
+  display: none;
+}
+
+.dark #particles-js {
+  display: none;
+}
+
+.light .login-container {
+  background-color: #f5f7fa;
+}
+.light .login-box {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid #e0e0e0;
+}
+.light h2 {
+  color: #409eff;
+  text-shadow: 0 0 10px #409eff, 0 0 20px #a0cfff;
+}
+.light :deep(.el-input__wrapper) {
+  background: #fff !important;
+  border: 1px solid #dcdfe6 !important;
+}
+.light .login-button {
+  background: linear-gradient(90deg, #409eff, #67c23a) !important;
+  color: #fff !important;
+}
+
+.dark .login-container {
+  background-color: #0a0a1a;
+}
+.dark .login-box {
+  background: rgba(10, 10, 26, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+.dark h2 {
+  color: #00f0ff;
+  text-shadow: 0 0 10px #00f0ff, 0 0 20px #b400ff;
+}
+.dark :deep(.el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+}
+.dark .login-button {
+  background: linear-gradient(90deg, #00f0ff, #b400ff) !important;
+  color: #0a0a1a !important;
 }
 </style>

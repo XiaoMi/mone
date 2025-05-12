@@ -1,10 +1,12 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
+import './styles/element-theme.scss'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import './assets/main.css'
 import './styles/common.css'
+import './styles/index.scss'
 
 import App from './App.vue'
 import router from './router'

@@ -26,9 +26,9 @@
               <button class="create-btn" @click="handleCreate">+ 创建任务</button>
             </div>
           </div>
-          
-          <div v-for="task in taskList" 
-               :key="task.id" 
+
+          <div v-for="task in taskList"
+               :key="task.id"
                class="task-card"
                @click="handleShowDetail(task)">
             <div class="task-info">
@@ -57,15 +57,15 @@
             </div>
 
             <div class="task-actions">
-              <button 
-                class="execute-btn" 
+              <button
+                class="execute-btn"
                 @click.stop="handleExecute(task)"
                 :disabled="task.status === 'running'"
               >
                 执行
               </button>
-              <button 
-                class="edit-btn" 
+              <button
+                class="edit-btn"
                 @click.stop="handleEdit(task)"
               >
                 修改
@@ -128,6 +128,7 @@ import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
 import CreateTaskDialog from '@/components/CreateTaskDialog.vue'
 import { useRoute } from 'vue-router'
 import { getAgentList } from '@/api/agent'
+import { useTheme } from '@/styles/theme/useTheme'
 
 const taskList = ref<Task[]>([])
 const loading = ref(false)
@@ -146,6 +147,9 @@ const editForm = ref<CreateTaskRequest>({
   status: ''
 })
 const agentList = ref<any[]>([])
+
+// 获取主题
+const { currentTheme } = useTheme()
 
 // 获取任务列表
 const fetchTasks = async () => {
@@ -277,9 +281,10 @@ onMounted(() => {
 
 <style scoped>
 .task-list-container {
+  width: 100%;
   min-height: 100vh;
-  background: #0d1117;
-  color: #fff;
+  background: var(--el-color-chat-background);
+  color: var(--el-color-chat-text);
   padding: 12px 20px;
   position: relative;
   overflow: hidden;
@@ -291,9 +296,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
+  background-image:
+    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: gridMove 20s linear infinite;
   transform-origin: center;
@@ -314,13 +319,13 @@ onMounted(() => {
   position: absolute;
   width: 6px;
   height: 6px;
-  background: #00f0ff;
+  background: var(--el-color-chat-link-color);
   border-radius: 50%;
   filter: blur(1px);
-  box-shadow: 
-    0 0 10px #00f0ff,
-    0 0 20px #00f0ff,
-    0 0 30px rgba(0, 240, 255, 0.5);
+  box-shadow:
+    0 0 10px var(--el-color-chat-link-color),
+    0 0 20px var(--el-color-chat-link-color),
+    0 0 30px var(--el-color-chat-link-color-light);
   opacity: 0;
   z-index: 0;
 }
@@ -333,7 +338,7 @@ onMounted(() => {
   transform: translate(-50%, -50%);
   width: 12px;
   height: 12px;
-  background: rgba(0, 240, 255, 0.3);
+  background: var(--el-color-chat-link-color-light);
   border-radius: 50%;
   filter: blur(2px);
 }
@@ -347,8 +352,8 @@ onMounted(() => {
   height: 2px;
   background: linear-gradient(
     270deg,
-    rgba(0, 240, 255, 0.8),
-    rgba(0, 240, 255, 0)
+    var(--el-color-chat-link-color),
+    var(--el-color-chat-link-color-light)
   );
   transform-origin: right center;
   transform: translateY(-50%);
@@ -482,14 +487,9 @@ onMounted(() => {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(
-    90deg,
-    #00f0ff 0%,
-    #b400ff 50%,
-    #00f0ff 100%
-  );
+  background: var(--el-color-background-gradient);
   animation: progressLine 3s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 10px var(--el-color-background-gradient);
 }
 
 @keyframes progressLine {
@@ -524,21 +524,19 @@ onMounted(() => {
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1.6rem;
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
   color: transparent;
   display: flex;
+  background: var(--el-color-background-gradient) text;
   align-items: center;
   gap: 10px;
 }
 
 .create-btn {
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
-  color: #0d1117;
+  color: var(--el-color-white);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -546,12 +544,12 @@ onMounted(() => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px var(--el-color-background-gradient);
 }
 
 .task-card {
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  background: var(--el-color-chat-window-background);
+  border: 1px solid var(--el-color-chat-link-color);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -567,8 +565,8 @@ onMounted(() => {
 
 .task-card:hover {
   transform: translateX(4px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  border-color: var(--el-color-chat-link-color);
+  box-shadow: 0 0 20px var(--el-color-chat-link-color-light);
 }
 
 .task-info {
@@ -582,7 +580,7 @@ onMounted(() => {
   height: 50px;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
 }
 
 .task-logo-placeholder {
@@ -593,17 +591,17 @@ onMounted(() => {
   justify-content: center;
   font-size: 24px;
   font-weight: bold;
-  color: #0d1117;
+  color: var(--el-color-white);
 }
 
 .task-details h4 {
   font-size: 18px;
   margin-bottom: 5px;
-  color: #00f0ff;
+  color: var(--el-color-chat-link-color);
 }
 
 .task-details p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--el-color-chat-text-secondary);
   font-size: 14px;
 }
 
@@ -615,27 +613,27 @@ onMounted(() => {
 }
 
 .badge.running {
-  background: rgba(0, 240, 255, 0.1);
-  color: #00f0ff;
-  border: 1px solid #00f0ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .badge.completed {
-  background: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-  border: 1px solid #00ff88;
+  background: var(--el-color-success-light);
+  color: var(--el-color-success);
+  border: 1px solid var(--el-color-success);
 }
 
 .badge.failed {
-  background: rgba(255, 85, 85, 0.1);
-  color: #ff5555;
-  border: 1px solid #ff5555;
+  background: var(--el-color-danger-light);
+  color: var(--el-color-danger);
+  border: 1px solid var(--el-color-danger);
 }
 
 .badge.pending {
-  background: rgba(255, 184, 0, 0.1);
-  color: #ffb800;
-  border: 1px solid #ffb800;
+  background: var(--el-color-warning-light);
+  color: var(--el-color-warning);
+  border: 1px solid var(--el-color-warning);
 }
 
 .empty-state {
@@ -657,9 +655,9 @@ onMounted(() => {
 /* 保持原有的抽屉和对话框样式 */
 :deep(.el-drawer),
 :deep(.el-dialog) {
-  background: rgba(13, 17, 23, 0.7);
+  background: var(--el-color-chat-window-background);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 /* 响应式设计 */
@@ -676,15 +674,15 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #00f0ff;
+  color: var(--el-color-chat-link-color);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
   margin-bottom: 16px;
-  border: 3px solid rgba(0, 240, 255, 0.1);
-  border-top: 3px solid #00f0ff;
+  border: 3px solid var(--el-color-chat-link-color-light);
+  border-top: 3px solid var(--el-color-chat-link-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -700,11 +698,11 @@ onMounted(() => {
 }
 
 .execute-btn {
-  background: linear-gradient(135deg, #00f0ff, #0066ff);
+  background: var(--el-color-background-gradient);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
-  color: #0d1117;
+  color: var(--el-color-white);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -712,17 +710,17 @@ onMounted(() => {
 
 .execute-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 15px var(--el-color-background-gradient);
 }
 
 .execute-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #666;
+  background: var(--el-color-text-secondary);
 }
 
 .edit-btn {
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
