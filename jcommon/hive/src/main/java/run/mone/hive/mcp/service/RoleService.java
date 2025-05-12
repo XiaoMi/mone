@@ -129,7 +129,7 @@ public class RoleService {
             this.clientMap.put(clientId, clientId);
         }
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
-        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList, ip) {
+        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, llm, this.toolList, this.mcpToolList, ip) {
             @Override
             public void reg(RegInfo info) {
                 if (owner.equals(Const.DEFAULT)) {
