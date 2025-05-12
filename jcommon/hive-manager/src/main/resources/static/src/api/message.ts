@@ -40,21 +40,32 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
         if (xhr?.responseText) {
           xhr?.responseText.replace('data: ', '');
           let allText = '';
-          xhr?.responseText.split('data:').forEach((chunk: string, index: number) => {
-            if (chunk.includes("hiveVoiceBase64-")) {
-              textToVoice(chunk.split("hiveVoiceBase64-")[1]);
-            }else {
-              // -2需要去掉最后一个\n
-              allText += chunk.slice(0, -2);
+          if (xhr?.responseText.indexOf("predictions") > -1 || xhr?.responseText.indexOf("[DONE]") > -1) {
+            if (xhr?.responseText.indexOf("[DONE]") > -1){
+              for (const chunk of xhr?.responseText.split('data:')) {
+                if (chunk.indexOf("predictions") > -1) {
+                  callback?.(chunk);
+                  break;
+                }
+              }
             }
-          });
-          // console.log(allText);
-          // 新增的部分
-          const resText = allText.slice(text.length);
-          // console.log(resText);
-          text = allText;
-          if (resText) {
-            callback?.(resText);
+          } else {
+            xhr?.responseText.split('data:').forEach((chunk: string, index: number) => {
+              if (chunk.includes("hiveVoiceBase64-")) {
+                textToVoice(chunk.split("hiveVoiceBase64-")[1]);
+              }else {
+                // -2需要去掉最后一个\n
+                allText += chunk.slice(0, -2);
+              }
+            });
+            // console.log(allText);
+            // 新增的部分
+            const resText = allText.slice(text.length);
+            // console.log(resText);
+            text = allText;
+            if (resText) {
+              callback?.(resText);
+            }
           }
         }
       }
