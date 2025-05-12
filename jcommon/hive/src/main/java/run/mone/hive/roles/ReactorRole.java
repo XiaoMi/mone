@@ -40,15 +40,12 @@ import java.util.stream.Collectors;
 /**
  * @author wangyingjie
  * @author goodjava@qq.com
- * @date 2025/4/9 10:26
  * 会自己决策和行动的Role(Agent)
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
 public class ReactorRole extends Role {
-
-    private CountDownLatch countDownLatch;
 
     private LLM llm;
 
@@ -125,12 +122,12 @@ public class ReactorRole extends Role {
     }
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
-        this(name, "", "", "", "", "", 0, countDownLatch, llm, Lists.newArrayList(), Lists.newArrayList());
+        this(name, "", "", "", "", "", 0, llm, Lists.newArrayList(), Lists.newArrayList());
     }
 
 
     @SneakyThrows
-    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
+    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools, String ip) {
         super(name);
         this.group = group;
         this.version = version;
@@ -145,7 +142,6 @@ public class ReactorRole extends Role {
 
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
-        this.countDownLatch = countDownLatch;
         this.llm = llm;
         this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this.getName());
 
@@ -167,8 +163,8 @@ public class ReactorRole extends Role {
         }, 0, 20, TimeUnit.SECONDS);
     }
 
-    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, CountDownLatch countDownLatch, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
-        this(name, group, version, profile, goal, constraints, port, countDownLatch, llm, tools, mcpTools, NetUtils.getLocalHost());
+    public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+        this(name, group, version, profile, goal, constraints, port, llm, tools, mcpTools, NetUtils.getLocalHost());
     }
 
     //think -> observe -> act
@@ -237,6 +233,7 @@ public class ReactorRole extends Role {
                 }).map(it -> toolMap.get(it.getTag()))
                 .anyMatch(ITool::completed) ? -1 : 1;
 
+        //任务已经完成
         if (attemptCompletion == -1) {
             if (null != lastMsg.getSink()) {
                 lastMsg.getSink().complete();
@@ -245,10 +242,6 @@ public class ReactorRole extends Role {
 
         if (attemptCompletion == 1) {
             this.putMessage(msg);
-        }
-
-        if (countDownLatch != null && attemptCompletion == -1) {
-            countDownLatch.countDown();
         }
         return attemptCompletion;
     }
@@ -288,8 +281,8 @@ public class ReactorRole extends Role {
             String systemPrompt = getSystemPrompt();
 
             //调用大模型(选用合适的工具)
-            String toolRes = callLlm(systemPrompt, compoundMsg, sink, hasError);
-            log.info("res\n:{} hasError:{}", toolRes, hasError.get());
+            String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
+            log.info("res\n:{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
@@ -367,7 +360,7 @@ public class ReactorRole extends Role {
         this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
     }
 
-    private String callLlm(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
+    private String callLLM(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
         StringBuilder sb = new StringBuilder();
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);

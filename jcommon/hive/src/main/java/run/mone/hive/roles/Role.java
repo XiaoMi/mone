@@ -438,6 +438,10 @@ public class Role {
         this.rc.getMemory().add(message);
     }
 
+    public Message getLastMessage() {
+        return this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
+    }
+
     @Override
     public String toString() {
         return "Role{" +
