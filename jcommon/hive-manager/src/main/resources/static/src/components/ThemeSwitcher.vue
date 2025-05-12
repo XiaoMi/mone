@@ -1,12 +1,12 @@
 <template>
   <div class="theme-switcher">
     <el-dropdown @command="handleThemeChange" trigger="click">
-      <el-button type="primary" :icon="Brush">
-        {{ currentTheme.name }}
+      <el-button type="primary" :icon="Brush" size="large">
+        {{ themeNameMap[currentTheme.name] || currentTheme.name }}
         <el-icon class="el-icon--right"><arrow-down /></el-icon>
       </el-button>
       <template #dropdown>
-        <el-dropdown-menu>
+        <el-dropdown-menu class="theme-dropdown-menu">
           <el-dropdown-item
             v-for="(theme, name) in themes"
             :key="name"
@@ -15,94 +15,56 @@
           >
             <div class="theme-item">
               <el-icon v-if="currentTheme.name === theme.name"><check /></el-icon>
-              <span>{{ theme.name }}</span>
-              <el-icon
-                v-if="isCustomTheme(theme.name)"
-                class="delete-icon"
-                @click.stop="handleDeleteTheme(theme.name)"
-              >
-                <Delete />
-              </el-icon>
-            </div>
-          </el-dropdown-item>
-          <el-dropdown-item divided>
-            <div class="theme-item" @click.stop="showConfigurator">
-              <el-icon><plus /></el-icon>
-              <span>自定义主题</span>
+              <span>{{ themeNameMap[theme.name] || theme.name }}</span>
             </div>
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
     </el-dropdown>
-
-    <!-- 主题配置器 -->
-    <ThemeConfigurator ref="configuratorRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Brush, Check, Delete, Plus } from '@element-plus/icons-vue'
+import { Brush, Check, ArrowDown } from '@element-plus/icons-vue'
 import { useTheme } from '../styles/theme/useTheme'
-import ThemeConfigurator from './ThemeConfigurator.vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
 
-const { currentTheme, setTheme, themes, deleteCustomTheme, isCustomTheme } = useTheme()
-const configuratorRef = ref()
+const { currentTheme, setTheme, themes } = useTheme()
+
+const themeNameMap: Record<string, string> = {
+  light: '明亮',
+  dark: '暗黑',
+  cyberpunk: '赛博朋克'
+}
 
 const handleThemeChange = (themeName: string) => {
   setTheme(themeName)
-}
-
-const handleDeleteTheme = async (themeName: string) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除主题"${themeName}"吗？此操作不可恢复。`,
-      '删除主题',
-      {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger'
-      }
-    )
-
-    if (deleteCustomTheme(themeName)) {
-      ElMessage.success(`主题"${themeName}"已删除`)
-    } else {
-      ElMessage.error('删除失败，该主题可能已不存在')
-    }
-  } catch {
-    // 用户取消删除，不做任何操作
-  }
-}
-
-const showConfigurator = () => {
-  configuratorRef.value?.show()
 }
 </script>
 
 <style lang="scss" scoped>
 .theme-switcher {
   display: inline-block;
-
   background: var(--el-color-background-gradient);
 
   :deep(.el-button) {
-    background-color: var(--el-color-background-gradient);
+    background: var(--el-color-background-gradient);
     border-color: var(--el-color-primary);
-    color: var(--el-color-white);
-    transition: all var(--el-transition-duration);
+    color: var(--el-text-color-primary);
+    border-width: 0px;
+    transition: all 0.2s;
 
     &:hover {
-      background-color: var(--el-color-primary-light-3);
-      border-color: var(--el-color-primary-light-3);
+      background: var(--el-color-primary);
+      color: var(--el-bg-color);
     }
-
     .el-icon {
       margin-right: 4px;
     }
   }
+}
+
+.theme-dropdown-menu {
+  background: var(--el-color-background-gradient);
 }
 
 .theme-item {
@@ -111,11 +73,11 @@ const showConfigurator = () => {
   gap: 8px;
   width: 100%;
   padding: 8px 12px;
-  color: var(--el-text-color-primary);
-  transition: all var(--el-transition-duration);
+  transition: all 0.2s;
 
   &:hover {
-    background-color: var(--el-color-primary-light-9);
+    background: var(--el-color-primary);
+    color: var(--el-bg-color);
   }
 
   .el-icon {
@@ -124,46 +86,37 @@ const showConfigurator = () => {
   }
 }
 
-.delete-icon {
-  margin-left: auto;
-  color: var(--el-color-danger);
-  font-size: 16px;
-  opacity: 0;
-  transition: all var(--el-transition-duration);
-
-  &:hover {
-    color: var(--el-color-danger-light-3);
-  }
-}
-
-.el-dropdown-item:hover .delete-icon {
-  opacity: 1;
-}
-
 .el-dropdown-item.is-active {
   color: var(--el-color-primary);
-  background-color: var(--el-color-primary-light-9);
+  background: var(--el-color-primary-light-9, #f0f6ff);
   font-weight: 500;
 }
 
 :deep(.el-dropdown-menu) {
   padding: 4px 0;
-  border-radius: var(--el-border-radius-base);
-  box-shadow: var(--el-box-shadow-light);
-  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  box-shadow: none;
+  border: none;
+  color: var(--el-text-color-primary);
+  background: var(--el-color-background-gradient);
 }
 
 :deep(.el-dropdown-menu__item) {
   padding: 0;
   line-height: normal;
+  color: var(--el-text-color-primary);
 }
 
 :deep(.el-dropdown-menu__item:focus) {
-  background-color: transparent;
+  background: transparent;
 }
 
 :deep(.el-dropdown-menu__item--divided:before) {
   margin: 4px 0;
-  background-color: var(--el-border-color-lighter);
+  background: var(--el-border-color-lighter);
+}
+
+:deep(.el-popper.is-light) {
+  border: none;
 }
 </style>

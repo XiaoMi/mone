@@ -104,7 +104,6 @@ import { login, register } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { useTheme } from '@/styles/theme/useTheme'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -199,9 +198,7 @@ const toggleForm = () => {
   isLoginForm.value = !isLoginForm.value
 }
 
-// 获取主题
-const { currentTheme } = useTheme()
-
+// 添加粒子效果初始化
 onMounted(() => {
   // @ts-ignore
   particlesJS('particles-js', {
@@ -214,7 +211,7 @@ onMounted(() => {
         }
       },
       color: {
-        value: currentTheme.value.colors.chatParticleColor
+        value: ['#00f0ff', '#b400ff']
       },
       shape: {
         type: 'circle'
@@ -242,8 +239,8 @@ onMounted(() => {
       line_linked: {
         enable: true,
         distance: 150,
-        color: currentTheme.value.colors.chatParticleColor,
-        opacity: 0.3,
+        color: '#00f0ff',
+        opacity: 0.2,
         width: 1
       },
       move: {
@@ -278,7 +275,7 @@ onMounted(() => {
         grab: {
           distance: 140,
           line_linked: {
-            opacity: 1
+            opacity: 0.5
           }
         },
         push: {
@@ -294,34 +291,36 @@ onMounted(() => {
 <style scoped>
 .login-container {
   display: flex;
-  flex: 1;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: var(--el-color-chat-background);
-  background-image: var(--el-color-chat-background-gradient);
+  background-color: #0a0a1a;
   padding: 20px;
   box-sizing: border-box;
   font-family: 'Orbitron', sans-serif;
   position: relative;
   overflow: hidden;
+
+  flex-grow: 1;
 }
 
 .login-box {
   width: 100%;
   max-width: 500px;
-  background: var(--el-color-chat-window-background);
-  border: 1px solid var(--el-color-chat-link-color);
-  box-shadow: 0 0 30px var(--el-color-chat-link-color);
+  background: rgba(10, 10, 26, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
   border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2),
+              0 0 40px rgba(180, 0, 255, 0.1);
   transition: all 0.3s ease;
   position: relative;
   z-index: 1;
 }
 
 .login-box:hover {
-  box-shadow: 0 0 30px var(--el-color-chat-link-color),
-              0 0 50px var(--el-color-chat-link-color);
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.3),
+              0 0 50px rgba(180, 0, 255, 0.2);
 }
 
 .card-header {
@@ -332,36 +331,36 @@ onMounted(() => {
 
 h2 {
   font-size: 2rem;
-  color: var(--el-color-chat-link-color);
-  text-shadow: 0 0 10px var(--el-color-chat-link-color), 0 0 20px var(--el-color-chat-link-color);
+  color: #00f0ff;
+  text-shadow: 0 0 10px #00f0ff, 0 0 20px #b400ff;
 }
 
 :deep(.el-input__wrapper) {
-  background: var(--el-color-chat-window-background) !important;
-  border: 1px solid var(--el-color-chat-link-color) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
   box-shadow: none !important;
 }
 
 :deep(.el-input__wrapper:hover),
 :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--el-color-chat-link-color) !important;
-  box-shadow: 0 0 10px var(--el-color-chat-link-color) !important;
+  border-color: #b400ff !important;
+  box-shadow: 0 0 10px rgba(180, 0, 255, 0.5) !important;
 }
 
 :deep(.el-input__inner) {
-  color: var(--el-color-chat-text) !important;
+  color: #00f0ff !important;
   font-family: 'Orbitron', sans-serif;
 }
 
 :deep(.el-form-item__label) {
-  color: var(--el-color-chat-text) !important;
+  color: rgba(0, 240, 255, 0.8) !important;
   font-family: 'Orbitron', sans-serif;
 }
 
 .login-button {
-  background: var(--el-color-chat-link-color) !important;
+  background: linear-gradient(90deg, #00f0ff, #b400ff) !important;
   border: none !important;
-  color: var(--el-color-white) !important;
+  color: #0a0a1a !important;
   font-family: 'Orbitron', sans-serif;
   font-weight: bold;
   border-radius: 8px !important;
@@ -391,9 +390,8 @@ h2 {
 }
 
 .login-button:hover {
-  background: var(--el-color-chat-link-color-light) !important;
   transform: translateY(-3px);
-  box-shadow: 0 5px 15px var(--el-color-chat-link-color);
+  box-shadow: 0 5px 15px rgba(180, 0, 255, 0.4);
   animation: pulse-border 1.5s infinite;
 }
 
@@ -417,13 +415,13 @@ h2 {
 
 @keyframes pulse-border {
   0% {
-    box-shadow: 0 5px 15px var(--el-color-chat-link-color);
+    box-shadow: 0 5px 15px rgba(180, 0, 255, 0.4);
   }
   50% {
-    box-shadow: 0 5px 25px var(--el-color-chat-link-color-light);
+    box-shadow: 0 5px 25px rgba(0, 240, 255, 0.6);
   }
   100% {
-    box-shadow: 0 5px 15px var(--el-color-chat-link-color);
+    box-shadow: 0 5px 15px rgba(180, 0, 255, 0.4);
   }
 }
 
@@ -433,16 +431,16 @@ h2 {
 }
 
 .register-link :deep(.el-link) {
-  color: var(--el-color-chat-link-color) !important;
+  color: #00f0ff !important;
   font-family: 'Orbitron', sans-serif;
 }
 
 @keyframes glow {
   0% {
-    text-shadow: 0 0 10px var(--el-color-chat-link-color), 0 0 20px var(--el-color-chat-link-color);
+    text-shadow: 0 0 10px #00f0ff, 0 0 20px #b400ff;
   }
   100% {
-    text-shadow: 0 0 15px var(--el-color-chat-link-color), 0 0 30px var(--el-color-chat-link-color);
+    text-shadow: 0 0 15px #00f0ff, 0 0 30px #b400ff;
   }
 }
 
@@ -453,7 +451,7 @@ h2 {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at center, var(--el-color-chat-link-color-light) 0%, transparent 70%);
+  background: radial-gradient(circle at center, rgba(0, 240, 255, 0.1) 0%, transparent 70%);
   animation: pulse 4s infinite;
 }
 
@@ -484,28 +482,51 @@ h2 {
   margin: 0 auto;
 }
 
-/* 添加量子背景效果 */
-.login-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
-    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
-  background-size: 30px 30px;
-  animation: gridMove 20s linear infinite;
-  z-index: 0;
+.light #particles-js {
+  display: none;
 }
 
-@keyframes gridMove {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(30px);
-  }
+.dark #particles-js {
+  display: none;
+}
+
+.light .login-container {
+  background-color: #f5f7fa;
+}
+.light .login-box {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid #e0e0e0;
+}
+.light h2 {
+  color: #409eff;
+  text-shadow: 0 0 10px #409eff, 0 0 20px #a0cfff;
+}
+.light :deep(.el-input__wrapper) {
+  background: #fff !important;
+  border: 1px solid #dcdfe6 !important;
+}
+.light .login-button {
+  background: linear-gradient(90deg, #409eff, #67c23a) !important;
+  color: #fff !important;
+}
+
+.dark .login-container {
+  background-color: #0a0a1a;
+}
+.dark .login-box {
+  background: rgba(10, 10, 26, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+.dark h2 {
+  color: #00f0ff;
+  text-shadow: 0 0 10px #00f0ff, 0 0 20px #b400ff;
+}
+.dark :deep(.el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+}
+.dark .login-button {
+  background: linear-gradient(90deg, #00f0ff, #b400ff) !important;
+  color: #0a0a1a !important;
 }
 </style>

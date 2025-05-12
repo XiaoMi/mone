@@ -53,6 +53,8 @@ html,body {
 
 .app-header {
   padding: 1rem 2rem;
+  height: 72px;
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;

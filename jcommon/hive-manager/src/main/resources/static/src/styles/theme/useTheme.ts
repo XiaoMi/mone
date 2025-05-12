@@ -88,11 +88,12 @@ export const useTheme = () => {
   // 应用主题到CSS变量
   const applyTheme = (theme: ThemeConfig) => {
     const root = document.documentElement
-    root.setAttribute('data-theme', theme.name)
-    Object.entries(theme.colors).forEach(([key, value]) => {
-      const cssVar = `--el-color-${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`
-      root.style.setProperty(cssVar, value)
+    // 移除所有主题 class
+    Object.keys(presetThemes).forEach(themeName => {
+      root.classList.remove(themeName)
     })
+    // 添加当前主题 class
+    root.classList.add(theme.name)
     // 设置body背景色
     document.body.style.backgroundColor = theme.colors.background
     document.body.style.color = theme.colors.textPrimary

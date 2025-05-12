@@ -570,4 +570,12 @@ onMounted(async () => {
     background-position: 0 0;
   }
 }
+
+// .light #particles-js {
+//   display: none;
+// }
+
+// .dark #particles-js {
+//   display: none;
+// }
 </style>
