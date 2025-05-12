@@ -2,14 +2,17 @@ package run.mone.agentx.websocket;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.adapter.standard.StandardWebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import run.mone.agentx.entity.User;
+import run.mone.agentx.service.AgentAccessService;
 import run.mone.agentx.service.McpService;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.hive.common.GsonUtils;
@@ -23,6 +26,7 @@ import java.net.URI;
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private final McpService mcpService;
+    private final AgentAccessService agentAccessService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -79,6 +83,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             String userId = session.getAttributes().getOrDefault("userId", "").toString();
             toolData.setUserId(userId);
             toolData.setAgentId(String.valueOf(request.getAgentId()));
+
+            if (!agentAccessService.validateAccess(request.getAgentId(), userId).block()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "用户没有权限访问该Agent");
+            }
 
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
