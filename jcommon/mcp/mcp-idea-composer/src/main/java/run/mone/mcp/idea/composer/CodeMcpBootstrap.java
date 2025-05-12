@@ -1,4 +1,3 @@
-
 package run.mone.mcp.idea.composer;
 
 import org.springframework.boot.SpringApplication;

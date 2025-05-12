@@ -42,9 +42,9 @@ public class McpController {
         log.info("user:{} 调用MCP服务，请求参数: {}", user.getUsername(), requestBody);
         McpRequest request = GsonUtils.gson.fromJson(requestBody, McpRequest.class);
 
-//        if (!agentAccessService.validateAccess(request.getAgentId(), String.valueOf(user.getId())).block()) {
-//            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "用户没有权限访问该Agent");
-//        }
+        if (!agentAccessService.validateAccess(request.getAgentId(), String.valueOf(user.getId())).block()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "用户没有权限访问该Agent");
+        }
 
         String agentId = String.valueOf(request.getAgentId());
 
