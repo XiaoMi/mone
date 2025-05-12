@@ -18,7 +18,7 @@ import java.util.Map;
 @Slf4j
 public class ImageFunction implements McpFunction {
 
-    private String name = "stream_iamge_chat";
+    private String name = "stream_image_chat";
 
     private String desc = "Generate image from text prompt using Imagen 3.0";
 
@@ -37,7 +37,7 @@ public class ImageFunction implements McpFunction {
 
     private static HttpClient httpClient = new HttpClient();
     private static final Gson gson = new Gson();
-    private static final String API_URL = "https://us-central1-aiplatform.googleapis.com/v1/projects/b2c-mione-gcp-copilot/locations/us-central1/publishers/google/models/imagen-3.0-generate-002:predict";
+    private static final String API_URL = "https://europe-west1-aiplatform.googleapis.com/v1/projects/b2c-mione-gcp-copilot/locations/europe-west1/publishers/google/models/imagen-3.0-generate-002:predict";
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
@@ -47,7 +47,8 @@ public class ImageFunction implements McpFunction {
                 log.info("Generating image for prompt: {}", prompt);
                 String result = generateImage(prompt);
                 return Flux.just(
-                        new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false)
+                        new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false),
+                        new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("[DONE]")), false)
                 );
             } catch (Exception e) {
                 log.error("Failed to generate image", e);
