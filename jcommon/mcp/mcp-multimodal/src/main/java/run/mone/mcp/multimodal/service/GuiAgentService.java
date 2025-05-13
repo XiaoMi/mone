@@ -169,21 +169,32 @@ public class GuiAgentService {
                 case "click":
                     if (json.has("start_box") && !json.get("start_box").isNull()) {
                         int[] coords = getBoxCenter(json.get("start_box"));
-                        return multimodalService.click(coords[0], coords[1]);
+                        // Get screen dimensions
+                        // Convert relative coordinates to screen coordinates
+                        Point imagePoint = new Point(coords[0], coords[1]);
+                        // Use 1000x1000 as the image reference size since coordinates are in [0-1000] range
+                        Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(imagePoint, new Dimension(1000, 1000));
+                        return multimodalService.click(screenPoint.x, screenPoint.y);
                     }
                     break;
 
                 case "left_double":
                     if (json.has("start_box") && !json.get("start_box").isNull()) {
                         int[] coords = getBoxCenter(json.get("start_box"));
-                        return multimodalService.doubleClick(coords[0], coords[1]);
+                        // Convert relative coordinates to screen coordinates
+                        Point imagePoint = new Point(coords[0], coords[1]);
+                        Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(imagePoint, new Dimension(1000, 1000));
+                        return multimodalService.doubleClick(screenPoint.x, screenPoint.y);
                     }
                     break;
 
                 case "right_single":
                     if (json.has("start_box") && !json.get("start_box").isNull()) {
                         int[] coords = getBoxCenter(json.get("start_box"));
-                        return multimodalService.rightClick(coords[0], coords[1]);
+                        // Convert relative coordinates to screen coordinates
+                        Point imagePoint = new Point(coords[0], coords[1]);
+                        Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(imagePoint, new Dimension(1000, 1000));
+                        return multimodalService.rightClick(screenPoint.x, screenPoint.y);
                     }
                     break;
 
@@ -192,9 +203,17 @@ public class GuiAgentService {
                             !json.get("start_box").isNull() && !json.get("end_box").isNull()) {
                         int[] startCoords = getBoxCenter(json.get("start_box"));
                         int[] endCoords = getBoxCenter(json.get("end_box"));
+                        
+                        // Convert relative coordinates to screen coordinates
+                        Point startImagePoint = new Point(startCoords[0], startCoords[1]);
+                        Point endImagePoint = new Point(endCoords[0], endCoords[1]);
+                        
+                        Point startScreenPoint = ImageProcessingUtil.imageToScreenCoordinates(startImagePoint, new Dimension(1000, 1000));
+                        Point endScreenPoint = ImageProcessingUtil.imageToScreenCoordinates(endImagePoint, new Dimension(1000, 1000));
+                        
                         return multimodalService.dragAndDrop(
-                                startCoords[0], startCoords[1],
-                                endCoords[0], endCoords[1]);
+                                startScreenPoint.x, startScreenPoint.y,
+                                endScreenPoint.x, endScreenPoint.y);
                     }
                     break;
 
@@ -242,13 +261,13 @@ public class GuiAgentService {
      * Get the center coordinates of a bounding box
      */
     private int[] getBoxCenter(JsonNode boxNode) {
-        // Assuming relative coordinates [0-1000]
+        // These are already relative coordinates [0-1000]
         int x1 = boxNode.get(0).asInt();
         int y1 = boxNode.get(1).asInt();
         int x2 = boxNode.get(2).asInt();
         int y2 = boxNode.get(3).asInt();
 
-        // Return center point
+        // Return center point in relative coordinates
         return new int[]{(x1 + x2) / 2, (y1 + y2) / 2};
     }
 } 

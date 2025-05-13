@@ -101,6 +101,57 @@ public class ImageProcessingUtil {
     }
     
     /**
+     * Convert image coordinates to macOS screen coordinates
+     * 
+     * @param imageCoords Coordinates [x, y] in the image
+     * @param imgSize Image dimensions [width, height]
+     * @return Screen coordinates [x, y] for macOS
+     */
+    public static Point imageToScreenCoordinates(Point imageCoords, Dimension imgSize) {
+        // Get the screen size
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        
+        // Calculate the scale factor between the image and screen
+        double scaleX = screenSize.getWidth() / imgSize.getWidth();
+        double scaleY = screenSize.getHeight() / imgSize.getHeight();
+        
+        // Convert image coordinates to screen coordinates
+        int screenX = (int) (imageCoords.x * scaleX);
+        int screenY = (int) (imageCoords.y * scaleY);
+        
+        return new Point(screenX, screenY);
+    }
+    
+    /**
+     * Convert bounding box in image to corresponding screen coordinates
+     * 
+     * @param imageBox Bounding box in image coordinates [x1, y1, x2, y2]
+     * @param imgSize Image dimensions [width, height]
+     * @return Bounding box in screen coordinates [x1, y1, x2, y2]
+     */
+    public static int[] imageBoxToScreenCoordinates(int[] imageBox, Dimension imgSize) {
+        if (imageBox == null || imageBox.length != 4) {
+            return null;
+        }
+        
+        // Get the screen size
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        
+        // Calculate the scale factor between the image and screen
+        double scaleX = screenSize.getWidth() / imgSize.getWidth();
+        double scaleY = screenSize.getHeight() / imgSize.getHeight();
+        
+        // Convert image coordinates to screen coordinates
+        int[] screenBox = new int[4];
+        screenBox[0] = (int) (imageBox[0] * scaleX);
+        screenBox[1] = (int) (imageBox[1] * scaleY);
+        screenBox[2] = (int) (imageBox[2] * scaleX);
+        screenBox[3] = (int) (imageBox[3] * scaleY);
+        
+        return screenBox;
+    }
+    
+    /**
      * Draw boxes and arrows on an image
      *
      * @param image Original image to draw on

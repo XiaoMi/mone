@@ -24,7 +24,11 @@ import java.nio.file.Paths;
 public class GuiAgentExample {
 
     public static void main(String[] args) {
-        args = new String[]{"/tmp/v.png", "click 百度一下 按钮"};
+        args = new String[]{"/tmp/v.png",
+//                "click 百度一下 按钮"
+                "click 文库 标签"
+//                "click 搜索框"
+        };
         SpringApplication.run(GuiAgentExample.class, args);
     }
 
@@ -64,12 +68,12 @@ public class GuiAgentExample {
                 // Step 1: Analyze the screenshot with instruction
                 System.out.println("Step 1: Analyzing screenshot...");
 
-//                String modelOutput = guiAgentService.run(imagePath, instruction).block();
+                String modelOutput = guiAgentService.run(imagePath, instruction).block();
 
-                String modelOutput = """
-                        Thought: 我看到搜索框里已经有了"上海一民警受贿200余万获刑"这个关键词，现在只需要点击右边那个蓝色的"百度一下"按钮就能开始搜索了。这个按钮就在搜索框的右侧，很容易找到。
-                        Action: click(start_box='<bbox>637 354 637 354</bbox>')
-                        """;
+//                String modelOutput = """
+//                        Thought: 我看到搜索框里已经有了"上海一民警受贿200余万获刑"这个关键词，现在只需要点击右边那个蓝色的"百度一下"按钮就能开始搜索了。这个按钮就在搜索框的右侧，很容易找到。
+//                        Action: click(start_box='<bbox>637 354 637 354</bbox>')
+//                        """;
 
                 System.out.println("\nModel output:\n" + modelOutput);
 
@@ -89,8 +93,6 @@ public class GuiAgentExample {
                 String action = parsedJson.get("action").asText("");
 
                 System.out.println("\nStep 4: Action detected: " + action);
-                System.out.println("To execute this action, confirm with 'yes' or press Enter to skip:");
-
                 System.out.println("\nExecuting action...");
 
                 guiAgentService.executeAction(parsedOutput)
