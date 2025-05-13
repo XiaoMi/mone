@@ -6,7 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
-import run.mone.hive.roles.tool.*;
+import run.mone.hive.roles.tool.AskTool;
+import run.mone.hive.roles.tool.AttemptCompletionTool;
+import run.mone.hive.roles.tool.ChatTool;
 import run.mone.mcp.writer.function.WriterFunction;
 import run.mone.mcp.writer.service.WriterService;
 
@@ -41,14 +43,11 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool(),
-                        //文件操作工具
-                        new FileTool(),
-                        //执行文件工具
-                        new ExecuteTool()
+                        new AttemptCompletionTool()
                         ))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName),
+                .mcpTools(Lists.newArrayList(
+                        new ChatFunction(agentName),
                         new WriterFunction(writerService)
                 ))
                 .build();
