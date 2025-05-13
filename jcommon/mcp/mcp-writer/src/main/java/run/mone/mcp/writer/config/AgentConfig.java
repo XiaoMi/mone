@@ -30,13 +30,13 @@ public class AgentConfig {
                 .profile("你是一名优秀的写作助手")
                 .goal("你的目标是更好的帮助用户完成写作任务")
                 .workflow("""
-                        写文章的工作流程:
+                        写文章的流程:
                         <1>写出文章 调用stream_writer->writeNewArticle operation
                         <2>对文章提出修改意见 调用stream_writer->suggestImprovements operation
                         <3>对文章进行润色 调用stream_writer->polishArticle operation
                         """)
                 .outputFormat("直接输出文本即可,不要使用markdown格式")
-                .constraints("不要探讨任何和写作不相关的问题,如果用户问你,你可以直接拒绝掉")
+                .constraints("不要探讨任何和写作不相关的问题,如果用户问你,你可以直接拒绝掉.用中文写文章.")
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),
