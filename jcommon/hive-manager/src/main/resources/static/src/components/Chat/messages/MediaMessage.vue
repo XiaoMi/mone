@@ -13,6 +13,7 @@
         style="height: 80px;"
         fit="scale-down"
         :src="src"
+        :preview-src-list="[src]"
       >
         <template #error>
           <div class="image-slot">
@@ -29,6 +30,7 @@
           fit="scale-down"
           v-if="handleImageSrc(item)"
           :src="handleImageSrc(item)"
+          :preview-src-list="[handleImageSrc(item)]"
         >
           <template #error>
             <div class="image-slot">
