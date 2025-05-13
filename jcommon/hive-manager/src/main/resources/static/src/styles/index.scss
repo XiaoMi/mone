@@ -1,5 +1,5 @@
 // 基础变量
-@import './theme/variables.scss';
+@use './theme/variables.scss' as *;
 
 // 组件主题覆盖
 // @import './theme/chat-window.scss'; 

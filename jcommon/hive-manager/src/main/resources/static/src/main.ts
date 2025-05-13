@@ -1,6 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
+import '@fortawesome/fontawesome-free/scss/fontawesome.scss'
+import '@fortawesome/fontawesome-free/scss/solid.scss'
 import './styles/element-theme.scss'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
