@@ -12,6 +12,8 @@ export const useUserStore = defineStore('user', () => {
   const token = ref('')
   const user = ref<User | null>(null)
   const agent = ref<Agent | null>(null)
+  const instance = ref<Array<any> | null>(null)
+  const selectedInstance = ref<any>(null)
 
   function setToken(newToken: string) {
     token.value = newToken
@@ -23,9 +25,29 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('user', JSON.stringify(newUser))
   }
 
-  function setAgent(newAgent: Agent) {
+  function setAgent(newAgent: Agent | null) {
     agent.value = newAgent
   }
+
+  function getAgent () {
+    return agent.value
+  }
+
+  function setInstance(newInstance: Array<any> | null) {
+    instance.value = newInstance
+  }
+
+  function getInstance() {
+    return instance.value
+  }
+
+  function getSelectedInstance() {
+    return selectedInstance.value
+  }
+
+  function setSelectedInstance(newInstance: any) {
+    selectedInstance.value = newInstance
+  } 
 
   function clearUser() {
     token.value = ''
@@ -50,9 +72,14 @@ export const useUserStore = defineStore('user', () => {
     token,
     user,
     agent,
+    getInstance,
     setToken,
     setUser,
     clearUser,
-    initUser
+    initUser,
+    setInstance,
+    getSelectedInstance,
+    setSelectedInstance,
+    getAgent
   }
 })

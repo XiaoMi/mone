@@ -35,12 +35,17 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
                      "isCreateAudioFile": {
                          "type": "string",
                          "enum": ["true","false"],
-                         "description": "是否创建音频文件：ture是，false否"
+                         "description": "是否创建音频文件：ture是，false否，默认为false"
                      },
                      "isPlay": {
                          "type": "string",
                          "enum": ["true","false"],
-                         "description": "是否播放：ture是，false否"
+                         "description": "是否播放：ture是，false否，默认为false"
+                     },
+                     "isOutputBase64": {
+                         "type": "string",
+                         "enum": ["true","false"],
+                         "description": "是否输出base64编码音频数据：ture是，false否，默认为ture"
                      },
                      "textString": {
                          "type": "string",
@@ -48,7 +53,6 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
                      }
                  },
                  "required": [
-                     "type",
                      "textString"
                  ]
              }
@@ -65,10 +69,12 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
 
-        String type = (String) arguments.get("type");
+        String type = (String) arguments.getOrDefault("type", "tencent");
         String isCreateAudioFile = arguments.get("isCreateAudioFile") != null ? (String) arguments.get(
                 "isCreateAudioFile") : "false";
         String isPlay = arguments.get("isPlay") != null ? (String) arguments.get("isPlay") : "false";
+        String isOutputBase64 = arguments.get("isOutputBase64") != null ? (String) arguments.get("isOutputBase64") :
+                "true";
         String textString = (String) arguments.get("textString");
 
         log.info("textString: {}", textString);
@@ -76,6 +82,7 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
             case "tencent" -> {
                 tencentTtsService.setIsCreateAudioFile(isCreateAudioFile);
                 tencentTtsService.setIsPlay(isPlay);
+                tencentTtsService.setIsOutputBase64(isOutputBase64);
                 return tencentTtsService.doTts(textString)
                         .map(message -> new McpSchema.CallToolResult(
                                 List.of(new McpSchema.TextContent(message)),
@@ -92,6 +99,7 @@ public class TtsFunction implements Function<Map<String, Object>, Flux<McpSchema
             case "ali" -> {
                 aliTtsService.setIsCreateAudioFile(isCreateAudioFile);
                 aliTtsService.setIsPlay(isPlay);
+                aliTtsService.setIsOutputBase64(isOutputBase64);
                 return aliTtsService.doTts(textString)
                         .map(message -> new McpSchema.CallToolResult(
                                 List.of(new McpSchema.TextContent(message)),

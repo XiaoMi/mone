@@ -26,9 +26,9 @@
               <button class="create-btn" @click="handleCreate">+ 创建任务</button>
             </div>
           </div>
-          
-          <div v-for="task in taskList" 
-               :key="task.id" 
+
+          <div v-for="task in taskList"
+               :key="task.id"
                class="task-card"
                @click="handleShowDetail(task)">
             <div class="task-info">
@@ -55,6 +55,22 @@
               <span>更新时间：</span>
               <time>{{formatDate(task.utime)}}</time>
             </div>
+
+            <div class="task-actions">
+              <button
+                class="execute-btn"
+                @click.stop="handleExecute(task)"
+                :disabled="task.status === 'running'"
+              >
+                执行
+              </button>
+              <button
+                class="edit-btn"
+                @click.stop="handleEdit(task)"
+              >
+                修改
+              </button>
+            </div>
           </div>
         </TransitionGroup>
       </div>
@@ -71,30 +87,79 @@
       v-model="dialogVisible"
       @submit="handleSubmit"
     />
+
+    <el-dialog
+      v-model="editDialogVisible"
+      title="修改任务"
+      width="400px"
+    >
+      <el-form :model="editForm" label-width="100px">
+        <el-form-item label="任务描述">
+          <el-input v-model="editForm.description"></el-input>
+        </el-form-item>
+        <el-form-item label="Agent">
+          <el-select v-model="editForm.serverAgentId" placeholder="请选择">
+            <el-option
+              v-for="item in agentList"
+              :key="item.agent.id"
+              :label="item.agent.name"
+              :value="item.agent.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleEditSubmit">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTaskById, createTask, getTaskList } from '@/api/task'
+import { getTaskById, createTask, getTaskList, executeTask, updateTask } from '@/api/task'
 import type { Task, CreateTaskRequest } from '@/api/task'
 import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
 import CreateTaskDialog from '@/components/CreateTaskDialog.vue'
 import { useRoute } from 'vue-router'
+import { getAgentList } from '@/api/agent'
+import { useTheme } from '@/styles/theme/useTheme'
 
 const taskList = ref<Task[]>([])
 const loading = ref(false)
 const drawerVisible = ref(false)
 const selectedTask = ref<Task | null>(null)
 const dialogVisible = ref(false)
+const editDialogVisible = ref(false)
 const route = useRoute()
+const editForm = ref<CreateTaskRequest>({
+  taskUuid: '',
+  clientAgentId: null,
+  serverAgentId: null,
+  skillId: null,
+  title: '',
+  description: '',
+  status: ''
+})
+const agentList = ref<any[]>([])
+
+// 获取主题
+const { currentTheme } = useTheme()
 
 // 获取任务列表
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await getTaskList(Number(route.query.serverAgentId))
+    const params: any = {}
+    if (route.query.serverAgentId) {
+      params.serverAgentId = Number(route.query.serverAgentId)
+    }
+    const response = await getTaskList(params)
     if (response.data.code === 200) {
       taskList.value = response.data.data || []
     } else {
@@ -140,6 +205,46 @@ const handleSubmit = async (form: CreateTaskRequest) => {
   }
 }
 
+const handleExecute = async (task: Task) => {
+  try {
+    const response = await executeTask({
+      id: task.taskUuid,
+      metadata:{
+        input: task.description,
+        serverAgentId: task.serverAgentId
+      }
+    })
+    if (response.data.code === 200) {
+      ElMessage.success('任务执行成功')
+      fetchTasks()
+    } else {
+      ElMessage.error(response.data.message)
+    }
+  } catch {
+    ElMessage.error('执行任务失败')
+  }
+}
+
+const handleEdit = (task: Task) => {
+  editForm.value = { ...task }
+  editDialogVisible.value = true
+}
+
+const handleEditSubmit = async () => {
+  try {
+    const response = await updateTask(editForm.value)
+    if (response.data.code === 200) {
+      ElMessage.success('任务更新成功')
+      editDialogVisible.value = false
+      fetchTasks()
+    } else {
+      ElMessage.error(response.data.message)
+    }
+  } catch {
+    ElMessage.error('更新任务失败')
+  }
+}
+
 const formatDate = (date: string) => {
   return new Date(date).toLocaleString()
 }
@@ -154,17 +259,33 @@ const getStatusType = (status: string) => {
   return statusMap[status] || 'info'
 }
 
+// 获取Agent列表
+const fetchAgentList = async () => {
+  try {
+    const response = await getAgentList()
+    if (response.data.code === 200) {
+      agentList.value = response.data.data || []
+    } else {
+      ElMessage.error(response.data.message)
+    }
+  } catch {
+    ElMessage.error('获取Agent列表失败')
+  }
+}
+
 onMounted(() => {
   fetchTasks()
+  fetchAgentList()
 })
 </script>
 
 <style scoped>
 .task-list-container {
+  width: 100%;
   min-height: 100vh;
-  background: #0d1117;
-  color: #fff;
-  padding: 20px;
+  background: var(--el-color-chat-background);
+  color: var(--el-color-chat-text);
+  padding: 12px 20px;
   position: relative;
   overflow: hidden;
 }
@@ -175,9 +296,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
+  background-image:
+    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: gridMove 20s linear infinite;
   transform-origin: center;
@@ -198,13 +319,13 @@ onMounted(() => {
   position: absolute;
   width: 6px;
   height: 6px;
-  background: #00f0ff;
+  background: var(--el-color-chat-link-color);
   border-radius: 50%;
   filter: blur(1px);
-  box-shadow: 
-    0 0 10px #00f0ff,
-    0 0 20px #00f0ff,
-    0 0 30px rgba(0, 240, 255, 0.5);
+  box-shadow:
+    0 0 10px var(--el-color-chat-link-color),
+    0 0 20px var(--el-color-chat-link-color),
+    0 0 30px var(--el-color-chat-link-color-light);
   opacity: 0;
   z-index: 0;
 }
@@ -217,7 +338,7 @@ onMounted(() => {
   transform: translate(-50%, -50%);
   width: 12px;
   height: 12px;
-  background: rgba(0, 240, 255, 0.3);
+  background: var(--el-color-chat-link-color-light);
   border-radius: 50%;
   filter: blur(2px);
 }
@@ -231,8 +352,8 @@ onMounted(() => {
   height: 2px;
   background: linear-gradient(
     270deg,
-    rgba(0, 240, 255, 0.8),
-    rgba(0, 240, 255, 0)
+    var(--el-color-chat-link-color),
+    var(--el-color-chat-link-color-light)
   );
   transform-origin: right center;
   transform: translateY(-50%);
@@ -366,14 +487,9 @@ onMounted(() => {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(
-    90deg,
-    #00f0ff 0%,
-    #b400ff 50%,
-    #00f0ff 100%
-  );
+  background: var(--el-color-background-gradient);
   animation: progressLine 3s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 10px var(--el-color-background-gradient);
 }
 
 @keyframes progressLine {
@@ -399,24 +515,28 @@ onMounted(() => {
   }
 }
 
+
+.table-container {
+  height: calc(100vh - 110px);
+  overflow-y: auto;
+}
+
 .dashboard-header h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
+  font-size: 1.6rem;
   color: transparent;
   display: flex;
+  background: var(--el-color-background-gradient) text;
   align-items: center;
   gap: 10px;
 }
 
 .create-btn {
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 8px;
-  color: #0d1117;
+  color: var(--el-color-white);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -424,12 +544,12 @@ onMounted(() => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px var(--el-color-background-gradient);
 }
 
 .task-card {
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  background: var(--el-color-chat-window-background);
+  border: 1px solid var(--el-color-chat-link-color);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
@@ -445,8 +565,8 @@ onMounted(() => {
 
 .task-card:hover {
   transform: translateX(4px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  border-color: var(--el-color-chat-link-color);
+  box-shadow: 0 0 20px var(--el-color-chat-link-color-light);
 }
 
 .task-info {
@@ -460,7 +580,7 @@ onMounted(() => {
   height: 50px;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
 }
 
 .task-logo-placeholder {
@@ -471,17 +591,17 @@ onMounted(() => {
   justify-content: center;
   font-size: 24px;
   font-weight: bold;
-  color: #0d1117;
+  color: var(--el-color-white);
 }
 
 .task-details h4 {
   font-size: 18px;
   margin-bottom: 5px;
-  color: #00f0ff;
+  color: var(--el-color-chat-link-color);
 }
 
 .task-details p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--el-color-chat-text-secondary);
   font-size: 14px;
 }
 
@@ -493,27 +613,27 @@ onMounted(() => {
 }
 
 .badge.running {
-  background: rgba(0, 240, 255, 0.1);
-  color: #00f0ff;
-  border: 1px solid #00f0ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .badge.completed {
-  background: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-  border: 1px solid #00ff88;
+  background: var(--el-color-success-light);
+  color: var(--el-color-success);
+  border: 1px solid var(--el-color-success);
 }
 
 .badge.failed {
-  background: rgba(255, 85, 85, 0.1);
-  color: #ff5555;
-  border: 1px solid #ff5555;
+  background: var(--el-color-danger-light);
+  color: var(--el-color-danger);
+  border: 1px solid var(--el-color-danger);
 }
 
 .badge.pending {
-  background: rgba(255, 184, 0, 0.1);
-  color: #ffb800;
-  border: 1px solid #ffb800;
+  background: var(--el-color-warning-light);
+  color: var(--el-color-warning);
+  border: 1px solid var(--el-color-warning);
 }
 
 .empty-state {
@@ -522,6 +642,7 @@ onMounted(() => {
   margin: 120px auto 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .empty-state .empty-text {
@@ -534,9 +655,9 @@ onMounted(() => {
 /* 保持原有的抽屉和对话框样式 */
 :deep(.el-drawer),
 :deep(.el-dialog) {
-  background: rgba(13, 17, 23, 0.7);
+  background: var(--el-color-chat-window-background);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 /* 响应式设计 */
@@ -553,15 +674,15 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #00f0ff;
+  color: var(--el-color-chat-link-color);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
   margin-bottom: 16px;
-  border: 3px solid rgba(0, 240, 255, 0.1);
-  border-top: 3px solid #00f0ff;
+  border: 3px solid var(--el-color-chat-link-color-light);
+  border-top: 3px solid var(--el-color-chat-link-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -569,5 +690,49 @@ onMounted(() => {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.task-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.execute-btn {
+  background: var(--el-color-background-gradient);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: var(--el-color-white);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.execute-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px var(--el-color-background-gradient);
+}
+
+.execute-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--el-color-text-secondary);
+}
+
+.edit-btn {
+  background: var(--el-color-background-gradient);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: #0d1117;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-left: 10px;
+}
+
+.edit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
 }
 </style>

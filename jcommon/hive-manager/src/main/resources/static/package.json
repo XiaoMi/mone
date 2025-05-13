@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@fortawesome/fontawesome-free": "^6.7.2",
     "@traptitech/markdown-it-katex": "^3.6.0",
     "autolinker": "^4.0.0",
     "axios": "^1.7.9",
@@ -39,11 +40,13 @@
     "vue": "^3.0.0",
     "vue-class-component": "^8.0.0-0",
     "vue-clipboard3": "^2.0.0",
+    "vue-json-pretty": "^2.4.0",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.4",
     "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
     "@types/vue": "latest",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",

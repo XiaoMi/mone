@@ -16,15 +16,18 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/static/**")
-                .addResourceLocations("classpath:/static/dist/");
+        registry.addResourceHandler("/assets/**")
+                .addResourceLocations("classpath:/static/dist/assets/");
+                
+        registry.addResourceHandler("/scripts/**")
+                .addResourceLocations("classpath:/static/dist/scripts/");
     }
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/").setViewName("forward:/index.html");
-        registry.addViewController("/page").setViewName("forward:/index.html");
-        registry.addViewController("/page/**").setViewName("forward:/index.html");
+        registry.addViewController("/agent-manager").setViewName("forward:/index.html");
+        registry.addViewController("/agent-manager/**").setViewName("forward:/index.html");
     }
 
     @Bean

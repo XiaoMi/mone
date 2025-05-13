@@ -1,6 +1,6 @@
 <template>
   <div class="instances">
-    <pre>{{agent.instances}}</pre>
+    <pre>{{instances}}</pre>
   </div>
 </template>
 
@@ -8,7 +8,7 @@
 import type { Agent } from '@/api/agent'
 
 defineProps<{
-  agent: Agent
+  instances: Array<any>
 }>()
 </script>
 
@@ -20,8 +20,9 @@ defineProps<{
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: auto;
+  overflow: auto;
   white-space: pre;
+  max-height: 80vh;
 }
 .instances pre::-webkit-scrollbar {
   display: none;

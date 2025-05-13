@@ -1,3 +1,14 @@
+#### GRPC模式配置
+```
+"knowledge_base_query-mcp": {
+    "type": "grpc",
+    "env": {
+      "host": "127.0.0.1",
+      "port": "9786"
+    }
+  }
+```
+
 #### 本地IO模式配置
 ```
 {

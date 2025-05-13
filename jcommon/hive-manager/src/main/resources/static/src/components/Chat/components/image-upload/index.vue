@@ -13,7 +13,7 @@
       list-type="picture"
     >
       <div class="image-upload-icon">
-        <font-awesome-icon color="#FFF" :icon="['fas', 'file-image']" />
+        <el-icon size="18" color="#FFF"><UploadFilled /></el-icon>
       </div>
     </el-upload>
   </div>

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
+import { isTokenExpired } from "@/utils/parseToken";
 
 const router = createRouter({
   history: createWebHistory('/agent-manager/'),
@@ -12,7 +13,25 @@ const router = createRouter({
     {
       path: "/",
       name: "Home",
-      component: () => import("@/views/Login.vue")
+      redirect: "/login"
+    },
+    {
+      path: "/",
+      component: () => import("@/components/Header.vue"),
+      children: [
+        {
+          path: "agents",
+          name: "AgentList",
+          component: () => import("@/views/AgentList.vue"),
+          meta: { requiresAuth: true }
+        },
+        {
+          path: "tasks",
+          name: "TaskList",
+          component: () => import("@/views/TaskList.vue"),
+          meta: { requiresAuth: true }
+        }
+      ]
     },
     {
       path: "/about",
@@ -39,18 +58,6 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: "/agents",
-      name: "AgentList",
-      component: () => import("@/views/AgentList.vue"),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: "/tasks",
-      name: "TaskList",
-      component: () => import("@/views/TaskList.vue"),
-      meta: { requiresAuth: true }
-    },
-    {
       path: "/:pathMatch(.*)*",
       name: "NotFound",
       component: () => import("@/views/Login.vue")
@@ -60,7 +67,12 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore();
-  
+  const isExpired = isTokenExpired();
+  if (isExpired && to.path !== "/login") {
+    userStore.clearUser();
+    next("/login");
+    return
+  }
   if (!userStore.initUser()) {
     if (to.path === "/login") {
       userStore.clearUser();

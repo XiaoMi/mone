@@ -12,6 +12,9 @@
       :initCodePrompt="initCodePrompt"
       @scrollToTop="scrollToTop"
       :changeSendMethod="toggleSendMethod"
+      :onPlayAudio="onPlayAudio"
+      :onClearHistory="onClearHistory"
+      :onOffline="onOfflineAgent"
     />
   </div>
 </template>
@@ -23,16 +26,18 @@ import {
   type Message,
 } from "@/stores/chat-context";
 import { onMounted, onBeforeUnmount, computed, ref } from "vue"
-import { getAgentDetail } from '@/api/agent'
+import { getAgentDetail, clearHistory, offlineAgent } from '@/api/agent'
 import { useRoute } from 'vue-router'
 import { connectWebSocket } from '@/api/wsConnect'
-import { streamChat } from '@/api/message'
+import { streamChat, textToVoice } from '@/api/message'
 import { v4 as uuidv4 } from 'uuid';
 import { fluxCodeHandler } from '@/components/Chat/common/result-code';
+import { useTheme } from '@/styles/theme/useTheme'
+
 const route = useRoute()
 const { getChatContext, setMessageList, addMessage, setProject, setModule, setLoading, messageList } =
   useChatContextStore();
-const { user, setAgent } = useUserStore();
+const { user, setAgent, setInstance, getSelectedInstance, getAgent} = useUserStore();
 
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string);
@@ -60,17 +65,85 @@ const toggleSendMethod = (val: string) => {
   const scrollToTop = () => {
     // 滚动到顶部
   }
+
+  const getAgentName = () => {
+    const agent = getAgent();
+    const name = `stream_${agent.name}_chat`
+    if (agent?.mcpToolMap) {
+      try {
+        const toolMap = JSON.parse(agent.mcpToolMap);
+        const item = Object.values(toolMap)[0];
+        const tool = JSON.parse(item);
+        if (tool.name === name) {
+          return tool.name;
+        }
+      } catch (error) {
+        // return "";
+      }
+    }
+    return name;
+  }
+  const onClearHistory = () => {
+    const agent = getAgent();
+    let params = {
+      message: `/clear`,
+      __owner_id__: user?.username,
+    }
+    clearHistory({
+      mapData: {
+        outerTag: "use_mcp_tool",
+        server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+        tool_name: getAgentName(),
+        arguments: JSON.stringify(params)
+      },
+      conversationId: route.query.conversationId,
+      agentId: route.query.serverAgentId,
+      agentInstance: getSelectedInstance(),
+    });
+  }
+  const onOfflineAgent = () => {
+    const agent = getAgent();
+    let params = {
+      message: `/exit`,
+      __owner_id__: user?.username,
+    }
+    offlineAgent({
+      mapData: {
+        outerTag: "use_mcp_tool",
+        server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+        tool_name: getAgentName(),
+        arguments: JSON.stringify(params)
+      },
+      conversationId: route.query.conversationId,
+      agentId: route.query.serverAgentId,
+      agentInstance: getSelectedInstance(),
+    });
+  }
   const initCodePrompt = () => {
       setMessageList([]);
     //   this.getCodePrompt();
     }
-  const sendMessage = async (message: Message) => {
-    addMessage(message);
+  const onPlayAudio = (text: string) => {
     try {
+      const agent = getAgent();
       messageId.value = uuidv4();
+      let params = {
+        message: `语音合成处理以下文本内容："${text}"`,
+        __owner_id__: user?.username,
+      }
       if (sendMethod.value === "sse") {
         // sse发送消息
-        streamChat(message.data.text as string, uuid.value, (data: any) => {
+        streamChat({
+          mapData: {
+            outerTag: "use_mcp_tool",
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+            tool_name: getAgentName(),
+            arguments: JSON.stringify(params)
+          },
+          conversationId: route.query.conversationId,
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
+        }, (data: any) => {
           if (data) {
             fluxCodeHandler(data, messageId.value)
           }
@@ -78,12 +151,71 @@ const toggleSendMethod = (val: string) => {
       } else {
         // ws发送消息
         socket.value?.send(JSON.stringify({
-          outerTag: "use_mcp_tool",
-          content: {
-            server_name: "minzai-mcp",
-            tool_name: "stream_minzai_chat",
-            arguments: JSON.stringify({ message:message.data.text, clientId: uuid.value, __owner_id__: uuid.value })
+          mapData: {
+            outerTag: "use_mcp_tool",
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+            tool_name: getAgentName(),
+            arguments: JSON.stringify(params)
+          },
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
+        }));
+      }
+    } catch (error) {
+      console.error('发送消息失败:', error);
+    }
+  }
+  const sendMessage = async (message: Message) => {
+    addMessage(message);
+    let text = message.data.text;
+    let image = null;
+    if(message.type === "image") {
+      text = message.data.content;
+      image = message.data.text?.split("base64,")[1];
+    } else if (message.type === "audio") {
+      text = `用asr-mcp工具并且使用腾讯云语音识别这个音频文件内容`;
+    }
+    try {
+      const agent = getAgent();
+      messageId.value = uuidv4();
+      let params = {
+        message: text,
+        __owner_id__: user?.username,
+      }
+      if (message.type === "audio") {
+        params.voiceBase64 = message.data.content?.split("base64,")[1];
+      }
+      if (image) {
+        params.images = image;
+      }
+      if (sendMethod.value === "sse") {
+        // sse发送消息
+        streamChat({
+          mapData: {
+            outerTag: "use_mcp_tool",
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+            tool_name: getAgentName(),
+            arguments: JSON.stringify(params)
+          },
+          conversationId: route.query.conversationId,
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
+        }, (data: any) => {
+          if (data) {
+            fluxCodeHandler(data, messageId.value)
           }
+        });
+      } else {
+        // ws发送消息
+        socket.value?.send(JSON.stringify({
+          mapData: {
+            outerTag: "use_mcp_tool",
+            server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+            tool_name: getAgentName(),
+            arguments: JSON.stringify(params)
+          },
+          agentId: route.query.serverAgentId,
+          agentInstance: getSelectedInstance(),
         }));
       }
     } catch (error) {
@@ -180,7 +312,7 @@ const messageClick = async (item: { type: string; text: string; params: any }) =
           try {
             await messageDelete(item);
           } catch (e) {
-            // 
+            //
           }
           break;
         case "refresh":
@@ -198,15 +330,22 @@ const messageClick = async (item: { type: string; text: string; params: any }) =
       }
     }
 onBeforeUnmount(() => {
+    setAgent(null)
+    setInstance(null)
     initCodePrompt()
 })
+
+// 获取主题
+const { currentTheme } = useTheme()
+
 onMounted(async () => {
     try {
       // 获取Agent详情
       const { data } = await getAgentDetail(Number(route.query.serverAgentId))
       if (data.code === 200) {
-        const agent = data.data
+        const agent = data.data?.agent
         setAgent(agent)
+        setInstance(data.data?.instances)
         addMessage({
             type: "md",
             author: {
@@ -227,7 +366,7 @@ onMounted(async () => {
     }
 
     // 初始化粒子效果
-    particlesJS("particles-js", {
+    window.particlesJS("particles-js", {
       particles: {
         number: {
           value: 80,
@@ -237,7 +376,7 @@ onMounted(async () => {
           }
         },
         color: {
-          value: "#00ffff"
+          value: currentTheme.value.colors.chatParticleColor
         },
         shape: {
           type: "circle"
@@ -265,7 +404,7 @@ onMounted(async () => {
         line_linked: {
           enable: true,
           distance: 150,
-          color: "#00ffff",
+          color: currentTheme.value.colors.chatParticleColor,
           opacity: 0.3,
           width: 1
         },
@@ -314,12 +453,13 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
+<style lang="scss">
 .chat-container {
   width: 100%;
-  height: 100%;
+  flex: 1;
   padding: 20px;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  background: var(--el-color-chat-background);
+  background-image: var(--el-color-chat-background-gradient);
   position: relative;
   overflow: hidden;
 }
@@ -341,9 +481,9 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(rgba(100, 100, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100, 100, 255, 0.1) 1px, transparent 1px);
+  background:
+    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 30px 30px;
   animation: gridMove 20s linear infinite;
   z-index: 0;
@@ -357,7 +497,7 @@ onMounted(async () => {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff);
+  background: var(--el-color-chat-border-glow);
   background-size: 400%;
   z-index: -1;
   filter: blur(5px);
@@ -368,11 +508,11 @@ onMounted(async () => {
   width: 70%;
   height: 100%;
   margin: 0 auto;
-  background: rgba(15, 15, 35, 0.7);
+  background: var(--el-color-chat-window-background);
   backdrop-filter: blur(10px);
   border-radius: 15px;
-  border: 1px solid rgba(100, 100, 255, 0.2);
-  box-shadow: 0 0 30px rgba(0, 100, 255, 0.3);
+  // border: 1px solid var(--el-color-chat-link-color);
+  // box-shadow: 0 0 30px var(--el-color-chat-link-color);
   position: relative;
   z-index: 2;
 }
@@ -381,7 +521,7 @@ onMounted(async () => {
 .quantum-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid var(--el-color-chat-link-color);
   z-index: 1;
 }
 
@@ -430,4 +570,12 @@ onMounted(async () => {
     background-position: 0 0;
   }
 }
+
+// .light #particles-js {
+//   display: none;
+// }
+
+// .dark #particles-js {
+//   display: none;
+// }
 </style>

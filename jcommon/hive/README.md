@@ -2,7 +2,7 @@
 + mcp代码借鉴自Spring Ai 和 Cline(https://github.com/cline/cline)
 + 有 team role action
 + 主要的思考路径:think->act->think->act
-+ 蜜蜂很傻,但一群蜜蜂很聪明
++ 一只蜜蜂很傻,但一群蜜蜂很聪明
 + idea debug test 需要给ide 添加参数:-Deditable.java.test.console=true
 + 启动hive的app方式:
 

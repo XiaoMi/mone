@@ -14,7 +14,7 @@
         </div>
       </slot>
       <div class="sc-message--content">
-        <div class="sc-message--user-content">
+        <div class="sc-message--user-content" :class="{'sc-message--user-content-audio': message.type === 'audio'}">
           <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message">
             <template v-slot:default="scopedProps">
               <slot
@@ -77,7 +77,47 @@
           </div>
         </div> -->
         </div>
-        <div v-if="message.data.sound">
+        <div class="sc-message--footer">
+          <div v-if="message.type === 'md' || message.type === 'hello'" style="display: flex; align-items: center; cursor: pointer;" @click="handlePlay(message.data.text)">
+            <i class="fas fa-volume-high" style="font-size: 14px; color: #FFF; margin-right: 4px;"></i>
+          </div>
+        </div>
+        <!-- <el-popover placement="right-start" popper-class="sc-message--ops">
+          <template #reference>
+            <div class="sc-message--ops-item" style="height: 20px;" v-if="message.meta.role !== 'USER'">
+              <el-icon size="14" color="#FFF"><More /></el-icon>
+            </div>
+          </template>
+          <div>
+            <div
+              v-if="message.type === 'md' || message.type === 'hello'"
+              class="sc-message--ops-item"
+              @click="handlePlay(message.data.text)"
+            >
+              <span style="margin-left: 4px">播放</span>
+            </div>
+            <div
+              class="sc-message--ops-item"
+              @click="onMessageCmd('delete', message)"
+            >
+              <el-icon :size="14" color="#FFF">
+                <font-awesome-icon icon="fa-solid fa-trash" />
+              </el-icon>
+              <span style="margin-left: 4px">删除</span>
+            </div>
+            <div
+              v-if="message.type === 'audio'"
+              class="sc-message--ops-item"
+              @click="onMessageCmd('text', message)"
+            >
+              <el-icon :size="14" color="#FFF">
+                <font-awesome-icon icon="fa-solid fa-file-lines" />
+              </el-icon>
+              <span style="margin-left: 4px">文字</span>
+            </div>
+          </div>
+        </el-popover> -->
+        <!-- <div v-if="message.data.sound">
           <audio ref="audio" :src="message.data.sound" autoplay />
         </div>
         <div class="sc-message--ops">
@@ -90,8 +130,10 @@
               <font-awesome-icon icon="fa-solid fa-rotate" />
             </el-icon>
           </div>
-          <div v-else></div>
-          <!-- <el-popover placement="right">
+          <div v-else>
+
+          </div>
+          <el-popover placement="right">
             <template #reference>
               <div class="sc-message--ops-item" style="display: flex">
                 <el-icon :size="14" color="#FFF">
@@ -110,16 +152,6 @@
                 <span style="margin-left: 4px">删除</span>
               </div>
               <div
-                v-if="message.type === 'md' || message.type === 'hello'"
-                class="sc-message--ops-item"
-                @click="onMessageCmd('audio', message)"
-              >
-                <el-icon :size="14" color="#FFF">
-                  <font-awesome-icon icon="fa-solid fa-volume-high" />
-                </el-icon>
-                <span style="margin-left: 4px">朗读</span>
-              </div>
-              <div
                 v-if="message.type === 'audio'"
                 class="sc-message--ops-item"
                 @click="onMessageCmd('text', message)"
@@ -130,8 +162,8 @@
                 <span style="margin-left: 4px">文字</span>
               </div>
             </div>
-          </el-popover> -->
-        </div>
+          </el-popover>
+        </div> -->
       </div>
     </div>
   </div>
@@ -148,6 +180,9 @@ import UnknownMessage from "./messages/UnknownMessage.vue";
 import ListMessage from "./messages/ListMessage.vue";
 import FlowData from "./FlowData/index.vue";
 import AudioPlayer from "@/components/audio-player/index.vue";
+import { ElMessage } from "element-plus";
+import { textToVoice } from "@/api/audio";
+import { ArrowRight } from '@element-plus/icons-vue';
 
 export default {
   components: {
@@ -160,7 +195,8 @@ export default {
     UnknownMessage,
     ListMessage,
     FlowData,
-    AudioPlayer
+    AudioPlayer,
+    ArrowRight
   },
   props: {
     id: {
@@ -183,6 +219,10 @@ export default {
       type: Function,
       required: true,
     },
+    onPlayAudio: {
+      type: Function,
+      required: true,
+    },
   },
   computed: {
     authorName() {
@@ -193,6 +233,11 @@ export default {
     },
   },
   methods: {
+     async handlePlay (text: string) {
+      if (text?.trim()) {
+        this.onPlayAudio(text)
+      }
+    },
     playAudio(cmd: string, message: Record<string, any>) {
       if (message.data.sound) {
         const audio = this.$refs.audio;
@@ -227,7 +272,6 @@ export default {
     .sc-message--content {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
     }
   }
 }
@@ -242,52 +286,74 @@ export default {
   }
 }
 .sc-message--content {
-  display: inline-flex;
-  flex-direction: column;
+  // display: inline-flex;
   max-width: 100%;
+  align-items: flex-end;
 }
 
 .sc-message--user-content {
   display: inline-block;
-  max-width: 100%;
-  width: fit-content;
-  padding: 5px 20px;
-  border-radius: 6px;
+  // max-width: 100%;
+  // width: fit-content;
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 8px 8px 0px 0;
   font-weight: 300;
   font-size: 14px;
   position: relative;
   -webkit-font-smoothing: subpixel-antialiased;
-  // background-color: rgb(39, 39, 39);
   color: #fff;
-  background-color: rgba(58, 58, 58, 0.5);
-}
+  background: rgba(58, 58, 58, 0.7);
+  backdrop-filter: blur(8px);
+  transition: background 0.2s;
 
-.sc-message--footer {
-  padding: 5px 20px;
-  display: flex;
-
-  & .sc-message--ops-btn {
-    margin-right: 18px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-
-    cursor: pointer;
-
-    color: rgba(224, 236, 255, 0.8);
-    font-size: 12px;
-
-    &:hover {
-      color: #fff;
-      background-color: rgb(39, 39, 39);
-    }
+  &:hover {
+    background: rgba(58, 58, 58, 0.8);
   }
 }
 
-.sc-message--ops-btn-icon {
-  padding-right: 2px;
-  font-size: 20px;
+.sc-message--user-content-audio {
+  background-color: transparent;
+  padding: 0;
+  backdrop-filter: none;
+
+  &:hover {
+    background: transparent;
+  }
+}
+
+.sc-message--footer {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 18px;
+  background: rgba(30, 30, 30, 0.15);
+  border-radius: 0 0 8px 8px;
+  min-height: 36px;
+
+  .sc-message--ops-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: transparent;
+    color: rgba(224, 236, 255, 0.8);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+
+    &:hover {
+      background: rgba(39, 39, 39, 0.7);
+      color: #fff;
+    }
+
+    .sc-message--ops-btn-icon {
+      font-size: 18px;
+      margin-right: 2px;
+    }
+  }
 }
 
 .sc-message--avatar {
@@ -361,10 +427,36 @@ export default {
 
 .sc-message--ops-item {
   padding: 5px 0;
+  margin-left: 4px;
   display: flex;
-  align-items: center;
+  align-items: self-end;
   font-size: 12px;
+  color: #fff !important;
 
   cursor: pointer;
+}
+.sc-message--ops-item:hover {
+  color: #00f0ff !important;
+}
+
+@media (max-width: 600px) {
+  .sc-message--footer {
+    padding: 4px 8px;
+    gap: 8px;
+    min-height: 28px;
+
+    .sc-message--ops-btn {
+      font-size: 12px;
+      padding: 2px 6px;
+
+      .sc-message--ops-btn-icon {
+        font-size: 14px;
+      }
+    }
+  }
+  .sc-message--user-content {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
 }
 </style>

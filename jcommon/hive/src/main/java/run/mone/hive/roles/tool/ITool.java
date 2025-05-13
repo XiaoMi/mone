@@ -1,10 +1,12 @@
 package run.mone.hive.roles.tool;
 
 import com.google.gson.JsonObject;
+import run.mone.hive.roles.ReactorRole;
 
 /**
  * @author goodjava@qq.com
  * @date 2025/4/9 11:07
+ * prompt中就定义的工具
  */
 public interface ITool {
 
@@ -35,7 +37,7 @@ public interface ITool {
         return false;
     }
 
-    default JsonObject execute(JsonObject req) {
+    default JsonObject execute(ReactorRole role, JsonObject req) {
         return new JsonObject();
     }
 

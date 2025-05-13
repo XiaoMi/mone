@@ -26,6 +26,12 @@ public class RegInfo implements Serializable {
 
     private String group;
 
+    private String profile;
+
+    private String goal;
+
+    private String constraints;
+
     private String ip;
 
     private int port;
@@ -33,5 +39,7 @@ public class RegInfo implements Serializable {
     private Map<String, ITool> toolMap;
 
     private Map<String, McpSchema.Tool> mcpToolMap;
+
+    private Map<String,String> clientMap;
 
 }

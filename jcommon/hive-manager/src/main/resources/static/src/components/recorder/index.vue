@@ -1,6 +1,6 @@
 <template>
   <div class="recorder" @click="handleStartOrStop">
-    <el-icon :color="recording ? 'red' : ''" :size="20">
+    <el-icon :color="recording ? 'red' : 'white'" :size="20">
       <Mic />
     </el-icon>
   </div>
@@ -54,14 +54,12 @@ async function getRecorder() {
 
       // 间视频录制结束时触发
       mediaRecorder.onstop = () => {
-        console.log(mediaRecorder.mimeType)
         const blob = new Blob(chunks, { type: mediaRecorder.mimeType })
         // 通过Blob合建对象URL本地地址
         const fileReader = new FileReader()
         fileReader.onload = (e) => {
           const base64Data: string = e.target?.result as string
           if (!base64Data) return
-          console.log(base64Data)
           const url = URL.createObjectURL(blob)
           emits('submit', url, base64Data)
         }

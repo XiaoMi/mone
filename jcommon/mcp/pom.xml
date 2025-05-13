@@ -60,6 +60,9 @@
         <module>mcp-chat</module>
         <module>mcp-tts</module>
         <module>mcp-asr</module>
+        <module>mcp-hera-analysis</module>
+        <module>mcp-custom-model</module>
+        <module>mcp-image</module>
     </modules>
 
     <properties>

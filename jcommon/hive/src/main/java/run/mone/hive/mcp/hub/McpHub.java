@@ -1,6 +1,8 @@
 package run.mone.hive.mcp.hub;
 
+import com.google.common.collect.Lists;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import run.mone.hive.common.Safe;
@@ -25,9 +27,13 @@ import java.util.function.Consumer;
 @Data
 @Slf4j
 public class McpHub {
+
     private final Map<String, McpConnection> connections = new ConcurrentHashMap<>();
+
     private final Path settingsPath;
+
     private WatchService watchService;
+
     private volatile boolean isConnecting = false;
 
     //使用grpc连接mcp
@@ -36,19 +42,49 @@ public class McpHub {
 
     public McpHub(Path settingsPath) throws IOException {
         this(settingsPath, msg -> {
-        });
+        }, false);
     }
 
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
-        this.settingsPath = settingsPath;
-        this.watchService = FileSystems.getDefault().newWatchService();
-        this.msgConsumer = msgConsumer;
-        initializeWatcher();
-        initializeMcpServers();
+        this(settingsPath, msgConsumer, false);
+    }
 
+    @SneakyThrows
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
+        this.settingsPath = settingsPath;
+        this.msgConsumer = msgConsumer;
+
+        if (!skipFile) {
+            this.watchService = FileSystems.getDefault().newWatchService();
+            initializeWatcher();
+            initializeMcpServers();
+        }
+
+        //用来发ping
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping())));
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping(), ex -> {
+                if (null == ex) {
+                    value.setErrorNum(0);
+                } else {
+                    //发生错误了
+                    value.setErrorNum(value.getErrorNum() + 1);
+                    if (value.getErrorNum() >= 3) {
+                        this.connections.remove(key);
+                        value.getTransport().close();
+                        McpHubHolder.remove(key);
+                    }
+                }
+            })));
         }, 5, 5, TimeUnit.SECONDS);
+    }
+
+    //移除废弃的连接
+    public void removeConnection(String key) {
+        McpConnection v = this.connections.remove(key);
+        log.info("remove connection:{}", v);
+        if (null != v) {
+            v.getTransport().close();
+        }
     }
 
     // 局部刷新
@@ -193,7 +229,7 @@ public class McpHub {
         isConnecting = false;
     }
 
-    private void connectToServer(String name, ServerParameters config) {
+    public void connectToServer(String name, ServerParameters config) {
         ClientMcpTransport transport = null;
         switch (config.getType().toLowerCase()) {
             case "grpc":
@@ -212,6 +248,7 @@ public class McpHub {
                 throw new IllegalArgumentException("Unsupported transport type: " + config.getType());
         }
 
+        //建立连接(grpc就直接连过去了)
         McpSyncClient client = McpClient.using(transport)
                 .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msgConsumer)
@@ -223,13 +260,14 @@ public class McpHub {
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
         McpConnection connection = new McpConnection(server, client, transport, McpType.fromString(config.getType()));
+        connection.setKey(name);
         connections.put(name, connection);
-
         try {
+            //这里真的会连接过去
             client.initialize();
             server.setStatus("connected");
+            //放入工具(tool)
             server.setTools(client.listTools().tools());
-            // Fetch resources and resource templates if needed
         } catch (Exception e) {
             log.error("Failed to connect to MCP server {}: ", name, e);
             server.setStatus("disconnected");
@@ -310,7 +348,10 @@ public class McpHub {
             toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
-            throw new IllegalArgumentException("No connection found for server: " + serverName);
+            return Flux.create(sink -> {
+                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)), true));
+                sink.complete();
+            });
         }
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callToolStream(request);

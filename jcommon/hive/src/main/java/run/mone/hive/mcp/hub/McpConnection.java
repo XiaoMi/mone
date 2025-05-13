@@ -1,15 +1,21 @@
 
 package run.mone.hive.mcp.hub;
 
+import lombok.Data;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 
+@Data
 public class McpConnection {
 
     private final McpServer server;
     private final McpSyncClient client;
     private final ClientMcpTransport transport;
     private final McpType type;
+
+    private String key;
+
+    private int errorNum;
 
     public McpConnection(McpServer server, McpSyncClient client, ClientMcpTransport transport) {
         this(server, client, transport, McpType.STDIO);
@@ -22,19 +28,4 @@ public class McpConnection {
         this.type = type;
     }
 
-    public McpServer getServer() {
-        return server;
-    }
-
-    public McpSyncClient getClient() {
-        return client;
-    }
-
-    public ClientMcpTransport getTransport() {
-        return transport;
-    }
-
-    public McpType getType() {
-        return type;
-    }
 }

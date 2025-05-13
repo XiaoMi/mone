@@ -90,10 +90,13 @@
         <module>docean-spring-starter</module>
         <module>ai</module>
         <module>ai/neo4j</module>
-        <module>hive</module>
         <module>ai/m78</module>
         <module>mcp</module>
+        <module>hive</module>
+        <module>hive-client</module>
         <module>hive-manager</module>
+        <module>hive-mind</module>
+        <module>hive-spring-starter</module>
     </modules>
 
 <!--    <distributionManagement>-->
