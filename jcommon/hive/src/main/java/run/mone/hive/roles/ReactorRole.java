@@ -274,7 +274,7 @@ public class ReactorRole extends Role {
             String userPrompt = buildUserPrompt(msg, history);
             log.info("userPrompt:{}", userPrompt);
 
-            LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
+            LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt, msg);
 
             AtomicBoolean hasError = new AtomicBoolean(false);
 
@@ -388,16 +388,6 @@ public class ReactorRole extends Role {
         return curLLM;
     }
 
-    private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
-        return LLMCompoundMsg.builder()
-                .content(userPrompt)
-                .parts(msg.getImages() == null
-                        ? new ArrayList<>()
-                        : msg.getImages()
-                        .stream()
-                        .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
-                        .collect(Collectors.toList())).build();
-    }
 
     public void sendMsg(McpSchema.Content content, String toolName) {
         log.info("send msg :{} {}", content, toolName);
