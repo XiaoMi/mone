@@ -8,6 +8,7 @@ import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -78,7 +79,12 @@ public class MonerMcpClient {
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                 } else {
                     // 只有当before返回true时才调用工具
-                    toolRes = McpHubHolder.get(from).callTool(serviceName, toolName,
+                    McpHub mcpHub = McpHubHolder.get(from);
+                    if (null == mcpHub) {
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
+                    }
+
+                    toolRes = mcpHub.callTool(serviceName, toolName,
                             toolArguments);
                 }
                 monerMcpInterceptor.after(toolName, toolRes);

@@ -38,6 +38,11 @@ public class Role {
     protected String goal;
 
     protected String constraints;
+
+    protected String workflow;
+
+    protected String outputFormat;
+
     @Getter
     protected List<String> specializations;
 

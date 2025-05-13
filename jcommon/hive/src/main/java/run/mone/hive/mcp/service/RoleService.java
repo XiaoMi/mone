@@ -1,7 +1,9 @@
 package run.mone.hive.mcp.service;
 
 import com.google.common.collect.ImmutableMap;
-import lombok.*;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +28,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -160,6 +161,8 @@ public class RoleService {
         role.setProfile(roleMeta.getProfile());
         role.setGoal(roleMeta.getGoal());
         role.setConstraints(roleMeta.getConstraints());
+        role.setWorkflow(roleMeta.getWorkflow());
+        role.setOutputFormat(roleMeta.getOutputFormat());
 
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
