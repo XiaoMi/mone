@@ -43,3 +43,7 @@ logging:
     run.mone.agentx: INFO
     org.springframework.r2dbc: INFO
     io.r2dbc.mysql: INFO
+
+hive:
+  manager:
+    token: ${hive_manager_token}

@@ -25,4 +25,6 @@ public class HealthInfo {
 
     private int port;
 
+    private String token;
+
 }

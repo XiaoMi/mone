@@ -33,6 +33,7 @@ public class SecurityConfig {
                 // .antMatchers("/api/manager/ws/realtime/**").permitAll()
                 // .antMatchers("/ws/agent/chat/**").permitAll()
                 // .antMatchers("/ws/realtime/**").permitAll()
+                .antMatchers("/api/v1/agents/health", "/api/v1/agents/unregister", "/api/v1/agents/register", "/api/v1/tasks/execute").permitAll()
                 .antMatchers("/scripts/**").permitAll()
                 .anyRequest().authenticated()
                 .and()

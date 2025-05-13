@@ -43,6 +43,8 @@ public class RegInfoDto implements Serializable {
     private Map<String, String> mcpToolMap;
 
     private Map<String,String> clientMap;
+
+    private String token;
     
     /**
      * 将 RegInfoDto 转换为 RegInfo
