@@ -32,4 +32,6 @@ public class TaskExecutionInfo {
      * 任务结果数据
      */
     private String result;
+
+    private String token;
 } 

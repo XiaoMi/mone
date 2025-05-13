@@ -1,5 +1,6 @@
 package run.mone.agentx.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -89,6 +90,22 @@ public class UserController {
                 .collectList()
                 .map(ApiResponse::success)
                 .doOnError(error -> log.error("获取用户列表时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @PostMapping("/token")
+    public Mono<ApiResponse<String>> createToken(@AuthenticationPrincipal User user) {
+        return userService.createToken(user)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("创建token时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @GetMapping("/token")
+    public Mono<ApiResponse<String>> getCurrentUserToken(@AuthenticationPrincipal User user) {
+        return userService.getCurrentUserToken(user)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("获取当前用户token时发生错误: {}", error.getMessage(), error))
                 .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
     }
 }

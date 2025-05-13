@@ -32,4 +32,6 @@ public class Task {
     private Map<String, Object> metadata;
 
     private String userName;
-} 
+
+    private String token;
+}

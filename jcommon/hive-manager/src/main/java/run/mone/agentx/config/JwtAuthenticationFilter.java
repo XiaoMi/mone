@@ -52,6 +52,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/a2a/v1/healthz") ||
                 path.equals("/ping") ||
                 path.equals("/") ||
+                path.equals("/api/v1/agents/health") ||
+                path.equals("/api/v1/tasks/execute") ||
+                path.equals("/api/v1/agents/unregister") ||
+                path.equals("/api/v1/agents/register") ||
                 path.equals("/error")) {
             filterChain.doFilter(request, response);
             return;
