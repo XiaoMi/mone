@@ -169,23 +169,25 @@ export function markdownItMcp(md: MarkdownIt) {
          * Note that this can fire at any point within text and you might
          * have to stitch together multiple pieces.
          */
-        const lines = text.split('\n');
-        for (const line of lines) {
-          if (line.includes('```')) {
-            if (startCodeBlock) {
-              startCodeBlock = false;
-              html += md.render(accumulatedText);
-            } else {
-              startCodeBlock = true;
-              accumulatedText += `${line}\n`;
-            }
-          } else if (startCodeBlock){
-            accumulatedText += `${line}\n`;
-          } else {
-            html += md.utils.escapeHtml(`${line}\n`);
-            // html += md.render(`${line}\n`);
-          }
-        }
+        text = text.replace(/```(\w*)\n/g, '').replace(/\n```/g, '');
+        html += md.utils.escapeHtml(`${text}`);
+        // const lines = text.split('\n');
+        // for (const line of lines) {
+        //   if (line.includes('```')) {
+        //     if (startCodeBlock) {
+        //       startCodeBlock = false;
+        //       html += md.render(accumulatedText);
+        //     } else {
+        //       startCodeBlock = true;
+        //       accumulatedText += `${line}\n`;
+        //     }
+        //   } else if (startCodeBlock){
+        //     accumulatedText += `${line}\n`;
+        //   } else {
+        //     html += md.utils.escapeHtml(`${line}\n`);
+        //     // html += md.render(`${line}\n`);
+        //   }
+        // }
       },
       onclosetag(tagname, isImplied) {
         /*
