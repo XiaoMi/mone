@@ -9,6 +9,7 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.FileTool;
 import run.mone.mcp.writer.function.WriterFunction;
 import run.mone.mcp.writer.service.WriterService;
 
@@ -43,7 +44,8 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool()
+                        new AttemptCompletionTool(),
+                        new FileTool()
                         ))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(
