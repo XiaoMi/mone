@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration scan="true" scanPeriod="5 seconds">
+    <property resource="config.properties"></property>
+
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%date [%thread] %-5level %logger{50}:%L - %msg%n</pattern>
+        </layout>
+    </appender>
+
+    <appender name="logfile"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${logpath}/fsserver/fileserver.log</File>
+        <encoder>
+            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${logpath}/fsserver/fileserver.log.%d{yyyy-MM-dd}
+            </FileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+
+
+    <logger name="ch.qos.logback" level="ERROR"/>
+
+
+    <root level="INFO">
+        <appender-ref ref="logfile"/>
+        <appender-ref ref="stdout"/>
+    </root>
+</configuration>
