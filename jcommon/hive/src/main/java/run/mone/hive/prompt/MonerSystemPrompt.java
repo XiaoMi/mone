@@ -92,7 +92,7 @@ public class MonerSystemPrompt {
         } else {
             McpHub mcpHub = McpHubHolder.get(from);
             if (mcpHub == null) {
-                log.warn("mcpHub is null, from: {}", from);
+                log.info("mcpHub is null, from: {}", from);
                 return serverList;
             }
             McpHubHolder.get(from).getConnections().forEach((key, value) -> Safe.run(() -> {

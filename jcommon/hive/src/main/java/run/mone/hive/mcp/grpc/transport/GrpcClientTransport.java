@@ -193,6 +193,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     @Override
     public Mono<Void> closeGracefully() {
+        log.info("closeGracefully");
         close.set(true);
         return Mono.fromRunnable(() -> {
             try {

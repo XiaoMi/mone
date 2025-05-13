@@ -15,6 +15,8 @@ public class McpConnection {
 
     private String key;
 
+    private int errorNum;
+
     public McpConnection(McpServer server, McpSyncClient client, ClientMcpTransport transport) {
         this(server, client, transport, McpType.STDIO);
     }
