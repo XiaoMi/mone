@@ -74,6 +74,11 @@ public class UserService {
     }
 
     public Mono<Boolean> verifyToken(String token) {
+        // 如果token为null，直接返回false
+        if (token == null || token.trim().isEmpty()) {
+            return Mono.just(false);
+        }
+        
         return userRepository.findByToken(token)
                 .map(user -> {
                     // 检查用户状态是否正常
