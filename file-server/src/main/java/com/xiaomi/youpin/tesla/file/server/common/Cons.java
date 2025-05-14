@@ -41,6 +41,10 @@ public abstract class Cons {
     public static final String GETTOKEN = "/token";
 
     public static final String HEALTH = "/health";
+    
+    public static final String LIST_FILES = "/list";
+    
+    public static final String DELETE_FILE = "/delete";
 
     public static final int WRITELIMIT = Config.ins().getInt("writeLimit", 10);
 

@@ -21,12 +21,15 @@ import com.xiaomi.youpin.tesla.file.server.common.FileServerVersion;
 import com.xiaomi.youpin.tesla.file.server.common.UserSecretConfig;
 import com.xiaomi.youpin.tesla.file.server.service.BaseService;
 import com.xiaomi.youpin.tesla.file.server.service.DownloadService;
+import com.xiaomi.youpin.tesla.file.server.service.FileService;
 import com.xiaomi.youpin.tesla.file.server.service.TokenService;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -57,6 +60,7 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
         String token = decoder.parameters().getOrDefault("token", Arrays.asList("")).get(0);
         String userKey = decoder.parameters().getOrDefault("userKey", Arrays.asList("")).get(0);
         String userSecret = decoder.parameters().getOrDefault("userSecret", Arrays.asList("")).get(0);
+        String directoryPath = decoder.parameters().getOrDefault("directory", Arrays.asList("")).get(0);
 
         // 验证用户key和secret
         if (!UserSecretConfig.validateUser(userKey, userSecret)) {
@@ -68,7 +72,6 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
         uri = decoder.path();
 
         log.info("call uri:{} name:{} id:{}", uri, name, id);
-
 
 
         if (!BaseService.checkParams(ctx, name, token)) {
@@ -92,6 +95,18 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
         //获取token
         if (uri.startsWith(Cons.GETTOKEN)) {
             BaseService.send(ctx, new TokenService().generateToken(name));
+            return;
+        }
+        
+        //获取文件列表
+        if (uri.startsWith(Cons.LIST_FILES)) {
+            new FileService().listFiles(ctx, userKey, directoryPath);
+            return;
+        }
+        
+        //删除文件
+        if (uri.startsWith(Cons.DELETE_FILE)) {
+            new FileService().deleteFile(ctx, userKey, name, id);
             return;
         }
 
