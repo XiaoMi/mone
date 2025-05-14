@@ -51,6 +51,7 @@ html,body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .app-header {
@@ -77,6 +78,7 @@ html,body {
   flex: 1;
   // padding: 2rem;
   background-color: var(--el-color-background);
+  overflow: hidden;
 }
 
 /* 全局过渡效果 */
