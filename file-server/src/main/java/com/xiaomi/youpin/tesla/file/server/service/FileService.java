@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @author goodjava@qq.com
@@ -21,6 +22,19 @@ import java.util.Map;
 public class FileService {
 
     private static final Logger log = LoggerFactory.getLogger(FileService.class);
+    
+    // Regex pattern to validate that string only contains alphanumeric characters and hyphens
+    private static final Pattern VALID_KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-]+$");
+    
+    /**
+     * Validates if a string contains only alphanumeric characters and hyphens
+     * 
+     * @param input String to validate
+     * @return true if valid, false otherwise
+     */
+    private boolean isValidKeyFormat(String input) {
+        return input != null && VALID_KEY_PATTERN.matcher(input).matches();
+    }
 
     /**
      * List files for a specific user
@@ -31,6 +45,13 @@ public class FileService {
      */
     public void listFiles(ChannelHandlerContext ctx, String userKey, String directoryPath) {
         try {
+            // Validate userKey
+            if (!isValidKeyFormat(userKey)) {
+                BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
+                return;
+            }
+            
+
             // Construct the base path for this user
             String basePath = Cons.DATAPATH + File.separator + userKey;
 
@@ -85,6 +106,18 @@ public class FileService {
      */
     public void deleteFile(ChannelHandlerContext ctx, String userKey, String name) {
         try {
+            // Validate userKey
+            if (!isValidKeyFormat(userKey)) {
+                BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
+                return;
+            }
+            
+            // Validate name
+            if (!isValidKeyFormat(name)) {
+                BaseService.send(ctx, "error:Invalid file name format. Only alphanumeric characters and hyphens are allowed.");
+                return;
+            }
+            
             // Construct the full path to the file
             String filePath = Cons.DATAPATH + File.separator + userKey + File.separator + name;
 
