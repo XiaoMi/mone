@@ -31,6 +31,9 @@
   --el-color-chat-window-before-gradient-light: #E4E7ED;
   --el-color-chat-window-before-gradient-dark: #DCDFE6;
   --el-color-background-gradient: linear-gradient(135deg, #b3b8d4 0%, #8b93b8 100%);
+  --el-menu-text: #848484;
+  --el-menu-text-hover: #848484;
+  --el-menu-text-active: #333;
 }
 
 .dark {
@@ -66,6 +69,9 @@
   --el-color-chat-window-before-gradient-light: #60A5FA;
   --el-color-chat-window-before-gradient-dark: #3B82F6;
   --el-color-background-gradient: #60A5FA;
+  --el-menu-text: #848484;
+  --el-menu-text-hover: #fff;
+  --el-menu-text-active: #fff;
 }
 
 .cyberpunk {
@@ -101,4 +107,7 @@
   --el-color-chat-window-before-gradient-light: #00dbde;
   --el-color-chat-window-before-gradient-dark: #fc00ff;
   --el-color-background-gradient: linear-gradient(135deg, rgb(0, 240, 255), rgb(180, 0, 255));
+  --el-menu-text: #848484;
+  --el-menu-text-hover: #fff;
+  --el-menu-text-active: #00f0ff;
 } 
