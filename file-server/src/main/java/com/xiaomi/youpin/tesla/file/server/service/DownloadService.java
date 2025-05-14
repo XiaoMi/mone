@@ -21,9 +21,10 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedFile;
+import lombok.SneakyThrows;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
+import java.nio.file.Files;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -71,10 +72,12 @@ public class DownloadService extends BaseService {
     }
 
 
+    @SneakyThrows
     private static void setContentTypeHeader(HttpResponse response, File file) {
-        MimetypesFileTypeMap m = new MimetypesFileTypeMap();
-        String contentType = m.getContentType(file.getPath());
-        if (!contentType.equals("application/octet-stream")) {
+        String contentType = Files.probeContentType(file.toPath());
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        } else if (!contentType.equals("application/octet-stream")) {
             contentType += "; charset=utf-8";
         }
         response.headers().set(CONTENT_TYPE, contentType);
