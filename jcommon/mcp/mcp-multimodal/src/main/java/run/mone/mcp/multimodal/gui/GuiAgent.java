@@ -3,6 +3,7 @@ package run.mone.mcp.multimodal.gui;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import run.mone.mcp.multimodal.service.GuiAgentService;
@@ -18,6 +19,7 @@ import java.nio.file.Paths;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GuiAgent {
 
     private final GuiAgentService guiAgentService;
@@ -29,6 +31,8 @@ public class GuiAgent {
     public void run(String instruction) {
         //截图
         String imagePath = multimodalService.captureScreenshotWithRobot(null).blockFirst();
+
+        log.info("imagePath:{}", imagePath);
 
         // Check if image exists
         Path path = Paths.get(imagePath);

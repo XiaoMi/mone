@@ -65,10 +65,10 @@ public class MultimodalService {
             robot.delay(200);
 
 //            // 2. 点击一次获取窗口焦点
-//            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-//            robot.delay(100);
-//            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-//            robot.delay(500); // 等待窗口获取焦点
+            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+            robot.delay(100);
+            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+            robot.delay(500); // 等待窗口获取焦点
 //
 //
 //            robot.mouseMove(x, y);

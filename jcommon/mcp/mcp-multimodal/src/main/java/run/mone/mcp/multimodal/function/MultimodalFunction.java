@@ -33,8 +33,8 @@ public class MultimodalFunction implements McpFunction {
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["takeScreenshot", "runGuiAgent"],
-                        "description": "The operation to perform on the user interface takeScreenshot=截屏 runGuiAgent=执行操作gui的指令 "
+                        "enum": ["runGuiAgent"],
+                        "description": "The operation to perform on the user interface runGuiAgent=执行操作gui的指令(内部会自动截图,然后分析) "
                     },
                     "imageBase64": {
                         "type": "string",
