@@ -11,6 +11,8 @@ public class UserDTO {
     private Long ctime;
     private Long utime;
     private Integer state;
+    private String token;
+    private String internalAccount;
 
     public static UserDTO fromUser(User user) {
         UserDTO dto = new UserDTO();
@@ -20,6 +22,8 @@ public class UserDTO {
         dto.setCtime(user.getCtime());
         dto.setUtime(user.getUtime());
         dto.setState(user.getState());
+        dto.setToken(user.getToken());
+        dto.setInternalAccount(user.getInternalAccount());
         return dto;
     }
 } 

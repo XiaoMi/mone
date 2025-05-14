@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Flux;
+import run.mone.agentx.dto.UserDTO;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.repository.UserRepository;
 
@@ -92,4 +93,23 @@ public class UserService {
                 .defaultIfEmpty(false)
                 .doOnError(error -> log.error("验证token时发生错误: {}", error.getMessage(), error));
     }
+
+    public Mono<UserDTO> getUserInfo(User user) {
+        return findByUsername(user.getUsername())
+                .map(UserDTO::fromUser)
+                .doOnSuccess(info -> log.info("获取用户信息成功: {}", user.getUsername()))
+                .doOnError(error -> log.error("获取用户信息失败: {}", error.getMessage(), error));
+    }
+
+    public Mono<String> bindInternalAccount(User user, String internalAccount) {
+        return findByUsername(user.getUsername())
+                .flatMap(existingUser -> {
+                    existingUser.setInternalAccount(internalAccount);
+                    return userRepository.save(existingUser)
+                            .thenReturn(internalAccount);
+                })
+                .doOnSuccess(t -> log.info("为用户 {} 绑定内部账号成功", user.getUsername()))
+                .doOnError(error -> log.error("绑定内部账号失败: {}", error.getMessage(), error));
+    }
+
 }
