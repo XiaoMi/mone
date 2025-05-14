@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,11 +102,21 @@ public class UserController {
                 .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
     }
 
-    @GetMapping("/token")
-    public Mono<ApiResponse<String>> getCurrentUserToken(@AuthenticationPrincipal User user) {
-        return userService.getCurrentUserToken(user)
+    @GetMapping("/info")
+    public Mono<ApiResponse<UserDTO>> getUserInfo(@AuthenticationPrincipal User user) {
+        return userService.getUserInfo(user)
                 .map(ApiResponse::success)
-                .doOnError(error -> log.error("获取当前用户token时发生错误: {}", error.getMessage(), error))
+                .doOnError(error -> log.error("获取用户信息时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @PostMapping("/internal-account")
+    public Mono<ApiResponse<String>> bindInternalAccount(
+            @AuthenticationPrincipal User user,
+            @RequestParam String internalAccount) {
+        return userService.bindInternalAccount(user, internalAccount)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
                 .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
     }
 }
