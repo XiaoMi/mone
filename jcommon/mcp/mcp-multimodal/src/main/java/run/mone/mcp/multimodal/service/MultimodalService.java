@@ -64,18 +64,18 @@ public class MultimodalService {
             robot.mouseMove(x, y);
             robot.delay(200);
 
-            // 2. 点击一次获取窗口焦点
-            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-            robot.delay(100);
-            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-            robot.delay(500); // 等待窗口获取焦点
-
-
-            robot.mouseMove(x, y);
-            robot.delay(100);
-            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-            robot.delay(50);
-            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+//            // 2. 点击一次获取窗口焦点
+//            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+//            robot.delay(100);
+//            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+//            robot.delay(500); // 等待窗口获取焦点
+//
+//
+//            robot.mouseMove(x, y);
+//            robot.delay(100);
+//            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+//            robot.delay(50);
+//            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
             return Flux.just("成功在坐标 (" + x + ", " + y + ") 执行了左键点击");
         } catch (Exception e) {
             return Flux.just("点击操作失败：" + e.getMessage());

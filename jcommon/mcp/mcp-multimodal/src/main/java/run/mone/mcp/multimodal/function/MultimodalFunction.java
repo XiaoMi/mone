@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.multimodal.service.GuiAgentService;
 import run.mone.mcp.multimodal.service.MultimodalService;
+import run.mone.mcp.multimodal.gui.GuiAgent;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,10 +18,13 @@ import java.util.Map;
 public class MultimodalFunction implements McpFunction {
 
     private final MultimodalService multimodalService;
-
+    private final GuiAgent guiAgent;
+    
     @Autowired
-    public MultimodalFunction(MultimodalService multimodalService) {
+    public MultimodalFunction(MultimodalService multimodalService, 
+                            GuiAgent guiAgent) {
         this.multimodalService = multimodalService;
+        this.guiAgent = guiAgent;
     }
 
     private static final String TOOL_SCHEMA = """
@@ -28,8 +33,8 @@ public class MultimodalFunction implements McpFunction {
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["analyzeScreenshot", "click", "doubleClick", "rightClick", "dragAndDrop", "typeText", "pressHotkey", "takeScreenshot"],
-                        "description": "The operation to perform on the user interface"
+                        "enum": ["takeScreenshot", "runGuiAgent"],
+                        "description": "The operation to perform on the user interface takeScreenshot=截屏 runGuiAgent=执行操作gui的指令 "
                     },
                     "imageBase64": {
                         "type": "string",
@@ -123,6 +128,7 @@ public class MultimodalFunction implements McpFunction {
                     }
                     case "takeScreenshot" -> multimodalService.captureScreenshotWithRobot(
                             (String) arguments.getOrDefault("filePath", null));
+                    case "runGuiAgent" -> runGuiAgent((String) arguments.get("instruction"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
                 return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
@@ -132,15 +138,24 @@ public class MultimodalFunction implements McpFunction {
             }
         });
     }
+    
+    private Flux<String> runGuiAgent(String instruction) {
+        if (instruction == null || instruction.isEmpty()) {
+            return Flux.error(new IllegalArgumentException("Instruction cannot be empty"));
+        }
+        
+        guiAgent.run(instruction);
+        return Flux.just("GuiAgent has processed the instruction: " + instruction);
+    }
 
     @Override
     public String getName() {
-        return "multimodal";
+        return "stream_multimodal";
     }
 
     @Override
     public String getDesc() {
-        return "Execute UI operations including analyzing screenshots, clicking, double-clicking, right-clicking, dragging and dropping, typing text, and pressing hotkeys.";
+        return "Execute UI operations including analyzing screenshots, clicking, double-clicking, right-clicking, dragging and dropping, typing text, pressing hotkeys, and running GuiAgent with instructions.";
     }
 
     @Override

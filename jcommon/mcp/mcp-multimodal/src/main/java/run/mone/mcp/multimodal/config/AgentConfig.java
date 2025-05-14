@@ -11,6 +11,8 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.FileTool;
 import run.mone.mcp.multimodal.function.MultimodalFunction;
+import run.mone.mcp.multimodal.gui.GuiAgent;
+import run.mone.mcp.multimodal.service.GuiAgentService;
 import run.mone.mcp.multimodal.service.MultimodalService;
 
 import javax.annotation.Resource;
@@ -27,6 +29,14 @@ public class AgentConfig {
     @Resource
     private MultimodalService multimodalService;
 
+
+    @Resource
+    private GuiAgentService guiAgentService;
+
+    @Resource
+    private GuiAgent guiAgent;
+
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -34,11 +44,7 @@ public class AgentConfig {
                 .goal("你的目标是根据用户提供的截图和指令，执行点击、拖拽、输入等操作")
                 .workflow("""
                         界面操作流程:
-                        <1>分析用户提供的截图 调用multimodal->analyzeScreenshot operation
-                        <2>执行点击操作 调用multimodal->click/doubleClick/rightClick operation
-                        <3>执行拖拽操作 调用multimodal->dragAndDrop operation
-                        <4>执行键盘输入 调用multimodal->typeText operation
-                        <5>执行组合键 调用multimodal->pressHotkey operation
+                        <1>执行操作界面指令 调用multimodal->runGuiAgent operation
                         """)
                 .outputFormat("直接输出文本即可，描述你的操作结果")
                 .constraints("只执行用户要求的界面操作，不要执行任何可能有安全风险的操作")
@@ -46,13 +52,12 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool(),
-                        new FileTool()
+                        new AttemptCompletionTool()
                 ))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(
                         new ChatFunction(agentName),
-                        new MultimodalFunction(multimodalService)
+                        new MultimodalFunction(multimodalService, guiAgent)
                 ))
                 .build();
     }
