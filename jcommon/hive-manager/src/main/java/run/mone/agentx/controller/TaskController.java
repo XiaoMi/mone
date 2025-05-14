@@ -83,27 +83,33 @@ public class TaskController {
      */
     @PostMapping("/execute")
     public Mono<ApiResponse<Task>> executeTask(
+            @AuthenticationPrincipal User user,
             @RequestBody run.mone.hive.a2a.types.Task taskExecutionInfo) {
         
         log.info("收到任务执行请求: {}", taskExecutionInfo);
-        
-        // 验证token
-        return userService.verifyToken(taskExecutionInfo.getToken())
-                .flatMap(isValid -> {
-                    if (!isValid) {
-                        return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
-                    }
+        if (user != null) {
+            taskExecutionInfo.setUserName(user.getUsername());
+        } else {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(taskExecutionInfo.getToken()).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
+            }
+            User userByToken = userService.findByToken(taskExecutionInfo.getToken()).block();
+            user = userByToken;
+            taskExecutionInfo.setUserName(userByToken.getUsername());
+        }
+       
                     
-                    // 调用service执行任务
-                    return taskService.executeTask(taskExecutionInfo)
-                            .map(task -> {
-                                log.info("任务创建成功: {}", task.getTaskUuid());
-                                return ApiResponse.success(task);
-                            })
-                            .onErrorResume(e -> {
-                                log.error("任务执行请求处理失败: {}", e.getMessage(), e);
-                                return Mono.just(ApiResponse.error(500, "任务执行请求处理失败: " + e.getMessage()));
-                            });
+        // 调用service执行任务
+        return taskService.executeTask(taskExecutionInfo, user)
+                .map(task -> {
+                    log.info("任务执行成功: {}", task.getTaskUuid());
+                    return ApiResponse.success(task);
+                })
+                .onErrorResume(e -> {
+                    log.error("任务执行请求处理失败: {}", e.getMessage(), e);
+                    return Mono.just(ApiResponse.error(500, "任务执行请求处理失败: " + e.getMessage()));
                 });
     }
     
@@ -117,30 +123,34 @@ public class TaskController {
     @GetMapping("/{taskUuid}/status")
     public Mono<ApiResponse<Map<String, Object>>> getTaskStatus(
             @PathVariable String taskUuid,
-            @RequestParam String token) {
-        
-        // 验证token
-        return userService.verifyToken(token)
-                .flatMap(isValid -> {
-                    if (!isValid) {
-                        return Mono.just(ApiResponse.<Map<String, Object>>error(401, "Invalid token"));
-                    }
-                    
-                    return taskService.findByTaskUuid(taskUuid)
-                            .map(task -> {
-                                Map<String, Object> statusInfo = Map.of(
-                                    "taskId", task.getTaskUuid(),
-                                    "status", task.getStatus(),
-                                    "statusMessage", task.getStatus() + " 状态信息",
-                                    "result", task.getResult() != null ? task.getResult() : ""
-                                );
-                                return ApiResponse.success(statusInfo);
-                            })
-                            .switchIfEmpty(Mono.defer(() -> {
-                                ApiResponse<Map<String, Object>> errorResponse = new ApiResponse<>(404, "任务不存在: " + taskUuid, null);
-                                return Mono.just(errorResponse);
-                            }));
-                });
+            @RequestParam(required = false) String token,
+            @AuthenticationPrincipal User user) {
+        if (user == null) {
+            // 验证token
+            boolean isValid = userService.verifyToken(token).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Map<String, Object>>error(401, "Invalid token"));
+            }
+            User userByToken = userService.findByToken(token).block();
+            if (userByToken == null) {
+                return Mono.just(ApiResponse.<Map<String, Object>>error(401, "Invalid token"));
+            }
+        }
+             
+        return taskService.findByTaskUuid(taskUuid)
+                .map(task -> {
+                    Map<String, Object> statusInfo = Map.of(
+                        "taskId", task.getTaskUuid(),
+                        "status", task.getStatus(),
+                        "statusMessage", task.getStatus() + " 状态信息",
+                        "result", task.getResult() != null ? task.getResult() : ""
+                    );
+                    return ApiResponse.success(statusInfo);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    ApiResponse<Map<String, Object>> errorResponse = new ApiResponse<>(404, "任务不存在: " + taskUuid, null);
+                    return Mono.just(errorResponse);
+                }));
     }
     
     /**

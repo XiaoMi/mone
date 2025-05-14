@@ -112,4 +112,8 @@ public class UserService {
                 .doOnError(error -> log.error("绑定内部账号失败: {}", error.getMessage(), error));
     }
 
+    public Mono<User> findByToken(String token) {
+        return userRepository.findByToken(token)
+                .doOnError(error -> log.error("根据token查找用户时发生错误: {}", error.getMessage(), error));
+    }
 }
