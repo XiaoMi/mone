@@ -1,7 +1,7 @@
 <template>
   <div class="theme-switcher">
     <el-dropdown @command="handleThemeChange" trigger="click">
-      <el-button type="primary" :icon="Brush" size="large">
+      <el-button type="primary" :icon="Brush">
         {{ themeNameMap[currentTheme.name] || currentTheme.name }}
         <el-icon class="el-icon--right"><arrow-down /></el-icon>
       </el-button>
