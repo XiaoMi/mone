@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 @Slf4j
 public class MultimodalService {
 
-    private static final Logger log = LoggerFactory.getLogger(MultimodalService.class);
-
     @Autowired
     private LLM llm;
 
@@ -142,79 +140,6 @@ public class MultimodalService {
     }
 
     /**
-     * 截取全屏并保存为PNG图片
-     * @param filePath 指定保存的文件路径，如果为null则使用默认路径和文件名
-     * @return 保存的图片文件路径
-     */
-    /**
-     * 分别截取每个屏幕并保存为独立文件
-     *
-     * @param baseFilePath 基本文件路径，将会在文件名中添加屏幕编号
-     * @return 包含所有操作结果的Flux
-     */
-    public Flux<String> captureEachScreenSeparately(String baseFilePath) {
-        try {
-            // 获取所有屏幕设备
-            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            GraphicsDevice[] screens = ge.getScreenDevices();
-
-            if (screens.length == 0) {
-                return Flux.just("错误: 未检测到屏幕设备");
-            }
-
-            // 处理baseFilePath
-            if (baseFilePath == null || baseFilePath.isEmpty()) {
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-                String timestamp = dateFormat.format(new Date());
-                String userHome = System.getProperty("user.home");
-                File screenshotDir = new File(userHome, "Screenshots");
-                if (!screenshotDir.exists()) {
-                    screenshotDir.mkdirs();
-                }
-                baseFilePath = new File(screenshotDir, "screenshot_" + timestamp).getAbsolutePath();
-            }
-
-            // 移除扩展名以便添加屏幕编号
-            if (baseFilePath.toLowerCase().endsWith(".png")) {
-                baseFilePath = baseFilePath.substring(0, baseFilePath.length() - 4);
-            }
-
-            List<String> results = new ArrayList<>();
-
-            // 为每个屏幕创建截图
-            for (int i = 0; i < screens.length; i++) {
-                GraphicsDevice screen = screens[i];
-                GraphicsConfiguration config = screen.getDefaultConfiguration();
-                Rectangle bounds = config.getBounds();
-
-                // 截取当前屏幕
-                BufferedImage screenshot = robot.createScreenCapture(bounds);
-
-                // 生成当前屏幕的文件路径
-                String screenFilePath = baseFilePath + "_screen" + (i + 1) + ".png";
-                File outputFile = new File(screenFilePath);
-
-                System.out.println(outputFile);
-
-                // 保存图片
-                ImageIO.write(screenshot, "png", outputFile);
-
-                results.add(String.format(
-                        "屏幕 %d (%dx%d, 位置: %d,%d) 截图已保存为: %s",
-                        i + 1, bounds.width, bounds.height, bounds.x, bounds.y, screenFilePath));
-            }
-
-            // 添加一个总结信息
-            results.add(String.format("总共截取了 %d 个屏幕的图像", screens.length));
-
-            return Flux.fromIterable(results);
-        } catch (Exception e) {
-            log.error("分别截取屏幕失败", e);
-            return Flux.just("截图失败: " + e.getMessage());
-        }
-    }
-
-    /**
      * 使用macOS原生的截屏命令进行全屏截图
      *
      * @param filePath 指定保存的文件路径，如果为null则使用默认路径和文件名
@@ -308,98 +233,6 @@ public class MultimodalService {
         }
     }
 
-    /**
-     * 使用AppleScript执行全屏幕截图，可以捕获所有窗口包括最小化的窗口
-     *
-     * @param filePath 指定保存的文件路径
-     * @return 保存的图片文件路径
-     */
-    public Flux<String> captureAllScreensWithAppleScript(String filePath) {
-        try {
-            // 检查是否为macOS
-            String osName = System.getProperty("os.name").toLowerCase();
-            if (!osName.contains("mac")) {
-                return Flux.just("错误: 此功能仅支持macOS系统");
-            }
-
-            // 处理文件路径
-            if (filePath == null || filePath.isEmpty()) {
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-                String timestamp = dateFormat.format(new Date());
-                String fileName = "screenshot_" + timestamp + "_" + UUID.randomUUID().toString().substring(0, 8) + ".png";
-
-                String userHome = System.getProperty("user.home");
-                File screenshotDir = new File(userHome, "Screenshots");
-                if (!screenshotDir.exists()) {
-                    screenshotDir.mkdirs();
-                }
-
-                filePath = new File(screenshotDir, fileName).getAbsolutePath();
-            }
-
-            if (!filePath.toLowerCase().endsWith(".png")) {
-                filePath += ".png";
-            }
-
-            // 创建AppleScript脚本
-            // 这个脚本会展示所有窗口并截图
-            String appleScript =
-                    "tell application \"System Events\"\n" +
-                            "   set allProcesses to every process whose visible is true\n" +
-                            "   repeat with proc in allProcesses\n" +
-                            "      set frontmost of proc to true\n" +
-                            "      delay 0.2\n" +
-                            "   end repeat\n" +
-                            "end tell\n" +
-                            "delay 0.5\n" +
-                            "do shell script \"screencapture -x '" + filePath.replace("'", "\\'") + "'\"\n";
-
-            // 创建临时脚本文件
-            File scriptFile = File.createTempFile("screenshot_script_", ".scpt");
-            try (java.io.FileWriter writer = new java.io.FileWriter(scriptFile)) {
-                writer.write(appleScript);
-            }
-
-            log.info("准备使用AppleScript执行全屏截图，保存到: " + filePath);
-
-            // 执行AppleScript
-            ProcessBuilder processBuilder = new ProcessBuilder(
-                    "osascript", scriptFile.getAbsolutePath());
-            processBuilder.redirectErrorStream(true);
-
-            Process process = processBuilder.start();
-
-            // 读取输出
-            StringBuilder output = new StringBuilder();
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-            }
-
-            int exitCode = process.waitFor();
-
-            // 清理临时文件
-            scriptFile.delete();
-
-            if (exitCode == 0) {
-                File outputFile = new File(filePath);
-                if (outputFile.exists() && outputFile.length() > 0) {
-                    return Flux.just("成功使用AppleScript截取全屏并保存为: " + filePath);
-                } else {
-                    return Flux.just("错误: AppleScript执行成功但截图文件未创建或为空");
-                }
-            } else {
-                log.error("AppleScript执行失败，退出码: " + exitCode + ", 输出: " + output);
-                return Flux.just("AppleScript截图失败: " + output);
-            }
-        } catch (Exception e) {
-            log.error("AppleScript截图失败", e);
-            return Flux.just("AppleScript截图失败: " + e.getMessage());
-        }
-    }
 
     /**
      * 执行键盘输入
@@ -463,6 +296,74 @@ public class MultimodalService {
             return Flux.just("成功执行组合键: " + String.join("+", keys));
         } catch (Exception e) {
             return Flux.just("组合键执行失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 使用Robot截取全屏
+     *
+     * @param filePath 指定保存的文件路径，如果为null则使用默认路径和文件名
+     * @return 保存的图片文件路径，如果截图失败则返回null
+     */
+    public Flux<String> captureScreenshotWithRobot(String filePath) {
+        try {
+            // 如果未指定文件路径，则生成默认路径
+            if (filePath == null || filePath.isEmpty()) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+                String timestamp = dateFormat.format(new Date());
+                String fileName = "screenshot_" + timestamp + "_" + UUID.randomUUID().toString().substring(0, 8) + ".png";
+
+                // 使用用户主目录下的 Screenshots 文件夹
+                String userHome = System.getProperty("user.home");
+                File screenshotDir = new File(userHome, "Screenshots");
+                if (!screenshotDir.exists()) {
+                    screenshotDir.mkdirs();
+                }
+
+                filePath = new File(screenshotDir, fileName).getAbsolutePath();
+            }
+
+            // 确保文件扩展名为 .png
+            if (!filePath.toLowerCase().endsWith(".png")) {
+                filePath += ".png";
+            }
+
+            // 确保目标目录存在且可写
+            File outputFile = new File(filePath);
+            File parentDir = outputFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                if (!parentDir.mkdirs()) {
+                    log.error("无法创建目录: " + parentDir.getAbsolutePath());
+                    return Flux.just(null);
+                }
+            }
+
+            if (parentDir != null && !parentDir.canWrite()) {
+                log.error("没有写入权限: " + parentDir.getAbsolutePath());
+                return Flux.just(null);
+            }
+
+            log.info("准备使用Robot截图，保存到: " + filePath);
+
+            // 获取默认屏幕设备
+            Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
+            
+            // 使用Robot捕获屏幕
+            BufferedImage screenshot = robot.createScreenCapture(screenRect);
+            
+            // 保存图片
+            ImageIO.write(screenshot, "png", outputFile);
+            
+            if (outputFile.exists() && outputFile.length() > 0) {
+                log.info("成功使用Robot截图，文件大小: " + outputFile.length() + " 字节");
+                return Flux.just(filePath);
+            } else {
+                log.error("Robot截图成功，但文件未创建或为空");
+                return Flux.just(null);
+            }
+        } catch (IOException e) {
+            log.error("Robot截图失败", e);
+            return Flux.just(null);
         }
     }
 
