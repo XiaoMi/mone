@@ -28,13 +28,11 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.UUID;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.*;
+import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 
 
 /**
@@ -106,7 +104,7 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
         
         //删除文件
         if (uri.startsWith(Cons.DELETE_FILE)) {
-            new FileService().deleteFile(ctx, userKey, name, id);
+            new FileService().deleteFile(ctx, userKey, name);
             return;
         }
 
