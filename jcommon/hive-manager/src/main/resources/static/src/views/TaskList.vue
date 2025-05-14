@@ -4,13 +4,7 @@
     <div class="circuit-point point-1"></div>
     <div class="circuit-point point-2"></div>
     <div class="dashboard-header">
-      <div class="title-container">
-        <h1>⚡ 任务控制中心</h1>
-        <div class="animated-underline"></div>
-      </div>
-      <div class="header-actions">
-        <button class="create-btn" @click="handleCreate">+ 创建任务</button>
-      </div>
+      <button class="create-btn" @click="handleCreate">+ 创建任务</button>
     </div>
 
     <div class="table-container">
@@ -285,7 +279,7 @@ onMounted(() => {
   min-height: 100vh;
   background: var(--el-color-chat-background);
   color: var(--el-color-chat-text);
-  padding: 12px 20px;
+  padding: 0 20px 12px;
   position: relative;
   overflow: hidden;
 }
@@ -472,9 +466,9 @@ onMounted(() => {
 
 .dashboard-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 40px;
+  margin-bottom: 12px;
 }
 
 .title-container {
