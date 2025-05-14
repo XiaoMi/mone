@@ -172,7 +172,14 @@ public final class McpSchema {
 			@JsonProperty("jsonrpc") String jsonrpc,
 			@JsonProperty("method") String method,
 			@JsonProperty("id") Object id,
-			@JsonProperty("params") Object params) implements JSONRPCMessage {
+			@JsonProperty("params") Object params,
+			 @JsonProperty("clientId") String clientId
+								  ) implements JSONRPCMessage {
+
+		public JSONRPCRequest(String jsonrpc,String method,Object id,Object params) {
+			this(jsonrpc,method,id,params,null);
+		}
+
 	} // @formatter:on
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -669,7 +676,7 @@ public final class McpSchema {
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record JsonSchema( // @formatter:off
+    public record JsonSchema( // @formatter:off
 		@JsonProperty("type") String type, 
 		@JsonProperty("properties") Map<String, Object> properties, 
 		@JsonProperty("required") List<String> required,
@@ -1002,6 +1009,10 @@ public final class McpSchema {
 
         public ImageContent {
             type = "image";
+        }
+
+        public ImageContent(String data, String mimeType) {
+            this(null, null, null, data, mimeType);
         }
 
         public String type() {

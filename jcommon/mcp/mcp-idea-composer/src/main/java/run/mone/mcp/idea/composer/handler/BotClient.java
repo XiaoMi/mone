@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static run.mone.hive.llm.ClaudeProxy.*;
+
 /**
  * @author goodjava@qq.com
  * @date 2024/11/24 11:01
@@ -31,7 +33,15 @@ public class BotClient {
     private StringBuffer sb = new StringBuffer();
 
     public BotClient(FluxSink<String> fluxSink) {
-        llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build());
+        LLMConfig config = LLMConfig.builder()
+                .llmProvider(LLMProvider.CLAUDE_COMPANY)
+                .url(getClaudeUrl())
+                .version(getClaudeVersion())
+                .maxTokens(getClaudeMaxToekns())
+                .build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
+        llm = new LLM(config);
         this.fluxSink = fluxSink;
     }
 
@@ -115,6 +125,28 @@ public class BotClient {
             }
 
             req.add("content", array);
+        }
+
+        if(llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY){
+            req.addProperty("role", "user");
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", text);
+            contentJsons.add(obj1);
+
+            if (StringUtils.isNotEmpty(imgText)) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image");
+                JsonObject source = new JsonObject();
+                source.addProperty("type", "base64");
+                source.addProperty("media_type", "image/jpeg");
+                source.addProperty("data", imgText);
+                obj2.add("source", source);
+                contentJsons.add(obj2);
+            }
+            req.add("content", contentJsons);
         }
         return req;
     }

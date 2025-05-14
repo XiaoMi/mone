@@ -38,6 +38,11 @@ public class Role {
     protected String goal;
 
     protected String constraints;
+
+    protected String workflow;
+
+    protected String outputFormat;
+
     @Getter
     protected List<String> specializations;
 
@@ -70,6 +75,9 @@ public class Role {
     private boolean blockingMessageRetrieval;
 
     protected String prompt;
+
+    //role的配置
+    protected Map<String, String> roleConfig = new HashMap<>();
 
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
@@ -285,14 +293,19 @@ public class Role {
         return CompletableFuture.completedFuture(res);
     }
 
+
+    //执行的最大轮数
+    private int doReactNum = 15;
+
     /**
      * react实际执行的逻辑， 可以重写
+     *
      * @param ac
      */
     protected void doReact(ActionContext ac) {
         // 默认最多执行15次, 可以重写这里的逻辑
         int i = 0;
-        while (this.think() > 0 && i++ < 15) {
+        while (this.think() > 0 && i++ < doReactNum) {
             this.act(ac).join();
         }
     }
@@ -409,6 +422,7 @@ public class Role {
 
     /**
      * 在react之后执行的hook, 可以重写
+     *
      * @param ac
      */
     protected void postReact(ActionContext ac) {
@@ -416,7 +430,21 @@ public class Role {
     }
 
     public void putMessage(Message message) {
+        if (0 == message.getCreateTime()) {
+            message.setCreateTime(System.currentTimeMillis());
+        }
         this.rc.news.offer(message);
+    }
+
+    public void putMemory(Message message) {
+        if (0 == message.getCreateTime()) {
+            message.setCreateTime(System.currentTimeMillis());
+        }
+        this.rc.getMemory().add(message);
+    }
+
+    public Message getLastMessage() {
+        return this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
     }
 
     @Override
@@ -429,5 +457,14 @@ public class Role {
 
     public void sendMessage(Message msg) {
         log.info("msg:{}, ", msg);
+    }
+
+    /**
+     * Clears all messages from the role's memory
+     */
+    public void clearMemory() {
+        if (this.rc != null && this.rc.getMemory() != null) {
+            this.rc.getMemory().clear();
+        }
     }
 }

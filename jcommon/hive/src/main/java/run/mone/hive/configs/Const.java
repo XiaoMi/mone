@@ -10,4 +10,33 @@ public class Const {
 
     public static String PROJECT_NAME = "__PROJECT__";
 
+    public static int GRPC_PORT = 50051;
+
+    public static final String CLIENT_ID = "clientId";
+
+    public static final String USER_ID = "__user_id__";
+
+    public static final String AGENT_ID = "__agent_id__";
+
+    public static final String ROLE = "__role__";
+
+    //有这个agent的拥有者
+    public static final String OWNER_ID = "__owner_id__";
+
+    public static final String TOKEN = "token";
+
+    public static final String HIVE_VERSION = "2025-03-28:0.0.1";
+
+    public static final String NOTIFY_MSG = "msg";
+
+    //退出agent
+    public static final String ROLE_EXIT = "___exit___";
+
+    //清空agent记忆
+    public static final String CLEAR_HISTORY = "___clear_history___";
+
+    public static final String DEFAULT = "default";
+
+    public static final String INTERNAL_SERVER = "internalServer";
+
 }

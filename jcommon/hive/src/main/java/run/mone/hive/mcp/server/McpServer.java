@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.ResourceTemplate;
@@ -580,9 +581,12 @@ public interface McpServer {
 		 * settings
 		 */
 		public McpAsyncServer async() {
-
-			return new McpAsyncServer(transport, serverInfo, serverCapabilities, tools, resources, resourceTemplates,
+			McpAsyncServer server = new McpAsyncServer(transport, serverInfo, serverCapabilities, tools, resources, resourceTemplates,
 					prompts, rootsChangeConsumers);
+			if (transport instanceof GrpcServerTransport gst) {
+				gst.setMcpServer(server);
+			}
+			return server;
 		}
 
 	}

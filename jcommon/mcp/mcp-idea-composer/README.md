@@ -19,9 +19,26 @@
 }
 }
 
+{
+"mcpServers": {
+"database-idea-composer": {
+"type": "grpc",
+"sseRemote": true,
+"env": {
+"host": "10.38.216.204",
+"port": "9786"
+}
+}
+}
+}
+
 # remote mcp启动需要环境变量
 GOOGLE_AI_GATEWAY=
 GOOGLE_API_KEY=
 IDEA_PORT=30000
 STEPFUN_API_KEY=
 OPENROUTER_API_KEY=
+
+一些env配置
+cwd
+customInstructions

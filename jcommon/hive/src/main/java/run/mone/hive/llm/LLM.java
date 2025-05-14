@@ -6,13 +6,20 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.impl.minmax.MiniMax;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
@@ -22,8 +29,10 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +40,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
 
 @Data
 @Slf4j
@@ -39,6 +52,9 @@ public class LLM {
     protected LLMConfig config;
 
     private LLMProvider llmProvider;
+
+    //可以外部设置进来
+    private Function<LLMProvider, Optional<LLMConfig>> configFunction;
 
     private BotBridge botBridge;
 
@@ -77,11 +93,19 @@ public class LLM {
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isEmpty(config.getUrl())) {
             key = apiKey;
         }
+
         if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
+            String urlToUse;
             if (stream && StringUtils.isNotEmpty(this.config.getStreamUrl())) {
-                return this.config.getStreamUrl() + key;
+                // 处理多个流式URL的情况
+                String[] streamUrls = this.config.getStreamUrl().split(",");
+                urlToUse = getRandomUrl(streamUrls);
+            } else {
+                // 处理多个普通URL的情况
+                String[] urls = this.config.getUrl().split(",");
+                urlToUse = getRandomUrl(urls);
             }
-            return this.config.getUrl() + key;
+            return urlToUse + key;
         }
         return llmProvider.getUrl() + key;
     }
@@ -99,13 +123,13 @@ public class LLM {
             if (StringUtils.isNotEmpty(this.config.getModel())) {
                 model = this.config.getModel();
             }
-            return CompletableFuture.completedFuture(chatCompletion(System.getenv(llmProvider.getEnvName()), prompt, model));
+            return CompletableFuture.completedFuture(chatCompletion(getToken(), prompt, model));
         }
     }
 
     //支持多模态
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role(ROLE_USER).content(content).build()), model, "", config);
     }
 
 
@@ -127,7 +151,15 @@ public class LLM {
                 .build();
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", model);
+        if (StringUtils.isNotEmpty(model)) {
+            requestBody.addProperty("model", model);
+        }
+
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+            requestBody.remove("model");
+        }
 
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
@@ -172,12 +204,17 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+        }
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER
                     || this.llmProvider == LLMProvider.MOONSHOT
                     || this.llmProvider == LLMProvider.DOUBAO
+                    || this.llmProvider == LLMProvider.QWEN
             ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -192,7 +229,11 @@ public class LLM {
         Request.Builder requestBuilder = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                requestBuilder.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else {
+                requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -224,6 +265,10 @@ public class LLM {
                 return text;
             }
 
+            if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                return jsonResponse.get("content").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
+            }
+
             //openai那个流派的
             res = jsonResponse.getAsJsonArray("choices")
                     .get(0).getAsJsonObject()
@@ -253,6 +298,10 @@ public class LLM {
 
     // 文本转语音
     public byte[] generateSpeech(String text) throws IOException {
+        //使用minmax
+        if (this.llmProvider.equals(LLMProvider.MINIMAX)) {
+            return new MiniMax().generateAudio(this.llmProvider.getCustomModelEnv(), this.llmProvider.getEnvName(), text);
+        }
         return generateSpeech(getToken(), text, "wenrounvsheng", null);
     }
 
@@ -266,9 +315,17 @@ public class LLM {
 
 
     public String getToken() {
-        String token = System.getenv(llmProvider.getEnvName());
+        //直接获取token
+        if (null != this.configFunction) {
+            Optional<LLMConfig> optional = this.configFunction.apply(this.llmProvider);
+            if (optional.isPresent()) {
+                return optional.get().getToken();
+            }
+        }
+        //从环境变量里获取
+        String token = System.getProperty(llmProvider.getEnvName());
         if (StringUtils.isEmpty(token)) {
-            return System.getProperty(llmProvider.getEnvName());
+            return System.getenv(llmProvider.getEnvName());
         }
         return token;
     }
@@ -348,27 +405,84 @@ public class LLM {
 
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        }, "");
+        chatCompletionStream(getToken(),
+                messages,
+                llmProvider.getDefaultModel(),
+                messageHandlerr,
+                line -> {
+                },
+                "");
     }
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr, String systemPrompt) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        }, systemPrompt);
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+                messages,
+                llmProvider.getDefaultModel(),
+                messageHandlerr,
+                line -> {
+                },
+                systemPrompt
+        );
+    }
+
+    public Flux<String> compoundMsgCall(LLMCompoundMsg msg, String systemPrompt) {
+        JsonObject req = getReq(this, msg);
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        return call(messages, systemPrompt);
+    }
+
+    public Flux<String> call(List<AiMessage> messages) {
+        return call(messages, "");
+    }
+
+    public Flux<String> call(List<AiMessage> messages, String systemPrompt) {
+        return Flux.create(sink -> chatCompletionStream(getToken(),
+                messages,
+                llmProvider.getDefaultModel(),
+                (a, b) -> {
+                },
+                (a) -> {
+                },
+                systemPrompt,
+                sink)
+        );
+    }
+
+
+    public Flux<String> chat(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
+        return Flux.create(sink -> chatCompletionStream(apiKey, messages, model, messageHandler, lineConsumer, systemPrompt, sink));
     }
 
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
+        chatCompletionStream(apiKey, messages, model, messageHandler, lineConsumer, systemPrompt, null);
+    }
+
+    public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
         JsonObject requestBody = new JsonObject();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+        if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("model", model);
+            requestBody.addProperty("stream", true);
+
+            if (null != this.config.getTemperature()) {
+                requestBody.addProperty("temperature", this.config.getTemperature());
+            }
+        }
+
+
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
             requestBody.addProperty("stream", true);
         }
 
         JsonArray msgArray = new JsonArray();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+        if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             if (this.config.isJson()) {
                 String jsonSystemPrompt = """
                          返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
@@ -384,6 +498,11 @@ public class LLM {
             }
         }
 
+        //claude的系统提示词
+        if (llmProvider == LLMProvider.CLAUDE_COMPANY && StringUtils.isNotEmpty(systemPrompt)) {
+            requestBody.addProperty("system", systemPrompt);
+        }
+
         //gemini的系统提示词
         if (llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(systemPrompt)) {
             JsonObject system_instruction = new JsonObject();
@@ -395,7 +514,13 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER ||
+                    this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
+                    this.llmProvider == LLMProvider.DEEPSEEK ||
+                    this.llmProvider == LLMProvider.DOUBAO_UI_TARS ||
+                    this.llmProvider == LLMProvider.GROK ||
+                    this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
@@ -408,7 +533,11 @@ public class LLM {
         Request.Builder rb = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            rb.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else {
+                rb.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -435,12 +564,16 @@ public class LLM {
                 jsonResponse.addProperty("type", "failure");
                 jsonResponse.addProperty("content", e.getMessage());
                 messageHandler.accept(e.getMessage(), jsonResponse);
+                if (null != sink) {
+                    sink.error(e);
+                }
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(Call call, Response response) {
                 try (ResponseBody responseBody = response.body()) {
                     if (!response.isSuccessful()) {
+                        log.error("Unexpected response code: " + response);
                         throw new IOException("Unexpected response code: " + response);
                     }
                     SSEReader reader = new SSEReader(responseBody.source());
@@ -465,12 +598,56 @@ public class LLM {
                                 jsonResponse.addProperty("type", "event");
                                 jsonResponse.addProperty("content", text);
                                 messageHandler.accept(text, jsonResponse);
-
+                                if (null != sink) {
+                                    sink.next(text);
+                                }
                                 if (candidate.has("finishReason")) {
                                     JsonObject finishRes = new JsonObject();
                                     finishRes.addProperty("type", "finish");
                                     finishRes.addProperty("content", candidate.get("finishReason").getAsString());
                                     messageHandler.accept("[DONE]", finishRes);
+
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
+
+                                }
+                            }
+                        } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                if ("message_start".equals(jsonResponse.get("type").getAsString())
+                                        || "ping".equals(jsonResponse.get("type").getAsString())
+                                        || "content_block_start".equals(jsonResponse.get("type").getAsString())) {
+                                    continue;
+                                }
+
+                                if ("message_delta".equals(jsonResponse.get("type").getAsString())) {
+                                    JsonObject jsonRes = new JsonObject();
+                                    jsonRes.addProperty("type", "finish");
+                                    jsonRes.addProperty("content", jsonResponse.get("delta").getAsJsonObject().get("stop_reason").getAsString());
+                                    messageHandler.accept("[DONE]", jsonRes);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
+                                    break;
+                                }
+
+                                if ("content_block_delta".equals(jsonResponse.get("type").getAsString())) {
+                                    String content = "";
+                                    try {
+                                        JsonObject delta = jsonResponse.getAsJsonObject("delta");
+                                        content = delta.get("text").getAsString();
+                                    } catch (Throwable ex) {
+                                        log.error(ex.getMessage());
+                                    }
+                                    jsonResponse.addProperty("type", "event");
+                                    jsonResponse.addProperty("content", content);
+                                    messageHandler.accept(content, jsonResponse);
+                                    if (null != sink) {
+                                        sink.next(content);
+                                    }
                                 }
                             }
                         } else {
@@ -481,6 +658,9 @@ public class LLM {
                                     jsonResponse.addProperty("type", "finish");
                                     jsonResponse.addProperty("content", "[DONE]");
                                     messageHandler.accept("[DONE]", jsonResponse);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
                                     break;
                                 }
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
@@ -491,9 +671,9 @@ public class LLM {
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
-                                    if (c.isJsonNull() || (c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString()))) {
+                                    if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
                                         JsonElement rc = delta.get("reasoning_content");
-                                        if (!rc.isJsonNull()) {
+                                        if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();
                                         }
                                     } else {
@@ -506,15 +686,21 @@ public class LLM {
                                 jsonResponse.addProperty("type", "event");
                                 jsonResponse.addProperty("content", content);
                                 messageHandler.accept(content, jsonResponse);
+                                if (null != sink) {
+                                    sink.next(content);
+                                }
                             }
                         }
                     }
-                    System.out.println("FINISH");
+                    log.info("FINISH");
                 } catch (Throwable ex) {
                     JsonObject jsonResponse = new JsonObject();
                     jsonResponse.addProperty("type", "failure");
                     jsonResponse.addProperty("content", ex.getMessage());
                     messageHandler.accept(ex.getMessage(), jsonResponse);
+                    if (null != sink) {
+                        sink.error(ex);
+                    }
                 }
             }
         });
@@ -541,7 +727,7 @@ public class LLM {
         StringBuilder sb = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         String msgId = UUID.randomUUID().toString();
-        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
+        chat(Lists.newArrayList(AiMessage.builder().role(ROLE_USER).content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
         try {
             latch.await();
         } catch (InterruptedException e) {
@@ -582,8 +768,8 @@ public class LLM {
             if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
             } else if (type.equals("finish") || type.equals("failure")) {
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
                 latch.countDown();
-                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).build());
             } else {
                 sb.append(o.get("content").getAsString());
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
@@ -701,4 +887,295 @@ public class LLM {
         }
     }
 
+    // 添加一个新方法，用于从多个URL中随机选择一个
+    private String getRandomUrl(String[] urls) {
+        if (urls == null || urls.length == 0) {
+            return "";
+        }
+        // 随机选择一个URL
+        int randomIndex = (int) (Math.random() * urls.length);
+        return urls[randomIndex].trim(); // 去除可能的空白字符
+    }
+
+    /*********************************** 增强的调用方法系列 ***********************************/
+    public static final String ROLE_ASSISTANT = "assistant";
+    public static final String ROLE_USER = "user";
+    public static final String TYPE_TEXT = "text";
+    public static final String TYPE_IMAGE = "image";
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LLMCompoundMsg {
+        private String role; // 角色: assistant, user
+        private String content; // 文本内容
+        private List<LLMPart> parts; // 消息内容
+        private String imageType;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LLMPart {
+        String type; // 内容类型，text, image
+        String text; // 文本内容
+        String data; // 数据内容
+        String mimeType; // 媒体类型
+    }
+
+    /**
+     * 同步调用LLM，发送文本和图像输入，并返回结果
+     *
+     * @param msg       消息
+     * @param sysPrompt 系统提示
+     * @return 结果字符串
+     */
+    public String call(LLMPart msg, String sysPrompt) {
+        JsonObject req = getReq(this, msg);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = this.chatCompletion(messages, sysPrompt);
+        log.info("{}", result);
+        return result;
+
+    }
+
+    /**
+     * 同步调用LLM，发送文本和图像输入，并返回结果
+     *
+     * @param sysPrompt 系统提示
+     * @return 结果字符串
+     */
+    public String call(LLMCompoundMsg msg, String sysPrompt) {
+        JsonObject req = getReq(this, msg);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = this.chatCompletion(messages, sysPrompt);
+        log.info("{}", result);
+        return result;
+
+    }
+
+    /**
+     * 流式调用LLM，发送文本和图像输入，并返回结果
+     *
+     * @param role         角色实例
+     * @param systemPrompt 系统提示
+     * @return 结果字符串
+     */
+    public String callStream(Role role, LLMCompoundMsg msg, String systemPrompt) {
+        JsonObject req = getReq(this, msg);
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = this.syncChat(role, messages, systemPrompt);
+        log.info("{}", result);
+        return result;
+
+    }
+
+
+    public static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
+        return LLMCompoundMsg.builder()
+                .content(userPrompt)
+                .parts(msg.getImages() == null
+                        ? new ArrayList<>()
+                        : msg.getImages()
+                        .stream()
+                        .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                        .collect(Collectors.toList())).build();
+    }
+
+
+    /**
+     * 获取LLM请求对象
+     *
+     * @param llm LLM实例
+     * @return 请求对象
+     */
+    public JsonObject getReq(LLM llm, LLMCompoundMsg msg) {
+        JsonObject req = new JsonObject();
+        String imageType = getImageType(msg);
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
+            JsonArray parts = new JsonArray();
+            JsonObject obj = new JsonObject();
+            obj.addProperty("text", msg.getContent());
+            parts.add(obj);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    JsonObject objImg = new JsonObject();
+                    objImg.addProperty("mime_type", part.getMimeType());
+                    objImg.addProperty("data", part.getData());
+                    obj2.add("inline_data", objImg);
+                    parts.add(obj2);
+                });
+            }
+
+            req.add("parts", parts);
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
+        ) {
+            req.addProperty("role", ROLE_USER);
+            JsonArray array = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", msg.getContent());
+            array.add(obj1);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    obj2.addProperty("type", "image_url");
+                    JsonObject imgObj = new JsonObject();
+                    if (!part.getData().startsWith("data:image")) {
+                        imgObj.addProperty("url", "data:image/" + imageType + ";base64," + part.getData());
+                    } else {
+                        imgObj.addProperty("url", part.getData());
+                    }
+                    obj2.add("image_url", imgObj);
+                    array.add(obj2);
+                });
+            }
+            req.add("content", array);
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", ROLE_USER);
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", msg.getContent());
+            contentJsons.add(obj1);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    obj2.addProperty("type", "image");
+                    JsonObject source = new JsonObject();
+                    source.addProperty("type", "base64");
+                    source.addProperty("media_type", part.getMimeType());
+                    source.addProperty("data", part.getData());
+                    obj2.add("source", source);
+                    contentJsons.add(obj2);
+                });
+            }
+            req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", msg.getContent());
+        }
+        return req;
+    }
+
+    private static String getImageType(LLMCompoundMsg msg) {
+        String imageType = "jpeg";
+        if (StringUtils.isNotEmpty(msg.getImageType())) {
+            imageType = msg.getImageType();
+        }
+        return imageType;
+    }
+
+    private JsonObject getReq(LLM llm, LLMPart llmPart) {
+        JsonObject req = new JsonObject();
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
+            JsonArray parts = new JsonArray();
+            JsonObject obj = new JsonObject();
+            obj.addProperty("text", llmPart.getText());
+            parts.add(obj);
+
+            if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
+                JsonObject obj2 = new JsonObject();
+                JsonObject objImg = new JsonObject();
+                objImg.addProperty("mime_type", llmPart.getMimeType());
+                objImg.addProperty("data", llmPart.getData());
+                obj2.add("inline_data", objImg);
+                parts.add(obj2);
+            }
+
+            req.add("parts", parts);
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+            req.addProperty("role", ROLE_USER);
+            JsonArray array = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", TYPE_TEXT);
+            obj1.addProperty("text", llmPart.getText());
+            array.add(obj1);
+
+            if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image_url");
+                JsonObject img = new JsonObject();
+                img.addProperty("url", "data:image/jpeg;base64," + llmPart.getData());
+                obj2.add("image_url", img);
+                array.add(obj2);
+            }
+
+            req.add("content", array);
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", ROLE_USER);
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", TYPE_TEXT);
+            obj1.addProperty("text", llmPart.getText());
+            contentJsons.add(obj1);
+
+            if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image");
+                JsonObject source = new JsonObject();
+                source.addProperty("type", "base64");
+                source.addProperty("media_type", llmPart.getMimeType());
+                source.addProperty("data", llmPart.getData());
+                obj2.add("source", source);
+                contentJsons.add(obj2);
+            }
+            req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", llmPart.getText());
+        }
+
+        return req;
+    }
+
+    private JsonObject getGeminiJsonObject(LLMPart p) {
+        JsonObject part = new JsonObject();
+        if (TYPE_IMAGE.equals(p.getType())) {
+            JsonObject inline = new JsonObject();
+            inline.addProperty("mime_type", p.getMimeType());
+            inline.addProperty("data", p.getData());
+            part.add("inline_data", inline);
+        } else {
+            part.addProperty("text", p.getText());
+        }
+        return part;
+    }
+
+    private JsonObject getOpenaiJsonObject(LLMPart p) {
+        JsonObject part = new JsonObject();
+        if (TYPE_IMAGE.equals(p.getType())) {
+            part.addProperty("type", "image_url");
+            JsonObject inline = new JsonObject();
+            inline.addProperty("url", String.format("data:%s;base64,%s", p.getMimeType(), p.getData()));
+            part.add("image_url", inline);
+        } else {
+            part.addProperty("type", "text");
+            part.addProperty("text", p.getText());
+        }
+        return part;
+    }
 }

@@ -122,7 +122,7 @@ public class StdioServerTransport implements ServerMcpTransport {
 	}
 
 	@Override
-	public Mono<Void> sendMessage(JSONRPCMessage message) {
+	public Mono<Object> sendMessage(JSONRPCMessage message) {
 		return Mono.zip(inboundReady.asMono(), outboundReady.asMono()).then(Mono.defer(() -> {
 			if (this.outboundSink.tryEmitNext(message).isSuccess()) {
 				return Mono.empty();

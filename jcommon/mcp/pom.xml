@@ -36,7 +36,6 @@
         <module>mcp-sequentialthinking</module>
         <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
-        <module>mcp-idea</module>
         <module>mcp-nacosconfig</module>
         <module>mcp-terminal</module>
         <module>mcp-feishu</module>
@@ -56,6 +55,14 @@
         <module>mcp-novel</module>
         <module>mcp-miapi</module>
         <module>mcp-high-risk-element</module>
+        <module>mcp-store-data</module>
+        <module>mcp-knowledge-base</module>
+        <module>mcp-chat</module>
+        <module>mcp-tts</module>
+        <module>mcp-asr</module>
+        <module>mcp-hera-analysis</module>
+        <module>mcp-custom-model</module>
+        <module>mcp-image</module>
     </modules>
 
     <properties>

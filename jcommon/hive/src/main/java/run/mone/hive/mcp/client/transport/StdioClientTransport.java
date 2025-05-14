@@ -338,7 +338,7 @@ public class StdioClientTransport implements ClientMcpTransport {
     }
 
     @Override
-    public Mono<Void> sendMessage(JSONRPCMessage message) {
+    public Mono<Object> sendMessage(JSONRPCMessage message) {
         if (this.outboundSink.tryEmitNext(message).isSuccess()) {
             // TODO: essentially we could reschedule ourselves in some time and make
             // another attempt with the already read data but pause reading until

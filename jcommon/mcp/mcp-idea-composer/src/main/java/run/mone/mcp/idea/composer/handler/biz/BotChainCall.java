@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.mcp.idea.composer.handler.CodeGeneratePromptHolder;
 import run.mone.mcp.idea.composer.handler.CodeGeneratorTeam;
-import run.mone.mcp.idea.composer.handler.CodePrompt;
+import run.mone.mcp.idea.composer.handler.prompt.CodePrompt;
 import run.mone.mcp.idea.composer.handler.ConversationContext;
 import run.mone.mcp.idea.composer.handler.prompt.Prompt;
 
@@ -24,6 +24,7 @@ public class BotChainCall {
             log.info("use agent mode");
             if(StringUtils.isEmpty(isFull)) {
                 ConversationContext conversationContext = new ConversationContext();
+                conversationContext.setAdditionalData(json);
                 CodeGeneratorTeam.generateCode(botChainCallContext.getPrompt(), botChainCallContext, conversationContext, json);
             }else{
                 botChainCallContext.getBotClient().sendPrompt(getRetryPrompt(Boolean.valueOf(isFull)), Prompt.CODE_GENERATE_SYSTEM_PROMPT, buildComposerImagePo(botChainCallContext), true);
