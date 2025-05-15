@@ -145,8 +145,8 @@ public class LLM {
     @SneakyThrows
     public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(240, TimeUnit.SECONDS)
+                .writeTimeout(240, TimeUnit.SECONDS)
                 .readTimeout(200, TimeUnit.SECONDS)
                 .build();
 
@@ -521,6 +521,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.DOUBAO_UI_TARS ||
                     this.llmProvider == LLMProvider.DOUBAO_VISION ||
                     this.llmProvider == LLMProvider.GROK ||
+                    this.llmProvider == LLMProvider.DOUBAO ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
