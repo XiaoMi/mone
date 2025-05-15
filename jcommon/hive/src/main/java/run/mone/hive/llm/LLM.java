@@ -145,8 +145,8 @@ public class LLM {
     @SneakyThrows
     public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(240, TimeUnit.SECONDS)
-                .writeTimeout(240, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(200, TimeUnit.SECONDS)
                 .build();
 
