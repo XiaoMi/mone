@@ -12,6 +12,7 @@ import com.tencent.asrv2.AsrConstant;
 import com.tencent.core.ws.SpeechClient;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -19,9 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author 龚文
@@ -39,6 +38,7 @@ public class AliAsrService {
     private Long sleepTime;
     private SampleRateEnum sampleRate;
     private InputFormatEnum inputFormat;
+    private String base64AudioFormat;
 
 
     private static Gson gson = new Gson();
@@ -67,17 +67,23 @@ public class AliAsrService {
     }
 
 
-    public Flux<String> doAsr(String fileName) {
+    public Flux<String> doAsr(String fileName, String base64Audio) {
         return Flux.create(sink -> {
             sink.next("阿里语音识别结果为：");
-            doAsr(fileName, sink);
+            doAsr(fileName, base64Audio, sink);
             sink.complete();
         });
     }
 
-    public void doAsr(String fileName, FluxSink<String> sink) {
+
+    public void doAsr(String fileName, String base64Audio, FluxSink<String> sink) {
         String sessionId = UUID.randomUUID().toString();
-        String suffixName = fileName.substring(fileName.lastIndexOf("."));
+        String suffixName = null;
+        if (StringUtils.isNotBlank(fileName)) {
+            suffixName = fileName.substring(fileName.lastIndexOf("."));
+        } else if (StringUtils.isNotBlank(base64AudioFormat)) {
+            suffixName = "." + base64AudioFormat;
+        }
         inputFormat = IMPUT_FORMAT_MAP.getOrDefault(suffixName, InputFormatEnum.WAV);
         SpeechTranscriber transcriber = null;
         try {
@@ -121,18 +127,29 @@ public class AliAsrService {
             //此方法将以上参数设置序列化为JSON发送给服务端，并等待服务端确认。
             transcriber.start();
 
-            File file = new File(fileName);
-            if (!file.exists()) {
-                throw new FileNotFoundException("File " + fileName + " Not Exit");
-            }
-            FileInputStream fis = new FileInputStream(file);
-            byte[] b = new byte[speechLength];
-            int len;
-            while ((len = fis.read(b)) > 0) {
-                log.info("send data pack length: " + len);
-                transcriber.send(b, len);
-                //读取本地文件的形式模拟实时获取语音流并发送的，因为读取速度较快，这里需要设置sleep。
-                Thread.sleep(sleepTime);
+            //读文件
+            if (StringUtils.isNotBlank(fileName)) {
+                File file = new File(fileName);
+                if (!file.exists()) {
+                    throw new FileNotFoundException("File " + fileName + " Not Exit");
+                }
+                FileInputStream fis = new FileInputStream(file);
+                byte[] b = new byte[speechLength];
+                int len;
+                while ((len = fis.read(b)) > 0) {
+                    log.info("send data pack length: " + len);
+                    transcriber.send(b, len);
+                    //读取本地文件的形式模拟实时获取语音流并发送的，因为读取速度较快，这里需要设置sleep。
+                    Thread.sleep(sleepTime);
+                }
+            } else if (StringUtils.isNotBlank(base64Audio)) {
+                //base64编码的音频数据
+                byte[] bytes = Base64.getDecoder().decode(base64Audio);
+                List<byte[]> speechData = splitBytes(bytes, speechLength);
+                for (byte[] speechDatum : speechData) {
+                    transcriber.send(speechDatum);
+                    Thread.sleep(sleepTime);
+                }
             }
             //通知服务端语音数据发送完毕，等待服务端处理完成。
             transcriber.stop();
@@ -143,6 +160,24 @@ public class AliAsrService {
                 transcriber.close();
             }
         }
+    }
+
+
+    public static List<byte[]> splitBytes(byte[] bytes, int chunkSize) {
+        if (chunkSize <= 0) {
+            throw new IllegalArgumentException("Chunk size must be positive");
+        }
+        List<byte[]> result = new ArrayList<>();
+        if (bytes == null || bytes.length == 0) {
+            return result;
+        }
+        int totalLength = bytes.length;
+        for (int i = 0; i < totalLength; i += chunkSize) {
+            int endIndex = Math.min(i + chunkSize, totalLength);
+            byte[] chunk = Arrays.copyOfRange(bytes, i, endIndex);
+            result.add(chunk);
+        }
+        return result;
     }
 
     public static void createAliNlsClient(String accessKeyId, String accessKeySecret, String url) {

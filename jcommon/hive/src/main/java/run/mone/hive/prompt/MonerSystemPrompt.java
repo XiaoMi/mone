@@ -3,13 +3,16 @@ package run.mone.hive.prompt;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import run.mone.hive.bo.InternalServer;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
+import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.utils.CacheService;
 
@@ -41,7 +44,17 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static String mcpPrompt(String from, String name, String customInstructions, List<ITool> tools) {
+    //当前工作目录
+    public static String cwd(ReactorRole role) {
+        return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
+    }
+
+    //自定义指令
+    public static String customInstructions(ReactorRole role, String customInstructions) {
+        return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+    }
+
+    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -49,17 +62,28 @@ public class MonerSystemPrompt {
         data.put("osName", MonerSystemPrompt.getSystemName());
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
-        data.put("cwd", "cwd");
-        data.put("customInstructions", customInstructions);
+        data.put("cwd", MonerSystemPrompt.cwd(role));
+        data.put("customInstructions", MonerSystemPrompt.customInstructions(role,customInstructions));
+        data.put("roleDescription", roleDescription);
 
         List<Map<String, Object>> serverList = getMcpInfo(from);
         data.put("serverList", serverList);
 
         //注入工具
         data.put("toolList", tools);
-        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data, Lists.newArrayList(Pair.of("invoke", new InvokeMethodFunction())));
+        //注入mcp工具
+        data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
+        data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
+                Lists.newArrayList(
+                        //反射执行
+                        Pair.of("invoke", new InvokeMethodFunction()),
+                        //可以使用默认值
+                        Pair.of("value", new DefaultValueFunction())
+                ));
     }
 
+    //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from) {
         final List<Map<String, Object>> serverList = new ArrayList<>();
         List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
@@ -68,7 +92,6 @@ public class MonerSystemPrompt {
         } else {
             McpHub mcpHub = McpHubHolder.get(from);
             if (mcpHub == null) {
-                log.warn("mcpHub is null, from: {}", from);
                 return serverList;
             }
             McpHubHolder.get(from).getConnections().forEach((key, value) -> Safe.run(() -> {
@@ -84,21 +107,27 @@ public class MonerSystemPrompt {
                 server.put("tools", toolsStr);
                 serverList.add(server);
             }));
-            CacheService.ins().cacheObject(CacheService.tools_key, serverList);
+            if (!serverList.isEmpty()) {
+                CacheService.ins().cacheObject(CacheService.tools_key, serverList);
+            }
         }
         return serverList;
     }
 
     public static final String TOOL_USE_INFO = """
-             You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
+            You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
             (任何工具每次只使用一个,不要一次返回多个工具,不管是mcp tool 还是 tool,你必须严格遵守这个条款,不然系统会崩溃 thx)
             """;
 
+
     // mcp 调用的会使用这个prompt
     public static final String MCP_PROMPT = """
-            You are ${name}, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+            You are ${name}, ${value(roleDescription,' a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.')}
             
             ====
+            
+            You are very good at using tools, these are some rules for using tools and the tools you can use.
+            
             
             TOOL USE
             
@@ -158,6 +187,11 @@ public class MonerSystemPrompt {
             
             
             <% } %>
+            
+            # 我这里有一些内部mcp工具,如果发现内部mcp工具就可以用来解决问题,请优先使用内部mcp工具
+            ## serverName:${internalServer.name}  ${internalServer.args}
+            ### Available Tools
+            ${mcpToolList}
             
             # Tool Use Guidelines
             

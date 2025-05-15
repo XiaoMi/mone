@@ -14,9 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentAccess;
 import run.mone.agentx.entity.User;
@@ -31,8 +30,10 @@ public class AgentAccessController {
     private final AgentAccessService agentAccessService;
 
     @GetMapping("/list/{agentId}")
-    public Flux<AgentAccess> getAccessList(@PathVariable Long agentId) {
-        return agentAccessService.getAgentAccessList(agentId);
+    public Mono<ApiResponse<List<AgentAccess>>> getAccessList(@PathVariable Long agentId) {
+        return agentAccessService.getAgentAccessList(agentId)
+                .collectList()
+                .map(ApiResponse::success);
     }
 
     @PostMapping("/create")

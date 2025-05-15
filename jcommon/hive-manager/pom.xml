@@ -121,6 +121,12 @@
             <version>1.6.2-jdk21-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>hive-spring-starter</artifactId>
+            <version>1.6.0-jdk21-SNAPSHOT</version>
+        </dependency>
+
 
         <!-- Utils -->
         <dependency>
@@ -172,6 +178,18 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>${spring.version}</version>
+        </dependency>
+
+        <!-- Cache -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.1.8</version>
         </dependency>
     </dependencies>
 

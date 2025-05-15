@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.transport.ServerParameters;
@@ -35,12 +36,12 @@ import run.mone.hive.mcp.grpc.StreamResponse;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
-import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -71,8 +72,11 @@ public class GrpcClientTransport implements ClientMcpTransport {
     // 存储元数据的 Map
     private Map<String, String> metaData = new HashMap<>();
 
+    private AtomicBoolean close = new AtomicBoolean(false);
+
     private Consumer<Object> consumer = (msg) -> {
     };
+
 
     /**
      * 创建 gRPC 客户端传输层
@@ -189,6 +193,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     @Override
     public Mono<Void> closeGracefully() {
+        log.info("closeGracefully");
+        close.set(true);
         return Mono.fromRunnable(() -> {
             try {
                 if (channel != null) {
@@ -249,7 +255,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                     String data = response.getData();
                     Type typeOfT = new TypeToken<Map<String, String>>() {
                     }.getType();
-                    Map map = GsonUtils.GSON.fromJson(data, typeOfT);
+                    Map map = GsonUtils.gson.fromJson(data, typeOfT);
                     consumer.accept(map);
                 }
                 // 直接转发响应
@@ -261,6 +267,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
             @Override
             public void onError(Throwable t) {
                 log.error("连接错误: " + t.getMessage() + "，5秒后重连...");
+                if (close.get()) {
+                    log.info("client exit");
+                    return;
+                }
                 Safe.run(() -> Thread.sleep(5000));
 
                 if (t.getMessage() != null && t.getMessage().contains("UNAVAILABLE: Channel shutdown invoked")) {
@@ -292,6 +302,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         Map<String, Object> objectMap = re.arguments();
 
         Map<String, String> stringMap = objectMap.entrySet().stream()
+                .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> {
@@ -311,7 +322,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                                     throw new RuntimeException("Failed to serialize value", ex);
                                 }
                             }
-                            return Objects.toString(value, null);
+                            return Objects.toString(value, "");
                         }
                 ));
 
@@ -343,6 +354,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         Map<String, Object> objectMap = re.arguments();
 
         Map<String, String> stringMap = objectMap.entrySet().stream()
+                .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> Objects.toString(e.getValue(), null)

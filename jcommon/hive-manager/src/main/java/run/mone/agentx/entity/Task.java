@@ -14,6 +14,9 @@ public class Task extends BaseEntity {
     private Long skillId;
     private String title;
     private String description;
+    private String taskContent;
+    private String metadata; // json
     private String status;
     private String result;
+    private String username;
 }

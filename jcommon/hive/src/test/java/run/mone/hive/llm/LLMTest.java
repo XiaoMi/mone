@@ -10,10 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
@@ -139,7 +142,10 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
 
-        config.setLlmProvider(LLMProvider.MINIMAX);
+//        config.setLlmProvider(LLMProvider.MINIMAX);
+
+//        config.setLlmProvider(LLMProvider.DOUBAO_UI_TARS);
+        config.setLlmProvider(LLMProvider.DOUBAO_VISION);
 
         //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -153,6 +159,11 @@ class LLMTest {
         //grok 也需要使用代理
         if (config.getLlmProvider() == LLMProvider.GROK) {
             config.setUrl(System.getenv("X_AI_GATEWAY"));
+        }
+
+        if (config.getLlmProvider() == LLMProvider.QWEN3) {
+            config.setUrl("http://xxx:8000/v1/chat/completions");
+            config.setModel("Qwen3-14B");
         }
 
         llm = new LLM(config);
@@ -170,6 +181,50 @@ class LLMTest {
         // System.setProperty("socksProxyPort", "7890");
         // // 设置不需要代理的主机
         // System.setProperty("http.nonProxyHosts", "localhost|127.0.0.1");
+    }
+
+
+    @Test
+    public void testImg() {
+        llm.getConfig().setTemperature((double) 0);
+        String img = llm.imageToBase64("/tmp/abc.png", "png");
+        LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(
+                """
+                        请提取并整理这张IM聊天截图中的对话内容：
+                        
+                        1. 图片从上到下按时间顺序排列，最早消息在顶部，最新消息在底部
+                        2. 如果图片包含多页截图拼接（可能由红线或其他明显标记分隔），请识别并去除拼接处的重复内容
+                        3. 【重要】必须提取截图最底部显示的消息，无论其内容长短，这是时间上最新的一条消息，具有最高优先级
+                        4. 特别注意查找截图底部可能出现的简短回复（如"好的"、"你好"、"谢谢"等单句消息），这些短消息同样重要
+                        5. 按发送方区分内容，并包含消息时间，使用以下格式整理：
+                           - [发送方A] [时间]：[消息内容]
+                           - [发送方B] [时间]：[消息内容]
+                        6. 根据聊天气泡的位置和样式识别发送方：
+                           - 通常右侧气泡（如蓝色气泡）为一方
+                           - 左侧气泡（可能为灰色或其他颜色）为另一方
+                        7. 提取每条消息旁显示的时间，如果消息只显示具体时间（如"18:32"）没有日期，则只提取这个时间
+                        8. 保持消息的原始时间顺序，确保对话逻辑连贯
+                        9. 如有消息包含链接、图片描述或特殊格式，请完整保留
+                        10. 在提取完成后，请特别核对截图最底部是否有任何消息未被提取，包括单词短句
+                        
+                        最后，请在回答的末尾明确标注出最新一条消息是什么，格式为：
+                        "最新消息：[发送方] [时间]：[消息内容]"
+                        
+                        请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
+                        """
+                , Message.builder()
+                .images(Lists.newArrayList(
+                    img
+                )).build());
+        compoundMsg.setImageType("png");
+
+        List<String>list = new ArrayList<>();
+        IntStream.range(0,10).forEach(it->{
+            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容").collect(Collectors.joining()).block();
+            System.out.println(str);
+            list.add(str);
+        });
+        System.out.println(list);
     }
 
     @Test

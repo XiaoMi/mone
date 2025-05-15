@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
@@ -128,7 +129,7 @@ public class LLM {
 
     //支持多模态
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role(ROLE_USER).content(content).build()), model, "", config);
     }
 
 
@@ -150,7 +151,15 @@ public class LLM {
                 .build();
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", model);
+        if (StringUtils.isNotEmpty(model)) {
+            requestBody.addProperty("model", model);
+        }
+
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+            requestBody.remove("model");
+        }
 
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
@@ -195,6 +204,10 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
+        }
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
@@ -216,7 +229,11 @@ public class LLM {
         Request.Builder requestBuilder = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                requestBuilder.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else {
+                requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -246,6 +263,10 @@ public class LLM {
                 JsonObject content = candidate.get("content").getAsJsonObject();
                 String text = content.get("parts").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
                 return text;
+            }
+
+            if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                return jsonResponse.get("content").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
             }
 
             //openai那个流派的
@@ -445,7 +466,12 @@ public class LLM {
                 && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("model", model);
             requestBody.addProperty("stream", true);
+
+            if (null != this.config.getTemperature()) {
+                requestBody.addProperty("temperature", this.config.getTemperature());
+            }
         }
+
 
         if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("anthropic_version", this.config.getVersion());
@@ -488,7 +514,14 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER ||
+                    this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
+                    this.llmProvider == LLMProvider.DEEPSEEK ||
+                    this.llmProvider == LLMProvider.DOUBAO_UI_TARS ||
+                    this.llmProvider == LLMProvider.DOUBAO_VISION ||
+                    this.llmProvider == LLMProvider.GROK ||
+                    this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
@@ -591,10 +624,10 @@ public class LLM {
                                     continue;
                                 }
 
-                                if ("content_block_stop".equals(jsonResponse.get("type").getAsString())) {
+                                if ("message_delta".equals(jsonResponse.get("type").getAsString())) {
                                     JsonObject jsonRes = new JsonObject();
                                     jsonRes.addProperty("type", "finish");
-                                    jsonRes.addProperty("content", "[DONE]");
+                                    jsonRes.addProperty("content", jsonResponse.get("delta").getAsJsonObject().get("stop_reason").getAsString());
                                     messageHandler.accept("[DONE]", jsonRes);
                                     if (null != sink) {
                                         sink.complete();
@@ -695,7 +728,7 @@ public class LLM {
         StringBuilder sb = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         String msgId = UUID.randomUUID().toString();
-        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
+        chat(Lists.newArrayList(AiMessage.builder().role(ROLE_USER).content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
         try {
             latch.await();
         } catch (InterruptedException e) {
@@ -736,8 +769,8 @@ public class LLM {
             if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
             } else if (type.equals("finish") || type.equals("failure")) {
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
                 latch.countDown();
-                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).build());
             } else {
                 sb.append(o.get("content").getAsString());
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
@@ -879,6 +912,7 @@ public class LLM {
         private String role; // 角色: assistant, user
         private String content; // 文本内容
         private List<LLMPart> parts; // 消息内容
+        private String imageType;
     }
 
     @Data
@@ -944,11 +978,18 @@ public class LLM {
 
     }
 
-    // TODO: 2025/2/17 实现mcp的流式调用
-    public String callStreamWithMcp(LLM llm, LLMCompoundMsg msg, String systemPrompt) {
 
-        return null;
+    public static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
+        return LLMCompoundMsg.builder()
+                .content(userPrompt)
+                .parts(msg.getImages() == null
+                        ? new ArrayList<>()
+                        : msg.getImages()
+                        .stream()
+                        .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                        .collect(Collectors.toList())).build();
     }
+
 
     /**
      * 获取LLM请求对象
@@ -958,6 +999,7 @@ public class LLM {
      */
     public JsonObject getReq(LLM llm, LLMCompoundMsg msg) {
         JsonObject req = new JsonObject();
+        String imageType = getImageType(msg);
 
         if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
             JsonArray parts = new JsonArray();
@@ -977,11 +1019,13 @@ public class LLM {
             }
 
             req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
-                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
-            req.addProperty("role", "user");
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
+        ) {
+            req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -995,7 +1039,7 @@ public class LLM {
                     obj2.addProperty("type", "image_url");
                     JsonObject imgObj = new JsonObject();
                     if (!part.getData().startsWith("data:image")) {
-                        imgObj.addProperty("url", "data:image/jpeg;base64," + part.getData());
+                        imgObj.addProperty("url", "data:image/" + imageType + ";base64," + part.getData());
                     } else {
                         imgObj.addProperty("url", part.getData());
                     }
@@ -1004,10 +1048,8 @@ public class LLM {
                 });
             }
             req.add("content", array);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
-            req.addProperty("role", "user");
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", ROLE_USER);
             JsonArray contentJsons = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1028,8 +1070,20 @@ public class LLM {
                 });
             }
             req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", msg.getContent());
         }
         return req;
+    }
+
+    private static String getImageType(LLMCompoundMsg msg) {
+        String imageType = "jpeg";
+        if (StringUtils.isNotEmpty(msg.getImageType())) {
+            imageType = msg.getImageType();
+        }
+        return imageType;
     }
 
     private JsonObject getReq(LLM llm, LLMPart llmPart) {
@@ -1051,11 +1105,9 @@ public class LLM {
             }
 
             req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
                 || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
-            req.addProperty("role", "user");
+            req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1073,10 +1125,8 @@ public class LLM {
             }
 
             req.add("content", array);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
-            req.addProperty("role", "user");
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
+            req.addProperty("role", ROLE_USER);
             JsonArray contentJsons = new JsonArray();
 
             JsonObject obj1 = new JsonObject();
@@ -1095,12 +1145,12 @@ public class LLM {
                 contentJsons.add(obj2);
             }
             req.add("content", contentJsons);
+        } else {
+            // HINT: openai compatible
+            req.addProperty("role", ROLE_USER);
+            req.addProperty("content", llmPart.getText());
         }
 
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENAICOMPATIBLE) {
-
-        }
         return req;
     }
 

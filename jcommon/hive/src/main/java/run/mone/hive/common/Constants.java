@@ -8,4 +8,6 @@ public class Constants {
     public static final String ROLE = "role";
 
     public static final String MEMORY = "memory";
+
+    public static final String FROM = "__from__";
 } 

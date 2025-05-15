@@ -11,4 +11,6 @@ public class User extends BaseEntity {
     private String username;
     private String password;
     private String email;
+    private String token;
+    private String internalAccount;  // 公司内部账号绑定
 }

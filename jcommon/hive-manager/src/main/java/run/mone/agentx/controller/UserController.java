@@ -1,19 +1,29 @@
 package run.mone.agentx.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.dto.LoginRequest;
 import run.mone.agentx.dto.LoginResponse;
+import run.mone.agentx.dto.UserDTO;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.JwtService;
 import run.mone.agentx.service.UserService;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -22,6 +32,10 @@ import run.mone.agentx.service.UserService;
 public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
+    private static final String TOKEN_COOKIE_NAME = "auth_token";
+    
+    @Value("${jwt.expiration}")
+    private Long jwtExpiration;
 
     @PostMapping("/register")
     public Mono<ApiResponse<User>> register(@RequestBody User user) {
@@ -45,13 +59,64 @@ public class UserController {
     }
     
     @PostMapping("/login")
-    public Mono<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest) {
+    public Mono<ResponseEntity<ApiResponse<LoginResponse>>> login(@RequestBody LoginRequest loginRequest) {
         return userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword())
                 .map(user -> {
                     String token = jwtService.generateToken(user);
-                    return ApiResponse.success(LoginResponse.fromUser(user, token));
+                    LoginResponse loginResponse = LoginResponse.fromUser(user, token);
+                    
+                    // 创建 http-only cookie，过期时间与 JWT token 一致
+                    // 由于 JWT token 使用 UTC 时间
+                    ResponseCookie cookie = ResponseCookie.from(TOKEN_COOKIE_NAME, token)
+                            .httpOnly(true)
+                            .secure(true)  // 只在 HTTPS 下发送
+                            .path("/")
+                            .maxAge((jwtExpiration) / 1000)
+                            .build();
+                    
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                            .body(ApiResponse.success(loginResponse));
                 })
-                .switchIfEmpty(Mono.just(ApiResponse.error(401, "Invalid username or password")))
+                .switchIfEmpty(Mono.just(ResponseEntity.ok()
+                        .body(ApiResponse.error(401, "Invalid username or password"))))
+                .onErrorResume(e -> Mono.just(ResponseEntity.ok()
+                        .body(ApiResponse.error(500, e.getMessage()))));
+    }
+
+    @GetMapping("/list")
+    public Mono<ApiResponse<List<UserDTO>>> listUsers() {
+        return userService.findAllUsers()
+                .map(UserDTO::fromUser)
+                .collectList()
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("获取用户列表时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @PostMapping("/token")
+    public Mono<ApiResponse<String>> createToken(@AuthenticationPrincipal User user) {
+        return userService.createToken(user)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("创建token时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @GetMapping("/info")
+    public Mono<ApiResponse<UserDTO>> getUserInfo(@AuthenticationPrincipal User user) {
+        return userService.getUserInfo(user)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("获取用户信息时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @PostMapping("/internal-account")
+    public Mono<ApiResponse<String>> bindInternalAccount(
+            @AuthenticationPrincipal User user,
+            @RequestParam String internalAccount) {
+        return userService.bindInternalAccount(user, internalAccount)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
                 .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
     }
 }

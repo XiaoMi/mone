@@ -3,6 +3,8 @@ package run.mone.mcp.idea.composer.function;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.composer.service.IdeaService;
 
@@ -12,7 +14,7 @@ import java.util.function.Function;
 
 @RequiredArgsConstructor
 @Slf4j
-public class GitPushFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class GitPushFunction implements McpFunction {
 
     private IdeaService ideaService;
 
@@ -36,14 +38,14 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
             {
                 "type": "object",
                 "properties": {
-                    
+            
                 },
                 "required": []
             }
             """;
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         try {
             String result = ideaService.gitPush((String) arguments.get("code"));
             String commit = ideaService.extractContent(result, "commit");
@@ -52,10 +54,15 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
             data.addProperty("commit", commit);
 
             log.info("data:{}", data);
-
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(data.toString(), data.toString())), false);
+            return Flux.create(sink -> {
+                sink.next(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(data.toString(), data.toString())), false));
+                sink.complete();
+            });
         } catch (Exception e) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
+            return Flux.create(sink -> {
+                sink.next(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
+                sink.complete();
+            });
         }
     }
 

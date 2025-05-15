@@ -34,6 +34,8 @@ public class LLMConfig {
 
     private String token2;
 
+    private String systemPrompt;
+
     @Builder.Default
     private LLMProvider llmProvider = LLMProvider.DEEPSEEK;
 

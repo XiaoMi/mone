@@ -1,9 +1,9 @@
 package run.mone.agentx.config;
 
 import java.io.IOException;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -24,21 +24,69 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserService userService;
+    private static final String TOKEN_COOKIE_NAME = "auth_token";
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.endsWith("/users/login") || path.endsWith("/users/register");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
+        String jwt = null;
+        String username = null;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // 如果请求路径是静态资源，则不进行 token 认证
+        // 登录和注册也不需要校验
+        String path = request.getRequestURI();
+        if(path.isEmpty() ||
+                path.startsWith("/agent-manager") ||
+                path.startsWith("/assets/") ||
+                path.startsWith("/scripts/") ||
+                path.equals("/api/v1/users/register") ||
+                path.equals("/api/manager/v1/users/register") ||
+                path.equals("/api/v1/users/login") ||
+                path.equals("/api/manager/v1/users/login") ||
+                path.equals("/a2a/v1/healthz") ||
+                path.equals("/ping") ||
+                path.equals("/") ||
+                path.equals("/api/v1/agents/health") ||
+                path.equals("/api/v1/tasks/execute") ||
+                path.equals("/api/v1/agents/unregister") ||
+                path.equals("/api/v1/agents/register") ||
+                path.equals("/error")) {
             filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 首先尝试从 Authorization header 获取 token
+        final String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7);
+        } else {
+            // 如果 header 中没有，则尝试从 cookie 中获取
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (TOKEN_COOKIE_NAME.equals(cookie.getName())) {
+                        jwt = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (jwt == null) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"code\":403,\"message\":\"Token is required\"}");
             return;
         }
         
         try {
-            jwt = authHeader.substring(7);
             username = jwtService.extractUsername(jwt);
             
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

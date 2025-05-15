@@ -1,5 +1,6 @@
 import MarkdownIt from "markdown-it";
-import * as htmlparser2 from "htmlparser2";
+// import * as htmlparser2 from "htmlparser2";
+import { SimpleHtmlParser } from "./simple-html-parser";
 
 export function markdownItMcp(md: MarkdownIt) {
   if (!md.block || !md.block.ruler) {
@@ -13,65 +14,36 @@ export function markdownItMcp(md: MarkdownIt) {
     endLine: number,
     silent: boolean
   ): boolean {
+    if (silent) return true;
+
     const pos = state.bMarks[startLine] + state.tShift[startLine];
+    // 获取完整内容
+    const mcpContent = state.src.slice(pos);
 
     // 检查当前行是否包含<thinking>等标签
-    const currentLine = state.src.slice(pos, state.eMarks[startLine]);
     if (
       !(
-        currentLine.includes("<terminal>") ||
-        currentLine.includes("<use_mcp_tool>") ||
-        currentLine.includes("<thinking>") ||
-        currentLine.includes("<chat>") ||
-        currentLine.includes("<mcp_tool>") ||
-        currentLine.includes("<attempt_completion>") ||
-        currentLine.includes("<ask_followup_question>") ||
-        currentLine.includes("<mcp>") ||
-        currentLine.includes("<step>")
+        mcpContent.includes("<terminal>") ||
+        mcpContent.includes("<use_mcp_tool>") ||
+        mcpContent.includes("<thinking>") ||
+        mcpContent.includes("<chat>") ||
+        mcpContent.includes("<mcp_tool>") ||
+        mcpContent.includes("<attempt_completion>") ||
+        mcpContent.includes("<ask_followup_question>") ||
+        mcpContent.includes("<mcp>") ||
+        mcpContent.includes("<step>") ||
+        mcpContent.includes("<file>") ||
+        mcpContent.includes("<file_operation>") ||
+        mcpContent.includes("<execute>")
       )
     ) {
       return false;
     }
 
-    // 找到对应的结束标签
-    let line = startLine;
-    let mcpContent = '';
-    let tagFound = false;
-    
-    while (line < endLine) {
-      const lineText = state.src.slice(
-        state.bMarks[line] + state.tShift[line],
-        state.eMarks[line]
-      );
-      
-      if (lineText.includes("</terminal>") ||
-          lineText.includes("</use_mcp_tool>") ||
-          lineText.includes("</thinking>") ||
-          lineText.includes("</chat>") ||
-          lineText.includes("</mcp_tool>") ||
-          lineText.includes("</attempt_completion>") ||
-          lineText.includes("</ask_followup_question>") ||
-          lineText.includes("</mcp>") ||
-          lineText.includes("</step>")) {
-        tagFound = true;
-        mcpContent += lineText + '\n';
-        break;
-      }
-      
-      mcpContent += lineText + '\n';
-      line++;
-    }
-
-    if (!tagFound) {
-      return false;
-    }
-
-    if (silent) return true;
-
     let html = "";
     let accumulatedText = ""; // 添加文本累积变量
     let startCodeBlock = false;
-    const parser = new htmlparser2.Parser({
+    const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
         /*
          * This fires when a new tag is opened.
@@ -151,10 +123,37 @@ export function markdownItMcp(md: MarkdownIt) {
                 <span>步骤</span>
               </div>
               <div class="step-content">`;
+        } else if (name === "file") {
+          html += `
+            <div class="file-block">
+              <div class="file-header">
+                <i class="fa-solid fa-file"></i>
+                <span>文件操作</span>
+              </div>
+              <div class="file-content">`;
+        } else if (name === "file_operation") {
+          html += `
+            <div class="file-operation-block">
+              <div class="file-operation-header">
+                <i class="fa-solid fa-file-code"></i>
+                <span>文件操作</span>
+              </div>
+              <div class="file-operation-content">`;
+        } else if (name === "execute") {
+          html += `
+            <div class="execute-block">
+              <div class="execute-header">
+                <i class="fa-solid fa-terminal"></i>
+                <span>执行命令</span>
+              </div>
+              <div class="execute-content">`;
+        } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
+          html += `<div class="${name}-section">`;
         } else {
           if (startCodeBlock) {
             accumulatedText += `<${name}>`
           } else {
+            console.log("unhandled tag", name,attributes);
             html += md.utils.escapeHtml(
               `<${name} ${Object.entries(attributes)
                 .map(([key, value]) => `${key}="${value}"`)
@@ -164,27 +163,33 @@ export function markdownItMcp(md: MarkdownIt) {
         }
       },
       ontext(text) {
-        /*
-         * Fires whenever a section of text was processed.
-         *
-         * Note that this can fire at any point within text and you might
-         * have to stitch together multiple pieces.
-         */
-        const lines = text.split('\n');    
-        for (const line of lines) {
-          if (line.includes('```')) {
-            if (startCodeBlock) {
-              startCodeBlock = false;
-              html += md.render(accumulatedText);
-            } else {
-              startCodeBlock = true;
-              accumulatedText += `${line}\n`;
-            }
-          } else if (startCodeBlock){
-            accumulatedText += `${line}\n`;
-          } else {
-            html += md.utils.escapeHtml(`${line}\n`);
+        text = text.replace(/```(\w*)\n/g, '').replace(/\n```/g, '');
+        // 匹配所有 voice 类型 JSON
+        const regex = /({[^{}]*"result"\s*:\s*"([^"]+)"[^{}]*"toolMsgType"\s*:\s*"voice"[^{}]*})/g;
+        let lastIndex = 0;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          // 输出前面的普通文本
+          if (match.index > lastIndex) {
+            const normalText = text.slice(lastIndex, match.index);
+            html += md.utils.escapeHtml(normalText);
           }
+          // 尝试解析 JSON
+          try {
+            const obj = JSON.parse(match[1]);
+            if (obj && obj.result && obj.toolMsgType === "voice") {
+              html += `<audio controls src="data:audio/wav;base64,${obj.result}"></audio>`;
+            } else {
+              html += md.utils.escapeHtml(match[0]);
+            }
+          } catch (e) {
+            html += md.utils.escapeHtml(match[0]);
+          }
+          lastIndex = regex.lastIndex;
+        }
+        // 剩余部分
+        if (lastIndex < text.length) {
+          html += md.utils.escapeHtml(text.slice(lastIndex));
         }
       },
       onclosetag(tagname, isImplied) {
@@ -222,25 +227,32 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div>`;
         } else if (tagname === "step") {
           html += `</div></div>`;
+        } else if (tagname === "file") {
+          html += `</div></div>`;
+        } else if (tagname === "file_operation") {
+          html += `</div></div>`;
+        } else if (tagname === "execute") {
+          html += `</div></div>`;
+        } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
+          html += `</div>`;
         } else {
-          if (!isImplied) {
-            html += md.utils.escapeHtml(`</${tagname}>`);
-          }
+          // if (!isImplied) {
+          //   html += md.utils.escapeHtml(`</${tagname}>`);
+          // } else {
+          //   console.log("unhandled tag", tagname);
+          // }
         }
       },
-    },
-    {
-      xmlMode: true,
     });
-    
+
     parser.write(mcpContent);
     parser.end();
 
     let token = state.push("html_block", "", 0);
     token.content = html;
-    token.map = [startLine, line + 1];
+    token.map = [startLine, endLine];
 
-    state.line = line + 1;
+    state.line = endLine;
     return true;
   }
 

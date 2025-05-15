@@ -1,16 +1,20 @@
 package run.mone.hive.mcp.service;
 
-import lombok.Getter;
+import com.google.common.collect.ImmutableMap;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -22,14 +26,18 @@ import run.mone.hive.utils.NetUtils;
 import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
  * @date 2025/4/9 09:49
  */
 @RequiredArgsConstructor
+@Data
+@Slf4j
 public class RoleService {
 
     private final LLM llm;
@@ -38,40 +46,42 @@ public class RoleService {
 
     private final List<McpSchema.Tool> mcpToolList;
 
+    private final List<McpFunction> functionList;
+
     private final HiveManagerService hiveManagerService;
 
+    //通过这个反向注册一些role(agent)元数据进来
+    private final RoleMeta roleMeta;
 
     @Value("${mcp.hub.path:}")
-    @Setter
-    @Getter
     private String mcpPath;
 
     @Value("${mcp.agent.name:}")
-    @Setter
-    @Getter
     private String agentName;
 
     @Value("${mcp.agent.group:}")
-    @Setter
-    @Getter
     private String agentGroup;
 
     @Value("${mcp.agent.version:}")
-    @Setter
-    @Getter
     private String agentversion;
 
     @Value("${mcp.agent.ip:}")
-    @Setter
-    @Getter
     private String agentIp;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
     @Value("${mcp.grpc.port:9999}")
-    @Setter
-    @Getter
     private int grpcPort;
+
+
+    //支持延时创建agent(单位是s)
+    @Value("${mcp.agent.delay:0}")
+    private int delay;
+
+    private ReactorRole defaultAgent;
+
+    //连接过来的客户端
+    private ConcurrentHashMap<String, String> clientMap = new ConcurrentHashMap<>();
 
     @PostConstruct
     @SneakyThrows
@@ -80,31 +90,85 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
+        //创建一个默认Agent
+        createDefaultAgent();
+        //优雅关机
+        shutdownHook();
     }
 
-    public ReactorRole createRole(String owner, String clientId) {
+    private void shutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> Safe.run(() -> {
+            RegInfo regInfo = RegInfo.builder().name(agentName).group(agentGroup).ip(NetUtils.getLocalHost()).port(grpcPort).version(agentversion).build();
+            log.info("shutdown hook unregister:{}", regInfo);
+            regInfo.setClientMap(this.clientMap);
+            hiveManagerService.unregister(regInfo);
+        })));
+    }
+
+    private void createDefaultAgent() {
+        if (delay == 0) {
+            Safe.run(() -> this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT, "", ""));
+        } else {
+            Safe.run(() -> Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+                this.defaultAgent = createRole(Const.DEFAULT, Const.DEFAULT, "", "");
+            }, delay, TimeUnit.SECONDS));
+        }
+    }
+
+    public ReactorRole createRole(Message message) {
+        String owner = message.getSentFrom().toString();
+        String clientId = message.getClientId();
+        String userId = message.getUserId();
+        String agentId = message.getAgentId();
+
+        return createRole(owner, clientId, userId, agentId);
+    }
+
+    public ReactorRole createRole(String owner, String clientId, String userId, String agentId) {
+        log.info("create role owner:{} clientId:{}", owner, clientId);
+        if (!owner.equals(Const.DEFAULT)) {
+            this.clientMap.put(clientId, clientId);
+        }
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
-        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, grpcPort, new CountDownLatch(1), llm, this.toolList, this.mcpToolList, ip) {
-                @Override
-                public void reg(RegInfo info) {
-                    // 直接传递传入的RegInfo对象
+        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, llm, this.toolList, this.mcpToolList, ip) {
+            @Override
+            public void reg(RegInfo info) {
+                if (owner.equals(Const.DEFAULT)) {
                     hiveManagerService.register(info);
                 }
+            }
 
-                @Override
-                public void unreg(RegInfo regInfo) {
-                    // 直接传递传入的RegInfo对象
+            @Override
+            public void unreg(RegInfo regInfo) {
+                if (owner.equals(Const.DEFAULT)) {
                     hiveManagerService.unregister(regInfo);
                 }
+            }
 
-                @Override
-                public void health(HealthInfo healthInfo) {
-                    // 直接传递传入的HealthInfo对象
+            @Override
+            public void health(HealthInfo healthInfo) {
+                if (owner.equals(Const.DEFAULT)) {
                     hiveManagerService.heartbeat(healthInfo);
                 }
-            };
+            }
+        };
+
+
+        role.setFunctionList(this.functionList);
         role.setOwner(owner);
         role.setClientId(clientId);
+
+        role.setProfile(roleMeta.getProfile());
+        role.setGoal(roleMeta.getGoal());
+        role.setConstraints(roleMeta.getConstraints());
+        role.setWorkflow(roleMeta.getWorkflow());
+        role.setOutputFormat(roleMeta.getOutputFormat());
+
+        if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+            Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+            role.setRoleConfig(configMap);
+        }
+
         //一直执行不会停下来
         role.run();
         return role;
@@ -114,7 +178,7 @@ public class RoleService {
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
         if (!roleMap.containsKey(from)) {
-            roleMap.putIfAbsent(from, createRole(from, message.getClientId()));
+            roleMap.putIfAbsent(from, createRole(message));
         }
         ReactorRole role = roleMap.get(from);
         return Flux.create(sink -> {
@@ -123,13 +187,32 @@ public class RoleService {
         });
     }
 
-    public void clearHistory(Message message) {
-        // Clear the role's memory
+    //下线某个Agent
+    public Mono<Void> offlineAgent(Message message) {
         String from = message.getSentFrom().toString();
-        if (roleMap.containsKey(from)) {
-            ReactorRole minzai = roleMap.get(from);
-            minzai.clearMemory();
+        ReactorRole agent = roleMap.get(from);
+        if (null != agent) {
+            message.setData(Const.ROLE_EXIT);
+            agent.putMessage(message);
+        }
+        return Mono.empty();
+    }
+
+    //清空某个Agent的记录
+    public void clearHistory(Message message) {
+        String from = message.getSentFrom().toString();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            role.clearMemory();
         }
     }
 
+    @Override
+    public String toString() {
+        return "RoleService{" +
+                "agentName='" + agentName + '\'' +
+                ", agentGroup='" + agentGroup + '\'' +
+                ", agentversion='" + agentversion + '\'' +
+                '}';
+    }
 }
