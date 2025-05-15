@@ -31,7 +31,7 @@
           </template>
         </el-input>
       </div>
-      <button class="create-btn" @click="handleCreate">创建 AGENT</button>
+      <button class="create-btn" @click="handleCreate">+ AGENT</button>
     </div>
     <div class="agent-list-type">
       <!-- <el-radio-group v-model="agentType" size="small" class="custom-radio-group" @change="fetchAgents">

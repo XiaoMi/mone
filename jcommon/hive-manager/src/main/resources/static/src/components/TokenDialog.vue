@@ -24,7 +24,7 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button type="primary" @click="handleCreateToken" :disabled="!!currentToken">
+        <el-button type="primary" @click="handleCreateToken" v-if="!currentToken">
           创建新Token
         </el-button>
       </span>
