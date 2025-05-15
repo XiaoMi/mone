@@ -101,6 +101,12 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
             new FileService().createDirectory(ctx, userKey, directoryPath);
             return;
         }
+
+        //删除文件夹
+        if (uri.startsWith(Cons.DELETE_DIR)) {
+            new FileService().deleteDirectory(ctx, userKey, directoryPath);
+            return;
+        }
         
         //获取文件列表
         if (uri.startsWith(Cons.LIST_FILES)) {

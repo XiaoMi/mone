@@ -208,4 +208,62 @@ public class FileService {
             BaseService.send(ctx, "error:Failed to create directory: " + e.getMessage());
         }
     }
+
+    /**
+     * Delete a directory and all its contents
+     *
+     * @param ctx           Channel context
+     * @param userKey       User key for file organization
+     * @param directoryPath Path of the directory to delete
+     */
+    public void deleteDirectory(ChannelHandlerContext ctx, String userKey, String directoryPath) {
+        try {
+            // Validate userKey
+            if (!isValidKeyFormat(userKey)) {
+                BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
+                return;
+            }
+
+            // Validate directory path
+            if (StringUtils.isEmpty(directoryPath)) {
+                BaseService.send(ctx, "error:Directory path cannot be empty.");
+                return;
+            }
+            
+            if (!DirUtils.isValidDirectoryPath(directoryPath)) {
+                BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                return;
+            }
+
+            // Construct the full path to the directory
+            String dirPath = DirUtils.dirPath(userKey, directoryPath);
+            File directory = new File(dirPath);
+
+            // Check if directory exists
+            if (!directory.exists()) {
+                BaseService.send(ctx, "error:Directory not found: " + directoryPath);
+                return;
+            }
+
+            // Verify it's actually a directory
+            if (!directory.isDirectory()) {
+                BaseService.send(ctx, "error:Path is not a directory: " + directoryPath);
+                return;
+            }
+
+            // Delete the directory and all its contents
+            FileUtils.deleteDirectory(directory);
+
+            // Send success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Directory deleted successfully");
+            response.put("path", directoryPath);
+            BaseService.send(ctx, JSONObject.toJSONString(response));
+
+        } catch (Exception e) {
+            log.error("Error deleting directory: {}", e.getMessage(), e);
+            BaseService.send(ctx, "error:Failed to delete directory: " + e.getMessage());
+        }
+    }
 }
