@@ -39,8 +39,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 @Slf4j
 public class BaseService {
 
-    public static final String DATAPATH = Cons.DATAPATH;
-
     public static void send(ChannelHandlerContext ctx, String message) {
         send(ctx, OK, message);
     }
