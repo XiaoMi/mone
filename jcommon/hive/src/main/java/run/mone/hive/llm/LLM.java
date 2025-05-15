@@ -519,6 +519,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
                     this.llmProvider == LLMProvider.DOUBAO_UI_TARS ||
+                    this.llmProvider == LLMProvider.DOUBAO_VISION ||
                     this.llmProvider == LLMProvider.GROK ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
@@ -1022,6 +1023,7 @@ public class LLM {
                 || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
         ) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
