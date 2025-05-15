@@ -157,7 +157,7 @@ public class UsageDemo {
     public static void main(String[] args) {
         // 创建客户端
         UsageDemo taskClient = new UsageDemo("http://localhost:8080")
-                .withToken("ba38a095d4524d689af79d976dfec84f");
+                .withToken("your-jwt-token");
                 
         // 创建任务
         HiveClient.Task task = taskClient.createTask("username", 1L, 2L);

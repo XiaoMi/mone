@@ -3,6 +3,7 @@ package run.mone.agentx.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.mone.agentx.dto.TaskDTO;
 import run.mone.agentx.dto.common.ApiResponse;
 import run.mone.agentx.entity.Task;
 import run.mone.agentx.entity.User;
@@ -32,13 +34,35 @@ public class TaskController {
     private final UserService userService;
 
     @PostMapping
-    public Mono<ApiResponse<Task>> createTask(@AuthenticationPrincipal User user, @RequestBody Task task) {
-        task.setUsername(user.getUsername());
+    public Mono<ApiResponse<Task>> createTask(@AuthenticationPrincipal User user, @RequestBody TaskDTO taskDTO) {
+        if (user == null) {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(taskDTO.getToken()).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
+            }
+            User userByToken = userService.findByToken(taskDTO.getToken()).block();
+            user = userByToken;
+        }
+        taskDTO.setUsername(user.getUsername());
+        Task task = new Task();
+        BeanUtils.copyProperties(taskDTO, task);
         return taskService.createTask(task).map(ApiResponse::success);
     }
 
     @GetMapping("/{taskUuid}")
-    public Mono<ApiResponse<Task>> getTask(@AuthenticationPrincipal User user, @PathVariable String taskUuid) {
+    public Mono<ApiResponse<Task>> getTask(@AuthenticationPrincipal User user, @PathVariable String taskUuid, @RequestParam(required = false) String token) {
+        if (user == null) {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(token).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
+            }
+            user = userService.findByToken(token).block();
+            if (user == null) {
+                return Mono.just(ApiResponse.<Task>error(401, "No valid user found"));
+            }
+        }
         return taskService.findByTaskUuid(taskUuid).map(ApiResponse::success);
     }
 
@@ -46,7 +70,19 @@ public class TaskController {
     public Mono<ApiResponse<List<Task>>> getTasks(
             @AuthenticationPrincipal User user,
             @RequestParam(required = false) Long clientAgentId,
-            @RequestParam(required = false) Long serverAgentId) {
+            @RequestParam(required = false) Long serverAgentId,
+            @RequestParam(required = false) String token) {
+        if (user == null) {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(token).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<List<Task>>error(401, "Invalid token"));
+            }
+            user = userService.findByToken(token).block();
+            if (user == null) {
+                return Mono.just(ApiResponse.<List<Task>>error(401, "No valid user found"));
+            }
+        }
         Flux<Task> tasks;
         if (clientAgentId != null) {
             tasks = taskService.findByClientAgentId(clientAgentId);
@@ -62,7 +98,19 @@ public class TaskController {
     public Mono<ApiResponse<Task>> updateTaskStatus(
             @AuthenticationPrincipal User user,
             @PathVariable String taskUuid,
-            @RequestParam String status) {
+            @RequestParam String status,
+            @RequestParam(required = false) String token) {
+        if (user == null) {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(token).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
+            }
+            user = userService.findByToken(token).block();
+            if (user == null) {
+                return Mono.just(ApiResponse.<Task>error(401, "No valid user found"));
+            }
+        }
         return taskService.updateTaskStatus(taskUuid, status).map(ApiResponse::success);
     }
 
@@ -70,7 +118,19 @@ public class TaskController {
     public Mono<ApiResponse<Task>> updateTaskResult(
             @AuthenticationPrincipal User user,
             @PathVariable String taskUuid,
-            @RequestBody String result) {
+            @RequestBody String result,
+            @RequestParam(required = false) String token) {
+        if (user == null) {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(token).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
+            }
+            user = userService.findByToken(token).block();
+            if (user == null) {
+                return Mono.just(ApiResponse.<Task>error(401, "No valid user found"));
+            }
+        }
         return taskService.updateTaskResult(taskUuid, result).map(ApiResponse::success);
     }
     
@@ -166,13 +226,25 @@ public class TaskController {
             @AuthenticationPrincipal User user,
             @PathVariable String taskUuid,
             @RequestParam(required = false) String description,
-            @RequestParam(required = false) Long serverAgentId) {
-        
+            @RequestParam(required = false) Long serverAgentId,
+            @RequestParam(required = false) String token)    {
+        if (user == null) {
+            // 如果用户为空，则验证token
+            boolean isValid = userService.verifyToken(token).block();
+            if (!isValid) {
+                return Mono.just(ApiResponse.<Task>error(401, "Invalid token"));
+            }
+            user = userService.findByToken(token).block();
+            if (user == null) {
+                return Mono.just(ApiResponse.<Task>error(401, "No valid user found"));
+            }
+        }
+        User finalUser = user;
         // 先检查任务是否存在
         return taskService.findByTaskUuid(taskUuid)
                 .flatMap(task -> {
                     // 检查当前用户是否有权限修改该任务
-                    if (!task.getUsername().equals(user.getUsername())) {
+                    if (!task.getUsername().equals(finalUser.getUsername())) {
                         return Mono.just(ApiResponse.<Task>error(403, "无权修改此任务"));
                     }
                     
