@@ -86,13 +86,19 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         //下载
         if (uri.startsWith(Cons.DOWNLOAD)) {
-            new DownloadService().download(ctx, request, userKey, name, id);
+            new DownloadService().download(ctx, request, userKey, directoryPath, name, id);
             return;
         }
 
         //获取token
         if (uri.startsWith(Cons.GETTOKEN)) {
             BaseService.send(ctx, new TokenService().generateToken(name));
+            return;
+        }
+
+        //创建文件夹
+        if (uri.startsWith(Cons.CREATE_DIR)) {
+            new FileService().createDirectory(ctx, userKey, directoryPath);
             return;
         }
         
@@ -104,7 +110,7 @@ public class HttpChannelHandler extends SimpleChannelInboundHandler<FullHttpRequ
         
         //删除文件
         if (uri.startsWith(Cons.DELETE_FILE)) {
-            new FileService().deleteFile(ctx, userKey, name);
+            new FileService().deleteFile(ctx, userKey, directoryPath, name);
             return;
         }
 

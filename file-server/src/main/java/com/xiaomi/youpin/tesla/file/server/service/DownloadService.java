@@ -16,12 +16,15 @@
 
 package com.xiaomi.youpin.tesla.file.server.service;
 
+import com.xiaomi.youpin.tesla.file.server.common.Cons;
+import com.xiaomi.youpin.tesla.file.server.utils.DirUtils;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedFile;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -35,10 +38,19 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 public class DownloadService extends BaseService {
 
 
-    public void download(ChannelHandlerContext ctx, FullHttpRequest request, String userKey, String name, String id) throws IOException {
-        final String path = path(userKey, name);
+    public void download(ChannelHandlerContext ctx, FullHttpRequest request, String userKey, String directoryPath, String name, String id) throws IOException {
+
+        // Validate directory path if provided
+        if (StringUtils.isNotEmpty(directoryPath)) {
+            if (!DirUtils.isValidDirectoryPath(directoryPath)) {
+                BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                return;
+            }
+        }
+
+        final String path = DirUtils.filePath(userKey, directoryPath, name);
         File file = new File(path);
-        if (file.isHidden() || !file.exists() || !file.isFile() || !file.getPath().startsWith(DATAPATH)) {
+        if (file.isHidden() || !file.exists() || !file.isFile() || !file.getPath().startsWith(Cons.DATAPATH)) {
             send(ctx, NOT_FOUND, NOT_FOUND.reasonPhrase());
             return;
         }
@@ -64,11 +76,6 @@ public class DownloadService extends BaseService {
         if (!HttpHeaders.isKeepAlive(request)) {
             lastContentFuture.addListener(ChannelFutureListener.CLOSE);
         }
-    }
-
-
-    private static String path(String userKey, String name) {
-        return DATAPATH + File.separator + userKey + File.separator + name;
     }
 
 

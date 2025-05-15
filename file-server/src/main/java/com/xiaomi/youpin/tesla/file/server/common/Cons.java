@@ -43,6 +43,8 @@ public abstract class Cons {
     public static final String HEALTH = "/health";
     
     public static final String LIST_FILES = "/list";
+
+    public static final String CREATE_DIR = "/createDir";
     
     public static final String DELETE_FILE = "/delete";
 
