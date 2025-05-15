@@ -1,6 +1,6 @@
 <template>
   <div class="theme-switcher">
-    <el-dropdown @command="handleThemeChange" trigger="click">
+    <el-dropdown @command="handleThemeChange">
       <el-button type="primary" :icon="Brush">
         {{ themeNameMap[currentTheme.name] || currentTheme.name }}
         <el-icon class="el-icon--right"><arrow-down /></el-icon>
@@ -45,6 +45,8 @@ const handleThemeChange = (themeName: string) => {
 .theme-switcher {
   display: inline-block;
   background: var(--el-color-background-gradient);
+  border-radius: 10px;
+  overflow: hidden;
 
   :deep(.el-button) {
     background: var(--el-color-background-gradient);
@@ -52,13 +54,12 @@ const handleThemeChange = (themeName: string) => {
     color: var(--el-text-color-primary);
     border-width: 0px;
     transition: all 0.2s;
+    padding: 0 4px;
+    height: 26px;
 
     &:hover {
       background: var(--el-color-primary);
       color: var(--el-bg-color);
-    }
-    .el-icon {
-      margin-right: 4px;
     }
   }
 }
