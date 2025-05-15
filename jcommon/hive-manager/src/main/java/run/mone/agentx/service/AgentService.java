@@ -250,104 +250,96 @@ public class AgentService {
     }
 
     public Mono<AgentInstance> register(RegInfoDto regInfoDto) {
-        try {
-            // 查找Agent是否存在
-            Agent agent = agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
-                    .block();
+        // 查找Agent是否存在
+        return agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
+                .flatMap(agent -> {
+                    // 如果Agent已存在，更新 toolMap 和 mcpToolMap
+                    if (regInfoDto.getToolMap() != null) {
+                        agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
+                    }
+                    if (regInfoDto.getMcpToolMap() != null) {
+                        agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
+                    }
+                    agent.setProfile(regInfoDto.getProfile());
+                    agent.setGoal(regInfoDto.getGoal());
+                    agent.setConstraints(regInfoDto.getConstraints());
+                    agent.setUtime(System.currentTimeMillis());
+                    return agentRepository.save(agent);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    // 如果Agent不存在，创建一个新的
+                    Agent agent = new Agent();
+                    agent.setName(regInfoDto.getName());
+                    agent.setGroup(regInfoDto.getGroup());
+                    agent.setVersion(regInfoDto.getVersion());
+                    agent.setDescription("Auto created during registration");
+                    agent.setProfile(regInfoDto.getProfile());
+                    agent.setGoal(regInfoDto.getGoal());
+                    agent.setConstraints(regInfoDto.getConstraints());
+                    agent.setCtime(System.currentTimeMillis());
+                    agent.setUtime(System.currentTimeMillis());
+                    agent.setState(1);
+                    agent.setIsPublic(true);
 
-            // 如果Agent不存在，创建一个新的
-            if (agent == null) {
-                agent = new Agent();
-                agent.setName(regInfoDto.getName());
-                agent.setGroup(regInfoDto.getGroup());
-                agent.setVersion(regInfoDto.getVersion());
-                agent.setDescription("Auto created during registration");
-                agent.setProfile(regInfoDto.getProfile());
-                agent.setGoal(regInfoDto.getGoal());
-                agent.setConstraints(regInfoDto.getConstraints());
-                agent.setCtime(System.currentTimeMillis());
-                agent.setUtime(System.currentTimeMillis());
-                agent.setState(1);
-                agent.setIsPublic(true);
+                    if (regInfoDto.getToolMap() != null) {
+                        agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
+                    }
+                    if (regInfoDto.getMcpToolMap() != null) {
+                        agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
+                    }
+                    return agentRepository.save(agent);
+                }))
+                .flatMap(agent -> {
+                    // 检查 ip 和 port 是否有效
+                    if (regInfoDto.getIp() == null || regInfoDto.getPort() <= 0) {
+                        // 如果 ip 为 null 或 port 为 0，只返回一个空的 AgentInstance
+                        AgentInstance emptyInstance = new AgentInstance();
+                        emptyInstance.setAgentId(agent.getId());
+                        emptyInstance.setIp("unknown");
+                        emptyInstance.setPort(0);
+                        emptyInstance.setLastHeartbeatTime(System.currentTimeMillis());
+                        emptyInstance.setIsActive(true);
+                        emptyInstance.setCtime(System.currentTimeMillis());
+                        emptyInstance.setUtime(System.currentTimeMillis());
+                        return Mono.just(emptyInstance);
+                    }
 
-                // 设置 toolMap 和 mcpToolMap
-                if (regInfoDto.getToolMap() != null) {
-                    agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
-                }
-                if (regInfoDto.getMcpToolMap() != null) {
-                    agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
-                }
-                agent.setProfile(regInfoDto.getProfile());
-                agent.setGoal(regInfoDto.getGoal());
-                agent.setConstraints(regInfoDto.getConstraints());
-
-                agent = agentRepository.save(agent).block();
-            } else {
-                // 如果Agent已存在，更新 toolMap 和 mcpToolMap
-                if (regInfoDto.getToolMap() != null) {
-                    agent.setToolMap(GsonUtils.gson.toJson(regInfoDto.getToolMap()));
-                }
-                if (regInfoDto.getMcpToolMap() != null) {
-                    agent.setMcpToolMap(GsonUtils.gson.toJson(regInfoDto.getMcpToolMap()));
-                }
-                agent.setProfile(regInfoDto.getProfile());
-                agent.setGoal(regInfoDto.getGoal());
-                agent.setConstraints(regInfoDto.getConstraints());
-                agent.setUtime(System.currentTimeMillis());
-                agent = agentRepository.save(agent).block();
-            }
-
-            // 检查 ip 和 port 是否有效
-            if (regInfoDto.getIp() == null || regInfoDto.getPort() <= 0) {
-                // 如果 ip 为 null 或 port 为 0，只返回一个空的 AgentInstance
-                AgentInstance emptyInstance = new AgentInstance();
-                emptyInstance.setAgentId(agent.getId());
-                emptyInstance.setIp("unknown");
-                emptyInstance.setPort(0);
-                emptyInstance.setLastHeartbeatTime(System.currentTimeMillis());
-                emptyInstance.setIsActive(true);
-                emptyInstance.setCtime(System.currentTimeMillis());
-                emptyInstance.setUtime(System.currentTimeMillis());
-                return Mono.just(emptyInstance);
-            }
-
-            // 检查AgentInstance是否已存在
-            AgentInstance existingInstance = agentInstanceRepository.findByAgentIdAndIpAndPort(
-                    agent.getId(), regInfoDto.getIp(), regInfoDto.getPort()).block();
-
-            if (existingInstance != null) {
-                // 如果AgentInstance已存在，更新最后心跳时间
-                existingInstance.setLastHeartbeatTime(System.currentTimeMillis());
-                existingInstance.setIsActive(true);
-                existingInstance.setUtime(System.currentTimeMillis());
-                return Mono.just(agentInstanceRepository.save(existingInstance).block());
-            } else {
-                // 如果AgentInstance不存在，创建一个新的
-                AgentInstance instance = new AgentInstance();
-                instance.setAgentId(agent.getId());
-                instance.setIp(regInfoDto.getIp());
-                instance.setPort(regInfoDto.getPort());
-                instance.setLastHeartbeatTime(System.currentTimeMillis());
-                instance.setIsActive(true);
-                instance.setCtime(System.currentTimeMillis());
-                instance.setUtime(System.currentTimeMillis());
-                return Mono.just(agentInstanceRepository.save(instance).block());
-            }
-        } catch (Exception e) {
-            return Mono.error(e);
-        }
+                    // 检查AgentInstance是否已存在
+                    return agentInstanceRepository.findByAgentIdAndIpAndPort(agent.getId(), regInfoDto.getIp(), regInfoDto.getPort())
+                            .flatMap(existingInstance -> {
+                                // 如果AgentInstance已存在，更新最后心跳时间
+                                existingInstance.setLastHeartbeatTime(System.currentTimeMillis());
+                                existingInstance.setIsActive(true);
+                                existingInstance.setUtime(System.currentTimeMillis());
+                                return agentInstanceRepository.save(existingInstance);
+                            })
+                            .switchIfEmpty(Mono.defer(() -> {
+                                // 如果AgentInstance不存在，创建一个新的
+                                AgentInstance instance = new AgentInstance();
+                                instance.setAgentId(agent.getId());
+                                instance.setIp(regInfoDto.getIp());
+                                instance.setPort(regInfoDto.getPort());
+                                instance.setLastHeartbeatTime(System.currentTimeMillis());
+                                instance.setIsActive(true);
+                                instance.setCtime(System.currentTimeMillis());
+                                instance.setUtime(System.currentTimeMillis());
+                                return agentInstanceRepository.save(instance);
+                            }));
+                });
     }
 
     public Mono<Void> unregister(RegInfoDto regInfoDto) {
         //从网络上也摘除
         Safe.run(() -> {
-            regInfoDto.getClientMap().forEach((key, value) -> {
-                String groupKey = Joiner.on(":").join(key, regInfoDto.getIp(), regInfoDto.getPort());
-                McpHub hub = McpHubHolder.remove(groupKey);
-                if (null != hub) {
-                    hub.removeConnection(groupKey);
-                }
-            });
+            if (null != regInfoDto.getClientMap()) {
+                regInfoDto.getClientMap().forEach((key, value) -> {
+                    String groupKey = Joiner.on(":").join(key, regInfoDto.getIp(), regInfoDto.getPort());
+                    McpHub hub = McpHubHolder.remove(groupKey);
+                    if (null != hub) {
+                        hub.removeConnection(groupKey);
+                    }
+                });
+            }
         });
 
         try {

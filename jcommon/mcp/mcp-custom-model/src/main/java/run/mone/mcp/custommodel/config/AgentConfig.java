@@ -7,9 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
-import run.mone.hive.roles.tool.AskTool;
-import run.mone.hive.roles.tool.AttemptCompletionTool;
-import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.*;
 import run.mone.mcp.custommodel.function.CustomModelFunction;
 
 /**
@@ -34,8 +32,10 @@ public class AgentConfig {
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),
-                        new AskTool(),
-                        new AttemptCompletionTool())
+                                new AskTool(),
+                                new AttemptCompletionTool(),
+                                new TextToSpeechTool(),
+                                new SpeechToTextTool())
                         )
                 //mcp工具
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName), customModelFunction))

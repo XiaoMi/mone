@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class HiveClient {
 
-    private static final String HIVE_URL = "http://10.10.10.10:10000";
+    private static final String HIVE_URL = "http://localhost:8080";
     
     private static final String API_PATH = "/api/v1/tasks";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
@@ -56,7 +56,7 @@ public class HiveClient {
     /**
      * 设置认证token
      * 
-     * @param token JWT认证token
+     * @param token 认证token
      * @return HiveClient实例
      */
     public HiveClient withToken(String token) {
@@ -289,7 +289,8 @@ public class HiveClient {
     @Data
     @Builder
     public static class TaskExecutionInfo {
-        private String taskId;
+        private String id;
+        private String token;
         private String userName;
         private Map<String, String> metadata;
     }
@@ -303,6 +304,7 @@ public class HiveClient {
         private String taskId;
         private String userName;
         private Map<String, String> metadata;
+        private String token;
         
         /**
          * 从HiveTask创建TaskExecutionInfo
@@ -312,7 +314,8 @@ public class HiveClient {
          */
         public static TaskExecutionInfo toTaskExecutionInfo(HiveTask hiveTask) {
             return TaskExecutionInfo.builder()
-                    .taskId(hiveTask.getTaskId())
+                    .id(hiveTask.getTaskId())
+                    .token(hiveTask.getToken())
                     .userName(hiveTask.getUserName())
                     .metadata(hiveTask.getMetadata() != null ? hiveTask.getMetadata() : Collections.emptyMap())
                     .build();

@@ -1,5 +1,9 @@
 <template>
-  <el-menu
+  <div class="header-container">
+    <div>
+      <LeftComp/>
+    </div>
+    <el-menu
       :default-active="activeIndex"
       class="el-menu-header"
       mode="horizontal"
@@ -9,16 +13,40 @@
       <el-menu-item index="agents">AGENT 列表</el-menu-item>
       <el-menu-item index="tasks">TASK 列表</el-menu-item>
     </el-menu>
+    <div class="header-right">
+      <ThemeSwitcher />
+      <el-dropdown @command="handleCommand">
+        <span class="el-dropdown-link">
+          {{userStore.user.username}}<el-icon class="el-icon--right"><arrow-down /></el-icon>
+        </span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="token">token</el-dropdown-item>
+            <el-dropdown-item command="inner">内部账号</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </div>
+  </div>
   <router-view />
+  <TokenDialog ref="tokenDialogRef"/>
+  <BindInner ref="bindInnerRef"/>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-
+import { useRoute, useRouter } from 'vue-router';
+import LeftComp from './LeftComp.vue';
+import { useUserStore } from '../stores/user';
+import TokenDialog from './TokenDialog.vue';
+import BindInner from './BindInner.vue';
+import ThemeSwitcher from './ThemeSwitcher.vue';
 const route = useRoute();
+const router = useRouter();
 const activeIndex = ref(route.path.substring(1) || 'agents');
-
+const userStore = useUserStore();
+const tokenDialogRef = ref(null);
+const bindInnerRef = ref(null);
 // 监听路由变化
 watch(
   () => route.path,
@@ -30,39 +58,56 @@ watch(
 function handleSelect(key, keyPath) {
   activeIndex.value = key;
 }
+
+function handleCommand(command) {
+  if (command === 'token') {
+    tokenDialogRef.value.open();
+  } else if (command === 'inner') {
+    bindInnerRef.value.open();
+  }
+}
 </script>
 
 <style scoped>
+.header-container {
+  background-color: var(--el-bg-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 12px;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+}
+.header-right .el-dropdown {
+  margin-left: 20px;
+}
 .el-menu-header {
   background-color: transparent;
-  color: #fff;
-  position: absolute;
-  top: 0;
-  z-index: 10;
-  width: 340px;
-  left: 50%;
-  transform: translateX(-50%);
+  color: var(--el-color-primary);
   border-bottom: none;
   user-select: none;
+  flex: 1;
 }
 .el-menu-header .el-menu-item {
-  color: #848484;
-  font-size: 18px;
+  color: var(--el-menu-text);
+  font-size: 20px;
   border-bottom: none !important;
-  transition: transform 0.3s ease;
 }
 .el-menu-header .el-menu-item:hover {
-    transform: scale(1.3);
-    color: #fff;
+    color: var(--el-menu-text-hover);
 }
 .el-menu-header .el-menu-item.is-active {
-  transform: scale(1.3);
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent !important;
+  color: var(--el-menu-text-active) !important;
 }
 .el-menu-header .el-menu-item:hover,.el-menu-header .el-menu-item:focus {
   background-color: transparent;
+}
+.el-dropdown-link {
+  outline: none !important;
+  color: var(--el-text-color-primary);
+  display: flex;
+  align-items: center;
 }
 </style>

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.utils.SafeRun;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -22,6 +23,16 @@ public class Safe {
             runnable.run();
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
+        }
+    }
+
+    public static void run(ExRunnable runnable, Consumer<Throwable> consumer) {
+        try {
+            runnable.run();
+            consumer.accept(null);
+        } catch (Throwable ex) {
+            log.error(ex.getMessage(), ex);
+            consumer.accept(ex);
         }
     }
 

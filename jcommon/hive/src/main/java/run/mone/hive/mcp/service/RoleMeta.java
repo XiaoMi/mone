@@ -8,9 +8,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.tool.ITool;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -27,6 +25,12 @@ public class RoleMeta {
     protected String goal;
 
     protected String constraints;
+
+    @Builder.Default
+    protected String workflow = "";
+
+    @Builder.Default
+    protected String outputFormat = "";
 
     //只可以内部调用
     @Builder.Default

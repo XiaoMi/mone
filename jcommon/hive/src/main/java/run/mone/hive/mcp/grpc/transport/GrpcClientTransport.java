@@ -193,6 +193,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     @Override
     public Mono<Void> closeGracefully() {
+        log.info("closeGracefully");
         close.set(true);
         return Mono.fromRunnable(() -> {
             try {
@@ -301,6 +302,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         Map<String, Object> objectMap = re.arguments();
 
         Map<String, String> stringMap = objectMap.entrySet().stream()
+                .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> {
@@ -320,7 +322,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                                     throw new RuntimeException("Failed to serialize value", ex);
                                 }
                             }
-                            return Objects.toString(value, null);
+                            return Objects.toString(value, "");
                         }
                 ));
 
@@ -352,6 +354,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         Map<String, Object> objectMap = re.arguments();
 
         Map<String, String> stringMap = objectMap.entrySet().stream()
+                .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> Objects.toString(e.getValue(), null)

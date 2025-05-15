@@ -1,5 +1,6 @@
 package run.mone.agentx.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -89,6 +91,32 @@ public class UserController {
                 .collectList()
                 .map(ApiResponse::success)
                 .doOnError(error -> log.error("获取用户列表时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @PostMapping("/token")
+    public Mono<ApiResponse<String>> createToken(@AuthenticationPrincipal User user) {
+        return userService.createToken(user)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("创建token时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @GetMapping("/info")
+    public Mono<ApiResponse<UserDTO>> getUserInfo(@AuthenticationPrincipal User user) {
+        return userService.getUserInfo(user)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("获取用户信息时发生错误: {}", error.getMessage(), error))
+                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    }
+
+    @PostMapping("/internal-account")
+    public Mono<ApiResponse<String>> bindInternalAccount(
+            @AuthenticationPrincipal User user,
+            @RequestParam String internalAccount) {
+        return userService.bindInternalAccount(user, internalAccount)
+                .map(ApiResponse::success)
+                .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
                 .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
     }
 }

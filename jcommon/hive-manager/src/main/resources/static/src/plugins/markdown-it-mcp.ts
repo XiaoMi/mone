@@ -163,28 +163,33 @@ export function markdownItMcp(md: MarkdownIt) {
         }
       },
       ontext(text) {
-        /*
-         * Fires whenever a section of text was processed.
-         *
-         * Note that this can fire at any point within text and you might
-         * have to stitch together multiple pieces.
-         */
-        const lines = text.split('\n');
-        for (const line of lines) {
-          if (line.includes('```')) {
-            if (startCodeBlock) {
-              startCodeBlock = false;
-              html += md.render(accumulatedText);
-            } else {
-              startCodeBlock = true;
-              accumulatedText += `${line}\n`;
-            }
-          } else if (startCodeBlock){
-            accumulatedText += `${line}\n`;
-          } else {
-            html += md.utils.escapeHtml(`${line}\n`);
-            // html += md.render(`${line}\n`);
+        text = text.replace(/```(\w*)\n/g, '').replace(/\n```/g, '');
+        // 匹配所有 voice 类型 JSON
+        const regex = /({[^{}]*"result"\s*:\s*"([^"]+)"[^{}]*"toolMsgType"\s*:\s*"voice"[^{}]*})/g;
+        let lastIndex = 0;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          // 输出前面的普通文本
+          if (match.index > lastIndex) {
+            const normalText = text.slice(lastIndex, match.index);
+            html += md.utils.escapeHtml(normalText);
           }
+          // 尝试解析 JSON
+          try {
+            const obj = JSON.parse(match[1]);
+            if (obj && obj.result && obj.toolMsgType === "voice") {
+              html += `<audio controls src="data:audio/wav;base64,${obj.result}"></audio>`;
+            } else {
+              html += md.utils.escapeHtml(match[0]);
+            }
+          } catch (e) {
+            html += md.utils.escapeHtml(match[0]);
+          }
+          lastIndex = regex.lastIndex;
+        }
+        // 剩余部分
+        if (lastIndex < text.length) {
+          html += md.utils.escapeHtml(text.slice(lastIndex));
         }
       },
       onclosetag(tagname, isImplied) {

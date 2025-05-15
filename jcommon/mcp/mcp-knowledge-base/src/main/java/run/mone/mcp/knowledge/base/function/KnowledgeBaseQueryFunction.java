@@ -67,9 +67,13 @@ public class KnowledgeBaseQueryFunction implements McpFunction {
     public String queryKnowledgeFile(String query){
         String result = "";
         try {
-            String url = getHost() + "/api/knowledgeFile/query";
+            String url = getHost() + "/rag/query";
             JsonObject req = new JsonObject();
-            req.addProperty("queryText", query);
+            req.addProperty("query", query);
+            req.addProperty("topK", 5);
+            req.addProperty("threshold", 0.5);
+            req.addProperty("tag", "");
+            req.addProperty("tenant", "1");
             String response = httpClient.post(url, gson.toJson(req));
             BaseVO<List<VectorQueryResponse>> list = gson.fromJson(response,
                     new TypeToken<BaseVO<List<VectorQueryResponse>>>(){}.getType());
@@ -85,10 +89,4 @@ public class KnowledgeBaseQueryFunction implements McpFunction {
         return result;
     }
 
-//    // 测试
-//    public static void main(String[] args) {
-//        KnowledgeBaseQueryFunction knowledgeBaseQueryFunction = new KnowledgeBaseQueryFunction();
-//        String result = knowledgeBaseQueryFunction.queryKnowledgeFile("小米汽车大兴区的4s店有哪些");
-//        System.out.println(result);
-//    }
 }
