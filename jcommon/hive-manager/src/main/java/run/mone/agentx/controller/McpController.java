@@ -55,7 +55,7 @@ public class McpController {
         // 使用Flux.create创建消息流
         return Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
-            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), dataInfo, sink);
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), requestBody, dataInfo, sink);
             sink.onDispose(() -> log.info("call mcp finish"));
             sink.complete();
         }));

@@ -91,7 +91,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
             String userName = session.getAttributes().getOrDefault("userName", "").toString();
-            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), toolData, sink);
+            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), payload, toolData, sink);
             sink.complete();
         } catch (Exception e) {
             log.error("Error processing MCP request", e);
