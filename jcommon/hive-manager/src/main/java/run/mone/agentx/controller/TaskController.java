@@ -24,6 +24,7 @@ import run.mone.agentx.entity.Task;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.TaskService;
 import run.mone.agentx.service.UserService;
+import run.mone.hive.a2a.types.TaskStatus;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
@@ -45,6 +46,7 @@ public class TaskController {
             user = userByToken;
         }
         taskDTO.setUsername(user.getUsername());
+        taskDTO.setStatus(TaskStatus.CREATED);
         Task task = new Task();
         BeanUtils.copyProperties(taskDTO, task);
         return taskService.createTask(task).map(ApiResponse::success);

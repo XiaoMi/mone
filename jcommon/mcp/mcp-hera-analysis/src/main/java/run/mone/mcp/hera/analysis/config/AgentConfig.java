@@ -44,7 +44,7 @@ public class AgentConfig {
                         new SystemInfoTool(),
                         new TextToSpeechTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName), heraAnalysisFunction))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,20), heraAnalysisFunction))
                 .build();
     }
 }

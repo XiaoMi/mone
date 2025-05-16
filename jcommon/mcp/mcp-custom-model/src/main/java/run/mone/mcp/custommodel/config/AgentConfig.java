@@ -32,13 +32,13 @@ public class AgentConfig {
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),
-                                new AskTool(),
-                                new AttemptCompletionTool(),
-                                new TextToSpeechTool(),
-                                new SpeechToTextTool())
-                        )
+                        new AskTool(),
+                        new AttemptCompletionTool(),
+                        new TextToSpeechTool(),
+                        new SpeechToTextTool())
+                )
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName), customModelFunction))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20), customModelFunction))
                 .build();
     }
 }

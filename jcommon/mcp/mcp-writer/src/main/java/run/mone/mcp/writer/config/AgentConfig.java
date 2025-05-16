@@ -46,10 +46,10 @@ public class AgentConfig {
                         new AskTool(),
                         new AttemptCompletionTool(),
                         new FileTool()
-                        ))
+                ))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(
-                        new ChatFunction(agentName),
+                        new ChatFunction(agentName, 20),
                         new WriterFunction(writerService)
                 ))
                 .build();

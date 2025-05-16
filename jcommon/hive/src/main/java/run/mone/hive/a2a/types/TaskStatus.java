@@ -19,6 +19,7 @@ public class TaskStatus {
     public static final String COMPLETED = "COMPLETED";
     public static final String FAILED = "FAILED";
     public static final String CANCELED = "CANCELED";
+    public static final String CREATED = "CREATED";
     
     /**
      * 任务状态值

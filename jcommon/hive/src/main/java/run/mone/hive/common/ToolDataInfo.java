@@ -37,9 +37,11 @@ public class ToolDataInfo {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
-        keyValuePairs.forEach((key, value) -> 
-            sb.append(key).append("=").append(value).append(", ")
-        );
+        if (keyValuePairs != null) {
+            keyValuePairs.forEach((key, value) ->
+                    sb.append(key).append("=").append(value).append(", ")
+            );
+        }
         if (sb.length() > 1) {
             sb.setLength(sb.length() - 2); // 移除最后的 ", "
         }

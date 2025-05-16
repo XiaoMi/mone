@@ -64,7 +64,7 @@ public class Role {
     protected Queue<Action> actionQueue = new LinkedList<>();
 
     @JsonIgnore
-    private Environment environment;
+    private Environment environment = new Environment();
 
     @JsonIgnore
     @Getter
@@ -328,12 +328,7 @@ public class Role {
                 TaskResult taskResult = actOnTask(task).join();
                 log.info("taskResult:{}", taskResult);
 
-                // Process the result, such as reviewing, confirming, plan updating
-//                planner.processTaskResult(taskResult).join();
-
                 planner.getPlan().finishCurrentTask();
-
-
             }
 
             Message rsp = planner.getUsefulMemories().get(0); // Return the completed plan as a response
@@ -343,7 +338,6 @@ public class Role {
         });
     }
 
-    //帮我实现下actOnTask (class)
     public CompletableFuture<TaskResult> actOnTask(Task task) {
         return CompletableFuture.supplyAsync(() -> {
             try {

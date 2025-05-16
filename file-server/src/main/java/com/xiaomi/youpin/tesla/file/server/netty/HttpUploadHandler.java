@@ -20,6 +20,7 @@ import com.xiaomi.youpin.tesla.file.server.common.Cons;
 import com.xiaomi.youpin.tesla.file.server.common.UserSecretConfig;
 import com.xiaomi.youpin.tesla.file.server.service.BaseService;
 import com.xiaomi.youpin.tesla.file.server.service.TokenService;
+import com.xiaomi.youpin.tesla.file.server.utils.DirUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -27,6 +28,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -88,6 +90,15 @@ public class HttpUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
                     String token = decoder.parameters().getOrDefault("token", Arrays.asList("")).get(0);
                     String userKey = decoder.parameters().getOrDefault("userKey", Arrays.asList("")).get(0);
                     String userSecret = decoder.parameters().getOrDefault("userSecret", Arrays.asList("")).get(0);
+                    String directoryPath = decoder.parameters().getOrDefault("directory", Arrays.asList("")).get(0);
+
+                    // Validate directory path if provided
+                    if (StringUtils.isNotEmpty(directoryPath)) {
+                        if (!DirUtils.isValidDirectoryPath(directoryPath)) {
+                            BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                            return;
+                        }
+                    }
 
                     // 验证用户key和secret
                     if (!UserSecretConfig.validateUser(userKey, userSecret)) {
@@ -113,7 +124,7 @@ public class HttpUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
 
                     log.info("upload file:{} begin {}", this.name, this);
 
-                    String filename = BaseService.DATAPATH + File.separator + userKey + File.separator + name;
+                    String filename = DirUtils.filePath(userKey, directoryPath, name);
                     String dirname = filename.substring(0, filename.lastIndexOf("/"));
                     File dirfile = new File(dirname);
                     if (!dirfile.exists() && !dirfile.isDirectory()) {

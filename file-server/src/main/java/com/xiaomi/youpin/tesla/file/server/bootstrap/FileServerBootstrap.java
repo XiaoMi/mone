@@ -46,7 +46,7 @@ public class FileServerBootstrap {
         log.info("{} start {}", new FileServerVersion(), port);
         FileServer server = new FileServer();
         server.setPort(port);
-        new ScheduleService(Lists.newArrayList(new CleanService(BaseService.DATAPATH, Cons.CLEAN_NUM))).run();
+        new ScheduleService(Lists.newArrayList(new CleanService(Cons.DATAPATH, Cons.CLEAN_NUM))).run();
         server.run();
     }
 

@@ -30,6 +30,7 @@ import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentConfigService;
 import run.mone.agentx.service.AgentService;
 import run.mone.agentx.service.McpService;
+import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
 import run.mone.hive.common.ToolDataInfo;
@@ -128,7 +129,7 @@ public class AgentController {
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
-            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), GsonUtils.gson.toJson(request), result, sink);
             sink.onDispose(() -> log.info("call mcp finish"));
             sink.complete();
         })).subscribe();
@@ -142,7 +143,7 @@ public class AgentController {
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
-            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), GsonUtils.gson.toJson(request), result, sink);
             sink.onDispose(() -> log.info("call mcp finish"));
             sink.complete();
         })).subscribe();
