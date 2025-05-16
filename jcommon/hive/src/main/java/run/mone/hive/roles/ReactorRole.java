@@ -190,6 +190,7 @@ public class ReactorRole extends Role {
 
     @Override
     protected void postReact(ActionContext ac) {
+        log.info("role:{} exit", this.name);
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
 

@@ -195,6 +195,7 @@ public class RoleService {
             message.setData(Const.ROLE_EXIT);
             agent.putMessage(message);
         }
+        roleMap.remove(from);
         return Mono.empty();
     }
 
