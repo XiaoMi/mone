@@ -15,6 +15,7 @@ public class InvokeHistoryService {
     private final InvokeHistoryRepository invokeHistoryRepository;
 
     public Mono<InvokeHistory> createInvokeHistory(InvokeHistory invokeHistory) {
+        invokeHistory.setInvokeTime(System.currentTimeMillis());
         invokeHistory.setCtime(System.currentTimeMillis());
         invokeHistory.setUtime(System.currentTimeMillis());
         invokeHistory.setState(1);
