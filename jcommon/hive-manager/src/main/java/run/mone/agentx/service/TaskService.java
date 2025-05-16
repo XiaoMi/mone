@@ -3,6 +3,7 @@ package run.mone.agentx.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.netty.util.internal.UnstableApi;
 import lombok.Data;
@@ -22,6 +23,7 @@ import run.mone.agentx.entity.Task;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.repository.TaskRepository;
 import run.mone.agentx.utils.AgentKeyUtils;
+import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.Team;
 import run.mone.hive.a2a.types.TaskStatus;
 import run.mone.hive.common.McpResult;
@@ -220,7 +222,7 @@ public class TaskService {
                     TaskResultSink sink = new TaskResultSink(taskUuid);
 
                     // 调用MCP服务(本质就是调用远程Agent)
-                    McpResult res = mcpService.callMcp(userName, mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), toolDataInfo, sink);
+                    McpResult res = mcpService.callMcp(userName, mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), GsonUtils.gson.toJson(mcpRequest), toolDataInfo, sink);
                     sink.complete();
 
                     JsonObject obj = new JsonObject();
