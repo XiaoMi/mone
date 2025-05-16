@@ -5,14 +5,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Expr;
 import run.mone.hive.schema.Message;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+
+//本质测试的事一个图的调用
 class ActionGraphTest {
 
     private ActionGraph actionGraph;
@@ -25,8 +28,7 @@ class ActionGraphTest {
     @Test
     void testExecute() {
         boolean debug = false;
-        // Create mock LLM
-        LLM mockLLM = new LLM(LLMConfig.builder().debug(debug).build()) {
+        LLM llm = new LLM(LLMConfig.builder().debug(debug).llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build()) {
             @Override
             public CompletableFuture<String> ask(String prompt) {
                 if (debug) {
@@ -38,13 +40,13 @@ class ActionGraphTest {
         };
 
         // Create action nodes
-        ActionNode node1 = new ActionNode("node1", String.class, "a=12+22 a=?", null);
-        node1.setLlm(mockLLM);
-        ActionNode node2 = new ActionNode("node2", String.class, "b=a+3 b=?", null);
-        node2.setLlm(mockLLM);
-        ActionNode node3 = new ActionNode("node3", String.class, "c=a+b c=?", null);
+        ActionNode node1 = new ActionNode("node1", String.class, "a=12+22 a=?", null);//34
+        node1.setLlm(llm);
+        ActionNode node2 = new ActionNode("node2", String.class, "b=a+3 b=?", null);//37
+        node2.setLlm(llm);
+        ActionNode node3 = new ActionNode("node3", String.class, "c=a+b c=?", null);//71
         node3.getExprs().add(Expr.builder().key("node1").input(false).expr("data").build());
-        node3.setLlm(mockLLM);
+        node3.setLlm(llm);
 
         // Add nodes to the graph
         actionGraph.addNode(node1);
@@ -61,29 +63,7 @@ class ActionGraphTest {
         // Wait for the execution to complete
         Map<String, Message> results = resultFuture.join();
 
-        // Assertions
+        //check 是不是71
         assertNotNull(results);
-
-        if (debug) {
-            assertEquals(3, results.size());
-            assertTrue(results.containsKey("node1"));
-            assertTrue(results.containsKey("node2"));
-            assertTrue(results.containsKey("node3"));
-
-            // Check that each result is a Message
-            results.values().forEach(result -> assertTrue(result instanceof Message));
-
-            // Check the content of each Message
-            results.values().forEach(result -> {
-                Message message = (Message) result;
-                assertEquals("Mock response", message.getContent());
-            });
-
-            // Check execution order
-            assertEquals(3, actionGraph.getExecutionOrder().size());
-            assertEquals("node1", actionGraph.getExecutionOrder().get(0));
-            assertEquals("node2", actionGraph.getExecutionOrder().get(1));
-            assertEquals("node3", actionGraph.getExecutionOrder().get(2));
-        }
     }
 }
