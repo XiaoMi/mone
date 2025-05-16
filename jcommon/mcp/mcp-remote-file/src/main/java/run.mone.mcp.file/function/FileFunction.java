@@ -158,11 +158,7 @@ public class FileFunction implements McpFunction {
             getUserKey(),
             getUserSecret(),
             getToken());
-        return String.format("<boltArtifact>\n" +
-                " <boltAction type=\"download\" filePath=\"%s\">\n" +
-                "\n" +
-                " </boltAction>\n" +
-                "</boltArtifact>", url);
+        return String.format("<download_file fileName=\"%s\" fileUrl=\"%s\">%s</download_file>", fileName, url, url);
     }
 
     private String getHost() {
@@ -170,14 +166,14 @@ public class FileFunction implements McpFunction {
     }
 
     private String getUserKey() {
-        return System.getenv().getOrDefault("USER_KEY", "");
+        return System.getenv().getOrDefault("USER_KEY", "wangmin");
     }
 
     private String getUserSecret() {
-        return System.getenv().getOrDefault("USER_SECRET", "");
+        return System.getenv().getOrDefault("USER_SECRET", "123456");
     }
 
     private String getToken() {
-        return System.getenv().getOrDefault("API_TOKEN", "");
+        return System.getenv().getOrDefault("API_TOKEN", "1");
     }
 }

@@ -119,19 +119,10 @@ public class ActionNode {
                 content = extractContent(rawContent);
                 validateContent();
 
-                JsonElement jt = JsonUtils.gson.toJsonTree(content);
-                if (jt.isJsonPrimitive()) {
-                    this.output = new JsonObject();
-                    ((JsonObject) this.output).add("data", jt);
-                }
-                if (jt.isJsonArray()) {
-                    this.output = jt;
-                }
-                if (jt.isJsonObject()) {
-                    this.output = jt;
-                }
+                //设置输出
+                setOutput(content);
 
-                log.info("execute action node:{} res:\n{}", this.key, content);
+                log.info("execute action node:{} res:\n{}  output:{}", this.key, content, this.output);
 
                 return Message.builder()
                         .content(content)
@@ -145,6 +136,22 @@ public class ActionNode {
                 throw new RuntimeException("ActionNode execution failed", e);
             }
         });
+    }
+
+    //输出下output
+    public void setOutput(String content) {
+        JsonElement jt = JsonUtils.gson.toJsonTree(content);
+        //字符串的会放到data中
+        if (jt.isJsonPrimitive()) {
+            this.output = new JsonObject();
+            ((JsonObject) this.output).add("data", jt);
+        }
+        if (jt.isJsonArray()) {
+            this.output = jt;
+        }
+        if (jt.isJsonObject()) {
+            this.output = jt;
+        }
     }
 
     private String generatePrompt() {
