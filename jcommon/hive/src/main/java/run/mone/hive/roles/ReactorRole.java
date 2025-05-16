@@ -207,6 +207,7 @@ public class ReactorRole extends Role {
         // 收到特殊指令直接退出
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
+            this.state.set(RoleState.exit);
             shutdownScheduler();
             return -2;
         }
@@ -248,18 +249,20 @@ public class ReactorRole extends Role {
     }
 
     private void shutdownScheduler() {
-        // Shutdown the scheduler when exiting
-        if (scheduler != null && !scheduler.isShutdown()) {
-            scheduler.shutdown();
-            try {
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+        Safe.run(()->{
+            // Shutdown the scheduler when exiting
+            if (scheduler != null && !scheduler.isShutdown()) {
+                scheduler.shutdown();
+                try {
+                    if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        scheduler.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
                     scheduler.shutdownNow();
+                    Thread.currentThread().interrupt();
                 }
-            } catch (InterruptedException e) {
-                scheduler.shutdownNow();
-                Thread.currentThread().interrupt();
             }
-        }
+        });
     }
 
     @SneakyThrows

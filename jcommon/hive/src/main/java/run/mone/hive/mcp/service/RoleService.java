@@ -19,6 +19,7 @@ import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
 import run.mone.hive.utils.NetUtils;
@@ -177,10 +178,10 @@ public class RoleService {
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
-        if (!roleMap.containsKey(from)) {
+        ReactorRole role = roleMap.get(from);
+        if (null == role || role.getState().get().equals(RoleState.exit)) {
             roleMap.putIfAbsent(from, createRole(message));
         }
-        ReactorRole role = roleMap.get(from);
         return Flux.create(sink -> {
             message.setSink(sink);
             role.putMessage(message);
