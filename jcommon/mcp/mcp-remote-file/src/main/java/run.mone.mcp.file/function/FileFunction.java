@@ -158,7 +158,11 @@ public class FileFunction implements McpFunction {
             getUserKey(),
             getUserSecret(),
             getToken());
-        return String.format("<fileUrl>%s</fileUrl>", url);
+        return String.format("<boltArtifact>\n" +
+                " <boltAction type=\"download\" filePath=\"%s\">\n" +
+                "\n" +
+                " </boltAction>\n" +
+                "</boltArtifact>", url);
     }
 
     private String getHost() {
