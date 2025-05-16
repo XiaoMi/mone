@@ -43,6 +43,11 @@ export type Message = {
     isLast?: boolean;
     flowData?: any;
     content?: string;
+    files?: {
+      mediaType: string;
+      url: string;
+      input: string;
+    }[];
     cmd?: {
       id: string;
       label: string;

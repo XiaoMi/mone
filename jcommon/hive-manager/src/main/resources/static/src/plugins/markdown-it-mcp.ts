@@ -24,6 +24,7 @@ export function markdownItMcp(md: MarkdownIt) {
     if (
       !(
         mcpContent.includes("<terminal>") ||
+        mcpContent.includes("<download_file") ||
         mcpContent.includes("<use_mcp_tool>") ||
         mcpContent.includes("<thinking>") ||
         mcpContent.includes("<chat>") ||
@@ -43,6 +44,7 @@ export function markdownItMcp(md: MarkdownIt) {
     let html = "";
     let accumulatedText = ""; // 添加文本累积变量
     let startCodeBlock = false;
+    let isDownloadFile = false;
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
         /*
@@ -149,6 +151,15 @@ export function markdownItMcp(md: MarkdownIt) {
               <div class="execute-content">`;
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
           html += `<div class="${name}-section">`;
+        } else if (name === "download_file") {
+          isDownloadFile = true;
+          html += `<div class="file-url-section">
+            <div class="file-url-header">
+              <i class="fa-solid fa-file"></i>
+              <span>文件下载</span>
+            </div>
+            <div class="file-url-content">
+              <a href="${attributes.fileUrl}" target="_blank">${attributes.fileName}</a>`;
         } else {
           if (startCodeBlock) {
             accumulatedText += `<${name}>`
@@ -163,6 +174,9 @@ export function markdownItMcp(md: MarkdownIt) {
         }
       },
       ontext(text) {
+        if (isDownloadFile) {
+          return;
+        }
         text = text.replace(/```(\w*)\n/g, '').replace(/\n```/g, '');
         // 匹配所有 voice 类型 JSON
         const regex = /({[^{}]*"result"\s*:\s*"([^"]+)"[^{}]*"toolMsgType"\s*:\s*"voice"[^{}]*})/g;
@@ -235,6 +249,9 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
+        } else if (tagname === "download_file") {
+          isDownloadFile = false;
+          html += `</div></div>`;
         } else {
           // if (!isImplied) {
           //   html += md.utils.escapeHtml(`</${tagname}>`);

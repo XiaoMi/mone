@@ -40,7 +40,7 @@ export const streamChat = async (params: any, callback: (data: any) => void) => 
         if (xhr?.responseText) {
           xhr?.responseText.replace('data: ', '');
           let allText = '';
-          if (xhr?.responseText.indexOf("predictions") > -1 || xhr?.responseText.indexOf("[DONE]") > -1) {
+          if (xhr?.responseText.indexOf("predictions") > -1 || xhr?.responseText.indexOf("[END]") > -1) {
             if (xhr?.responseText.indexOf("[DONE]") > -1){
               for (const chunk of xhr?.responseText.split('data:')) {
                 if (chunk.indexOf("predictions") > -1) {
