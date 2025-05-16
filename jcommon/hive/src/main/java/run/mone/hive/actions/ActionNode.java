@@ -41,6 +41,9 @@ public class ActionNode {
     // Action Context
     private String schema;  // raw/json/markdown
     private String context;  // all necessary context info
+
+    private ActionGraphContext graphContext;
+
     private LLM llm;    // LLM with ask interface
     private Map<String, ActionNode> children;
 
