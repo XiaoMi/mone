@@ -32,10 +32,9 @@ public class AgentConfig {
                         new AttemptCompletionTool(),
                         new SpeechToTextTool(),
                         new SystemInfoTool(),
-//                        new DocumentProcessingTool(),
                         new TextToSpeechTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName)))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
                 .build();
     }
 

@@ -45,7 +45,7 @@ public class AgentConfig {
                         new ExecuteTool()
                         ))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName),
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,20),
                         //生成或者修改大量代码
                         new ComposerFunction(ideaPort),
                         //代码review
