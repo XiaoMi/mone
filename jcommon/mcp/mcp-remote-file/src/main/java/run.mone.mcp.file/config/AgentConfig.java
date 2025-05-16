@@ -32,7 +32,7 @@ public class AgentConfig {
                         new AskTool(),
                         new AttemptCompletionTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName), new FileFunction()))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20), new FileFunction()))
                 .build();
     }
 
