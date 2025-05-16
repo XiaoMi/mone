@@ -48,7 +48,7 @@ public class ImageFunction implements McpFunction {
                 String result = generateImage(prompt);
                 return Flux.just(
                         new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false),
-                        new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("[DONE]")), false)
+                        new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("[END]")), false)
                 );
             } catch (Exception e) {
                 log.error("Failed to generate image", e);
