@@ -159,7 +159,7 @@ export function markdownItMcp(md: MarkdownIt) {
               <span>文件下载</span>
             </div>
             <div class="file-url-content">
-              <a href="${attributes.fileUrl}" target="_blank">${attributes.fileName}</a>`;
+              <a class="file-url-link" href="javascript:;" data-name="${attributes.fileName}" data-url="${attributes.fileUrl}">${attributes.fileName}</a>`;
         } else {
           if (startCodeBlock) {
             accumulatedText += `<${name}>`
