@@ -93,7 +93,7 @@ public class AgentController {
     @PutMapping("/{id}")
     public Mono<ApiResponse<Agent>> updateAgent(@AuthenticationPrincipal User user, @PathVariable Long id, @RequestBody Agent agent) {
         return agentService.findById(id)
-                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
+//                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
                 .flatMap(existingAgent -> {
                     agent.setId(id);
                     agent.setCreatedBy(user.getId());
