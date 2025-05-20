@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.multimodal.config.Prompt;
 import run.mone.mcp.multimodal.service.GuiAgentService;
 
 import java.util.List;
@@ -69,7 +70,7 @@ public class GuiAgentFunction implements McpFunction {
                         
                         AtomicReference<String> modelOutput = new AtomicReference<>();
                         
-                        return guiAgentService.run(imagePath, instruction)
+                        return guiAgentService.run(imagePath, instruction, Prompt.systemPrompt)
                             .doOnNext(modelOutput::set)
                             .flatMapMany(output -> {
                                 String parsedOutput = guiAgentService.parseActionOutput(output);

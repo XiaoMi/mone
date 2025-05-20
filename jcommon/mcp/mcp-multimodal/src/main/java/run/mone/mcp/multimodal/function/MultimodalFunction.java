@@ -145,7 +145,7 @@ public class MultimodalFunction implements McpFunction {
         }
         
         guiAgent.run(instruction);
-        return Flux.just("GuiAgent has processed the instruction: " + instruction);
+        return Flux.just("GuiAgent has processed the instruction: " + instruction + "并且成功");
     }
 
     @Override
