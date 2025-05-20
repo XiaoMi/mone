@@ -90,6 +90,8 @@ public class MultimodalFunction implements McpFunction {
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String operation = (String) arguments.get("operation");
 
+        Flux.create(sink->{});
+
         return Flux.defer(() -> {
             try {
                 Flux<String> result = switch (operation) {
@@ -143,9 +145,10 @@ public class MultimodalFunction implements McpFunction {
         if (instruction == null || instruction.isEmpty()) {
             return Flux.error(new IllegalArgumentException("Instruction cannot be empty"));
         }
+        return Flux.create(sink->{
+            guiAgent.run(instruction,sink);
+        });
         
-        guiAgent.run(instruction);
-        return Flux.just("GuiAgent has processed the instruction: " + instruction + "并且成功");
     }
 
     @Override

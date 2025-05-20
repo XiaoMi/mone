@@ -223,6 +223,18 @@ public class ReactorRole extends Role {
 
         // 获取memory中最后一条消息
         Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
+
+        //用户可以扩展退出策略
+        if (null != this.roleMeta.getCheckFinishFunc()) {
+            int v = this.roleMeta.getCheckFinishFunc().apply(lastMsg);
+            if (v < 0) {
+                if (null != lastMsg.getSink()) {
+                    lastMsg.getSink().complete();
+                }
+                return v;
+            }
+        }
+
         String lastMsgContent = lastMsg.getContent();
 
         //其实只会有一个

@@ -164,6 +164,12 @@ public class GuiAgentService {
             String action = json.get("action").asText("");
 
             switch (action) {
+                case "message":
+                    if (json.has("content") && !json.get("content").isNull()) {
+                        String content = json.get("content").asText("");
+                        return Flux.just(content);
+                    }
+                    break;
                 case "scroll":
                     if (json.has("start_box") && !json.get("start_box").isNull()) {
                         int[] coords = getBoxCenter(json.get("start_box"));

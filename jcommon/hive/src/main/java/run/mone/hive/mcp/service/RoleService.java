@@ -159,6 +159,7 @@ public class RoleService {
         role.setOwner(owner);
         role.setClientId(clientId);
 
+        role.setRoleMeta(roleMeta);
         role.setProfile(roleMeta.getProfile());
         role.setGoal(roleMeta.getGoal());
         role.setConstraints(roleMeta.getConstraints());

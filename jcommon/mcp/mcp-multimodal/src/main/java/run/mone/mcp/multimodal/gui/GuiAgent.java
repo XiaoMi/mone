@@ -2,13 +2,12 @@ package run.mone.mcp.multimodal.gui;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.FluxSink;
 import run.mone.mcp.multimodal.config.Prompt;
 import run.mone.mcp.multimodal.service.GuiAgentService;
 import run.mone.mcp.multimodal.service.MultimodalService;
@@ -45,7 +44,10 @@ public class GuiAgent {
                 hotkey(key='')
                 type(content='') #If you want to submit your input, use "\\n" at the end of `content`.
                 scroll(start_box='[x1, y1, x2, y2]', direction='down or up or right or left')
-                finished
+                //代表结束
+                finished()
+                //主要是根据你分析图片返回给用户一些信息
+                message(content='')
                 
                 
                 秉承的一些原则:
@@ -57,7 +59,7 @@ public class GuiAgent {
                 返回:(一定要是json格式)
                 [
                 "1.点击Terminal图标 (click)",
-                "2.finished"
+                "2.finished()"
                 ]
                 
                 例子2:
@@ -66,7 +68,14 @@ public class GuiAgent {
                 [
                 "1.点击idea的Code编辑区域 (click)",
                 "2.在编辑界面滑动滚轮 (scroll)"
-                "3.finished"
+                "3.finished()"
+                ]
+                
+                例子3:
+                需求:识别下打开的是什么软件
+                [
+                "1.在当前截图中,识别下打开的是什么软件 (message)",
+                "2.finished()"
                 ]
                 
                 
@@ -82,7 +91,7 @@ public class GuiAgent {
     }
 
 
-    public void run2(String instruction) {
+    public void run2(String instruction, FluxSink<String> sink) {
         if (instruction.contains(".finished")) {
             guiAgentService.executeAction("finished")
                     .doOnNext(System.out::println)
@@ -135,17 +144,21 @@ public class GuiAgent {
             //判断红点是否在正确的位置 (通过两次确定,让x,y 更准)
             //String modelOutput2 = guiAgentService.run(visualizedPath, "我的鼠标现在就是那个红点,你帮我计算下是否在正确的位置上,根据你的判断返回新的click信息   \n原始需求:"+instruction).block();
             //parsedOutput = guiAgentService.parseActionOutput(modelOutput2);
-
             // Step 4: Execute action (if requested)
+
+            sink.next(parsedOutput + "\n");
+
             JsonNode parsedJson = objectMapper.readTree(parsedOutput);
             String action = parsedJson.get("action").asText("");
 
             System.out.println("\nStep 4: Action detected: " + action);
             System.out.println("\nExecuting action...");
 
-            guiAgentService.executeAction(parsedOutput)
+            String res = guiAgentService.executeAction(parsedOutput)
                     .doOnNext(System.out::println)
                     .blockLast();
+
+            sink.next(res);
 
             System.out.println("\nGUI agent process completed.");
         } catch (Exception e) {
@@ -155,17 +168,19 @@ public class GuiAgent {
     }
 
 
-    public void run(String instruction) {
+    public void run(String instruction, FluxSink<String> sink) {
         String s = taskList(instruction);
         System.out.println(s);
+
+        sink.next("任务计划:\n" + s);
+
         JsonArray array = JsonParser.parseString(s).getAsJsonArray();
         array.forEach(it -> {
             String str = it.getAsString();
             log.info("run:{}", str);
-            run2(str);
+            run2(str, sink);
         });
-
-
+        sink.complete();
     }
 
 }
