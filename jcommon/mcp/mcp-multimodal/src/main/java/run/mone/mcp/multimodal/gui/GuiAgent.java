@@ -67,8 +67,13 @@ public class GuiAgent {
             // Step 3: Visualize the action
             System.out.println("\nStep 3: Creating visualization...");
             String outputImagePath = path.getParent().resolve("output_" + path.getFileName()).toString();
+            //标完红点的图像
             String visualizedPath = guiAgentService.visualizeAction(imagePath, parsedOutput, outputImagePath);
             System.out.println("\nVisualization saved to: " + visualizedPath);
+
+            //判断红点是否在正确的位置 (通过两次确定,让x,y 更准)
+            String modelOutput2 = guiAgentService.run(visualizedPath, "我的鼠标现在就是那个红点,你帮我计算下是否在正确的位置上,根据你的判断返回新的click信息   \n原始需求:"+instruction).block();
+            parsedOutput = guiAgentService.parseActionOutput(modelOutput2);
 
             // Step 4: Execute action (if requested)
             JsonNode parsedJson = objectMapper.readTree(parsedOutput);

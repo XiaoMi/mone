@@ -126,6 +126,8 @@ public class MultimodalFunction implements McpFunction {
                     }
                     case "takeScreenshot" -> multimodalService.captureScreenshotWithRobot(
                             (String) arguments.getOrDefault("filePath", null));
+
+                    //执行指令(用户的需求)
                     case "runGuiAgent" -> runGuiAgent((String) arguments.get("instruction"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };

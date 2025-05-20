@@ -184,7 +184,7 @@ public class RoleService {
         }
         return Flux.create(sink -> {
             message.setSink(sink);
-            role.putMessage(message);
+            roleMap.get(from).putMessage(message);
         });
     }
 

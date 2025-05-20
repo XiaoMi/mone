@@ -249,7 +249,7 @@ public class ReactorRole extends Role {
     }
 
     private void shutdownScheduler() {
-        Safe.run(()->{
+        Safe.run(() -> {
             // Shutdown the scheduler when exiting
             if (scheduler != null && !scheduler.isShutdown()) {
                 scheduler.shutdown();
@@ -282,6 +282,7 @@ public class ReactorRole extends Role {
 
             AtomicBoolean hasError = new AtomicBoolean(false);
 
+            //获取系统提示词
             String systemPrompt = getSystemPrompt();
 
             //调用大模型(选用合适的工具)
@@ -405,13 +406,12 @@ public class ReactorRole extends Role {
                     \n
                     profile: %s
                     goal: %s
-                    workflow: %s
                     constraints: %s
                     output format: %s
                     \n
-                    """.formatted(this.profile, this.goal, this.workflow, this.constraints, this.outputFormat);
+                    """.formatted(this.profile, this.goal, this.constraints, this.outputFormat);
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
+        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }
