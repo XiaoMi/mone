@@ -15,6 +15,8 @@
         fit="scale-down"
         :src="src"
         :preview-src-list="[src]"
+        :hide-on-click-modal="false"
+        preview-teleported
       >
         <template #error>
           <div class="image-slot">
@@ -33,6 +35,8 @@
           v-if="handleImageSrc(item)"
           :src="handleImageSrc(item)"
           :preview-src-list="[handleImageSrc(item)]"
+          :hide-on-click-modal="false"
+          preview-teleported
         >
           <template #error>
             <div class="image-slot">
