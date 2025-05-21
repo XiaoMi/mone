@@ -223,6 +223,18 @@ public class ReactorRole extends Role {
 
         // 获取memory中最后一条消息
         Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
+
+        //用户可以扩展退出策略
+        if (null != this.roleMeta.getCheckFinishFunc()) {
+            int v = this.roleMeta.getCheckFinishFunc().apply(lastMsg);
+            if (v < 0) {
+                if (null != lastMsg.getSink()) {
+                    lastMsg.getSink().complete();
+                }
+                return v;
+            }
+        }
+
         String lastMsgContent = lastMsg.getContent();
 
         //其实只会有一个
@@ -249,7 +261,7 @@ public class ReactorRole extends Role {
     }
 
     private void shutdownScheduler() {
-        Safe.run(()->{
+        Safe.run(() -> {
             // Shutdown the scheduler when exiting
             if (scheduler != null && !scheduler.isShutdown()) {
                 scheduler.shutdown();
@@ -282,6 +294,7 @@ public class ReactorRole extends Role {
 
             AtomicBoolean hasError = new AtomicBoolean(false);
 
+            //获取系统提示词
             String systemPrompt = getSystemPrompt();
 
             //调用大模型(选用合适的工具)
@@ -405,13 +418,12 @@ public class ReactorRole extends Role {
                     \n
                     profile: %s
                     goal: %s
-                    workflow: %s
                     constraints: %s
                     output format: %s
                     \n
-                    """.formatted(this.profile, this.goal, this.workflow, this.constraints, this.outputFormat);
+                    """.formatted(this.profile, this.goal, this.constraints, this.outputFormat);
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools);
+        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }

@@ -11,7 +11,6 @@ import reactor.core.publisher.Mono;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.multimodal.config.Prompt;
 import run.mone.mcp.multimodal.util.ActionResponseParser;
@@ -22,7 +21,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -71,7 +69,7 @@ public class GuiAgentService {
      * @param userPrompt User's instruction for the GUI agent
      * @return The model's response
      */
-    public Mono<String> run(String imagePath, String userPrompt) {
+    public Mono<String> run(String imagePath, String userPrompt, String systemPrompt) {
         try {
             String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
             LLM llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_UI_TARS).temperature(Prompt.temperature).build());
@@ -81,7 +79,7 @@ public class GuiAgentService {
                             .build());
             m.setImageType("png");
             Flux<String> flux = llm.compoundMsgCall(m
-                    , Prompt.systemPrompt);
+                    ,systemPrompt);
             return flux.collect(Collectors.joining());
         } catch (Exception e) {
             return Mono.error(e);
@@ -166,6 +164,18 @@ public class GuiAgentService {
             String action = json.get("action").asText("");
 
             switch (action) {
+                case "message":
+                    if (json.has("content") && !json.get("content").isNull()) {
+                        String content = json.get("content").asText("");
+                        return Flux.just(content);
+                    }
+                    break;
+                case "scroll":
+                    if (json.has("start_box") && !json.get("start_box").isNull()) {
+                        int[] coords = getBoxCenter(json.get("start_box"));
+                        return multimodalService.scrollWheel(coords[0]);
+                    }
+                    break;
                 case "click":
                     if (json.has("start_box") && !json.get("start_box").isNull()) {
                         int[] coords = getBoxCenter(json.get("start_box"));
