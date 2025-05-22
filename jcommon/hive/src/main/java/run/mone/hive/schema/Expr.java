@@ -1,5 +1,6 @@
 package run.mone.hive.schema;
 
+import com.google.gson.JsonElement;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,5 +23,8 @@ public class Expr {
     private String expr;
 
     private String desc;
+
+    //被提取出来的
+    private JsonElement value;
 
 }

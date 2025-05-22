@@ -44,7 +44,7 @@ public class AgentConfig {
     //定义mcp工具
     @Bean
     public List<McpFunction> mcpToolList() {
-        return Lists.newArrayList(new ChatFunction("dba"), new SqliteFunction());
+        return Lists.newArrayList(new ChatFunction("dba", 20), new SqliteFunction());
     }
 
 }

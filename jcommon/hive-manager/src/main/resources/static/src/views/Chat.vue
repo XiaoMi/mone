@@ -173,7 +173,8 @@ const toggleSendMethod = (val: string) => {
       text = message.data.content;
       image = message.data.text?.split("base64,")[1];
     } else if (message.type === "audio") {
-      text = `用asr-mcp工具并且使用腾讯云语音识别这个音频文件内容`;
+      // text = `用asr-mcp工具并且使用腾讯云语音识别这个音频文件内容`;
+      text = `用speech_to_text工具别这个音频文件内容`;
     }
     try {
       const agent = getAgent();
@@ -187,6 +188,10 @@ const toggleSendMethod = (val: string) => {
       }
       if (image) {
         params.images = image;
+      }
+      if (message.data.files?.length > 0) {
+        params.message += `fileName: ${message.data.files[0].name} `;
+        params.message += ` fileBase64: ${message.data.files[0].input}`;
       }
       if (sendMethod.value === "sse") {
         // sse发送消息

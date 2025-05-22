@@ -548,3 +548,36 @@
     }
   }
 }
+.file-url-section {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+  .file-url-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    i {
+      font-size: 16px;
+      color: #00b3ff;
+      margin-right: 12px;
+    }
+  }
+  .file-url-content {
+    padding: 16px 24px 16px 24px;
+    border-top: 1px solid #3d3d3d;
+    display: flex;
+    color: #e1e1e1;
+    line-height: 1.6;
+    align-items: center;
+    justify-content: flex-start;
+  }
+}

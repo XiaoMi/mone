@@ -4,40 +4,34 @@
     <div class="circuit-point point-1"></div>
     <div class="circuit-point point-2"></div>
     <div class="dashboard-header">
-      <div class="title-container">
-        <h1>⚡ AGENT 控制中心</h1>
-        <div class="animated-underline"></div>
+      <div class="search-bar">
+        <el-input
+          type="text"
+          size="large"
+          v-model="searchQuery"
+          @input="handleSearch"
+          placeholder="搜索 Agent...">
+          <template #append>
+            <el-select
+              v-model="agentType"
+              size="large"
+              class="type-search"
+            >
+              <el-option
+                key="0"
+                label="全部"
+                value="0"
+              />
+              <el-option
+                key="1"
+                label="收藏"
+                value="1"
+              />
+            </el-select>
+          </template>
+        </el-input>
       </div>
-      <div class="header-actions">
-        <div class="search-bar">
-          <el-input
-            type="text"
-            size="large"
-            v-model="searchQuery"
-            @input="handleSearch"
-            placeholder="搜索 Agent...">
-            <template #append>
-              <el-select
-                v-model="agentType"
-                size="large"
-                class="type-search"
-              >
-                <el-option
-                  key="0"
-                  label="全部"
-                  value="0"
-                />
-                <el-option
-                  key="1"
-                  label="收藏"
-                  value="1"
-                />
-              </el-select>
-            </template>
-          </el-input>
-        </div>
-        <button class="create-btn" @click="handleCreate">创建 AGENT</button>
-      </div>
+      <button class="create-btn" @click="handleCreate">+ AGENT</button>
     </div>
     <div class="agent-list-type">
       <!-- <el-radio-group v-model="agentType" size="small" class="custom-radio-group" @change="fetchAgents">
@@ -120,6 +114,7 @@
               <button size="small" class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
               <button size="small" class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
               <button size="small" class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
+              <button size="small" class="history-btn" @click.stop="handleHistory(item.agent)">记录</button>
             </div>
 
             <div class="favorite-container">
@@ -190,12 +185,16 @@
       :agent="selectedAgent"
     />
   </div>
+  <invoke-history
+    v-model="historyVisible"
+    :agentId="historyAgentId"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAgentList, createAgent, updateAgent, deleteAgent, favoriteList, addFavorite, deleteFavorite } from '@/api/agent'
+import { getAgentList, createAgent, updateAgent, deleteAgent, getInvokeHistory, addFavorite, deleteFavorite } from '@/api/agent'
 import type { Agent } from '@/api/agent'
 import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
 import { useRouter } from 'vue-router'
@@ -203,6 +202,7 @@ import { Plus, Star, StarFilled } from '@element-plus/icons-vue'
 import { v4 as uuidv4 } from "uuid";
 import Instances from '@/components/Instances.vue'
 import { useUserStore } from '@/stores/user'
+import InvokeHistory from '@/components/InvokeHistory.vue'
 
 const {user} = useUserStore()
 
@@ -231,6 +231,8 @@ const imageFile = ref<File | null>(null)
 const searchQuery = ref('')
 const searchTimeout = ref<number | null>(null)
 const agentType = ref('0')
+const historyVisible = ref(false)
+const historyAgentId = ref(0)
 
 // 获取主题
 const { currentTheme } = useTheme()
@@ -247,6 +249,11 @@ const fetchAgents = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleHistory = (agent: Agent) => {
+  historyAgentId.value = agent.id
+  historyVisible.value = true
 }
 
 const handleCreate = () => {
@@ -443,7 +450,7 @@ onMounted(() => {
   min-height: 100vh;
   background: var(--el-color-chat-background);
   color: var(--el-color-chat-text);
-  padding: 12px 20px;
+  padding: 0 20px 12px;
   position: relative;
   overflow: hidden;
 }
@@ -479,73 +486,12 @@ onMounted(() => {
   align-items: center;
   position: relative;
   z-index: 1;
-}
-
-.agent-list-type {
-  height: 40px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-}
-
-.title-container {
-  position: relative;
-}
-
-.animated-underline {
-  position: absolute;
-  bottom: -10px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: var(--el-color-background-gradient);
-  animation: progressLine 3s ease-in-out infinite;
-  box-shadow: 0 0 10px var(--el-color-background-gradient);
-}
-
-@keyframes progressLine {
-  0% {
-    width: 0;
-    opacity: 0.6;
-    left: 0;
-  }
-  50% {
-    width: 100%;
-    opacity: 1;
-    left: 0;
-  }
-  51% {
-    width: 100%;
-    opacity: 1;
-    left: 0;
-  }
-  100% {
-    width: 0;
-    opacity: 0.6;
-    left: 100%;
-  }
+  margin-bottom: 12px;
 }
 
 .table-container {
-  height: calc(100vh - 110px);
+  height: calc(100vh - 126px);
   overflow-y: auto;
-}
-
-.dashboard-header h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.6rem;
-  color: transparent;
-  background: var(--el-color-background-gradient) text;
-  -webkit-text-fill-color: transparent;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 20px;
-  align-items: center;
 }
 
 .search-bar {
@@ -806,6 +752,12 @@ onMounted(() => {
 }
 
 .task-btn {
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
+}
+
+.history-btn {
   background: var(--el-color-chat-link-color-light);
   color: var(--el-color-chat-link-color);
   border: 1px solid var(--el-color-chat-link-color);

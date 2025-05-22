@@ -89,10 +89,4 @@ public class KnowledgeBaseQueryFunction implements McpFunction {
         return result;
     }
 
-//    // 测试
-//    public static void main(String[] args) {
-//        KnowledgeBaseQueryFunction knowledgeBaseQueryFunction = new KnowledgeBaseQueryFunction();
-//        String result = knowledgeBaseQueryFunction.queryKnowledgeFile("小米汽车大兴区的4s店有哪些");
-//        System.out.println(result);
-//    }
 }

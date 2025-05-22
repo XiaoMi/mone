@@ -8,6 +8,7 @@ import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.schema.Message;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,8 @@ public class ChatFunction implements McpFunction {
     private RoleService roleService;
 
     private final String agentName;
+
+    private final long timeout;
 
     @Override
     public void setRoleService(RoleService roleService) {
@@ -52,6 +55,8 @@ public class ChatFunction implements McpFunction {
         String ownerId = arguments.get(Const.OWNER_ID).toString();
 
         String clientId = arguments.get(Const.CLIENT_ID).toString();
+
+        long timeout = Long.parseLong(arguments.getOrDefault(Const.TIMEOUT, String.valueOf(this.timeout)).toString());
 
         //用户id
         String userId = arguments.getOrDefault(Const.USER_ID, "").toString();
@@ -97,9 +102,11 @@ public class ChatFunction implements McpFunction {
                             .images(images)
                             .voiceBase64(voiceBase64)
                             .build())
+                    .timeout(Duration.ofSeconds(timeout))
+                    .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
                     .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
-            String errorMessage = "Error: " + e.getMessage();
+            String errorMessage = "ERROR: " + e.getMessage();
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
         }
     }

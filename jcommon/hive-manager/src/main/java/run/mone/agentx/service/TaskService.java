@@ -3,11 +3,14 @@ package run.mone.agentx.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.netty.util.internal.UnstableApi;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -17,8 +20,10 @@ import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.Task;
+import run.mone.agentx.entity.User;
 import run.mone.agentx.repository.TaskRepository;
 import run.mone.agentx.utils.AgentKeyUtils;
+import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.Team;
 import run.mone.hive.a2a.types.TaskStatus;
 import run.mone.hive.common.McpResult;
@@ -107,7 +112,7 @@ public class TaskService {
      * @param taskExecutionInfo 任务执行信息
      * @return 任务实体
      */
-    public Mono<Task> executeTask(run.mone.hive.a2a.types.Task taskExecutionInfo) {
+    public Mono<Task> executeTask(run.mone.hive.a2a.types.Task taskExecutionInfo, User user) {
         // 获取任务ID
         String taskId = (String) taskExecutionInfo.getId();
         if (taskId == null || taskId.isEmpty()) {
@@ -126,14 +131,14 @@ public class TaskService {
                     return taskRepository.save(existingTask)
                             .flatMap(savedTask -> {
                                 // 异步启动任务执行 - 改用Agent执行方式
-                                startTaskExecutionWithAgent(savedTask.getTaskUuid(), taskExecutionInfo);
+                                startTaskExecutionWithAgent(savedTask.getTaskUuid(), taskExecutionInfo, user);
                                 return Mono.just(savedTask);
                             });
                 });
     }
 
-    private void startTaskExecutionWithAgent(String taskUuid, run.mone.hive.a2a.types.Task taskExecutionInfo) {
-        String userName = taskExecutionInfo.getUserName();
+    private void startTaskExecutionWithAgent(String taskUuid, run.mone.hive.a2a.types.Task taskExecutionInfo, User user) {
+        String userName = StringUtils.isNotBlank(taskExecutionInfo.getUserName()) ? taskExecutionInfo.getUserName() : user.getUsername();
         // 使用异步线程执行任务
         new Thread(() -> {
             try {
@@ -209,13 +214,15 @@ public class TaskService {
 
                     mcpRequest.setMapData(ImmutableMap.of("outerTag", "use_mcp_tool", "server_name", serviceName, "tool_name", toolName, "arguments", arguments.toString()));
 
-                    ToolDataInfo result = new ToolDataInfo("mcp_request", mcpRequest.getMapData());
+                    ToolDataInfo toolDataInfo = new ToolDataInfo("mcp_request", mcpRequest.getMapData());
+                    toolDataInfo.setUserId(String.valueOf(user.getId()));
+                    toolDataInfo.setAgentId(String.valueOf(mcpRequest.getAgentId()));
 
                     // 创建消息接收器
                     TaskResultSink sink = new TaskResultSink(taskUuid);
 
                     // 调用MCP服务(本质就是调用远程Agent)
-                    McpResult res = mcpService.callMcp(userName, mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), result, sink);
+                    McpResult res = mcpService.callMcp(userName, mcpRequest.getAgentId(), mcpRequest.getAgentInstance(), GsonUtils.gson.toJson(mcpRequest), toolDataInfo, sink);
                     sink.complete();
 
                     JsonObject obj = new JsonObject();

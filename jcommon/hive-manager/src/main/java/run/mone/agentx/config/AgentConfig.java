@@ -37,7 +37,7 @@ public class AgentConfig {
                         new AttemptCompletionTool(),
                         agentTool))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName)))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
                 .build();
     }
 

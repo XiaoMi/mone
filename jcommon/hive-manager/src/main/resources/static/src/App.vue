@@ -1,16 +1,16 @@
 <template>
   <div class="app-container">
-    <header class="app-header">
+    <!-- <header class="app-header">
       <div class="header-left">
         <h1>Hive Manager</h1>
       </div>
       <div class="header-right">
         <ThemeSwitcher />
       </div>
-    </header>
-    <main class="app-main">
+    </header> -->
+    <!-- <main class="app-main"> -->
       <router-view></router-view>
-    </main>
+    <!-- </main> -->
   </div>
 </template>
 
@@ -30,6 +30,8 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
   height: 100%;
+  overflow: hidden;
+  max-height: 100vh;
 }
 
 #nav {
@@ -49,6 +51,7 @@ html,body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .app-header {
@@ -75,6 +78,7 @@ html,body {
   flex: 1;
   // padding: 2rem;
   background-color: var(--el-color-background);
+  overflow: hidden;
 }
 
 /* 全局过渡效果 */

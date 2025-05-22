@@ -1,5 +1,5 @@
 
-package run.mone.mcp.idea.composer.http;
+package run.mone.hive.http;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

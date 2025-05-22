@@ -2,6 +2,7 @@ package run.mone.hive.prompt;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import run.mone.hive.bo.InternalServer;
 import run.mone.hive.common.AiTemplate;
@@ -54,7 +55,7 @@ public class MonerSystemPrompt {
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
     }
 
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
+    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -63,11 +64,15 @@ public class MonerSystemPrompt {
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", MonerSystemPrompt.cwd(role));
-        data.put("customInstructions", MonerSystemPrompt.customInstructions(role,customInstructions));
+        data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
 
         List<Map<String, Object>> serverList = getMcpInfo(from);
         data.put("serverList", serverList);
+        if (StringUtils.isEmpty(workFlow)) {
+            workFlow = "";
+        }
+        data.put("workflow", workFlow);
 
         //注入工具
         data.put("toolList", tools);
@@ -92,7 +97,6 @@ public class MonerSystemPrompt {
         } else {
             McpHub mcpHub = McpHubHolder.get(from);
             if (mcpHub == null) {
-                log.info("mcpHub is null, from: {}", from);
                 return serverList;
             }
             McpHubHolder.get(from).getConnections().forEach((key, value) -> Safe.run(() -> {
@@ -273,6 +277,12 @@ public class MonerSystemPrompt {
             The following additional instructions are provided by the user, and should be followed to the best of your ability without interfering with the TOOL USE guidelines.
             
             ${customInstructions}
+            
+            用户可能会定义一些使用工作的流程(Flow),会使用内部工具和Mcp工具,这个时候你需要严格按照用户的定义来执行这个工作流.如果用户没有定义则忽略掉这条规则.
+            用户定义的工作流:
+            ${workflow}
+            
+            
             
             """;
 

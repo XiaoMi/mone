@@ -30,9 +30,11 @@ import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentConfigService;
 import run.mone.agentx.service.AgentService;
 import run.mone.agentx.service.McpService;
+import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
 import run.mone.hive.common.ToolDataInfo;
+import run.mone.agentx.service.UserService;
 
 @RestController
 @RequestMapping("/api/v1/agents")
@@ -45,6 +47,8 @@ public class AgentController {
     private final McpService mcpService;
 
     private final AgentConfigService agentConfigService;
+
+    private final UserService userService;
 
     @PostMapping("/create")
     public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
@@ -89,7 +93,7 @@ public class AgentController {
     @PutMapping("/{id}")
     public Mono<ApiResponse<Agent>> updateAgent(@AuthenticationPrincipal User user, @PathVariable Long id, @RequestBody Agent agent) {
         return agentService.findById(id)
-                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
+//                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
                 .flatMap(existingAgent -> {
                     agent.setId(id);
                     agent.setCreatedBy(user.getId());
@@ -109,7 +113,13 @@ public class AgentController {
 
     @PostMapping("/register")
     public Mono<ApiResponse<AgentInstance>> register(@RequestBody RegInfoDto regInfoDto) {
-        return agentService.register(regInfoDto).map(ApiResponse::success);
+        return userService.verifyToken(regInfoDto.getToken())
+                .flatMap(isValid -> {
+                    if (!isValid) {
+                        return Mono.just(ApiResponse.<AgentInstance>error(401, "Invalid token"));
+                    }
+                    return agentService.register(regInfoDto).map(ApiResponse::success);
+                });
     }
 
     //下线agent (需要调到远程)
@@ -119,7 +129,7 @@ public class AgentController {
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
-            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), GsonUtils.gson.toJson(request), result, sink);
             sink.onDispose(() -> log.info("call mcp finish"));
             sink.complete();
         })).subscribe();
@@ -133,7 +143,7 @@ public class AgentController {
         result.setFrom("hive_manager");
         Flux.create(sink -> CompletableFuture.runAsync(() -> {
             //这里本质是当Agent调用的
-            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), result, sink);
+            mcpService.callMcp(user.getUsername(), request.getAgentId(), request.getAgentInstance(), GsonUtils.gson.toJson(request), result, sink);
             sink.onDispose(() -> log.info("call mcp finish"));
             sink.complete();
         })).subscribe();
@@ -142,12 +152,24 @@ public class AgentController {
 
     @PostMapping("/unregister")
     public Mono<ApiResponse<Void>> unregister(@RequestBody RegInfoDto regInfoDto) {
-        return agentService.unregister(regInfoDto).thenReturn(ApiResponse.success(null));
+        return userService.verifyToken(regInfoDto.getToken())
+                .flatMap(isValid -> {
+                    if (!isValid) {
+                        return Mono.just(ApiResponse.<Void>error(401, "Invalid token"));
+                    }
+                    return agentService.unregister(regInfoDto).thenReturn(ApiResponse.success(null));
+                });
     }
 
     @PostMapping("/health")
     public Mono<ApiResponse<Void>> heartbeat(@RequestBody HealthInfo healthInfo) {
-        return agentService.heartbeat(healthInfo).thenReturn(ApiResponse.success(null));
+        return userService.verifyToken(healthInfo.getToken())
+                .flatMap(isValid -> {
+                    if (!isValid) {
+                        return Mono.just(ApiResponse.<Void>error(401, "Invalid token"));
+                    }
+                    return agentService.heartbeat(healthInfo).thenReturn(ApiResponse.success(null));
+                });
     }
 
     @GetMapping("/{id}/check")

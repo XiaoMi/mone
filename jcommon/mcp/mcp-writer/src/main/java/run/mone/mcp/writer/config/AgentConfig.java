@@ -33,7 +33,7 @@ public class AgentConfig {
                 .profile("你是一名优秀的写作助手")
                 .goal("你的目标是更好的帮助用户完成写作任务")
                 .workflow("""
-                        写文章的流程:
+                        写文章的流程:(work flow)
                         <1>写出文章 调用stream_writer->writeNewArticle operation
                         <2>对文章提出修改意见 调用stream_writer->suggestImprovements operation
                         <3>对文章进行润色 调用stream_writer->polishArticle operation
@@ -46,10 +46,10 @@ public class AgentConfig {
                         new AskTool(),
                         new AttemptCompletionTool(),
                         new FileTool()
-                        ))
+                ))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(
-                        new ChatFunction(agentName),
+                        new ChatFunction(agentName, 20),
                         new WriterFunction(writerService)
                 ))
                 .build();
