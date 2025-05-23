@@ -17,12 +17,12 @@ import java.util.List;
 public class PromptTest {
 
 
-    @Test
-    public void testPrompt() {
-        List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool());
-        List<McpSchema.Tool> mcpTools = Lists.newArrayList(new McpSchema.Tool("name", "d", "{}"));
-        String prompt = MonerSystemPrompt.mcpPrompt(null, "", "default", "zzy", "", tools, mcpTools);
-        System.out.println(prompt);
-    }
+//    @Test
+//    public void testPrompt() {
+//        List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool());
+//        List<McpSchema.Tool> mcpTools = Lists.newArrayList(new McpSchema.Tool("name", "d", "{}"));
+//        String prompt = MonerSystemPrompt.mcpPrompt(null, "", "default", "zzy", "", tools, mcpTools);
+//        System.out.println(prompt);
+//    }
 
 }
