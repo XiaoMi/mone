@@ -3,7 +3,9 @@ package run.mone.hive.configs;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import run.mone.hive.llm.LLMProvider;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -30,6 +32,8 @@ public class LLMConfig {
 
     private boolean webSearch;
 
+    private LiveSearchConfig liveSearchConfig;
+
     private String token;
 
     private String token2;
@@ -44,5 +48,34 @@ public class LLMConfig {
         this.temperature = 0.1;
         this.maxTokens = 4000;
         this.debug = true;
+    }
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class LiveSearchConfig {
+
+        private String mode; // on,off,auto
+
+        private boolean return_citations;
+
+        private String from_date; // yyyy-mm-dd
+
+        private String to_date; // yyyy-mm-dd
+
+        private String max_search_results;
+
+        private List<Source> sources;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Source {
+        // TODO: 补充其他字段，目前可只配置类型
+        private String type; //web,x,news,rss
     }
 } 
