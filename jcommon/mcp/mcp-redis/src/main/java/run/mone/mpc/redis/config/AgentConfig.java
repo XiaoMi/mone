@@ -44,7 +44,7 @@ public class AgentConfig {
     //定义mcp工具
     @Bean
     public List<McpFunction> mcpToolList() {
-        return Lists.newArrayList(new ChatFunction("redis-manager"), new RedisFunction());
+        return Lists.newArrayList(new ChatFunction("redis-manager", 20), new RedisFunction());
     }
 
 }

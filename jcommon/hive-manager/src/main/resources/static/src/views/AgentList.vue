@@ -31,7 +31,7 @@
           </template>
         </el-input>
       </div>
-      <button class="create-btn" @click="handleCreate">创建 AGENT</button>
+      <button class="create-btn" @click="handleCreate">+ AGENT</button>
     </div>
     <div class="agent-list-type">
       <!-- <el-radio-group v-model="agentType" size="small" class="custom-radio-group" @change="fetchAgents">
@@ -114,6 +114,7 @@
               <button size="small" class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
               <button size="small" class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
               <button size="small" class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
+              <button size="small" class="history-btn" @click.stop="handleHistory(item.agent)">记录</button>
             </div>
 
             <div class="favorite-container">
@@ -184,12 +185,16 @@
       :agent="selectedAgent"
     />
   </div>
+  <invoke-history
+    v-model="historyVisible"
+    :agentId="historyAgentId"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAgentList, createAgent, updateAgent, deleteAgent, favoriteList, addFavorite, deleteFavorite } from '@/api/agent'
+import { getAgentList, createAgent, updateAgent, deleteAgent, getInvokeHistory, addFavorite, deleteFavorite } from '@/api/agent'
 import type { Agent } from '@/api/agent'
 import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
 import { useRouter } from 'vue-router'
@@ -197,6 +202,7 @@ import { Plus, Star, StarFilled } from '@element-plus/icons-vue'
 import { v4 as uuidv4 } from "uuid";
 import Instances from '@/components/Instances.vue'
 import { useUserStore } from '@/stores/user'
+import InvokeHistory from '@/components/InvokeHistory.vue'
 
 const {user} = useUserStore()
 
@@ -225,6 +231,8 @@ const imageFile = ref<File | null>(null)
 const searchQuery = ref('')
 const searchTimeout = ref<number | null>(null)
 const agentType = ref('0')
+const historyVisible = ref(false)
+const historyAgentId = ref(0)
 
 // 获取主题
 const { currentTheme } = useTheme()
@@ -241,6 +249,11 @@ const fetchAgents = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleHistory = (agent: Agent) => {
+  historyAgentId.value = agent.id
+  historyVisible.value = true
 }
 
 const handleCreate = () => {
@@ -739,6 +752,12 @@ onMounted(() => {
 }
 
 .task-btn {
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
+}
+
+.history-btn {
   background: var(--el-color-chat-link-color-light);
   color: var(--el-color-chat-link-color);
   border: 1px solid var(--el-color-chat-link-color);

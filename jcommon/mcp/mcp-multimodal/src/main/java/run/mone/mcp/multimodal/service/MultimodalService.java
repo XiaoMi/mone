@@ -55,6 +55,16 @@ public class MultimodalService {
         return llm.call(List.of(new AiMessage("user", prompt)));
     }
 
+    //mac 下滑动滚轮 (class)
+    public Flux<String> scrollWheel(int amount) {
+        try {
+            robot.mouseWheel(amount);
+            return Flux.just("执行了滚轮滑动，滑动量: " + amount);
+        } catch (Exception e) {
+            return Flux.just("滚轮滑动操作失败：" + e.getMessage());
+        }
+    }
+
     /**
      * 执行左键点击操作
      */
@@ -347,13 +357,13 @@ public class MultimodalService {
 
             // 获取默认屏幕设备
             Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
-            
+
             // 使用Robot捕获屏幕
             BufferedImage screenshot = robot.createScreenCapture(screenRect);
-            
+
             // 保存图片
             ImageIO.write(screenshot, "png", outputFile);
-            
+
             if (outputFile.exists() && outputFile.length() > 0) {
                 log.info("成功使用Robot截图，文件大小: " + outputFile.length() + " 字节");
                 return Flux.just(filePath);

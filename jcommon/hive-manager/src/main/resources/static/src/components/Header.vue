@@ -14,7 +14,6 @@
       <el-menu-item index="tasks">TASK 列表</el-menu-item>
     </el-menu>
     <div class="header-right">
-      <ThemeSwitcher />
       <el-dropdown @command="handleCommand">
         <span class="el-dropdown-link">
           {{userStore.user.username}}<el-icon class="el-icon--right"><arrow-down /></el-icon>
@@ -26,6 +25,7 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
+      <ThemeSwitcher />
     </div>
   </div>
   <router-view />
@@ -70,7 +70,7 @@ function handleCommand(command) {
 
 <style scoped>
 .header-container {
-  background-color: var(--el-bg-color);
+  background-color: var(--el-color-chat-background);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -81,7 +81,7 @@ function handleCommand(command) {
   align-items: center;
 }
 .header-right .el-dropdown {
-  margin-left: 20px;
+  margin-right: 20px;
 }
 .el-menu-header {
   background-color: transparent;
@@ -109,5 +109,8 @@ function handleCommand(command) {
   color: var(--el-text-color-primary);
   display: flex;
   align-items: center;
+}
+.el-dropdown-menu {
+  background: var(--el-color-background-gradient);
 }
 </style>

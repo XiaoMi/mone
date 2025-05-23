@@ -286,3 +286,11 @@ export const deleteAgentConfig = (agentId: number, key: string) => {
     method: 'delete'
   })
 }
+
+
+export const getInvokeHistory = (agentId: number) => {
+  return Service<IResponse<void>>({
+    url: `/v1/invoke/history/${agentId}`,
+    method: 'get'
+  })
+}

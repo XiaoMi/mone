@@ -10,6 +10,7 @@ import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Prompts;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.schema.*;
 import run.mone.hive.strategy.Planner;
 import run.mone.hive.utils.Config;
@@ -34,6 +35,8 @@ public class Role {
     protected String name;
 
     protected String profile;
+
+    protected RoleMeta roleMeta;
 
     protected String goal;
 
@@ -64,7 +67,7 @@ public class Role {
     protected Queue<Action> actionQueue = new LinkedList<>();
 
     @JsonIgnore
-    private Environment environment;
+    private Environment environment = new Environment();
 
     @JsonIgnore
     @Getter
@@ -328,12 +331,7 @@ public class Role {
                 TaskResult taskResult = actOnTask(task).join();
                 log.info("taskResult:{}", taskResult);
 
-                // Process the result, such as reviewing, confirming, plan updating
-//                planner.processTaskResult(taskResult).join();
-
                 planner.getPlan().finishCurrentTask();
-
-
             }
 
             Message rsp = planner.getUsefulMemories().get(0); // Return the completed plan as a response
@@ -343,7 +341,6 @@ public class Role {
         });
     }
 
-    //帮我实现下actOnTask (class)
     public CompletableFuture<TaskResult> actOnTask(Task task) {
         return CompletableFuture.supplyAsync(() -> {
             try {

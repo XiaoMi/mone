@@ -6,6 +6,9 @@ package run.mone.hive.roles;
  */
 public enum RoleState {
 
-    think,observe,act
+    think,
+    observe,
+    act,
+    exit
 
 }

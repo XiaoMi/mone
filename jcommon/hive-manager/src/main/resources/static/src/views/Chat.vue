@@ -189,6 +189,10 @@ const toggleSendMethod = (val: string) => {
       if (image) {
         params.images = image;
       }
+      if (message.data.files?.length > 0) {
+        params.message += `fileName: ${message.data.files[0].name} `;
+        params.message += ` fileBase64: ${message.data.files[0].input}`;
+      }
       if (sendMethod.value === "sse") {
         // sse发送消息
         streamChat({

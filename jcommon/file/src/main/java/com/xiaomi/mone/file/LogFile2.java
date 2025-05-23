@@ -98,7 +98,7 @@ public class LogFile2 implements ILogFile {
         this.lineNumber = lineNumber;
     }
 
-    private void open() {
+    private void open() throws FileNotFoundException {
         try {
             //4kb
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
@@ -106,6 +106,7 @@ public class LogFile2 implements ILogFile {
             reFresh = false;
         } catch (FileNotFoundException e) {
             log.error("open file FileNotFoundException", e);
+            throw e;
         } catch (IOException e) {
             log.error("open file IOException", e);
         }
@@ -211,8 +212,13 @@ public class LogFile2 implements ILogFile {
                     break;
                 }
             } catch (Exception e) {
-                raf.close();
+                if (raf != null) {
+                    raf.close();
+                }
                 log.error("readLine error", e);
+                if (e instanceof FileNotFoundException) {
+                    throw e;
+                }
             }
         }
         log.info("read file:{},finished,,pointer:{},lineNumber:{},fileKey:{}", file, this.pointer, this.lineNumber, this.fileKey);

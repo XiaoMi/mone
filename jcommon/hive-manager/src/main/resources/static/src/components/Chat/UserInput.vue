@@ -73,11 +73,14 @@
             <div class="sc-user-input--button">
               <Screenshot v-model="screenshotImages" />
             </div>
+            <div class="sc-user-input--button test">
+              <ImageUpload :limit="1" v-model="files" type="file" />
+            </div>
             <div class="sc-user-input--button">
               <Recoder @submit="submitAudio" />
             </div>
             <div class="sc-user-input--button test">
-              <ImageUpload :limit="1" v-model="images" />
+              <ImageUpload :limit="1" v-model="images" type="image" />
             </div>
             <div class="sc-user-input--button test">
               <PasteImage v-model="screenshotImages" />
@@ -324,6 +327,11 @@ export default {
       percentage: 0,
       bizUpdate: false,
       screenshotImages: [] as {
+        mediaType: string;
+        url: string;
+        input: string;
+      }[],
+      files: [] as {
         mediaType: string;
         url: string;
         input: string;
@@ -658,7 +666,7 @@ export default {
         (event.key === "Enter" && event.shiftKey && !this.isEnter) ||
         (event.key === "Enter" && !event.shiftKey && this.isEnter)
       ) {
-        if (this.text.trim() !== "" || this.images.length > 0 || this.screenshotImages.length > 0) {
+        if (this.text.trim() !== "" || this.images.length > 0 || this.screenshotImages.length > 0 || this.files.length > 0) {
           this.submitText();
         }
         event.preventDefault();
@@ -968,7 +976,8 @@ export default {
           this.setStateFullback(ss[1]);
         } else if (
           (this.images && this.images.length > 0) ||
-          (this.screenshotImages && this.screenshotImages.length > 0)
+          (this.screenshotImages && this.screenshotImages.length > 0) ||
+          (this.files && this.files.length > 0)
         ) {
           const image = this.images[0] || this.screenshotImages[0];
           this.onSubmit({
@@ -983,17 +992,19 @@ export default {
             },
             data: {
               composer_config: this.composerList,
-              text: image.url,
+              text: image?.url,
               content: text,
+              files: this.files,
             },
           });
           await util.myVision({
-            mediaType: image.mediaType,
-            input: image.input,
+            mediaType: image?.mediaType,
+            input: image?.input,
             postscript: text,
           });
           this.images = [];
           this.screenshotImages = [];
+          this.files = [];
           // this.composerList = []
         } else {
           let code = text;

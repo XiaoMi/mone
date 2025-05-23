@@ -63,6 +63,7 @@
         <module>mcp-hera-analysis</module>
         <module>mcp-custom-model</module>
         <module>mcp-image</module>
+        <module>mcp-remote-file</module>
     </modules>
 
     <properties>

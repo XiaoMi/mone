@@ -59,6 +59,7 @@ export class SimpleHtmlParser {
     this.callbacks = callbacks;
     this.supportedTags = new Set([
       'terminal',
+      'download_file',
       'use_mcp_tool',
       'thinking',
       'chat',

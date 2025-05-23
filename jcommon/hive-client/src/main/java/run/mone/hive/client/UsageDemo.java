@@ -50,12 +50,13 @@ public class UsageDemo {
      * @param serverAgentId 服务端代理ID
      * @return 创建的任务
      */
-    public HiveClient.Task createTask(String username, Long clientAgentId, Long serverAgentId) {
+    public HiveClient.Task createTask(String token, String username, Long clientAgentId, Long serverAgentId) {
         HiveClient.Task task = HiveClient.Task.builder()
                 .username(username)
                 .clientAgentId(clientAgentId)
                 .serverAgentId(serverAgentId)
                 .status("PENDING")
+                .token(token)
                 .build();
 
         try {
@@ -74,9 +75,10 @@ public class UsageDemo {
      * @param metadata 元数据
      * @return 执行的任务
      */
-    public HiveClient.Task executeTask(String taskId, String username, Map<String, String> metadata) {
+    public HiveClient.Task executeTask(String token, String taskId, String username, Map<String, String> metadata) {
         HiveClient.TaskExecutionInfo taskInfo = HiveClient.TaskExecutionInfo.builder()
-                .taskId(taskId)
+                .token(token)
+                .id(taskId)
                 .userName(username)
                 .metadata(metadata)
                 .build();
@@ -154,34 +156,21 @@ public class UsageDemo {
      * 使用示例
      */
     public static void main(String[] args) {
+
+        String token = "your_token_here";
+        String username = "your_username_here";
+        Long serverAgentId = 43L;
+        String taskUuid = "your_task_uuid_here";
         // 创建客户端
         UsageDemo taskClient = new UsageDemo("http://localhost:8080")
-                .withToken("your-jwt-token");
+                .withToken(token);
                 
-        // 创建任务
-        HiveClient.Task task = taskClient.createTask("username", 1L, 2L);
-        if (task != null) {
-            String taskUuid = task.getTaskUuid();
-            System.out.println("任务创建成功: " + taskUuid);
             
-            // 更新任务状态
-            task = taskClient.updateTaskStatus(taskUuid, "RUNNING");
-            System.out.println("任务状态更新: " + task.getStatus());
-            
-            // 执行任务
-            Map<String, String> metadata = new HashMap<>();
-            metadata.put("param1", "value1");
-            metadata.put("param2", "value2");
-            HiveClient.Task executedTask = taskClient.executeTask(taskUuid, "username", metadata);
-            System.out.println("任务执行成功: " + (executedTask != null));
-            
-            // 更新任务结果
-            task = taskClient.updateTaskResult(taskUuid, "{\"result\": \"success\"}");
-            System.out.println("任务结果: " + task.getResult());
-            
-            // 获取任务状态
-            Map<String, Object> status = taskClient.getTaskStatus(taskUuid);
-            System.out.println("任务状态: " + status);
-        }
+        // 执行任务
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("serverAgentId", String.valueOf(serverAgentId));
+        HiveClient.Task executedTask = taskClient.executeTask(token, taskUuid, username, metadata);
+        System.out.println("任务执行成功: " + (executedTask != null));
+
     }
 } 
