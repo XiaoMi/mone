@@ -159,6 +159,7 @@ public class RoleService {
         role.setOwner(owner);
         role.setClientId(clientId);
 
+        role.setRoleMeta(roleMeta);
         role.setProfile(roleMeta.getProfile());
         role.setGoal(roleMeta.getGoal());
         role.setConstraints(roleMeta.getConstraints());
@@ -184,7 +185,7 @@ public class RoleService {
         }
         return Flux.create(sink -> {
             message.setSink(sink);
-            role.putMessage(message);
+            roleMap.get(from).putMessage(message);
         });
     }
 

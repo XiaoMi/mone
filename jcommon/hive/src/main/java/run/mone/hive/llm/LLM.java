@@ -161,6 +161,7 @@ public class LLM {
             requestBody.remove("model");
         }
 
+        // former web search
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
             JsonObject tool = new JsonObject();
@@ -171,6 +172,11 @@ public class LLM {
             tools.add(tool);
             requestBody.add("tools", tools);
             systemPrompt = systemPrompt + "\n每个提问先通过web search，然后通过web search的结果，回答用户问题\n";
+        }
+
+        // live search (xai/grok)
+        if (clientConfig.getLiveSearchConfig() != null) {
+            requestBody.add("search_parameters", gson.toJsonTree(clientConfig.getLiveSearchConfig()));
         }
 
 

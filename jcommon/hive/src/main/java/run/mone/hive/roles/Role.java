@@ -10,6 +10,7 @@ import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Prompts;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.schema.*;
 import run.mone.hive.strategy.Planner;
 import run.mone.hive.utils.Config;
@@ -34,6 +35,8 @@ public class Role {
     protected String name;
 
     protected String profile;
+
+    protected RoleMeta roleMeta;
 
     protected String goal;
 

@@ -28,7 +28,7 @@
            :class="['message-item', message.type]">
         <div class="message-time">{{ new Date(message.timestamp).toLocaleTimeString() }}</div>
         <div class="message-content">{{ message.content }}</div>
-        <audio v-if="message.audio" :src="message.audio" controls></audio>
+        <audio v-if="message.audio" :src="message.audio" controls autoplay></audio>
       </div>
     </div>
     <div v-if="errorMessage" class="error-message">
@@ -37,6 +37,17 @@
     <div v-if="statusMessage" class="status-message">
       {{ statusMessage }}
     </div>
+    <!-- 文本输入框和发送按钮 -->
+    <div class="text-input-container">
+      <el-input
+        v-model="textInput"
+        placeholder="请输入文本"
+        @keyup.enter="sendText"
+        clearable
+        style="margin-right: 10px;"
+      />
+      <el-button type="primary" @click="sendText">发送</el-button>
+    </div>
   </div>
 </template>
 
@@ -44,14 +55,22 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { v4 as uuidv4 } from 'uuid';
 import { wsUtil } from '@/api/wsUtils';
+import { concatAndEncodeWAV, encodeWAV } from '@/libs/audio'
 
-const mediaRecorder = ref<MediaRecorder | null>(null)
-const audioUrls = ref<string[]>([])
-const audioChunks = ref<Blob[]>([])
+// MediaRecorder 相关变量移除，改为 Web Audio API 采集 PCM
+// const mediaRecorder = ref<MediaRecorder | null>(null)
+// const audioChunks = ref<Blob[]>([])
 const isRecording = ref(false)
 const hasPermission = ref(false)
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(uuidv4());
+
+// Web Audio API 相关变量
+let audioContext: AudioContext | null = null;
+let processor: ScriptProcessorNode | null = null;
+let input: MediaStreamAudioSourceNode | null = null;
+let pcmChunks: Int16Array[] = [];
+let streamRef: MediaStream | null = null;
 
 const audioAppend = {
   "event_id": uuid.value,
@@ -74,6 +93,21 @@ const conversationItem = (audio: string) => ({
   }
 })
 
+const conversationTextItem = (text: string) => ({
+  type: 'conversation.item.create',
+  item: {
+    type: 'message',
+    role: 'user',
+    status: 'completed',
+    content: [
+      {
+        type: 'input_text',
+        text: text
+      }
+    ]
+  }
+})
+
 const audioCommit = {
   "event_id": uuid.value,
   "type": "input_audio_buffer.commit",
@@ -86,14 +120,18 @@ const asrTime = ref(0)
 const errorMessage = ref('')
 const statusMessage = ref('')
 const messageHistory = ref<Array<{
+  id: string;
   type: string;
   content: string;
   timestamp: number;
   audio: string;
 }>>([])
 
-const addMessage = (type: string, content: string, audio?: string) => {
+const textInput = ref('')
+
+const addMessage = (id: string, type: string, content: string, audio?: string) => {
   messageHistory.value.push({
+    id,
     type,
     content,
     audio: audio || '',
@@ -101,6 +139,17 @@ const addMessage = (type: string, content: string, audio?: string) => {
   })
 }
 
+const appendMessage = (id: string, type: string, content: string, audio?: string) => {
+  const message = messageHistory.value.find(item => item.id === id)
+  if (message) {
+    message.content += content
+    if (audio) {
+      message.audio = audio
+    }
+  } else {
+    addMessage(id, type, content, audio)
+  }
+}
 const checkMicrophonePermission = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -122,85 +171,90 @@ const toggleRecording = async () => {
   }
 }
 
-const stopRecording = () => {
-  if (mediaRecorder.value && isRecording.value) {
-    mediaRecorder.value.stop()
-    const tracks = mediaRecorder.value.stream.getTracks()
-    tracks.forEach(track => track.stop())
-    isRecording.value = false
-
-    // 等待最后一个数据块收集完成
-    setTimeout(() => {
-      if (audioChunks.value.length > 0) {
-        sendAudioData()
-        // socket.value?.send(JSON.stringify(audioCommit))
-        // socket.value?.send(JSON.stringify({type: 'response.create'}))
-      }
-    }, 100)
-  }
-}
-
 const startRecording = async () => {
   try {
     const permissionGranted = await checkMicrophonePermission()
     if (!permissionGranted) {
       return
     }
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        sampleRate: 16000,
-        sampleSize: 16,
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    streamRef = stream;
+    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+    input = audioContext.createMediaStreamSource(stream);
+    processor = audioContext.createScriptProcessor(4096, 1, 1);
+    pcmChunks = [];
+    processor.onaudioprocess = (e) => {
+      const inputData = e.inputBuffer.getChannelData(0); // Float32Array
+      // 转成16bit PCM
+      const pcm = new Int16Array(inputData.length);
+      for (let i = 0; i < inputData.length; i++) {
+        let s = Math.max(-1, Math.min(1, inputData[i]));
+        pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
       }
-    })
-    mediaRecorder.value = new MediaRecorder(stream, {
-      mimeType: 'audio/webm;codecs=pcm',
-      audioBitsPerSecond: 16000
-    })
-
-    mediaRecorder.value.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunks.value.push(event.data)
-      }
-    }
-
-    isRecording.value = true
-    mediaRecorder.value.start()
+      pcmChunks.push(pcm);
+    };
+    input.connect(processor);
+    processor.connect(audioContext.destination);
+    isRecording.value = true;
   } catch (error) {
     console.error('获取麦克风权限失败:', error)
     hasPermission.value = false
   }
 }
 
-const sendAudioData = async () => {
-  if (audioChunks.value.length === 0) return
-
-  const audioBlob = new Blob(audioChunks.value, { type: 'audio/webm;codecs=pcm' })
-  const reader = new FileReader()
-  reader.onloadend = () => {
-    const base64Data = (reader.result as string).split('base64,')[1]
-    const message = conversationItem(base64Data)
-
-    addMessage('audio', '发送音频数据', `data:audio/wav;base64,${base64Data}`);
-    // socket.value?.send(JSON.stringify({type: "input_audio_buffer.clear"}))
-    socket.value?.send(JSON.stringify(message))
-    // socket.value?.send(JSON.stringify(audioCommit))
-    socket.value?.send(JSON.stringify({type: 'response.create', status: 'completed'}))
-    audioChunks.value = []
+const stopRecording = () => {
+  if (!isRecording.value) return;
+  isRecording.value = false;
+  if (processor && input) {
+    processor.disconnect();
+    input.disconnect();
   }
-  reader.readAsDataURL(audioBlob)
+  if (audioContext) {
+    audioContext.close();
+  }
+  if (streamRef) {
+    streamRef.getTracks().forEach(track => track.stop());
+    streamRef = null;
+  }
+  // 合并所有PCM数据
+  const totalLength = pcmChunks.reduce((sum, arr) => sum + arr.length, 0);
+  const pcmData = new Int16Array(totalLength);
+  let offset = 0;
+  for (const chunk of pcmChunks) {
+    pcmData.set(chunk, offset);
+    offset += chunk.length;
+  }
+  // 转base64
+  const pcmUint8 = new Uint8Array(pcmData.buffer);
+  const base64 = btoa(String.fromCharCode(...pcmUint8));
+  setTimeout(() => {
+    sendAudioData(base64);
+    pcmChunks = [];
+  }, 0);
 }
 
+// sendAudioData 现在接收 base64 PCM
+const sendAudioData = async (base64Data: string) => {
+  if (!base64Data) return;
+  // 这里直接发送 base64 PCM，如果需要WAV可用encodeWAV
+  const message = conversationItem(base64Data)
+  // console.log('发送音频数据', `data:audio/pcm;base64,${base64Data}`);
+  const wavBase64 = await encodeWAV(base64Data, 24000, 1)
+  addMessage(uuidv4(), 'audio', '发送音频数据', `data:audio/wav;base64,${wavBase64}`);
+  socket.value?.send(JSON.stringify(message))
+  socket.value?.send(JSON.stringify({type: 'response.create', status: 'completed'}))
+}
+
+const responseAudio = new Map()
 const wsConnect = () => {
   if (socket.value) return;
 
   socket.value = wsUtil("/api/manager/ws/realtime/minimaxi",() => {
     console.log('WebSocket连接成功');
-    addMessage('system', 'WebSocket连接成功');
+    addMessage(uuidv4(), 'system', 'WebSocket连接成功');
   },() => {
     console.log('WebSocket连接关闭');
-    addMessage('system', 'WebSocket连接关闭');
+    addMessage(uuidv4(), 'system', 'WebSocket连接关闭');
     socket.value = null;
   },async (data: any) => {
     console.log('WebSocket message received:', data);
@@ -213,19 +267,36 @@ const wsConnect = () => {
     }
 
     switch (data.type) {
+      case 'response.created':
+      case 'conversation.item.created':
+      case 'response.done':
+      case 'response.output_item.done':
+      case 'response.audio_transcript.done':
+        // 不处理
+        break;
+
       case 'response.audio.delta':
         // 处理音频数据
         if (data.delta) {
-          audioUrls.value.push(`data:audio/wav;base64,${data.delta}`);
-          addMessage('audio', '收到音频数据', `data:audio/wav;base64,${data.delta}`);
+          const audioBase64 = responseAudio.get(data.response_id) || []
+          audioBase64.push(data.delta)
+          responseAudio.set(data.response_id, audioBase64)
+        }
+        break;
+      case 'response.audio.done':
+        const audioBase64 = responseAudio.get(data.response_id) || []
+        responseAudio.delete(data.response_id)
+        if (audioBase64 && audioBase64.length > 0) {
+          concatAndEncodeWAV(audioBase64, 24000, 1).then(wavBase64 => {
+            addMessage(data.response_id, 'audio', '收到音频数据', `data:audio/wav;base64,${wavBase64}`);
+          })
         }
         break;
 
-      case 'response.audio_transcript.done':
+      case 'response.audio_transcript.delta':
         // 处理语音转文字结果
-        if (data.transcript) {
-          // chatContent.value = data.transcript;
-          addMessage('transcript', data.transcript);
+        if (data.delta) {
+          appendMessage(data.response_id, 'transcript', data.delta)
         }
         break;
 
@@ -234,7 +305,7 @@ const wsConnect = () => {
         if (data.error) {
           console.error('服务端错误:', data.error);
           errorMessage.value = data.error;
-          addMessage('error', data.error);
+          addMessage(data.response_id, 'error', data.error);
         }
         break;
 
@@ -243,22 +314,36 @@ const wsConnect = () => {
         if (data.status) {
           console.log('服务端状态:', data.status);
           statusMessage.value = data.status;
-          addMessage('status', data.status);
+          addMessage(data.response_id, 'status', data.status);
         }
         break;
 
       case 'session.created':
       case 'session.updated':
         if (data.session) {
-          addMessage('session', `${data.type}, 会话ID: ${data.session.id}`);
+          addMessage(data.response_id, 'session', `${data.type}, 会话ID: ${data.session.id}`);
         }
         break;
 
       default:
         console.log('未处理的消息类型:', data.type);
-        addMessage('unknown', `未处理的消息类型: ${data.type}`);
+        addMessage(data.response_id, 'unknown', `未处理的消息类型: ${data.type}`);
     }
   });
+}
+
+const sendText = () => {
+  if (!textInput.value.trim()) return
+  const message = conversationTextItem(textInput.value)
+  addMessage(uuidv4(), 'text', textInput.value)
+  socket.value?.send(JSON.stringify(message))
+  socket.value?.send(JSON.stringify({
+    type: 'response.create',
+    response: {
+      status: 'completed'
+    }
+  }))
+  textInput.value = ''
 }
 
 onMounted(() => {
@@ -267,10 +352,21 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (mediaRecorder.value) {
-    mediaRecorder.value.stop()
-    const tracks = mediaRecorder.value.stream.getTracks()
-    tracks.forEach(track => track.stop())
+  // 关闭音频流和上下文
+  if (isRecording.value) {
+    isRecording.value = false;
+    if (processor && input) {
+      processor.disconnect();
+      input.disconnect();
+    }
+    if (audioContext) {
+      audioContext.close();
+    }
+    if (streamRef) {
+      streamRef.getTracks().forEach(track => track.stop());
+      streamRef = null;
+    }
+    pcmChunks = [];
   }
   if (socket.value) {
     socket.value.close()
@@ -469,5 +565,20 @@ onUnmounted(() => {
   padding: 10px 20px;
   border-radius: 4px;
   z-index: 1000;
+}
+
+.text-input-container {
+  display: flex;
+  align-items: center;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 600px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 1001;
 }
 </style>

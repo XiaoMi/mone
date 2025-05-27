@@ -278,16 +278,16 @@ class LLMTest {
     }
 
     @Test
-    public void testClaude35() {
+    public void testClaude() {
         ClaudeProxy claudeProxy = new ClaudeProxy();
-        claudeProxy.initGCPClaude("Claude-3.5-Sonnet-company-inner");
+        String model = "Claude-4-Sonnet";
+        claudeProxy.initGCPClaude(model);
 
-        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好").build());
-
-        String result = claudeProxy.callGCP("Claude-3.5-Sonnet-company-inner", msgs);
+        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好, 44+22是多少").build());
+        String result = claudeProxy.callGCP(model, msgs);
         System.out.println(result);
 
-        String apiKey = getClaudeKey("Claude-3.5-Sonnet-company-inner");
+        String apiKey = getClaudeKey(model);
 
         StringBuilder responseBuilder = new StringBuilder();
         List<JsonObject> jsonResponses = new ArrayList<>();
@@ -300,7 +300,7 @@ class LLMTest {
         llm.chatCompletionStream(
                 apiKey,
                 msgs,
-                "Claude-3.5-Sonnet-company-inner",
+                model,
                 (content, jsonResponse) -> {
                     if ("[DONE]".equals(content)) {
                         latch.countDown();

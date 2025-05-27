@@ -10,10 +10,13 @@
       v-else-if="message.type === 'image'"
     >
       <el-image
+        v-if="src"
         style="height: 80px;"
         fit="scale-down"
         :src="src"
         :preview-src-list="[src]"
+        :hide-on-click-modal="false"
+        preview-teleported
       >
         <template #error>
           <div class="image-slot">
@@ -21,6 +24,7 @@
           </div>
         </template>
       </el-image>
+      <p class="file-list" v-for="(item, index) in (message.data.files||[])" :key="index"><el-icon size="12" color="#FFF"><DocumentAdd /></el-icon><span>{{item.name}}</span></p>
       <div>{{ message.data.content }}</div>
     </div>
     <template v-else-if="message.type === 'images'">
@@ -31,6 +35,8 @@
           v-if="handleImageSrc(item)"
           :src="handleImageSrc(item)"
           :preview-src-list="[handleImageSrc(item)]"
+          :hide-on-click-modal="false"
+          preview-teleported
         >
           <template #error>
             <div class="image-slot">
@@ -168,5 +174,13 @@ const handleImageText = (item: any) => {
   font-family: 'Monaco', monospace;
   letter-spacing: 0.5px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.file-list {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.file-list .el-icon {
+  margin-right: 4px;
 }
 </style>

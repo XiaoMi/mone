@@ -21,6 +21,8 @@ public class ActionGraph {
     private List<String> executionOrder;
     private Map<String, CompletableFuture<Message>> results;
 
+    private ActionGraphContext context = new ActionGraphContext();
+
     public ActionGraph() {
         this.nodes = new HashMap<>();
         this.edges = new HashMap<>();
@@ -139,6 +141,7 @@ public class ActionGraph {
 
 
                 node.setContext(sb.toString());
+                node.setGraphContext(ActionGraph.this.context);
 
                 // 执行当前节点
                 return node.run().join();
