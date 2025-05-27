@@ -26,6 +26,7 @@ public enum LLMProvider {
     DOUBAO_DEEPSEEK_V3("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_V3_MODEL_KEY"),
     CLAUDE_COMPANY("CLAUDE_URL", "CLAUDE_TOKEN", "claude-3-5-sonnet@20240620", "CLAUDE35_MODEL_KEY"),
     GROK("https://api.x.ai/v1/chat/completions", "XAI_API_KEY", "grok-3-beta", null),
+    TENCENT_DEEPSEEK("https://api.lkeap.cloud.tencent.com/v1/chat/completions", "TENCENT_API_KEY", "deepseek-r1", null),
     //MiniMax-Text-01 abab6.5s-chat DeepSeek-R1
     MINIMAX("https://api.minimax.chat/v1/text/chatcompletion_v2", "MINIMAX_API_KEY", "MiniMax-Text-01", "MINIMAX_GROUP_ID"),
     QWEN3("", "xxx", "Qwen3-14B", "");
