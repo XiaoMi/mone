@@ -27,9 +27,11 @@ public enum LLMProvider {
     CLAUDE_COMPANY("CLAUDE_URL", "CLAUDE_TOKEN", "claude-3-5-sonnet@20240620", "CLAUDE35_MODEL_KEY"),
     TENCENT_DEEPSEEK("https://api.lkeap.cloud.tencent.com/v1/chat/completions", "TENCENT_API_KEY", "deepseek-r1", null),
     GROK("https://api.x.ai/v1/chat/completions", "XAI_API_KEY", "grok-3-latest", null),
-    //MiniMax-Text-01 abab6.5s-chat DeepSeek-R1
+    //MiniMax-Text-01 abab6.5s-chat DeepSeek-R1,
     MINIMAX("https://api.minimax.chat/v1/text/chatcompletion_v2", "MINIMAX_API_KEY", "MiniMax-Text-01", "MINIMAX_GROUP_ID"),
-    QWEN3("", "xxx", "Qwen3-14B", "");
+    QWEN3("", "xxx", "Qwen3-14B", ""),
+    // 这里的模型设置不生效，需要去对应Agent上修改
+    MIFY("XXX", "MIFY_API_KEY", "deepseek-r1", null);
 
     private final String url;
 
