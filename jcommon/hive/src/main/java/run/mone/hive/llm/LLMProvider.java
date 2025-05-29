@@ -31,7 +31,9 @@ public enum LLMProvider {
     MINIMAX("https://api.minimax.chat/v1/text/chatcompletion_v2", "MINIMAX_API_KEY", "MiniMax-Text-01", "MINIMAX_GROUP_ID"),
     QWEN3("", "xxx", "Qwen3-14B", ""),
     // 这里的模型设置不生效，需要去对应Agent上修改
-    MIFY("XXX", "MIFY_API_KEY", "deepseek-r1", null);
+    MIFY("XXX", "MIFY_API_KEY", "deepseek-r1", null),
+    // url只能从llmConfig里取
+    CLOUDML_CLASSIFY("", "xxx", "CLOUDML_CLASSIFY", "");
 
     private final String url;
 
