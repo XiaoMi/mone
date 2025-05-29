@@ -35,20 +35,6 @@ class UserServiceTest {
 
     private User testUser;
 
-    @BeforeEach
-    void setUp() {
-        // 清理测试数据
-        userRepository.deleteAll().block();
-
-        // 创建测试用户
-        testUser = new User();
-        testUser.setUsername("testUser");
-        testUser.setPassword("password123");
-        testUser.setEmail("test@example.com");
-        testUser.setCtime(System.currentTimeMillis());
-        testUser.setUtime(System.currentTimeMillis());
-        testUser.setState(1);
-    }
 
     @Test
     void testCreateUser_Success() {
