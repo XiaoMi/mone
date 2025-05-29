@@ -50,12 +50,14 @@ public class ProjectArchitect extends Role {
             
             需求：%s
             
+            这是一个正式的项目，里面不要出现demo，example等字样，当成一个正式项目区分析。
+            
             请以JSON格式返回以下信息：
             1. projectName: 项目名称（英文，小写，用横线分隔）
             2. projectType: 项目类型（spring-boot 或 maven-multi-module）
             3. basePackage: 基础包名（如：com.example.demo）
             4. description: 项目描述
-            
+          
             只返回JSON，不要其他任何内容。
             """.formatted(requirement);
         
