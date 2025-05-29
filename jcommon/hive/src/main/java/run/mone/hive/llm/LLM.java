@@ -161,6 +161,7 @@ public class LLM {
             requestBody.remove("model");
         }
 
+        // former web search
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
             JsonObject tool = new JsonObject();
@@ -171,6 +172,11 @@ public class LLM {
             tools.add(tool);
             requestBody.add("tools", tools);
             systemPrompt = systemPrompt + "\n每个提问先通过web search，然后通过web search的结果，回答用户问题\n";
+        }
+
+        // live search (xai/grok)
+        if (clientConfig.getLiveSearchConfig() != null) {
+            requestBody.add("search_parameters", gson.toJsonTree(clientConfig.getLiveSearchConfig()));
         }
 
 
@@ -534,9 +540,12 @@ public class LLM {
 
         Request.Builder rb = new Request.Builder();
 
+        // 设置API key
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
             if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
                 rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else if (this.llmProvider == LLMProvider.MIFY) {
+                rb.addHeader("api-key", apiKey);
             } else {
                 rb.addHeader("Authorization", "Bearer " + apiKey);
             }
@@ -668,12 +677,20 @@ public class LLM {
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
                                 String content = "";
                                 try {
-                                    JsonObject delta = jsonResponse.getAsJsonArray("choices")
+                                    JsonArray choicesJson = jsonResponse.getAsJsonArray("choices");
+                                    if (choicesJson == null || choicesJson.isEmpty()) {
+                                        continue;
+                                    }
+                                    JsonObject delta = choicesJson
                                             .get(0).getAsJsonObject()
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
                                     if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
+                                        // 当Content为空并且设置了不输出思考内容时，直接跳过
+                                        if(!config.isReasoningOutPut()){
+                                            continue;
+                                        }
                                         JsonElement rc = delta.get("reasoning_content");
                                         if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();

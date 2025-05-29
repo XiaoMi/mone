@@ -281,6 +281,7 @@ public class HiveClient {
         private String result;
         private Long clientAgentId;
         private Long serverAgentId;
+        private String token;
     }
     
     /**

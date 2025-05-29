@@ -56,9 +56,10 @@ public class AgentConfig {
                 ))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(
-                        new ChatFunction(agentName),
+                        new ChatFunction(agentName, 20),
                         new MultimodalFunction(multimodalService, guiAgent)
                 ))
+                .checkFinishFunc(msg -> msg.getContent().contains("任务完成:") ? -1 : 1)
                 .build();
     }
 } 

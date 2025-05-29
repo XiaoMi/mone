@@ -4,7 +4,7 @@
     <div class="circuit-point point-1"></div>
     <div class="circuit-point point-2"></div>
     <div class="dashboard-header">
-      <button class="create-btn" @click="handleCreate">+ 创建任务</button>
+      <button class="create-btn" @click="handleCreate">+ TASK</button>
     </div>
 
     <div class="table-container">
@@ -17,7 +17,7 @@
           <div v-if="taskList.length === 0" :key="'empty'" class="empty-state">
             <div class="empty-content">
               <span class="empty-text">暂无任务数据</span><br/>
-              <button class="create-btn" @click="handleCreate">+ 创建任务</button>
+              <button class="create-btn" @click="handleCreate">创建TASK</button>
             </div>
           </div>
 
@@ -87,10 +87,7 @@
       title="修改任务"
       width="400px"
     >
-      <el-form :model="editForm" label-width="100px">
-        <el-form-item label="任务描述">
-          <el-input v-model="editForm.description"></el-input>
-        </el-form-item>
+      <el-form :model="editForm" label-width="70px">
         <el-form-item label="Agent">
           <el-select v-model="editForm.serverAgentId" placeholder="请选择">
             <el-option
@@ -100,6 +97,9 @@
               :value="item.agent.id"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="任务描述">
+          <el-input v-model="editForm.description" type="textarea" rows="2"></el-input>
         </el-form-item>
       </el-form>
 
@@ -691,20 +691,17 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.execute-btn {
-  background: var(--el-color-background-gradient);
-  border: none;
-  padding: 8px 16px;
+.task-actions button {
+  padding: 4px 8px;
   border-radius: 6px;
-  color: var(--el-color-white);
-  font-weight: bold;
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.3s;
 }
 
-.execute-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 0 15px var(--el-color-background-gradient);
+.execute-btn {
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .execute-btn:disabled {
@@ -714,19 +711,9 @@ onMounted(() => {
 }
 
 .edit-btn {
-  background: var(--el-color-background-gradient);
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  color: #0d1117;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
   margin-left: 10px;
-}
-
-.edit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
 }
 </style>

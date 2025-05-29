@@ -75,7 +75,7 @@ public class LogFile implements ILogFile {
         this.lineNumber = lineNumber;
     }
 
-    private void open() {
+    private void open() throws FileNotFoundException {
         try {
             //日志文件进行切分时，减少FileNotFoundException概率,这个应该删掉了,在使用前保证就好了，由于历史原因,降低了休眠时间
 //            TimeUnit.SECONDS.sleep(1);
@@ -87,6 +87,7 @@ public class LogFile implements ILogFile {
 //            log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
             log.error("open file FileNotFoundException", e);
+            throw e;
         } catch (IOException e) {
             log.error("open file IOException", e);
         }
@@ -173,8 +174,13 @@ public class LogFile implements ILogFile {
                     break;
                 }
             } catch (Exception e) {
-                raf.close();
+                if (raf != null) {
+                    raf.close();
+                }
                 log.error("readLine error", e);
+                if (e instanceof FileNotFoundException) {
+                    throw e;
+                }
             }
         }
     }

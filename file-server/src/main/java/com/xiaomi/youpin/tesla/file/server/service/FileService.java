@@ -2,8 +2,10 @@ package com.xiaomi.youpin.tesla.file.server.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.xiaomi.youpin.tesla.file.server.common.Cons;
+import com.xiaomi.youpin.tesla.file.server.utils.DirUtils;
 import io.netty.channel.ChannelHandlerContext;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +27,7 @@ public class FileService {
     
     // Regex pattern to validate that string only contains alphanumeric characters and hyphens
     private static final Pattern VALID_KEY_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-]+$");
-    
+
     /**
      * Validates if a string contains only alphanumeric characters and hyphens
      * 
@@ -50,16 +52,17 @@ public class FileService {
                 BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
                 return;
             }
-            
 
-            // Construct the base path for this user
-            String basePath = Cons.DATAPATH + File.separator + userKey;
+            // Validate directory path if provided
+            if (StringUtils.isNotEmpty(directoryPath)) {
+                if (!DirUtils.isValidDirectoryPath(directoryPath)) {
+                    BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                    return;
+                }
+            }
 
             // If directory path is provided, append it to the base path
-            String targetPath = basePath;
-            if (directoryPath != null && !directoryPath.isEmpty()) {
-                targetPath = basePath + File.separator + directoryPath;
-            }
+            String targetPath = DirUtils.dirPath(userKey, directoryPath);
 
             File directory = new File(targetPath);
             if (!directory.exists() || !directory.isDirectory()) {
@@ -104,12 +107,20 @@ public class FileService {
      * @param userKey User key for file organization
      * @param name    Name of the file or directory to delete
      */
-    public void deleteFile(ChannelHandlerContext ctx, String userKey, String name) {
+    public void deleteFile(ChannelHandlerContext ctx, String userKey, String directoryPath, String name) {
         try {
             // Validate userKey
             if (!isValidKeyFormat(userKey)) {
                 BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
                 return;
+            }
+
+            // Validate directory path if provided
+            if (StringUtils.isNotEmpty(directoryPath)) {
+                if (!DirUtils.isValidDirectoryPath(directoryPath)) {
+                    BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                    return;
+                }
             }
             
             // Validate name
@@ -119,7 +130,7 @@ public class FileService {
             }
             
             // Construct the full path to the file
-            String filePath = Cons.DATAPATH + File.separator + userKey + File.separator + name;
+            String filePath = DirUtils.filePath(userKey, directoryPath, name);
 
             File file = new File(filePath);
             if (!file.exists()) {
@@ -148,6 +159,111 @@ public class FileService {
         } catch (Exception e) {
             log.error("Error deleting file: {}", e.getMessage(), e);
             BaseService.send(ctx, "error:Failed to delete file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Create a new directory
+     *
+     * @param ctx           Channel context
+     * @param userKey       User key for file organization
+     * @param directoryName Name of the directory to create
+     */
+    public void createDirectory(ChannelHandlerContext ctx, String userKey, String directoryName) {
+        try {
+            // Validate userKey
+            if (!isValidKeyFormat(userKey)) {
+                BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
+                return;
+            }
+            
+            // Validate directory name
+            if (StringUtils.isEmpty(directoryName) || !DirUtils.isValidDirectoryPath(directoryName)) {
+                BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                return;
+            }
+
+            // Construct the full path for the new directory
+            String directoryPath = Cons.DATAPATH + File.separator + userKey + File.separator + directoryName;
+            File directory = new File(directoryPath);
+
+            // Check if directory already exists
+            if (directory.exists()) {
+                BaseService.send(ctx, "error:Directory already exists: " + directoryName);
+                return;
+            }
+
+            // Create the directory
+            FileUtils.forceMkdir(directory);
+
+            // Send success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Directory created successfully");
+            response.put("path", directoryName);
+            BaseService.send(ctx, JSONObject.toJSONString(response));
+
+        } catch (Exception e) {
+            log.error("Error creating directory: {}", e.getMessage(), e);
+            BaseService.send(ctx, "error:Failed to create directory: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Delete a directory and all its contents
+     *
+     * @param ctx           Channel context
+     * @param userKey       User key for file organization
+     * @param directoryPath Path of the directory to delete
+     */
+    public void deleteDirectory(ChannelHandlerContext ctx, String userKey, String directoryPath) {
+        try {
+            // Validate userKey
+            if (!isValidKeyFormat(userKey)) {
+                BaseService.send(ctx, "error:Invalid userKey format. Only alphanumeric characters and hyphens are allowed.");
+                return;
+            }
+
+            // Validate directory path
+            if (StringUtils.isEmpty(directoryPath)) {
+                BaseService.send(ctx, "error:Directory path cannot be empty.");
+                return;
+            }
+            
+            if (!DirUtils.isValidDirectoryPath(directoryPath)) {
+                BaseService.send(ctx, "error:Invalid directory path format. Path can only contain alphanumeric characters, hyphens, and forward slashes.");
+                return;
+            }
+
+            // Construct the full path to the directory
+            String dirPath = DirUtils.dirPath(userKey, directoryPath);
+            File directory = new File(dirPath);
+
+            // Check if directory exists
+            if (!directory.exists()) {
+                BaseService.send(ctx, "error:Directory not found: " + directoryPath);
+                return;
+            }
+
+            // Verify it's actually a directory
+            if (!directory.isDirectory()) {
+                BaseService.send(ctx, "error:Path is not a directory: " + directoryPath);
+                return;
+            }
+
+            // Delete the directory and all its contents
+            FileUtils.deleteDirectory(directory);
+
+            // Send success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Directory deleted successfully");
+            response.put("path", directoryPath);
+            BaseService.send(ctx, JSONObject.toJSONString(response));
+
+        } catch (Exception e) {
+            log.error("Error deleting directory: {}", e.getMessage(), e);
+            BaseService.send(ctx, "error:Failed to delete directory: " + e.getMessage());
         }
     }
 }

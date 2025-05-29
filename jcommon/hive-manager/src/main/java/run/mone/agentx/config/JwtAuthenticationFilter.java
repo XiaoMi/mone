@@ -56,6 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals("/api/v1/tasks/execute") ||
                 path.equals("/api/v1/agents/unregister") ||
                 path.equals("/api/v1/agents/register") ||
+                path.equals("/api/v1/agents/config") ||
                 path.equals("/error")) {
             filterChain.doFilter(request, response);
             return;

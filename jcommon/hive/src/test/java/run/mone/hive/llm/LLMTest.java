@@ -187,30 +187,35 @@ class LLMTest {
     @Test
     public void testImg() {
         llm.getConfig().setTemperature((double) 0);
-        String img = llm.imageToBase64("/tmp/abc.png", "png");
+        String img = llm.imageToBase64("/tmp/ddd.png", "png");
         LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(
                 """
                         请提取并整理这张IM聊天截图中的对话内容：
                         
-                        1. 图片从上到下按时间顺序排列，最早消息在顶部，最新消息在底部
-                        2. 如果图片包含多页截图拼接（可能由红线或其他明显标记分隔），请识别并去除拼接处的重复内容
-                        3. 【重要】必须提取截图最底部显示的消息，无论其内容长短，这是时间上最新的一条消息，具有最高优先级
-                        4. 特别注意查找截图底部可能出现的简短回复（如"好的"、"你好"、"谢谢"等单句消息），这些短消息同样重要
-                        5. 按发送方区分内容，并包含消息时间，使用以下格式整理：
-                           - [发送方A] [时间]：[消息内容]
-                           - [发送方B] [时间]：[消息内容]
-                        6. 根据聊天气泡的位置和样式识别发送方：
-                           - 通常右侧气泡（如蓝色气泡）为一方
-                           - 左侧气泡（可能为灰色或其他颜色）为另一方
-                        7. 提取每条消息旁显示的时间，如果消息只显示具体时间（如"18:32"）没有日期，则只提取这个时间
-                        8. 保持消息的原始时间顺序，确保对话逻辑连贯
-                        9. 如有消息包含链接、图片描述或特殊格式，请完整保留
-                        10. 在提取完成后，请特别核对截图最底部是否有任何消息未被提取，包括单词短句
+                                                          1. 首先，从截图左上角识别客户信息，通常会显示为"[客户名称]@微信"或类似格式。提取出客户的实际名称，用于后续标记客户发送的消息。
+                                                          2. 图片从上到下按时间顺序排列，最早消息在顶部，最新消息在底部
+                                                          3. 如果图片包含多页截图拼接（可能由红线或其他明显标记分隔），请识别并去除拼接处的重复内容
+                                                          4. 【重要】必须提取截图最底部显示的消息，无论其内容长短，这是时间上最新的一条消息，具有最高优先级
+                                                          5. 特别注意查找截图底部可能出现的简短回复（如"好的"、"你好"、"谢谢"等单句消息），这些短消息同样重要
+                                                          6. 按发送方区分内容，并包含消息时间，使用以下固定格式整理：
+                                                             - [客服] [时间]：[消息内容]  (通常为右侧气泡，如蓝色气泡)
+                                                             - [[客户名称]] [时间]：[消息内容]  (通常为左侧气泡，使用从左上角提取的实际客户名称)
+                                                          7. 识别发送方的规则：
+                                                             - 右侧气泡（通常为蓝色或绿色）一律标记为 [客服]
+                                                             - 左侧气泡（通常为灰色或白色）一律标记为 [[客户名称]]，使用在步骤1中提取的客户实际名称
+                                                             - 如果无法提取到客户名称，则使用 [客户] 作为默认标记
+                                                          8. 提取每条消息旁显示的时间，如果消息只显示具体时间（如"18:32"）没有日期，则只提取这个时间
+                                                          9. 保持消息的原始时间顺序，确保对话逻辑连贯
+                                                          10. 如有消息包含链接、图片描述或特殊格式，请完整保留
+                                                          11. 在提取完成后，请特别核对截图最底部是否有任何消息未被提取，包括单词短句
                         
-                        最后，请在回答的末尾明确标注出最新一条消息是什么，格式为：
-                        "最新消息：[发送方] [时间]：[消息内容]"
+                                                          最后，请在回答的开头标明客户信息，格式为：
+                                                          "客户信息：[客户名称]"
                         
-                        请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
+                                                          并在回答的末尾明确标注出最新一条消息，格式为：
+                                                          "最新消息：[发送方] [时间]：[消息内容]"
+                        
+                                                          请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
                         """
                 , Message.builder()
                 .images(Lists.newArrayList(
@@ -220,7 +225,7 @@ class LLMTest {
 
         List<String>list = new ArrayList<>();
         IntStream.range(0,10).forEach(it->{
-            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容").collect(Collectors.joining()).block();
+            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
             System.out.println(str);
             list.add(str);
         });
@@ -273,16 +278,16 @@ class LLMTest {
     }
 
     @Test
-    public void testClaude35() {
+    public void testClaude() {
         ClaudeProxy claudeProxy = new ClaudeProxy();
-        claudeProxy.initGCPClaude("Claude-3.5-Sonnet-company-inner");
+        String model = "Claude-4-Sonnet";
+        claudeProxy.initGCPClaude(model);
 
-        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好").build());
-
-        String result = claudeProxy.callGCP("Claude-3.5-Sonnet-company-inner", msgs);
+        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好, 44+22是多少").build());
+        String result = claudeProxy.callGCP(model, msgs);
         System.out.println(result);
 
-        String apiKey = getClaudeKey("Claude-3.5-Sonnet-company-inner");
+        String apiKey = getClaudeKey(model);
 
         StringBuilder responseBuilder = new StringBuilder();
         List<JsonObject> jsonResponses = new ArrayList<>();
@@ -295,7 +300,7 @@ class LLMTest {
         llm.chatCompletionStream(
                 apiKey,
                 msgs,
-                "Claude-3.5-Sonnet-company-inner",
+                model,
                 (content, jsonResponse) -> {
                     if ("[DONE]".equals(content)) {
                         latch.countDown();

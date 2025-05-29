@@ -11,8 +11,10 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.adapter.standard.StandardWebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentAccessService;
+import run.mone.agentx.service.AgentService;
 import run.mone.agentx.service.McpService;
 import run.mone.agentx.dto.McpRequest;
 import run.mone.hive.common.GsonUtils;
@@ -27,6 +29,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final McpService mcpService;
     private final AgentAccessService agentAccessService;
+    private final AgentService agentService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -84,14 +87,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
             toolData.setUserId(userId);
             toolData.setAgentId(String.valueOf(request.getAgentId()));
 
-            if (!agentAccessService.validateAccess(request.getAgentId(), userId).block()) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "用户没有权限访问该Agent");
+            Agent agent = agentService.findById(request.getAgentId()).block();
+            if (!agent.getIsPublic()) {
+                if (!agentAccessService.validateAccess(request.getAgentId(), userId).block()) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "用户没有权限访问该Agent");
+                }
             }
 
             // 创建消息适配器并直接调用MCP服务
             McpMessageSink sink = new McpMessageSink(session);
             String userName = session.getAttributes().getOrDefault("userName", "").toString();
-            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), toolData, sink);
+            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), payload, toolData, sink);
             sink.complete();
         } catch (Exception e) {
             log.error("Error processing MCP request", e);

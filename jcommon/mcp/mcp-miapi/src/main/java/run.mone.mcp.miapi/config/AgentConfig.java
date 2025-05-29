@@ -24,7 +24,7 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ApiInfoTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName)))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
                 .build();
     }
 

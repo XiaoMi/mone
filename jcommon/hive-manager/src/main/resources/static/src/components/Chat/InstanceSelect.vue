@@ -88,6 +88,7 @@ const confirmOffline = () => {
             type: 'warning',
         }
     ).then(() => {
+        setMessageList([]);
         props.onOffline?.();
     }).catch(() => {
         // 用户取消操作
