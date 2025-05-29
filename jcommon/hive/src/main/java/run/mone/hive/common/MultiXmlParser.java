@@ -18,52 +18,44 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MultiXmlParser {
-    private static final Pattern XML_PATTERN = Pattern.compile("<(\\w+)>(.*?)(?:</\\1>|$)", Pattern.DOTALL);
-    private static final Pattern KEY_VALUE_PATTERN = Pattern.compile("<(\\w+)>(.*?)(?:</\\1>|$)", Pattern.DOTALL);
+
     public static final String MULTI_MESSAGE_SPLIT_CHAR = ":·:";
 
     public List<ToolDataInfo> parse(String input) {
         if (StringUtils.isEmpty(input)) {
             return Lists.newArrayList();
         }
-        String outerTag = null;
-        Matcher xmlMatcher = XML_PATTERN.matcher(input);
-
+        
         List<ToolDataInfo> list = new ArrayList<>();
-
-        while (xmlMatcher.find()) {
-            outerTag = xmlMatcher.group(1);
-            String xmlContent = xmlMatcher.group(2);
-            Map<String, String> keyValuePairs = extractKeyValuePairs(xmlContent);
+        
+        // Find all top-level tags
+        Matcher outerMatcher = Pattern.compile("<(\\w+)>(.*?)</\\1>", Pattern.DOTALL).matcher(input);
+        
+        while (outerMatcher.find()) {
+            String outerTag = outerMatcher.group(1);
+            String outerContent = outerMatcher.group(2);
+            
+            // Parse each tag's content
+            Map<String, String> keyValuePairs = new LinkedHashMap<>();
+            Matcher innerMatcher = Pattern.compile("<(\\w+)>(.*?)</\\1>", Pattern.DOTALL).matcher(outerContent);
+            
+            while (innerMatcher.find()) {
+                String key = innerMatcher.group(1);
+                String value = innerMatcher.group(2);
+                
+                String exists = keyValuePairs.get(key);
+                if (null != exists) {
+                    exists = exists + MULTI_MESSAGE_SPLIT_CHAR + value.trim();
+                    keyValuePairs.put(key, exists);
+                } else {
+                    keyValuePairs.put(key, value.trim());
+                }
+            }
+            
             list.add(new ToolDataInfo(outerTag, keyValuePairs));
         }
+        
         return list;
-    }
-
-    private Map<String, String> extractKeyValuePairs(String xmlContent) {
-        Map<String, String> keyValuePairs = new LinkedHashMap<>();
-        Matcher keyValueMatcher = KEY_VALUE_PATTERN.matcher(xmlContent);
-
-        while (keyValueMatcher.find()) {
-            String key = keyValueMatcher.group(1);
-            String value = keyValueMatcher.group(2);
-
-            // 递归处理嵌套的XML结构
-            if (value.contains("<") && value.contains(">")) {
-                Map<String, String> nestedPairs = extractKeyValuePairs(value);
-                value = nestedPairs.toString();
-            }
-
-            String exists = keyValuePairs.get(key);
-            if (null != exists) {
-                exists = exists + MULTI_MESSAGE_SPLIT_CHAR + value.trim();
-                keyValuePairs.put(key, exists);
-            } else {
-                keyValuePairs.put(key, value.trim());
-            }
-        }
-
-        return keyValuePairs;
     }
 
     @SneakyThrows

@@ -4,16 +4,40 @@
     <div class="circuit-point point-1"></div>
     <div class="circuit-point point-2"></div>
     <div class="dashboard-header">
-      <div class="title-container">
-        <h1>⚡ AGENT 控制中心</h1>
-        <div class="animated-underline"></div>
+      <div class="search-bar">
+        <el-input
+          type="text"
+          size="large"
+          v-model="searchQuery"
+          @input="handleSearch"
+          placeholder="搜索 Agent...">
+          <template #append>
+            <el-select
+              v-model="agentType"
+              size="large"
+              class="type-search"
+            >
+              <el-option
+                key="0"
+                label="全部"
+                value="0"
+              />
+              <el-option
+                key="1"
+                label="收藏"
+                value="1"
+              />
+            </el-select>
+          </template>
+        </el-input>
       </div>
-      <div class="header-actions">
-        <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
-        <!-- <div class="search-bar">
-          <input type="text" placeholder="搜索 Agent...">
-        </div> -->
-      </div>
+      <button class="create-btn" @click="handleCreate">+ AGENT</button>
+    </div>
+    <div class="agent-list-type">
+      <!-- <el-radio-group v-model="agentType" size="small" class="custom-radio-group" @change="fetchAgents">
+        <el-radio-button label="全部" value="0" />
+        <el-radio-button label="收藏" value="1" />
+      </el-radio-group> -->
     </div>
 
     <div class="table-container">
@@ -26,19 +50,19 @@
           <div v-if="agentList.length === 0" :key="'empty'" class="empty-state">
             <div class="empty-content">
               <span class="empty-text">暂无Agent数据</span><br/>
-              <button class="create-btn" @click="handleCreate">+ 创建 AGENT</button>
+              <button v-if="agentType === '0'" class="create-btn" @click="handleCreate">创建 AGENT</button>
             </div>
           </div>
-          
-          <div v-for="item in agentList" 
-               :key="item.agent.id" 
+
+          <div v-for="item in agentList"
+               :key="item.agent.id"
                class="agent-card"
                @click.stop="handleChat(item)">
             <div class="agent-info">
               <div class="agent-avatar">
-                <img v-if="item.agent.image" 
-                     :src="`data:image/jpeg;base64,${item.agent.image}`" 
-                     class="agent-logo" 
+                <img v-if="item.agent.image"
+                     :src="`data:image/jpeg;base64,${item.agent.image}`"
+                     class="agent-logo"
                      alt="agent logo"/>
                 <div v-else class="agent-logo-placeholder">
                   {{ item.agent.name.charAt(0).toUpperCase() }}
@@ -87,10 +111,18 @@
             </div>
 
             <div class="control-buttons">
-              <button class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
-              <button class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
-              <button class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
+              <button size="small" class="edit-btn" @click.stop="handleEdit(item.agent)">编辑</button>
+              <button size="small" class="delete-btn" @click.stop="handleDelete(item.agent)">删除</button>
+              <button size="small" class="task-btn" @click.stop="handleTask(item.agent)">任务</button>
+              <button size="small" class="history-btn" @click.stop="handleHistory(item.agent)">记录</button>
             </div>
+
+            <div class="favorite-container">
+                <el-icon :size="16" @click.stop="handleFavorite(item, $event)">
+                  <Star v-if="!item.isFavorite" color="#6c6c6c"/>
+                  <StarFilled v-else color="#00f0ff"/>
+                </el-icon>
+              </div>
           </div>
         </TransitionGroup>
       </div>
@@ -104,21 +136,21 @@
     >
       <el-form :model="agentForm" label-width="80px">
         <el-form-item label="名称">
-          <el-input 
-            v-model="agentForm.name" 
+          <el-input
+            v-model="agentForm.name"
             placeholder="请输入Agent名称"
           />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input 
-            v-model="agentForm.description" 
-            type="textarea" 
+          <el-input
+            v-model="agentForm.description"
+            type="textarea"
             placeholder="请输入Agent描述信息"
           />
         </el-form-item>
         <el-form-item label="Agent URL">
-          <el-input 
-            v-model="agentForm.agentUrl" 
+          <el-input
+            v-model="agentForm.agentUrl"
             placeholder="请输入Agent的URL地址"
           />
         </el-form-item>
@@ -153,21 +185,33 @@
       :agent="selectedAgent"
     />
   </div>
+  <invoke-history
+    v-model="historyVisible"
+    :agentId="historyAgentId"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAgentList, createAgent, updateAgent, deleteAgent } from '@/api/agent'
+import { getAgentList, createAgent, updateAgent, deleteAgent, getInvokeHistory, addFavorite, deleteFavorite } from '@/api/agent'
 import type { Agent } from '@/api/agent'
 import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Star, StarFilled } from '@element-plus/icons-vue'
 import { v4 as uuidv4 } from "uuid";
 import Instances from '@/components/Instances.vue'
+import { useUserStore } from '@/stores/user'
+import InvokeHistory from '@/components/InvokeHistory.vue'
+
+const {user} = useUserStore()
+
+import { useTheme } from '@/styles/theme/useTheme'
+
 const agentList = ref<{
   agent: Agent,
   instances: Array<any>
+  isFavorite: boolean
 }[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -184,21 +228,32 @@ const selectedAgent = ref<Agent | null>(null)
 const router = useRouter()
 const imageUrl = ref('')
 const imageFile = ref<File | null>(null)
+const searchQuery = ref('')
+const searchTimeout = ref<number | null>(null)
+const agentType = ref('0')
+const historyVisible = ref(false)
+const historyAgentId = ref(0)
+
+// 获取主题
+const { currentTheme } = useTheme()
 
 const fetchAgents = async () => {
   loading.value = true
   try {
-    const response = await getAgentList() 
-    if (response.data.code === 200) {
-      agentList.value = response.data.data || []
-    } else {
-      ElMessage.error(response.data.message)
-    }
-  } catch {
+    const response = await getAgentList(searchQuery.value, agentType.value === '1')
+      if (response.data.code === 200) {
+        agentList.value = response.data.data || []
+      }
+  } catch (error) {
     ElMessage.error('获取Agent列表失败')
   } finally {
     loading.value = false
   }
+}
+
+const handleHistory = (agent: Agent) => {
+  historyAgentId.value = agent.id
+  historyVisible.value = true
 }
 
 const handleCreate = () => {
@@ -309,11 +364,8 @@ const handleTask = (agent: Agent) => {
 }
 
 const handleChat = (item: any) => {
-  if(item.instances?.length > 0) {  
-    router.push({
-      path: '/chat',
-      query: { serverAgentId: item.agent.id, conversationId: uuidv4() }
-    })
+  if(item.instances?.length > 0) {
+    window.open(`/agent-manager/chat?serverAgentId=${item.agent.id}&conversationId=${uuidv4()}`, '_blank')
   } else {
     ElMessage.warning('Agent未启动')
   }
@@ -345,6 +397,48 @@ const handleImageError = (error: any) => {
   // 处理图片上传失败后的逻辑
 }
 
+const handleSearch = () => {
+  // 清除之前的定时器
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+
+  // 设置新的定时器实现防抖
+  searchTimeout.value = setTimeout(() => {
+    fetchAgents()
+  }, 300) as unknown as number
+}
+
+const handleFavorite = async (item: {agent: Agent, isFavorite: boolean}, event: Event) => {
+  event.stopPropagation()
+  try {
+    const data = {
+      userId: user?.id,
+      type: 1,
+      targetId: item.agent.id
+    }
+
+    if (item.isFavorite) {
+      const response = await deleteFavorite(data)
+      if (response.data.code === 200) {
+        ElMessage.success('取消收藏成功')
+      }
+    } else {
+      const response = await addFavorite(data)
+      if (response.data.code === 200) {
+        ElMessage.success('收藏成功')
+      }
+    }
+    fetchAgents()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  }
+}
+
+watch(() => agentType.value, () => {
+  fetchAgents()
+})
+
 onMounted(() => {
   fetchAgents()
 })
@@ -352,10 +446,11 @@ onMounted(() => {
 
 <style scoped>
 .agent-list-container {
+  width: 100%;
   min-height: 100vh;
-  background: #0d1117;
-  color: #fff;
-  padding: 20px;
+  background: var(--el-color-chat-background);
+  color: var(--el-color-chat-text);
+  padding: 0 20px 12px;
   position: relative;
   overflow: hidden;
 }
@@ -366,9 +461,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    linear-gradient(rgba(0, 240, 255, 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.3) 1px, transparent 1px);
+  background-image:
+    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 40px 40px;
   animation: gridMove 20s linear infinite;
   transform-origin: center;
@@ -389,75 +484,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
   position: relative;
   z-index: 1;
-}
-
-.title-container {
-  position: relative;
-}
-
-.animated-underline {
-  position: absolute;
-  bottom: -10px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    #00f0ff 0%,
-    #b400ff 50%,
-    #00f0ff 100%
-  );
-  animation: progressLine 3s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-}
-
-@keyframes progressLine {
-  0% {
-    width: 0;
-    opacity: 0.6;
-    left: 0;
-  }
-  50% {
-    width: 100%;
-    opacity: 1;
-    left: 0;
-  }
-  51% {
-    width: 100%;
-    opacity: 1;
-    left: 0;
-  }
-  100% {
-    width: 0;
-    opacity: 0.6;
-    left: 100%;
-  }
+  margin-bottom: 12px;
 }
 
 .table-container {
-  height: calc(100vh - 140px);
+  height: calc(100vh - 126px);
   overflow-y: auto;
-}
-
-.dashboard-header h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 20px;
-  align-items: center;
 }
 
 .search-bar {
@@ -465,14 +499,69 @@ onMounted(() => {
   width: 300px;
 }
 
+.search-bar:deep(.el-input-group__append ){
+  padding: 0;
+  width: 60px;
+  background-color: transparent;
+  box-shadow: none !important;
+  border: 1px solid rgba(49, 232, 249, 0.3);
+  border-left: none !important;
+}
+.type-search {
+  border: none !important;
+}
+.type-search:deep(.el-select__wrapper) {
+  padding: 0;
+  background-color: transparent;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: none !important;
+}
+
+.type-search:deep(.el-select__wrapper) .el-select__selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.type-search:deep(.el-select__wrapper) .el-select__suffix {
+  display: none;
+}
+
 .search-bar input {
   width: 100%;
   padding: 12px 20px;
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  background: var(--el-color-chat-window-background);
+  border: 1px solid var(--el-color-chat-link-color);
   border-radius: 8px;
-  color: #fff;
+  color: var(--el-color-chat-text);
   font-size: 16px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.search-bar input:focus {
+  border-color: var(--el-color-chat-link-color);
+  box-shadow: 0 0 0 2px var(--el-color-chat-link-color-light),
+              0 0 15px var(--el-color-chat-link-color-light),
+              0 0 30px var(--el-color-chat-link-color-light);
+  background: var(--el-color-chat-window-background);
+}
+
+.search-bar::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--el-color-chat-link-color);
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
+}
+
+.search-bar input:focus + .search-bar::after {
+  width: 100%;
 }
 
 .scan-animation {
@@ -490,6 +579,7 @@ onMounted(() => {
   margin: 120px auto 0;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .empty-state .empty-text {
@@ -500,11 +590,11 @@ onMounted(() => {
 }
 
 .create-btn {
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
   border: none;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: 8px;
-  color: #0d1117;
+  color: var(--el-color-white);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
@@ -512,17 +602,17 @@ onMounted(() => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px var(--el-color-background-gradient);
 }
 
 .agent-card {
-  background: rgba(13, 17, 23, 0.7);
-  border: 1px solid rgba(0, 240, 255, 0.2);
+  background: var(--el-color-chat-window-background);
+  border: 1px solid var(--el-color-chat-link-color);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: 4fr 1fr 1fr 1fr 2fr 2fr;
+  grid-template-columns: 4fr 1fr 1fr 1fr 2fr 1.5fr;
   gap: 20px;
   align-items: center;
   transition: all 0.3s;
@@ -533,8 +623,8 @@ onMounted(() => {
 
 .agent-card:hover {
   transform: translateX(4px);
-  border-color: rgba(0, 240, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  border-color: var(--el-color-chat-link-color);
+  box-shadow: 0 0 20px var(--el-color-chat-link-color-light);
 }
 
 .agent-info {
@@ -543,12 +633,18 @@ onMounted(() => {
   gap: 15px;
 }
 
+.favorite-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
 .agent-avatar {
   width: 50px;
   height: 50px;
   border-radius: 10px;
   overflow: hidden;
-  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  background: var(--el-color-background-gradient);
 }
 
 .agent-logo {
@@ -574,7 +670,7 @@ onMounted(() => {
 .agent-details h4 {
   font-size: 18px;
   margin-bottom: 5px;
-  color: #63f5ff;
+  color: var(--el-color-chat-link-color);
   position: relative;
   display: inline-block;
 }
@@ -586,15 +682,12 @@ onMounted(() => {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
+  background: var(--el-color-chat-link-color);
   transition: width 0.3s ease;
 }
 
 .agent-details h4:hover {
-  background: linear-gradient(90deg, #00f0ff, #b400ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--el-color-chat-link-color-light);
 }
 
 .agent-details h4:hover::after {
@@ -602,7 +695,7 @@ onMounted(() => {
 }
 
 .agent-details p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--el-color-chat-text-secondary);
   font-size: 14px;
 }
 
@@ -624,13 +717,13 @@ onMounted(() => {
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--el-color-chat-window-background);
 }
 
 .badge.public {
-  background: rgba(0, 240, 255, 0.1);
-  color: #00f0ff;
-  border: 1px solid #00f0ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .control-buttons {
@@ -639,29 +732,35 @@ onMounted(() => {
 }
 
 .control-buttons button {
-  padding: 8px 16px;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .edit-btn {
-  background: rgba(0, 240, 255, 0.1);
-  color: #00f0ff;
-  border: 1px solid #00f0ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 .delete-btn {
-  background: rgba(255, 85, 85, 0.1);
-  color: #ff5555;
-  border: 1px solid #ff5555;
+  background: var(--el-color-danger-light);
+  color: var(--el-color-danger);
+  border: 1px solid var(--el-color-danger);
 }
 
 .task-btn {
-  background: rgba(180, 0, 255, 0.1);
-  color: #b400ff;
-  border: 1px solid #b400ff;
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
+}
+
+.history-btn {
+  background: var(--el-color-chat-link-color-light);
+  color: var(--el-color-chat-link-color);
+  border: 1px solid var(--el-color-chat-link-color);
 }
 
 @keyframes scan {
@@ -682,12 +781,12 @@ onMounted(() => {
     grid-template-columns: 1fr;
     gap: 15px;
   }
-  
+
   .header-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .search-bar {
     width: 100%;
   }
@@ -699,15 +798,15 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #00f0ff;
+  color: var(--el-color-chat-link-color);
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
   margin-bottom: 16px;
-  border: 3px solid rgba(0, 240, 255, 0.1);
-  border-top: 3px solid #00f0ff;
+  border: 3px solid var(--el-color-chat-link-color-light);
+  border-top: 3px solid var(--el-color-chat-link-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -721,13 +820,13 @@ onMounted(() => {
   position: absolute;
   width: 6px;
   height: 6px;
-  background: #00f0ff;
+  background: var(--el-color-chat-link-color);
   border-radius: 50%;
   filter: blur(1px);
-  box-shadow: 
-    0 0 10px #00f0ff,
-    0 0 20px #00f0ff,
-    0 0 30px rgba(0, 240, 255, 0.5);
+  box-shadow:
+    0 0 10px var(--el-color-chat-link-color),
+    0 0 20px var(--el-color-chat-link-color),
+    0 0 30px var(--el-color-chat-link-color-light);
   opacity: 0;
   z-index: 0;
   &::before {
@@ -738,7 +837,7 @@ onMounted(() => {
     transform: translate(-50%, -50%);
     width: 12px;
     height: 12px;
-    background: rgba(0, 240, 255, 0.3);
+    background: var(--el-color-chat-link-color-light);
     border-radius: 50%;
     filter: blur(2px);
   }
@@ -751,8 +850,8 @@ onMounted(() => {
     height: 2px;
     background: linear-gradient(
       270deg,
-      rgba(0, 240, 255, 0.8),
-      rgba(0, 240, 255, 0)
+      var(--el-color-chat-link-color),
+      var(--el-color-chat-link-color-light)
     );
     transform-origin: right center;
     transform: translateY(-50%);
@@ -866,5 +965,52 @@ onMounted(() => {
   45.1%, 60% { transform: translateY(-50%) rotate(180deg); }
   60.1%, 75% { transform: translateY(-50%) rotate(-90deg); }
   75.1%, 90% { transform: translateY(-50%) rotate(180deg); }
+}
+
+/* 自定义单选按钮组样式 */
+.custom-radio-group :deep(.el-radio-button__inner) {
+  background: rgba(13, 17, 23, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.custom-radio-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #00f0ff, #b400ff);
+  border-color: transparent;
+  box-shadow: -1px 0 0 0 transparent;
+  color: #0d1117;
+  font-weight: bold;
+  border-right: none;
+}
+
+.custom-radio-group :deep(.el-radio-button__inner:hover) {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+  color: #00f0ff;
+}
+
+.favorite-btn {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.favorite-btn:hover {
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.1);
+}
+
+.favorite-btn.is-favorite {
+  color: #00f0ff;
+}
+
+.favorite-btn.is-favorite:hover {
+  color: #ff5555;
+  background: rgba(255, 85, 85, 0.1);
 }
 </style>

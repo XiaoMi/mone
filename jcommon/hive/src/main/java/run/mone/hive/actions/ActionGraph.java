@@ -21,6 +21,8 @@ public class ActionGraph {
     private List<String> executionOrder;
     private Map<String, CompletableFuture<Message>> results;
 
+    private ActionGraphContext context = new ActionGraphContext();
+
     public ActionGraph() {
         this.nodes = new HashMap<>();
         this.edges = new HashMap<>();
@@ -122,7 +124,9 @@ public class ActionGraph {
                 sb.append("\n").append("其他上下文 开始").append("\n");
                 node.getExprs().forEach(it -> {
                     ActionNode n = this.getNodes().get(it.getKey());
+                    //提取出来的值
                     JsonElement je = n.extractValue(it.isInput(), it.getExpr());
+                    it.setValue(je);
                     sb.append("\n").append(null != it.getDesc() ? it.getDesc() : it.getExpr()).append(":").append(je.toString());
                 });
                 sb.append("\n").append("其他上下文 结束").append("\n");
@@ -137,6 +141,7 @@ public class ActionGraph {
 
 
                 node.setContext(sb.toString());
+                node.setGraphContext(ActionGraph.this.context);
 
                 // 执行当前节点
                 return node.run().join();

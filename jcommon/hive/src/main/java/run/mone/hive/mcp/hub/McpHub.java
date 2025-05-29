@@ -27,9 +27,13 @@ import java.util.function.Consumer;
 @Data
 @Slf4j
 public class McpHub {
+
     private final Map<String, McpConnection> connections = new ConcurrentHashMap<>();
+
     private final Path settingsPath;
+
     private WatchService watchService;
+
     private volatile boolean isConnecting = false;
 
     //使用grpc连接mcp
@@ -58,7 +62,19 @@ public class McpHub {
 
         //用来发ping
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping())));
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping(), ex -> {
+                if (null == ex) {
+                    value.setErrorNum(0);
+                } else {
+                    //发生错误了
+                    value.setErrorNum(value.getErrorNum() + 1);
+                    if (value.getErrorNum() >= 3) {
+                        this.connections.remove(key);
+                        value.getTransport().close();
+                        McpHubHolder.remove(key);
+                    }
+                }
+            })));
         }, 5, 5, TimeUnit.SECONDS);
     }
 
@@ -332,8 +348,8 @@ public class McpHub {
             toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
-            return Flux.create(sink->{
-                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)),true));
+            return Flux.create(sink -> {
+                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)), true));
                 sink.complete();
             });
         }

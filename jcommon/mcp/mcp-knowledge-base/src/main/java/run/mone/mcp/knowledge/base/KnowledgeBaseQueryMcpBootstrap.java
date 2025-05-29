@@ -10,10 +10,6 @@ import org.springframework.context.annotation.ComponentScan;
 @Slf4j
 public class KnowledgeBaseQueryMcpBootstrap {
     public static void main(String[] args) {
-        try {
-            SpringApplication.run(KnowledgeBaseQueryMcpBootstrap.class, args);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
+        SpringApplication.run(KnowledgeBaseQueryMcpBootstrap.class, args);
     }
 }

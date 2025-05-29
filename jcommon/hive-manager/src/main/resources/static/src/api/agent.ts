@@ -59,13 +59,25 @@ export interface Access {
   utime: number
 }
 
+// 配置接口定义
+export interface AgentConfig {
+  id: number
+  agentId: number
+  userId: number
+  key: string
+  value: string
+  createdAt: string
+  updatedAt: string
+}
+
 // 获取Agent列表
-export const getAgentList = () => {
+export const getAgentList = (name: string = "", isFavorite: boolean = false) => {
   return Service<IResponse<{
     agent: Agent,
     instances: Array<any>
+    isFavorite: boolean
 }[]>>({
-    url: '/v1/agents/list',
+    url: '/v1/agents/list?name='+name+'&isFavorite='+isFavorite,
     method: 'get'
   })
 }
@@ -101,6 +113,7 @@ export const getAgentDetail = (id: number) => {
   return Service<IResponse<{
     agent: Agent,
     instances: Array<any>
+    isFavorite: boolean
   }>>({
     url: `/v1/agents/${id}`,
     method: 'get'
@@ -190,5 +203,94 @@ export const clearHistory = (data) => {
     url: `/v1/agents/clearHistory`,
     method: 'post',
     data
+  })
+}
+
+// 获取收藏列表
+export const favoriteList = (userId: number | string, type: number | string) => {
+  return Service<IResponse<{
+    agent: Agent,
+    instances: Array<any>
+    isFavorite: boolean
+}[]>>({
+    url: `/favorite/list?userId=${userId}&type=${type}`,
+    method: 'get',
+  })
+}
+
+
+// 添加收藏
+export const addFavorite = (data: {
+  userId: number | string
+  type: number | string
+  targetId: number | string
+}) => {
+  return Service<IResponse<string>>({
+    url: `/favorite/add`,
+    method: 'post',
+    data
+  })
+}
+
+// 删除收藏
+export const deleteFavorite = (data: {
+  userId: number | string
+  type: number | string
+  targetId: number | string
+}) => {
+  return Service<IResponse<string>>({
+    url: `/favorite/remove`,
+    method: 'post',
+    data
+  })
+}
+
+// 获取配置列表
+export const getAgentConfigs = (agentId: number) => {
+  return Service<IResponse<AgentConfig[]>>({
+    url: `/v1/agents/${agentId}/config`,
+    method: 'get'
+  })
+}
+
+// 获取单个配置
+export const getAgentConfig = (agentId: number, key: string) => {
+  return Service<IResponse<AgentConfig>>({
+    url: `/v1/agents/${agentId}/config/${key}`,
+    method: 'get'
+  })
+}
+
+// 设置单个配置
+export const setAgentConfig = (agentId: number, key: string, value: string) => {
+  return Service<IResponse<AgentConfig>>({
+    url: `/v1/agents/${agentId}/config/${key}`,
+    method: 'post',
+    data: { value }
+  })
+}
+
+// 批量设置配置
+export const setBatchAgentConfig = (agentId: number, configs: Record<string, string>) => {
+  return Service<IResponse<void>>({
+    url: `/v1/agents/${agentId}/config/batch`,
+    method: 'post',
+    data: { configs }
+  })
+}
+
+// 删除配置
+export const deleteAgentConfig = (agentId: number, key: string) => {
+  return Service<IResponse<void>>({
+    url: `/v1/agents/${agentId}/config/${key}`,
+    method: 'delete'
+  })
+}
+
+
+export const getInvokeHistory = (agentId: number) => {
+  return Service<IResponse<void>>({
+    url: `/v1/invoke/history/${agentId}`,
+    method: 'get'
   })
 }

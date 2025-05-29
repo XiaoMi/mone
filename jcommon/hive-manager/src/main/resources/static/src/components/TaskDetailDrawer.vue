@@ -31,6 +31,10 @@
           {{task.status}}
         </div>
         <div class="detail-item">
+          <label>执行结果：</label>
+          <span>{{task.result}}</span>
+        </div>
+        <div class="detail-item">
           <label>创建时间：</label>
           <span>{{formatDate(task.ctime)}}</span>
         </div>

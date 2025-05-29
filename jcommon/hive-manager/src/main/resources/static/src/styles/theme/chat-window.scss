@@ -1,0 +1,51 @@
+// Light主题（默认）
+body .chat-container .sc-chat-window {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(100, 108, 255, 0.2) !important;
+  box-shadow: 0 0 30px rgba(100, 108, 255, 0.2) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+
+  &::before {
+    background: linear-gradient(45deg, var(--chat-window-before-gradient-light), var(--chat-window-before-gradient-dark), var(--chat-window-before-gradient-light), var(--chat-window-before-gradient-dark)) !important;
+    opacity: 0.5 !important;
+    animation: glowing-border 20s linear infinite !important;
+  }
+}
+
+// Dark主题
+html[data-theme='dark'] body .chat-container .sc-chat-window {
+  background: rgba(15, 15, 35, 0.7) !important;
+  border: 1px solid rgba(100, 100, 255, 0.2) !important;
+  box-shadow: 0 0 30px rgba(0, 100, 255, 0.3) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+
+  &::before {
+    background: linear-gradient(45deg, var(--chat-window-before-gradient-light), var(--chat-window-before-gradient-dark), var(--chat-window-before-gradient-light), var(--chat-window-before-gradient-dark)) !important;
+    opacity: 0.7 !important;
+    animation: glowing-border 20s linear infinite !important;
+  }
+}
+
+// Cyberpunk主题
+html[data-theme='cyberpunk'] body .chat-container .sc-chat-window {
+  background: rgba(15, 15, 35, 0.8) !important;
+  border: 1px solid rgba(0, 255, 157, 0.3) !important;
+  box-shadow: 0 0 40px rgba(0, 255, 157, 0.4) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+
+  &::before {
+    background: linear-gradient(45deg, var(--chat-window-before-gradient-light), var(--chat-window-before-gradient-dark), var(--chat-window-before-gradient-light), var(--chat-window-before-gradient-dark)) !important;
+    opacity: 0.8 !important;
+    animation: glowing-border 15s linear infinite !important;
+  }
+}
+
+// 确保动画在所有主题下都可用
+@keyframes glowing-border {
+  0% { background-position: 0 0; }
+  50% { background-position: 400% 0; }
+  100% { background-position: 0 0; }
+} 

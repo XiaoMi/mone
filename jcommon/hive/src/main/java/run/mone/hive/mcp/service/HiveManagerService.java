@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.HealthInfo;
@@ -16,97 +15,38 @@ import run.mone.hive.bo.TaskExecutionInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
 public class HiveManagerService {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final AtomicReference<String> token = new AtomicReference<>();
-
-    // 存储本地任务状态
     private final Map<String, TaskExecutionInfo> taskStatusCache = new ConcurrentHashMap<>();
 
     @Value("${hive.manager.base-url:http://127.0.0.1:8080}")
     private String baseUrl;
 
-    @Value("${hive.manager.username:dp11}")
-    private String username;
-
-    @Value("${hive.manager.password:123456}")
-    private String password;
+    @Value("${hive.manager.token:XX}")
+    private String token;
 
     @Value("${hive.manager.reg.switch:true}")
     private Boolean enableRegHiveManager;
 
     /**
-     * 每10分钟登录一次，获取新的token
-     */
-    @Scheduled(fixedRate = 600000, initialDelay = 20000) // 10分钟  20秒后执行
-    public void login() {
-        if (!enableRegHiveManager) {
-            return;
-        }
-
-        try {
-            log.info("Logging in to get token");
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, String> loginRequest = new HashMap<>();
-            loginRequest.put("username", username);
-            loginRequest.put("password", password);
-
-            HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
-
-            String loginUrl = baseUrl + "/api/v1/users/login";
-            Map<String, Object> response = restTemplate.postForObject(loginUrl, request, Map.class);
-
-            if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
-                Map<String, Object> data = (Map<String, Object>) response.get("data");
-                if (data.containsKey("token")) {
-                    String newToken = (String) data.get("token");
-                    token.set(newToken);
-                    log.info("Successfully obtained new token");
-                } else {
-                    log.error("Token not found in response: {}", response);
-                }
-            } else {
-                log.error("Invalid response format: {}", response);
-            }
-        } catch (Exception e) {
-            log.error("Error during login: {}", e.getMessage());
-        }
-    }
-
-    /**
      * 注册Agent
      */
     public void register(RegInfo regInfo) {
-
         if (!enableRegHiveManager) {
             return;
         }
 
         try {
-            String currentToken = token.get();
-            if (currentToken == null) {
-                log.warn("No token available, attempting to login first");
-                login();
-                currentToken = token.get();
-                if (currentToken == null) {
-                    log.error("Failed to obtain token for registration");
-                    return;
-                }
-            }
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + currentToken);
 
             // 将 RegInfo 转换为 RegInfoDto
             RegInfoDto regInfoDto = RegInfoDto.fromRegInfo(regInfo);
+            regInfoDto.setToken(token);
 
             HttpEntity<RegInfoDto> request = new HttpEntity<>(regInfoDto, headers);
 
@@ -128,23 +68,12 @@ public class HiveManagerService {
         }
 
         try {
-            String currentToken = token.get();
-            if (currentToken == null) {
-                log.warn("No token available, attempting to login first");
-                login();
-                currentToken = token.get();
-                if (currentToken == null) {
-                    log.error("Failed to obtain token for unregistration");
-                    return;
-                }
-            }
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + currentToken);
 
             // 将 RegInfo 转换为 RegInfoDto
             RegInfoDto regInfoDto = RegInfoDto.fromRegInfo(regInfo);
+            regInfoDto.setToken(token);
 
             HttpEntity<RegInfoDto> request = new HttpEntity<>(regInfoDto, headers);
 
@@ -161,26 +90,15 @@ public class HiveManagerService {
      * 发送心跳
      */
     public void heartbeat(HealthInfo healthInfo) {
-
         if (!enableRegHiveManager) {
             return;
         }
 
         try {
-            String currentToken = token.get();
-            if (currentToken == null) {
-                log.warn("No token available, attempting to login first");
-                login();
-                currentToken = token.get();
-                if (currentToken == null) {
-                    log.error("Failed to obtain token for heartbeat");
-                    return;
-                }
-            }
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + currentToken);
+
+            healthInfo.setToken(token);
 
             HttpEntity<HealthInfo> request = new HttpEntity<>(healthInfo, headers);
 
@@ -206,20 +124,9 @@ public class HiveManagerService {
         }
 
         try {
-            String currentToken = token.get();
-            if (currentToken == null) {
-                log.warn("No token available, attempting to login first");
-                login();
-                currentToken = token.get();
-                if (currentToken == null) {
-                    log.error("Failed to obtain token for sending task");
-                    return;
-                }
-            }
-
+            taskInfo.setToken(token);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + currentToken);
 
             HttpEntity<TaskExecutionInfo> request = new HttpEntity<>(taskInfo, headers);
 
@@ -251,29 +158,15 @@ public class HiveManagerService {
         }
 
         try {
-            String currentToken = token.get();
-            if (currentToken == null) {
-                log.warn("No token available, attempting to login first");
-                login();
-                currentToken = token.get();
-                if (currentToken == null) {
-                    log.error("Failed to obtain token for getting task status");
-                    return taskStatusCache.get(taskId);
-                }
-            }
-
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + currentToken);
 
-            String taskStatusUrl = baseUrl + "/api/v1/tasks/" + taskId + "/status";
-
+            String taskStatusUrl = baseUrl + "/api/v1/tasks/" + taskId + "/status?token=" + token;
             HttpEntity<?> request = new HttpEntity<>(headers);
             Map<String, Object> response = restTemplate.getForObject(taskStatusUrl, Map.class);
 
             if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
                 Map<String, Object> data = (Map<String, Object>) response.get("data");
-
                 TaskExecutionInfo updatedInfo = new TaskExecutionInfo();
                 updatedInfo.setTaskId(taskId);
                 updatedInfo.setStatus((String) data.get("status"));
@@ -282,7 +175,6 @@ public class HiveManagerService {
 
                 // 更新缓存
                 taskStatusCache.put(taskId, updatedInfo);
-
                 return updatedInfo;
             } else {
                 log.error("Invalid response format or task not found: {}", response);
@@ -292,6 +184,67 @@ public class HiveManagerService {
             log.error("Error during getting task status: {}", e.getMessage(), e);
             return taskStatusCache.get(taskId);
         }
+    }
+
+    /**
+     * 获取配置信息
+     *
+     * @param request 包含agentId和userId的请求参数Map
+     * @return 配置信息映射
+     */
+    public Map<String, String> getConfig(Map<String, String> request) {
+        if (!enableRegHiveManager) {
+            // 如果未启用HiveManager，返回默认配置
+            return getDefaultConfig(request);
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, String>> httpRequest = new HttpEntity<>(request, headers);
+            String configUrl = baseUrl + "/api/v1/agents/config";
+            Map<String, Object> response = restTemplate.postForObject(configUrl, httpRequest, Map.class);
+
+            log.info("Config retrieval response: {}", response);
+
+            if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
+                Map<String, Object> data = (Map<String, Object>) response.get("data");
+                Map<String, String> configs = new HashMap<>();
+                // 将 Object 类型的值转换为 String 类型
+                for (Map.Entry<String, Object> entry : data.entrySet()) {
+                    configs.put(entry.getKey(), String.valueOf(entry.getValue()));
+                }
+                return configs;
+            } else {
+                log.error("Invalid response format for config: {}", response);
+                return getDefaultConfig(request);
+            }
+        } catch (Exception e) {
+            log.error("Error during getting config: {}", e.getMessage(), e);
+            return getDefaultConfig(request);
+        }
+    }
+
+    /**
+     * 获取默认配置信息
+     * 当无法从HiveManager获取配置时使用
+     *
+     * @param request 包含agentId和userId的请求参数Map
+     * @return 默认配置信息映射
+     */
+    private Map<String, String> getDefaultConfig(Map<String, String> request) {
+        Map<String, String> defaultConfig = new HashMap<>();
+        // 从请求中获取agentId和userId
+        if (request.containsKey("agentId")) {
+            defaultConfig.put("agentId", String.valueOf(request.get("agentId")));
+        }
+        if (request.containsKey("userId")) {
+            defaultConfig.put("userId", String.valueOf(request.get("userId")));
+        }
+        defaultConfig.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        log.info("Using default config for request: {}", request);
+        return defaultConfig;
     }
 
     /**
@@ -313,7 +266,6 @@ public class HiveManagerService {
                 runningInfo.setStatus("RUNNING");
                 runningInfo.setStatusMessage("任务正在执行中...");
                 runningInfo.setMetadata(taskInfo.getMetadata());
-
                 taskStatusCache.put(taskInfo.getTaskId(), runningInfo);
                 log.info("任务 {} 开始执行", taskInfo.getTaskId());
 
@@ -340,7 +292,6 @@ public class HiveManagerService {
                 }
 
                 taskStatusCache.put(taskInfo.getTaskId(), finalInfo);
-
             } catch (InterruptedException e) {
                 log.warn("模拟任务执行被中断: {}", e.getMessage());
                 Thread.currentThread().interrupt();

@@ -19,7 +19,7 @@ spring:
   profiles:
     active: dev
   r2dbc:
-    url: r2dbc:mysql://${TEST_DB_URL}/mone_agentx
+    url: r2dbc:mysql://${TEST_DB_URL}/${TEST_DB_NAME}
     username: ${TEST_DB_USER_NAME}
     password: ${TEST_DB_PASSWORD}
   sql:
@@ -35,7 +35,6 @@ spring:
     time-zone: GMT+8
 
 jwt:
-  secret: your-secret-key-here-must-be-at-least-32-characters
   expiration: 86400000 # 24 hours in milliseconds
 
 logging:
@@ -44,3 +43,7 @@ logging:
     run.mone.agentx: INFO
     org.springframework.r2dbc: INFO
     io.r2dbc.mysql: INFO
+
+hive:
+  manager:
+    token: ${hive_manager_token}

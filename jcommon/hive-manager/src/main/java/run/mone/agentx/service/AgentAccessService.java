@@ -1,6 +1,8 @@
 package run.mone.agentx.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,10 +31,12 @@ public class AgentAccessService {
         return agentAccessRepository.save(agentAccess);
     }
 
+    @CacheEvict(value = "agentAccess", key = "#id")
     public Mono<Void> deleteAgentAccess(Long id) {
         return agentAccessRepository.deleteById(id).then();
     }
 
+    @CacheEvict(value = "agentAccess", key = "#id")
     public Mono<Void> updateAgentAccessStatus(Long id, Integer state) {
         return agentAccessRepository.findById(id)
                 .flatMap(access -> {
@@ -42,9 +46,17 @@ public class AgentAccessService {
                 .then();
     }
 
+    @Cacheable(value = "agentAccess", key = "#agentId + ':' + #accessApp + ':' + #accessKey", unless = "#result == false")
     public Mono<Boolean> validateAccess(Long agentId, String accessApp, String accessKey) {
         return agentAccessRepository.findByAgentIdAndAccessApp(agentId, accessApp)
                 .map(access -> access.getAccessKey().equals(accessKey) && access.getState() == 1)
+                .defaultIfEmpty(false);
+    }
+
+    @Cacheable(value = "agentAccess", key = "#agentId + ':' + #accessAppId", unless = "#result == false")
+    public Mono<Boolean> validateAccess(Long agentId, String accessAppId) {
+        return agentAccessRepository.findByAgentIdAndAccessAppId(agentId, accessAppId)
+                .map(access -> true)
                 .defaultIfEmpty(false);
     }
 } 

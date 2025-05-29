@@ -10,6 +10,7 @@ import run.mone.hive.roles.tool.*;
 import run.mone.mcp.idea.composer.function.CodeReviewFunction;
 import run.mone.mcp.idea.composer.function.ComposerFunction;
 import run.mone.mcp.idea.composer.function.MethodRenameFunction;
+import run.mone.mcp.idea.composer.function.ProjectGenetatorFunction;
 import run.mone.mcp.idea.composer.service.IdeaService;
 
 import javax.annotation.Resource;
@@ -45,9 +46,10 @@ public class AgentConfig {
                         new ExecuteTool()
                         ))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName),
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,20),
                         //生成或者修改大量代码
                         new ComposerFunction(ideaPort),
+                        new ProjectGenetatorFunction(),
                         //代码review
                         new CodeReviewFunction(ideaService),
                         //给方法重命名

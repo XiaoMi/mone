@@ -3,6 +3,7 @@
     <el-upload
       class="upload-container"
       ref="upload"
+      :accept="fileTypes[props.type as keyof typeof fileTypes]"
       :limit="props.limit"
       :auto-upload="false"
       v-model:file-list="fileList"
@@ -10,10 +11,10 @@
       :on-change="beforeAvatarUpload"
       :on-remove="handleRemove"
       :on-exceed="handleExceed"
-      list-type="picture"
+      :list-type="props.type === 'file' ? 'text' : 'picture'"
     >
       <div class="image-upload-icon">
-        <el-icon size="18" color="#FFF"><UploadFilled /></el-icon>
+        <el-icon size="18" color="#FFF"><DocumentAdd v-if="props.type === 'file'" /><UploadFilled v-else /></el-icon>
       </div>
     </el-upload>
   </div>
@@ -23,6 +24,11 @@ import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import type { UploadUserFile, UploadProps, UploadInstance } from "element-plus";
 
+const fileTypes = {
+  image: '.png,.jpg,.jpeg,.gif,.webp',
+  file: '.txt,.pdf,.docx,.xlsx,.pptx,.doc,.xls,.ppt,.js,.ts,.css,.java,.sh,.bash,.xml,.md'
+}
+
 type ModelValue = {
   mediaType: string,
   input: string,
@@ -31,7 +37,8 @@ type ModelValue = {
 
 const props = defineProps<{
   limit: number,
-  modelValue: ModelValue[]
+  modelValue: ModelValue[],
+  type: string
 }>()
 
 const emits = defineEmits(['update:modelValue']);
@@ -66,11 +73,11 @@ const beforeAvatarUpload: UploadProps['onChange'] = (uploadFile, uploadFiles) =>
     const reader = new FileReader()
     const { name, size } = file
     //   文件类型限制
-    const fileTypeFlag = /^.png|.jpg|.jpeg|.gif|.webp$/.test(
+    const fileTypeFlag = fileTypes[props.type as keyof typeof fileTypes].includes(
       name.substring(name.lastIndexOf('.')).toLowerCase()
     )
     if (!fileTypeFlag) {
-      ElMessage.error('文件类型只能是.png|.jpg|.jpeg|.gif|.webp')
+      ElMessage.error(`文件类型只能是${fileTypes[props.type as keyof typeof fileTypes]}`)
       return
     }
     //   文件大小进行校验
@@ -95,7 +102,8 @@ const beforeAvatarUpload: UploadProps['onChange'] = (uploadFile, uploadFiles) =>
       emits("update:modelValue", [{
         mediaType: file.type,
         input: arr[1],
-        url
+        url,
+        name: file.name
       }]);
     }
   }

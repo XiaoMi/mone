@@ -6,9 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * @author goodjava@qq.com
@@ -26,6 +29,12 @@ public class RoleMeta {
 
     protected String constraints;
 
+    @Builder.Default
+    protected String workflow = "";
+
+    @Builder.Default
+    protected String outputFormat = "";
+
     //只可以内部调用
     @Builder.Default
     protected List<ITool> tools = new ArrayList<>();
@@ -33,5 +42,7 @@ public class RoleMeta {
     //外边用户也可以调用
     @Builder.Default
     protected List<McpFunction> mcpTools = new ArrayList<>();
+
+    private Function<Message, Integer> checkFinishFunc;
 
 }

@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
@@ -160,6 +161,7 @@ public class LLM {
             requestBody.remove("model");
         }
 
+        // former web search
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
             JsonObject tool = new JsonObject();
@@ -170,6 +172,11 @@ public class LLM {
             tools.add(tool);
             requestBody.add("tools", tools);
             systemPrompt = systemPrompt + "\n每个提问先通过web search，然后通过web search的结果，回答用户问题\n";
+        }
+
+        // live search (xai/grok)
+        if (clientConfig.getLiveSearchConfig() != null) {
+            requestBody.add("search_parameters", gson.toJsonTree(clientConfig.getLiveSearchConfig()));
         }
 
 
@@ -465,7 +472,12 @@ public class LLM {
                 && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("model", model);
             requestBody.addProperty("stream", true);
+
+            if (null != this.config.getTemperature()) {
+                requestBody.addProperty("temperature", this.config.getTemperature());
+            }
         }
+
 
         if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("anthropic_version", this.config.getVersion());
@@ -512,6 +524,10 @@ public class LLM {
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
+                    this.llmProvider == LLMProvider.DOUBAO_UI_TARS ||
+                    this.llmProvider == LLMProvider.DOUBAO_VISION ||
+                    this.llmProvider == LLMProvider.GROK ||
+                    this.llmProvider == LLMProvider.DOUBAO ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -524,9 +540,12 @@ public class LLM {
 
         Request.Builder rb = new Request.Builder();
 
+        // 设置API key
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
             if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
                 rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else if (this.llmProvider == LLMProvider.MIFY) {
+                rb.addHeader("api-key", apiKey);
             } else {
                 rb.addHeader("Authorization", "Bearer " + apiKey);
             }
@@ -658,12 +677,20 @@ public class LLM {
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
                                 String content = "";
                                 try {
-                                    JsonObject delta = jsonResponse.getAsJsonArray("choices")
+                                    JsonArray choicesJson = jsonResponse.getAsJsonArray("choices");
+                                    if (choicesJson == null || choicesJson.isEmpty()) {
+                                        continue;
+                                    }
+                                    JsonObject delta = choicesJson
                                             .get(0).getAsJsonObject()
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
                                     if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
+                                        // 当Content为空并且设置了不输出思考内容时，直接跳过
+                                        if(!config.isReasoningOutPut()){
+                                            continue;
+                                        }
                                         JsonElement rc = delta.get("reasoning_content");
                                         if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();
@@ -903,6 +930,7 @@ public class LLM {
         private String role; // 角色: assistant, user
         private String content; // 文本内容
         private List<LLMPart> parts; // 消息内容
+        private String imageType;
     }
 
     @Data
@@ -968,11 +996,18 @@ public class LLM {
 
     }
 
-    // TODO: 2025/2/17 实现mcp的流式调用
-    public String callStreamWithMcp(LLM llm, LLMCompoundMsg msg, String systemPrompt) {
 
-        return null;
+    public static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
+        return LLMCompoundMsg.builder()
+                .content(userPrompt)
+                .parts(msg.getImages() == null
+                        ? new ArrayList<>()
+                        : msg.getImages()
+                        .stream()
+                        .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                        .collect(Collectors.toList())).build();
     }
+
 
     /**
      * 获取LLM请求对象
@@ -982,6 +1017,7 @@ public class LLM {
      */
     public JsonObject getReq(LLM llm, LLMCompoundMsg msg) {
         JsonObject req = new JsonObject();
+        String imageType = getImageType(msg);
 
         if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
             JsonArray parts = new JsonArray();
@@ -1002,7 +1038,11 @@ public class LLM {
 
             req.add("parts", parts);
         } else if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
-                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
+        ) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
 
@@ -1017,7 +1057,7 @@ public class LLM {
                     obj2.addProperty("type", "image_url");
                     JsonObject imgObj = new JsonObject();
                     if (!part.getData().startsWith("data:image")) {
-                        imgObj.addProperty("url", "data:image/jpeg;base64," + part.getData());
+                        imgObj.addProperty("url", "data:image/" + imageType + ";base64," + part.getData());
                     } else {
                         imgObj.addProperty("url", part.getData());
                     }
@@ -1054,6 +1094,14 @@ public class LLM {
             req.addProperty("content", msg.getContent());
         }
         return req;
+    }
+
+    private static String getImageType(LLMCompoundMsg msg) {
+        String imageType = "jpeg";
+        if (StringUtils.isNotEmpty(msg.getImageType())) {
+            imageType = msg.getImageType();
+        }
+        return imageType;
     }
 
     private JsonObject getReq(LLM llm, LLMPart llmPart) {

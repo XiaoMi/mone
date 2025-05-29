@@ -1,16 +1,18 @@
 package run.mone.agentx.service;
 
-import com.google.common.base.Joiner;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
-import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentInstance;
+import run.mone.agentx.entity.InvokeHistory;
+import run.mone.agentx.entity.User;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
 import run.mone.agentx.utils.AgentKeyUtils;
+import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.common.McpResult;
 import run.mone.hive.common.ToolDataInfo;
 import run.mone.hive.mcp.client.MonerMcpClient;
@@ -18,6 +20,7 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.utils.SafeRun;
 
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
@@ -32,13 +35,29 @@ public class McpService {
     @Autowired
     private AgentService agentService;
 
+    @Autowired
+    private InvokeHistoryService invokeHistoryService;
+
     private ReentrantLock lock = new ReentrantLock();
 
+    private void recordInvoke(String userName, Long agentId, String requestBody) {
+        SafeRun.run(() -> {
+            InvokeHistory invokeHistory = new InvokeHistory();
+            invokeHistory.setType(1); // 设置合适的类型
+            invokeHistory.setRelateId(agentId);
+            invokeHistory.setInputs(requestBody);
+            invokeHistory.setInvokeWay(1);
+            invokeHistory.setInvokeUserName(userName);
+            invokeHistoryService.createInvokeHistory(invokeHistory).block();
+        });
+    }
 
-    public McpResult callMcp(String userName, Long agentId, AgentInstance instance, ToolDataInfo it, FluxSink sink) {
+    public McpResult callMcp(String userName, Long agentId, AgentInstance instance, String requestBody, ToolDataInfo toolDataInfo, FluxSink sink) {
         log.info("user:{} call mcp tool", userName);
-        AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
+        //记录调用
+        recordInvoke(userName, agentId, requestBody);
 
+        AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
         //这个需要那个用户就传他的id (需要从前端拿过来)
         String clientId = AgentKeyUtils.getAgentKey(agentDto.getAgent());
 
@@ -57,8 +76,8 @@ public class McpService {
             lock.unlock();
         }
 
-        // 调用MCP
-        return MonerMcpClient.mcpCall(it, key, this.mcpInterceptor, sink, (name) -> null);
+        //调用MCP
+        return MonerMcpClient.mcpCall(toolDataInfo, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
@@ -74,6 +93,5 @@ public class McpService {
         mcpHub.connectToServer(groupKey, parameters);
         McpHubHolder.put(groupKey, mcpHub);
     }
-
 
 }

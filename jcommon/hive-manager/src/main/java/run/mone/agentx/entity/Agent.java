@@ -2,6 +2,7 @@ package run.mone.agentx.entity;
 
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.annotation.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;

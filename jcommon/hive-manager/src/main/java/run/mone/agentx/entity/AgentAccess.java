@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 public class AgentAccess extends BaseEntity {
     private Long agentId;
     private String accessApp;
+    private Integer accessAppId;
     private String accessKey;
     private String description;
     // 0: 禁用, 1: 启用

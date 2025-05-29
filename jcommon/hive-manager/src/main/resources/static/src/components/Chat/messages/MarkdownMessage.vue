@@ -72,8 +72,6 @@ function highlightBlock(str: string, lang?: string) {
   return `<pre class="code-block-wrapper">
     <div class="code-block-header">
       <span class="code-block-header__lang">${lang}</span>
-      <span class="code-block-header__diff">代码比较</span>
-      <span class="code-block-header__insert">插入IDEA</span>
       <span class="code-block-header__copy">复制代码</span>
     </div>
     <code class="hljs code-block-body ${lang} hide-code show-code">${str}</code>${
@@ -132,6 +130,7 @@ export default {
     this.addDiffEvents();
     this.collapseFn();
     this.addBoltToggleEvents();
+    this.addFileUrlLinkEvents();
   },
   updated() {
     this.addApply();
@@ -141,6 +140,7 @@ export default {
     this.collapseFn();
     this.bindCollapse();
     this.addBoltToggleEvents();
+    this.addFileUrlLinkEvents();
   },
   unmounted() {
     this.removeEvents();
@@ -203,41 +203,41 @@ export default {
       }
     },
     addApply() {
-      this.$nextTick(() =>{
-        if (this.message.data.isLast) {
-          const textRef = this.$refs.textRef as HTMLDivElement;
-          if (textRef) {
-            const applyDivs = textRef.querySelectorAll(".code-block-header");
-            applyDivs.forEach((applyDiv: any) => {
-              const applyBtn = applyDiv.querySelectorAll(".code-block-header__apply");
-              if (applyBtn.length === 0) {
-                // Insert the Apply button
-                // 创建一个新的span元素
-                var spanElement = document.createElement("span");
+      // this.$nextTick(() =>{
+      //   if (this.message.data.isLast) {
+      //     const textRef = this.$refs.textRef as HTMLDivElement;
+      //     if (textRef) {
+      //       const applyDivs = textRef.querySelectorAll(".code-block-header");
+      //       applyDivs.forEach((applyDiv: any) => {
+      //         const applyBtn = applyDiv.querySelectorAll(".code-block-header__apply");
+      //         if (applyBtn.length === 0) {
+      //           // Insert the Apply button
+      //           // 创建一个新的span元素
+      //           var spanElement = document.createElement("span");
 
-                // 为span元素设置类名
-                spanElement.className = "code-block-header__apply";
+      //           // 为span元素设置类名
+      //           spanElement.className = "code-block-header__apply";
 
-                // 设置span元素的内容
-                spanElement.textContent = "Apply";
+      //           // 设置span元素的内容
+      //           spanElement.textContent = "Apply";
 
-                // 将span元素追加到applyDiv中
-                applyDiv.appendChild(spanElement);
-              }
-            });
-          }
-        } else {
-          // Remove existing Apply buttons if isLast is false or undefined
-          const textRef = this.$refs.textRef as HTMLDivElement;
-          if (textRef) {
-            const applyButtons = textRef.querySelectorAll(
-              ".code-block-header__apply"
-            );
-            applyButtons.forEach((button) => button.remove());
-          }
-        }
-        this.addApplyEvents();
-      })
+      //           // 将span元素追加到applyDiv中
+      //           applyDiv.appendChild(spanElement);
+      //         }
+      //       });
+      //     }
+      //   } else {
+      //     // Remove existing Apply buttons if isLast is false or undefined
+      //     const textRef = this.$refs.textRef as HTMLDivElement;
+      //     if (textRef) {
+      //       const applyButtons = textRef.querySelectorAll(
+      //         ".code-block-header__apply"
+      //       );
+      //       applyButtons.forEach((button) => button.remove());
+      //     }
+      //   }
+      //   this.addApplyEvents();
+      // })
     },
     addApplyEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;
@@ -329,6 +329,52 @@ export default {
         });
       }
     },
+    addFileUrlLinkEvents() {
+      const textRef = this.$refs.textRef as HTMLDivElement;
+      if (textRef) {
+        const fileLinks = textRef.querySelectorAll('.file-url-link');
+        fileLinks.forEach((link: any) => {
+          const clickHandler = link._clickHandler || ((e: Event) => {
+            e.preventDefault();
+            const url = link.getAttribute('data-url');
+            if (url) {
+              // 解析URL和参数
+              const urlObj = new URL(url);
+              const params = new URLSearchParams(urlObj.search);
+              
+              // 创建表单
+              const form = document.createElement('form');
+              form.method = 'GET';
+              form.action = urlObj.origin + urlObj.pathname;
+              form.target = '_blank';
+              form.style.display = 'none';
+              
+              // 添加所有参数作为隐藏的input
+              params.forEach((value, key) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+              });
+              
+              // 添加到文档并提交
+              document.body.appendChild(form);
+              form.submit();
+              
+              // 清理DOM
+              setTimeout(() => {
+                document.body.removeChild(form);
+              }, 100);
+            }
+          });
+
+          link.removeEventListener('click', link._clickHandler);
+          link.addEventListener('click', clickHandler);
+          link._clickHandler = clickHandler;
+        });
+      }
+    },
     removeEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;
       if (textRef) {
@@ -374,6 +420,14 @@ export default {
           if (btn._toggleHandler) {
             btn.removeEventListener('click', btn._toggleHandler);
             delete btn._toggleHandler;
+          }
+        });
+        // 移除file-url-link事件
+        const fileLinks = textRef.querySelectorAll('.file-url-link');
+        fileLinks.forEach((link: any) => {
+          if (link._clickHandler) {
+            link.removeEventListener('click', link._clickHandler);
+            delete link._clickHandler;
           }
         });
       }

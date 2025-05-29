@@ -13,7 +13,7 @@ public interface AgentAccessRepository extends ReactiveCrudRepository<AgentAcces
     
     @Query("SELECT * FROM t_agent_access WHERE agent_id = :agentId AND access_app = :accessApp")
     Mono<AgentAccess> findByAgentIdAndAccessApp(Long agentId, String accessApp);
-    
-    @Query("SELECT * FROM t_agent_access WHERE access_app = :accessApp")
-    Flux<AgentAccess> findByAccessApp(String accessApp);
+
+    @Query("SELECT * FROM t_agent_access WHERE agent_id = :agentId AND access_app_id = :accessAppId")
+    Mono<AgentAccess> findByAgentIdAndAccessAppId(Long agentId, String accessAppId);
 } 

@@ -10,6 +10,7 @@ import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Prompts;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.schema.*;
 import run.mone.hive.strategy.Planner;
 import run.mone.hive.utils.Config;
@@ -35,9 +36,16 @@ public class Role {
 
     protected String profile;
 
+    protected RoleMeta roleMeta;
+
     protected String goal;
 
     protected String constraints;
+
+    protected String workflow;
+
+    protected String outputFormat;
+
     @Getter
     protected List<String> specializations;
 
@@ -59,7 +67,7 @@ public class Role {
     protected Queue<Action> actionQueue = new LinkedList<>();
 
     @JsonIgnore
-    private Environment environment;
+    private Environment environment = new Environment();
 
     @JsonIgnore
     @Getter
@@ -70,6 +78,9 @@ public class Role {
     private boolean blockingMessageRetrieval;
 
     protected String prompt;
+
+    //role的配置
+    protected Map<String, String> roleConfig = new HashMap<>();
 
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
@@ -291,6 +302,7 @@ public class Role {
 
     /**
      * react实际执行的逻辑， 可以重写
+     *
      * @param ac
      */
     protected void doReact(ActionContext ac) {
@@ -319,12 +331,7 @@ public class Role {
                 TaskResult taskResult = actOnTask(task).join();
                 log.info("taskResult:{}", taskResult);
 
-                // Process the result, such as reviewing, confirming, plan updating
-//                planner.processTaskResult(taskResult).join();
-
                 planner.getPlan().finishCurrentTask();
-
-
             }
 
             Message rsp = planner.getUsefulMemories().get(0); // Return the completed plan as a response
@@ -334,7 +341,6 @@ public class Role {
         });
     }
 
-    //帮我实现下actOnTask (class)
     public CompletableFuture<TaskResult> actOnTask(Task task) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -413,6 +419,7 @@ public class Role {
 
     /**
      * 在react之后执行的hook, 可以重写
+     *
      * @param ac
      */
     protected void postReact(ActionContext ac) {
@@ -431,6 +438,10 @@ public class Role {
             message.setCreateTime(System.currentTimeMillis());
         }
         this.rc.getMemory().add(message);
+    }
+
+    public Message getLastMessage() {
+        return this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
     }
 
     @Override

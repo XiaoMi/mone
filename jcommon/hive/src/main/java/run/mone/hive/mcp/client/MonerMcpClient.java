@@ -8,6 +8,7 @@ import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -18,15 +19,21 @@ import java.util.function.Function;
 @Slf4j
 public class MonerMcpClient {
 
-    public static McpResult mcpCall(ToolDataInfo it, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
+    public static McpResult mcpCall(ToolDataInfo toolDataInfo, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
         return Safe.call(() -> {
-            String serviceName = it.getKeyValuePairs().get("server_name");
-            String toolName = it.getKeyValuePairs().get("tool_name");
-            String arguments = it.getKeyValuePairs().get("arguments");
+            String serviceName = toolDataInfo.getKeyValuePairs().get("server_name");
+            String toolName = toolDataInfo.getKeyValuePairs().get("tool_name");
+            String arguments = toolDataInfo.getKeyValuePairs().get("arguments");
             Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
 
-            if (StringUtils.isNotEmpty(it.getFrom())) {
-                toolArguments.put(Constants.FROM, it.getFrom());
+            if (StringUtils.isNotEmpty(toolDataInfo.getFrom())) {
+                toolArguments.put(Constants.FROM, toolDataInfo.getFrom());
+            }
+
+            toolArguments.put(Const.USER_ID, toolDataInfo.getUserId());
+            toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
+            if (null != toolDataInfo.getRole()) {
+                toolArguments.put(Const.ROLE, toolDataInfo.getRole());
             }
 
             // 调用before方法并检查返回值
@@ -72,7 +79,12 @@ public class MonerMcpClient {
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                 } else {
                     // 只有当before返回true时才调用工具
-                    toolRes = McpHubHolder.get(from).callTool(serviceName, toolName,
+                    McpHub mcpHub = McpHubHolder.get(from);
+                    if (null == mcpHub) {
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
+                    }
+
+                    toolRes = mcpHub.callTool(serviceName, toolName,
                             toolArguments);
                 }
                 monerMcpInterceptor.after(toolName, toolRes);

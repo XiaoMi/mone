@@ -1,7 +1,5 @@
 package run.mone.mcp.knowledge.base.http;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import okhttp3.*;
 
 import java.io.IOException;

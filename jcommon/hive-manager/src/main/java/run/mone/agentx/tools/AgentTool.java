@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.service.AgentService;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
 /**
@@ -36,11 +37,11 @@ public class AgentTool implements ITool {
         return """
                 一个用于查找最合适的 agent 的工具。
                 当用户需要执行特定任务时，可以使用此工具来查找最匹配的 agent。
-                            
+                
                 **使用场景：**
                 - 当用户需要执行特定任务时
                 - 当需要查找具有特定能力的 agent 时
-                            
+                
                 **输出：** 工具将返回最匹配的 agent 信息。
                 """;
     }
@@ -56,7 +57,7 @@ public class AgentTool implements ITool {
     public String usage() {
         return """
                 (注意：使用此工具时，必须在 <chat> 标签内返回 agent 信息):
-
+                
                 示例: 查找能处理数据分析任务的 agent
                 <chat>
                   <task>需要处理大量数据并生成分析报告</task>
@@ -71,7 +72,7 @@ public class AgentTool implements ITool {
     }
 
     @Override
-    public JsonObject execute(JsonObject inputJson) {
+    public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {
             String task = inputJson.has("task") ? inputJson.get("task").getAsString() : "";

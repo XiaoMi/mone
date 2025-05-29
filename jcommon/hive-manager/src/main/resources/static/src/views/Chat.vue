@@ -32,6 +32,8 @@ import { connectWebSocket } from '@/api/wsConnect'
 import { streamChat, textToVoice } from '@/api/message'
 import { v4 as uuidv4 } from 'uuid';
 import { fluxCodeHandler } from '@/components/Chat/common/result-code';
+import { useTheme } from '@/styles/theme/useTheme'
+
 const route = useRoute()
 const { getChatContext, setMessageList, addMessage, setProject, setModule, setLoading, messageList } =
   useChatContextStore();
@@ -126,7 +128,7 @@ const toggleSendMethod = (val: string) => {
       const agent = getAgent();
       messageId.value = uuidv4();
       let params = {
-        message: `语音合成处理以下文本内容：“${text}”`,
+        message: `语音合成处理以下文本内容："${text}"`,
         __owner_id__: user?.username,
       }
       if (sendMethod.value === "sse") {
@@ -171,7 +173,8 @@ const toggleSendMethod = (val: string) => {
       text = message.data.content;
       image = message.data.text?.split("base64,")[1];
     } else if (message.type === "audio") {
-      text = `用asr-mcp工具并且使用腾讯云语音识别这个音频文件内容`;
+      // text = `用asr-mcp工具并且使用腾讯云语音识别这个音频文件内容`;
+      text = `用speech_to_text工具别这个音频文件内容`;
     }
     try {
       const agent = getAgent();
@@ -185,6 +188,10 @@ const toggleSendMethod = (val: string) => {
       }
       if (image) {
         params.images = image;
+      }
+      if (message.data.files?.length > 0) {
+        params.message += `fileName: ${message.data.files[0].name} `;
+        params.message += ` fileBase64: ${message.data.files[0].input}`;
       }
       if (sendMethod.value === "sse") {
         // sse发送消息
@@ -310,7 +317,7 @@ const messageClick = async (item: { type: string; text: string; params: any }) =
           try {
             await messageDelete(item);
           } catch (e) {
-            // 
+            //
           }
           break;
         case "refresh":
@@ -332,6 +339,10 @@ onBeforeUnmount(() => {
     setInstance(null)
     initCodePrompt()
 })
+
+// 获取主题
+const { currentTheme } = useTheme()
+
 onMounted(async () => {
     try {
       // 获取Agent详情
@@ -360,7 +371,7 @@ onMounted(async () => {
     }
 
     // 初始化粒子效果
-    particlesJS("particles-js", {
+    window.particlesJS("particles-js", {
       particles: {
         number: {
           value: 80,
@@ -370,7 +381,7 @@ onMounted(async () => {
           }
         },
         color: {
-          value: "#00ffff"
+          value: currentTheme.value.colors.chatParticleColor
         },
         shape: {
           type: "circle"
@@ -398,7 +409,7 @@ onMounted(async () => {
         line_linked: {
           enable: true,
           distance: 150,
-          color: "#00ffff",
+          color: currentTheme.value.colors.chatParticleColor,
           opacity: 0.3,
           width: 1
         },
@@ -447,12 +458,13 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
+<style lang="scss">
 .chat-container {
   width: 100%;
-  height: 100%;
+  flex: 1;
   padding: 20px;
-  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  background: var(--el-color-chat-background);
+  background-image: var(--el-color-chat-background-gradient);
   position: relative;
   overflow: hidden;
 }
@@ -474,9 +486,9 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(rgba(100, 100, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100, 100, 255, 0.1) 1px, transparent 1px);
+  background:
+    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 30px 30px;
   animation: gridMove 20s linear infinite;
   z-index: 0;
@@ -490,7 +502,7 @@ onMounted(async () => {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, #00dbde, #fc00ff, #00dbde, #fc00ff);
+  background: var(--el-color-chat-border-glow);
   background-size: 400%;
   z-index: -1;
   filter: blur(5px);
@@ -501,11 +513,11 @@ onMounted(async () => {
   width: 70%;
   height: 100%;
   margin: 0 auto;
-  background: rgba(15, 15, 35, 0.7);
+  background: var(--el-color-chat-window-background);
   backdrop-filter: blur(10px);
   border-radius: 15px;
-  border: 1px solid rgba(100, 100, 255, 0.2);
-  box-shadow: 0 0 30px rgba(0, 100, 255, 0.3);
+  // border: 1px solid var(--el-color-chat-link-color);
+  // box-shadow: 0 0 30px var(--el-color-chat-link-color);
   position: relative;
   z-index: 2;
 }
@@ -514,7 +526,7 @@ onMounted(async () => {
 .quantum-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  border: 1px solid var(--el-color-chat-link-color);
   z-index: 1;
 }
 
@@ -563,4 +575,12 @@ onMounted(async () => {
     background-position: 0 0;
   }
 }
+
+// .light #particles-js {
+//   display: none;
+// }
+
+// .dark #particles-js {
+//   display: none;
+// }
 </style>

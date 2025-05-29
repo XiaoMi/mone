@@ -120,7 +120,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>m78</artifactId>
-            <version>1.4-jdk20-SNAPSHOT</version>
+            <version>1.5-jdk20-SNAPSHOT</version>
         </dependency>
 
         <dependency>

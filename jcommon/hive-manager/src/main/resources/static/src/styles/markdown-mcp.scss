@@ -430,3 +430,154 @@
 .markdown-body {
   counter-reset: step;
 }
+
+// 文件操作块样式
+.file-block, .file-operation-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .file-header, .file-operation-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+    
+    i {
+      font-size: 16px;
+      color: #00b3ff;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .file-content, .file-operation-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .operation-section, .path-section, .content-section, .r-section, .result-section {
+      margin: 8px 0;
+      padding: 8px;
+      background: #2d2d2d;
+      border-radius: 4px;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #888;
+        font-size: 0.9em;
+        margin-bottom: 4px;
+        text-transform: capitalize;
+      }
+    }
+  }
+}
+
+// 执行命令块样式
+.execute-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .execute-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+    
+    i {
+      font-size: 16px;
+      color: #00b3ff;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .execute-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    // line-height: 1.6;
+    background: #1e1e1e;
+
+    .command-section, .working_directory-section, .timeout-section {
+      margin: 8px 0;
+      padding: 8px;
+      background: #2d2d2d;
+      border-radius: 4px;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #888;
+        font-size: 0.9em;
+        margin-bottom: 4px;
+        text-transform: capitalize;
+      }
+    }
+
+    .completion-command {
+      .command-header {
+        display: none;
+      }
+
+      .command-content {
+        pre {
+          padding: 0;
+        }
+      }
+    }
+  }
+}
+.file-url-section {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+  .file-url-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    i {
+      font-size: 16px;
+      color: #00b3ff;
+      margin-right: 12px;
+    }
+  }
+  .file-url-content {
+    padding: 16px 24px 16px 24px;
+    border-top: 1px solid #3d3d3d;
+    display: flex;
+    color: #e1e1e1;
+    line-height: 1.6;
+    align-items: center;
+    justify-content: flex-start;
+  }
+}
