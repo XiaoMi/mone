@@ -37,11 +37,24 @@ public class ProjectInitializer extends Role {
     protected int observe() {
         log.info("ProjectInitializer observing...");
         if (this.rc.news.isEmpty()) {
+            log.info("No new messages for ProjectInitializer");
             return 0;
         }
         
         // 将消息添加到内存中
-        this.rc.news.forEach(msg -> this.rc.getMemory().add(msg));
+        this.rc.news.forEach(msg -> {
+            log.info("ProjectInitializer received message: {}", msg.getContent());
+            this.rc.getMemory().add(msg);
+            
+            // 如果消息是发给ProjectInitializer的，则触发action执行
+            if (msg.getSendTo() != null && msg.getSendTo().contains(this.getName())) {
+                log.info("Message is for ProjectInitializer, triggering actions");
+                this.getActions().forEach(action -> {
+                    log.info("Adding action to queue: {}", action.getClass().getSimpleName());
+                    this.addTodo(action);
+                });
+            }
+        });
         
         // 清空消息队列
         this.rc.news.clear();

@@ -75,6 +75,56 @@ public class LLM {
         return ask(prompt).join();
     }
 
+    // cloudml上训练的分类模型
+    /*
+    * modelType 模型类型 bert or qwen
+    * version 模型版本
+    * texts 待分类文本列表
+    * topK 返回topK个分类结果
+    * */
+    public String getClassifyScore(String modelType, String version, List<String> texts, Integer topK) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("model_type", modelType);
+            requestBody.addProperty("version", version);
+            requestBody.add("texts", gson.toJsonTree(texts));
+            requestBody.addProperty("top_k", topK);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call classify api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("classify response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call classify api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用接口失败, modelType:{}, version:{}, texts:{}, topK:{}, error:{}", 
+                    modelType, version, texts, topK, e.getMessage(), e);
+            throw new RuntimeException("接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
 
     public String chat(List<AiMessage> msgList) {
         return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);

@@ -13,13 +13,15 @@ import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+import static run.mone.hive.llm.ClaudeProxy.*;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeMaxToekns;
 
 @Slf4j
 class LLMTest {
@@ -761,6 +763,17 @@ class LLMTest {
 
         assertFalse(fullResponse.isEmpty(), "Response should not be empty");
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
+    }
+
+    @Test
+    public void testClassify() {
+        config =  LLMConfig.builder()
+                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
+                .url("http://xxxx")
+                .build();
+        LLM llm = new LLM(config);
+        String classify = llm.getClassifyScore("bert", "xxx", Arrays.asList("这是一个示例文本","这是第二个示例文本"), 1);
+        System.out.println(classify);
     }
 
 //    @Test
