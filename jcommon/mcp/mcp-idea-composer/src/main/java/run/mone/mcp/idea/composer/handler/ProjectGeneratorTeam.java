@@ -139,11 +139,23 @@ public class ProjectGeneratorTeam {
         ProjectDesignAction designAction = new ProjectDesignAction();
         designAction.setFunction((req, action, context) -> {
             log.info("ProjectDesignAction function executing...");
-            // 获取项目信息，优先使用projectInfo，如果没有则使用原始json
-            JsonObject projectInfo = json.has("projectInfo") ? json.getAsJsonObject("projectInfo") : json;
-            
-            // 创建项目基础结构
-            String projectStructure = generateProjectStructure(projectInfo);
+
+            // 获取项目信息
+            String projectType = json.getAsJsonObject("projectInfo").get("projectType").getAsString();
+            String basePackage = json.getAsJsonObject("projectInfo").get("basePackage").getAsString();
+            String projectName = json.getAsJsonObject("projectInfo").get("projectName").getAsString();
+
+            // 生成目录列表
+            List<String> paths = initializer.generateProjectStructure(projectType, basePackage);
+
+            // 实际创建目录
+            initializer.createProjectDirectories(projectName, projectType, basePackage);
+
+            // 返回创建的目录结构信息
+            StringBuilder structure = new StringBuilder();
+            structure.append("创建项目目录结构：\n");
+            paths.forEach(path -> structure.append("- ").append(path).append("\n"));
+            String projectStructure = structure.toString();
             promptResult.setContent(projectStructure);
             
             // 创建返回消息，并设置下一个接收者为ProjectBuilder
@@ -170,7 +182,7 @@ public class ProjectGeneratorTeam {
             JsonObject projectInfo = json.has("projectInfo") ? json.getAsJsonObject("projectInfo") : json;
             
             // 生成项目基础代码
-            String generatedCode = generateProjectCode(projectInfo);
+            String generatedCode = builder.generateProjectCode(projectInfo);
             
             // 创建返回消息
             Message message = Message.builder()
@@ -186,43 +198,4 @@ public class ProjectGeneratorTeam {
         log.info("ProjectBuilder actions set up completed with {} actions", builder.getActions().size());
     }
 
-    private static String generateProjectStructure(JsonObject json) {
-        ProjectInitializer initializer = new ProjectInitializer();
-        
-        // 获取项目信息
-        String projectType = json.get("projectType").getAsString();
-        String basePackage = json.get("basePackage").getAsString();
-        String projectName = json.get("projectName").getAsString();
-        
-        // 生成目录列表
-        List<String> paths = initializer.generateProjectStructure(projectType, basePackage);
-        
-        // 实际创建目录
-        initializer.createProjectDirectories(projectName, projectType, basePackage);
-        
-        // 返回创建的目录结构信息
-        StringBuilder structure = new StringBuilder();
-        structure.append("创建项目目录结构：\n");
-        paths.forEach(path -> structure.append("- ").append(path).append("\n"));
-        
-        return structure.toString();
-    }
-
-    private static String generateProjectCode(JsonObject projectInfo) {
-        ProjectBuilder builder = new ProjectBuilder();
-        Map<String, String> files = builder.generateProjectCode(
-            projectInfo.get("projectType").getAsString(),
-            projectInfo.get("basePackage").getAsString(),
-            projectInfo.get("projectName").getAsString()
-        );
-
-        StringBuilder result = new StringBuilder();
-        result.append("生成项目代码：\n");
-        files.forEach((path, content) -> {
-            result.append("文件：").append(path).append("\n");
-            result.append("内容：\n").append(content).append("\n\n");
-        });
-
-        return result.toString();
-    }
 } 
