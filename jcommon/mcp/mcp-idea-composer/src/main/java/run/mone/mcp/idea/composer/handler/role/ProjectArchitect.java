@@ -58,7 +58,7 @@ public class ProjectArchitect extends Role {
             3. basePackage: 基础包名（如：com.example.demo）
             4. description: 项目描述
           
-            只返回JSON，不要其他任何内容。
+            只返回标准的JSON结构，不要任何封装，举例：{"a":"b"}，绝对不要```json{"a":"b"}```这样的格式，不要其他任何内容。
             """.formatted(requirement);
         
         String response = llm.chat(prompt);
@@ -67,7 +67,7 @@ public class ProjectArchitect extends Role {
         try {
             return JsonParser.parseString(response).getAsJsonObject();
         } catch (Exception e) {
-            log.error("解析LLM响应失败", e);
+            log.error("解析LLM响应失败，返回结果是: {}", response, e);
             // 返回默认配置
             JsonObject defaultInfo = new JsonObject();
             defaultInfo.addProperty("projectName", "demo");
