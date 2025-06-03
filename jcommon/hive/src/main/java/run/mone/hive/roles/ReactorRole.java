@@ -47,8 +47,6 @@ import java.util.stream.Collectors;
 @Data
 public class ReactorRole extends Role {
 
-    private LLM llm;
-
     private String customInstructions = "";
 
     private List<ITool> tools = new ArrayList<>();
@@ -285,6 +283,20 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.poll();
         FluxSink sink = msg.getSink();
 
+
+        //执行action //TODO$-----
+        if (msg.getContent().equals("捡烟屁股")) {
+            try {
+                super.determineNextAction();
+                super.act(context);
+                sink.next("任务结束");
+            } finally {
+                sink.complete();
+            }
+            return CompletableFuture.completedFuture(Message.builder().build());
+        }
+
+
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String userPrompt = buildUserPrompt(msg, history);
@@ -434,4 +446,7 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
+    public void setLlm(LLM llm) {
+        this.llm = llm;
+    }
 }

@@ -154,6 +154,10 @@ public class Role {
             return -1;
         }
 
+        return determineNextAction();
+    }
+
+    protected int determineNextAction() {
         //思考模式(让ai选出来用那个action来执行)
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
             return selectActionBasedOnPrompt();
