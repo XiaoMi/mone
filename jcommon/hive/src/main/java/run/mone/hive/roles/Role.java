@@ -134,8 +134,9 @@ public class Role {
     @SneakyThrows
     protected int observe() {
         log.info("observe");
-        if (this.blockingMessageRetrieval) {
-            Message msg = this.rc.news.poll(2, TimeUnit.MINUTES);
+        if (isBlockingMessageRetrieval()) {
+            Message msg = this.rc.news.poll();
+            this.rc.getMemory().add(msg);
             this.rc.news.put(msg);
             return this.rc.news.size();
         } else {
@@ -149,7 +150,8 @@ public class Role {
     protected int think() {
         log.info("think");
         //观测消息
-        if (this.observe() == 0) {
+        int value = observe();
+        if (value == 0) {
             //没有消息
             return -1;
         }
@@ -207,7 +209,7 @@ public class Role {
 
 
     // 判断消息是否相关
-    protected boolean isRelevantMessage(Message message) {
+    public boolean isRelevantMessage(Message message) {
         return watchList.contains(message.getCauseBy()) ||
                 message.getReceivers().contains(name);
     }
@@ -269,6 +271,10 @@ public class Role {
     }
 
     public CompletableFuture<Message> react() {
+        ActionContext ac = new ActionContext();
+        ac.setReactMode(this.rc.getReactMode());
+        beforeReact(ac);
+
         //需要ai来制定计划
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.PLAN_AND_ACT)) {
             this.observe();
@@ -278,7 +284,6 @@ public class Role {
         //依次执行每个Action(按顺序)
         int actionsToken = 0;
         Message res = null;
-        ActionContext ac = new ActionContext();
 
         //按顺序挨个action去执行
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
@@ -428,6 +433,10 @@ public class Role {
      */
     protected void postReact(ActionContext ac) {
         //子类可以重写此方法
+    }
+
+    protected void beforeReact(ActionContext ac) {
+
     }
 
     public void putMessage(Message message) {

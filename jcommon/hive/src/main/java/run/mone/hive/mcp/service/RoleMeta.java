@@ -55,4 +55,8 @@ public class RoleMeta {
 
     private RoleContext.ReactMode reactMode;
 
+    //ReactorRole Role
+    @Builder.Default
+    private String roleType = "ReactorRole";
+
 }

@@ -167,6 +167,7 @@ public class RoleService {
         role.setWorkflow(roleMeta.getWorkflow());
         role.setOutputFormat(roleMeta.getOutputFormat());
         role.setActions(roleMeta.getActions());
+        role.setType(roleMeta.getRoleType());
         if (null != roleMeta.getLlm()) {
             role.setLlm(roleMeta.getLlm());
         }
