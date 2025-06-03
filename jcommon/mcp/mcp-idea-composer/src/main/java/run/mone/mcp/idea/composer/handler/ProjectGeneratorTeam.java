@@ -19,6 +19,10 @@ import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 import run.mone.mcp.idea.composer.handler.role.ProjectInitializer;
 import run.mone.mcp.idea.composer.handler.role.ProjectArchitect;
 import run.mone.mcp.idea.composer.handler.role.ProjectBuilder;
+import run.mone.mcp.idea.composer.handler.action.ProjectDesignAction;
+import run.mone.mcp.idea.composer.handler.action.ProjectAnalyzeAction;
+import run.mone.mcp.idea.composer.handler.action.ProjectBuildAction;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
@@ -28,6 +32,7 @@ import static run.mone.hive.llm.ClaudeProxy.*;
 /**
  * 项目生成团队，负责创建新项目
  */
+@Slf4j
 public class ProjectGeneratorTeam {
 
     public static void generateProject(String prompt, BotChainCallContext botChainCallContext, ConversationContext conversationContext, JsonObject json) {
@@ -87,8 +92,10 @@ public class ProjectGeneratorTeam {
     }
 
     private static void setArchitectActions(ConversationContext conversationContext, PromptResult promptResult, ProjectArchitect architect, JsonObject json) {
-        AnalyzeArchitecture analyzeArchitecture = new AnalyzeArchitecture();
-        analyzeArchitecture.setFunction((req, action, context) -> {
+        log.info("Setting up ProjectArchitect actions...");
+        ProjectAnalyzeAction analyzeAction = new ProjectAnalyzeAction();
+        analyzeAction.setFunction((req, action, context) -> {
+            log.info("ProjectAnalyzeAction function executing...");
             // 使用LLM分析需求
             JsonObject projectInfo = architect.analyzeRequirement(req.getMessage().getContent(), llm(req));
             
@@ -113,85 +120,82 @@ public class ProjectGeneratorTeam {
             json.add("projectInfo", projectInfo);
             
             // 创建返回消息，并设置下一个接收者为ProjectInitializer
-            return Message.builder()
+            Message message = Message.builder()
                     .content(projectAnalysis)
                     .role(architect.getName())
+                    .id(java.util.UUID.randomUUID().toString())
+                    .sentFrom(architect.getName())
                     .sendTo(List.of("ProjectInitializer"))
                     .build();
+            log.info("ProjectAnalyzeAction completed, sending message to ProjectInitializer");
+            return message;
         });
-        architect.setActions(Lists.newArrayList(analyzeArchitecture));
+        architect.setActions(Lists.newArrayList(analyzeAction));
+        log.info("ProjectArchitect actions set up completed with {} actions", architect.getActions().size());
     }
 
     private static void setInitializerActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, PromptResult promptResult, ProjectInitializer initializer, JsonObject json) {
-        WriteDesign writeDesign = new WriteDesign();
-        writeDesign.setFunction((req, action, context) -> {
-            // 获取项目信息，优先使用projectInfo，如果没有则使用原始json
-            JsonObject projectInfo = json.has("projectInfo") ? json.getAsJsonObject("projectInfo") : json;
-            
-            // 创建项目基础结构
-            String projectStructure = generateProjectStructure(projectInfo);
+        log.info("Setting up ProjectInitializer actions...");
+        ProjectDesignAction designAction = new ProjectDesignAction();
+        designAction.setFunction((req, action, context) -> {
+            log.info("ProjectDesignAction function executing...");
+
+            // 获取项目信息
+            String projectType = json.getAsJsonObject("projectInfo").get("projectType").getAsString();
+            String basePackage = json.getAsJsonObject("projectInfo").get("basePackage").getAsString();
+            String projectName = json.getAsJsonObject("projectInfo").get("projectName").getAsString();
+
+            // 生成目录列表
+            List<String> paths = initializer.generateProjectStructure(projectType, basePackage);
+
+            // 实际创建目录
+            initializer.createProjectDirectories(projectName, projectType, basePackage);
+
+            // 返回创建的目录结构信息
+            StringBuilder structure = new StringBuilder();
+            structure.append("创建项目目录结构：\n");
+            paths.forEach(path -> structure.append("- ").append(path).append("\n"));
+            String projectStructure = structure.toString();
             promptResult.setContent(projectStructure);
             
             // 创建返回消息，并设置下一个接收者为ProjectBuilder
-            return Message.builder()
+            Message message = Message.builder()
                     .content(projectStructure)
                     .role(initializer.getName())
+                    .id(java.util.UUID.randomUUID().toString())
+                    .sentFrom(initializer.getName())
                     .sendTo(List.of("ProjectBuilder"))
                     .build();
+            log.info("ProjectDesignAction completed, sending message to ProjectBuilder");
+            return message;
         });
-        initializer.setActions(Lists.newArrayList(writeDesign));
+        initializer.setActions(Lists.newArrayList(designAction));
+        log.info("ProjectInitializer actions set up completed with {} actions", initializer.getActions().size());
     }
 
     private static void setBuilderActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, PromptResult promptResult, ProjectBuilder builder, JsonObject json) {
-        WriteCode writeCode = new WriteCode();
-        writeCode.setFunction((req, action, context) -> {
+        log.info("Setting up ProjectBuilder actions...");
+        ProjectBuildAction buildAction = new ProjectBuildAction();
+        buildAction.setFunction((req, action, context) -> {
+            log.info("ProjectBuildAction function executing...");
             // 获取项目信息，优先使用projectInfo，如果没有则使用原始json
             JsonObject projectInfo = json.has("projectInfo") ? json.getAsJsonObject("projectInfo") : json;
             
             // 生成项目基础代码
-            String generatedCode = generateProjectCode(projectInfo);
-            return Message.builder().content(generatedCode).role(builder.getName()).build();
+            String generatedCode = builder.generateProjectCode(projectInfo);
+            
+            // 创建返回消息
+            Message message = Message.builder()
+                    .content(generatedCode)
+                    .role(builder.getName())
+                    .id(java.util.UUID.randomUUID().toString())
+                    .sentFrom(builder.getName())
+                    .build();
+            log.info("ProjectBuildAction completed, generated code length: {}", generatedCode.length());
+            return message;
         });
-        builder.setActions(Lists.newArrayList(writeCode));
+        builder.setActions(Lists.newArrayList(buildAction));
+        log.info("ProjectBuilder actions set up completed with {} actions", builder.getActions().size());
     }
 
-    private static String generateProjectStructure(JsonObject json) {
-        ProjectInitializer initializer = new ProjectInitializer();
-        
-        // 获取项目信息
-        String projectType = json.get("projectType").getAsString();
-        String basePackage = json.get("basePackage").getAsString();
-        String projectName = json.get("projectName").getAsString();
-        
-        // 生成目录列表
-        List<String> paths = initializer.generateProjectStructure(projectType, basePackage);
-        
-        // 实际创建目录
-        initializer.createProjectDirectories(projectName, projectType, basePackage);
-        
-        // 返回创建的目录结构信息
-        StringBuilder structure = new StringBuilder();
-        structure.append("创建项目目录结构：\n");
-        paths.forEach(path -> structure.append("- ").append(path).append("\n"));
-        
-        return structure.toString();
-    }
-
-    private static String generateProjectCode(JsonObject projectInfo) {
-        ProjectBuilder builder = new ProjectBuilder();
-        Map<String, String> files = builder.generateProjectCode(
-            projectInfo.get("projectType").getAsString(),
-            projectInfo.get("basePackage").getAsString(),
-            projectInfo.get("projectName").getAsString()
-        );
-
-        StringBuilder result = new StringBuilder();
-        result.append("生成项目代码：\n");
-        files.forEach((path, content) -> {
-            result.append("文件：").append(path).append("\n");
-            result.append("内容：\n").append(content).append("\n\n");
-        });
-
-        return result.toString();
-    }
 } 
