@@ -4,9 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import run.mone.hive.actions.Action;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
+import run.mone.hive.schema.RoleContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,5 +47,12 @@ public class RoleMeta {
     protected List<McpFunction> mcpTools = new ArrayList<>();
 
     private Function<Message, Integer> checkFinishFunc;
+
+    @Builder.Default
+    private List<Action> actions = new ArrayList<>();
+
+    private LLM llm;
+
+    private RoleContext.ReactMode reactMode;
 
 }

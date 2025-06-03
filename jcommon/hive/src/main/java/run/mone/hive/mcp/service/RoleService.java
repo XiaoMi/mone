@@ -22,6 +22,7 @@ import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
+import run.mone.hive.schema.RoleContext;
 import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
@@ -165,6 +166,13 @@ public class RoleService {
         role.setConstraints(roleMeta.getConstraints());
         role.setWorkflow(roleMeta.getWorkflow());
         role.setOutputFormat(roleMeta.getOutputFormat());
+        role.setActions(roleMeta.getActions());
+        if (null != roleMeta.getLlm()) {
+            role.setLlm(roleMeta.getLlm());
+        }
+        if (null != roleMeta.getReactMode()) {
+            role.getRc().setReactMode(roleMeta.getReactMode());
+        }
 
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
