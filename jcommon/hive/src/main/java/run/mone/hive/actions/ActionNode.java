@@ -141,6 +141,14 @@ public class ActionNode {
         });
     }
 
+    /**
+     * 允许将ActionNode执行结果发送出去
+     * @param message
+     */
+    public void sendMessage(Message message){
+
+    }
+
     //输出下output
     public void setOutput(String content) {
         JsonElement jt = JsonUtils.gson.toJsonTree(content);
