@@ -322,7 +322,6 @@ public class ReactorRole extends Role {
 
         if (type.equals("Role")) {
             sink.next("执行任务");
-            sink.complete();
             return super.act(context);
         }
 
@@ -366,6 +365,11 @@ public class ReactorRole extends Role {
                 sink.error(e);
             }
             log.error("ReactorRole act error:" + e.getMessage(), e);
+        } finally {
+            //没有副作用
+            if (null != sink) {
+                sink.complete();
+            }
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }

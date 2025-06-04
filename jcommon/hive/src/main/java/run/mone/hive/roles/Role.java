@@ -135,7 +135,8 @@ public class Role {
     protected int observe() {
         log.info("observe");
         if (isBlockingMessageRetrieval()) {
-            Message msg = this.rc.news.poll();
+            //没有数据陷入阻塞
+            Message msg = this.rc.news.take();
             this.rc.getMemory().add(msg);
             this.rc.news.put(msg);
             return this.rc.news.size();
@@ -274,35 +275,40 @@ public class Role {
         ActionContext ac = new ActionContext();
         ac.setReactMode(this.rc.getReactMode());
         beforeReact(ac);
+        try {
+            //需要ai来制定计划
+            if (this.rc.getReactMode().equals(RoleContext.ReactMode.PLAN_AND_ACT)) {
+                this.observe();
+                return planAndAct();
+            }
 
-        //需要ai来制定计划
-        if (this.rc.getReactMode().equals(RoleContext.ReactMode.PLAN_AND_ACT)) {
-            this.observe();
-            return planAndAct();
-        }
+            //依次执行每个Action(按顺序)
+            int actionsToken = 0;
+            Message res = null;
 
-        //依次执行每个Action(按顺序)
-        int actionsToken = 0;
-        Message res = null;
-
-        //按顺序挨个action去执行
-        if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
-            while (actionsToken < this.actions.size()) {
-                if (this.think() > 0) {
-                    res = this.act(ac).join();
-                    actionsToken++;
-                } else {
-                    break;
+            //按顺序挨个action去执行
+            if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
+                while (actionsToken < this.actions.size()) {
+                    if (this.think() > 0) {
+                        res = this.act(ac).join();
+                        actionsToken++;
+                    } else {
+                        break;
+                    }
                 }
             }
+            //自己决策用那个action
+            if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
+                //需要使用llm来选择action
+                doReact(ac);
+            }
+            return CompletableFuture.completedFuture(res);
+        } finally {
+            if (null != ac.getSink()) {
+                ac.getSink().complete();
+            }
+            postReact(ac);
         }
-        //自己决策用那个action
-        if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
-            //需要使用llm来选择action
-            doReact(ac);
-        }
-        postReact(ac);
-        return CompletableFuture.completedFuture(res);
     }
 
 
