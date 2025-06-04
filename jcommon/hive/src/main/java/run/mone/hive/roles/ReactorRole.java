@@ -47,9 +47,10 @@ import java.util.stream.Collectors;
 @Data
 public class ReactorRole extends Role {
 
-    private LLM llm;
-
     private String customInstructions = "";
+
+    //ReactorRole or Role
+    private String type = "ReactorRole";
 
     private List<ITool> tools = new ArrayList<>();
 
@@ -172,6 +173,12 @@ public class ReactorRole extends Role {
     protected int think() {
         log.info("think");
         this.state.set(RoleState.think);
+
+        if (this.type.equals("Role")) {
+            return super.think();
+        }
+
+
         int value = observe();
         //发生了空轮训(默认30分钟没有沟通后,就自动退出)
         if (value == -3) {
@@ -189,17 +196,28 @@ public class ReactorRole extends Role {
     }
 
     @Override
+    public boolean isBlockingMessageRetrieval() {
+        return true;
+    }
+
+    @Override
     protected void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
+
 
     @SneakyThrows
     @Override
     protected int observe() {
         log.info("{} observe", this.name);
         this.state.set(RoleState.observe);
-        Message msg = this.rc.getNews().poll(10, TimeUnit.MINUTES);
+
+        if (type.equals("Role")) {
+            return super.observe();
+        }
+
+        Message msg = this.rc.news.poll(10, TimeUnit.MINUTES);
         if (null == msg) {
             return -3;
         }
@@ -255,6 +273,7 @@ public class ReactorRole extends Role {
         }
 
         if (attemptCompletion == 1) {
+            //没有结束就放回去,方便act再次取出
             this.putMessage(msg);
         }
         return attemptCompletion;
@@ -282,8 +301,15 @@ public class ReactorRole extends Role {
     protected CompletableFuture<Message> act(ActionContext context) {
         log.info("{} act", this.name);
         this.state.set(RoleState.act);
+
         Message msg = this.rc.news.poll();
         FluxSink sink = msg.getSink();
+
+        if (type.equals("Role")) {
+            sink.next("执行任务");
+            sink.complete();
+            return super.act(context);
+        }
 
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
@@ -434,4 +460,7 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
+    public void setLlm(LLM llm) {
+        this.llm = llm;
+    }
 }

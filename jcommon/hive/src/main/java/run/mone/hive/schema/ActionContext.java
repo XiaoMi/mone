@@ -20,6 +20,8 @@ public class ActionContext {
 
     private JsonObject ctx = new JsonObject();
 
+    private RoleContext.ReactMode reactMode;
+
     private Map<String, String> data;
 
 }
