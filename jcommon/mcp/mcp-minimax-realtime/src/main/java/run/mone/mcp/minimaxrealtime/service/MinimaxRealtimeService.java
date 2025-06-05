@@ -134,7 +134,7 @@ public class MinimaxRealtimeService {
                 @Override
                 public void onMessage(String message) {
                     // 使用专门的消息处理器处理服务器消息
-                    log.debug("Received message on default connection: {}", message);
+                    // log.debug("Received message on default connection: {}", message);
                     try {
                         realtimeMessageHandler.handleMessage(message);
                     } catch (Exception e) {

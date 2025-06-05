@@ -4,12 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.minimaxrealtime.model.RealtimeMessage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -22,6 +26,10 @@ import java.util.function.Consumer;
 @Slf4j
 @Component
 public class MinimaxRealtimeMessageHandler {
+
+    static public final AtomicInteger lastIndex = new AtomicInteger(0);
+
+    static public final AtomicInteger firstIndex = new AtomicInteger(0);
 
     static public final Map<String, reactor.core.publisher.FluxSink<McpSchema.CallToolResult>> sinkMap = new ConcurrentHashMap();
 
@@ -233,6 +241,11 @@ public class MinimaxRealtimeMessageHandler {
             log.info("Response created: {}", event.getResponse().getId());
             // 这里可以添加具体的业务逻辑
             log.info("handleResponseCreated: {}", event);
+            int i = firstIndex.get();
+            if (i < lastIndex.get()) {
+                firstIndex.incrementAndGet();
+                sinkMap.putIfAbsent(event.getEvent_id(), sinkMap.get(String.valueOf(i)));
+            }
         } catch (Exception e) {
             log.error("Error handling response.created: {}", e.getMessage());
         }
@@ -246,6 +259,10 @@ public class MinimaxRealtimeMessageHandler {
             RealtimeMessage.ResponseDone event = objectMapper.treeToValue(message, RealtimeMessage.ResponseDone.class);
             log.info("Response done: {}, status: {}", event.getResponse().getId(), event.getResponse().getStatus());
             // 这里可以添加具体的业务逻辑
+            FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(event.getEvent_id());
+            if (sink != null) {
+                sink.complete();
+            }
         } catch (Exception e) {
             log.error("Error handling response.done: {}", e.getMessage());
         }
@@ -315,6 +332,12 @@ public class MinimaxRealtimeMessageHandler {
             RealtimeMessage.ResponseTextDelta event = objectMapper.treeToValue(message, RealtimeMessage.ResponseTextDelta.class);
             log.debug("Text delta for item {}: {}", event.getItem_id(), event.getDelta());
             // 这里可以添加具体的业务逻辑，比如累积文本或实时显示
+            FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(event.getEvent_id());
+            if (sink != null && !sink.isCancelled()) {
+                List<McpSchema.Content> contents = new ArrayList<>();
+                contents.add(new McpSchema.TextContent(event.getDelta()));
+                sink.next(new McpSchema.CallToolResult(contents, true));
+            }
         } catch (Exception e) {
             log.error("Error handling response.text.delta: {}", e.getMessage());
         }

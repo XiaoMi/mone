@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.minimaxrealtime.service.MinimaxRealtimeMessageHandler;
 import run.mone.mcp.minimaxrealtime.service.MinimaxRealtimeService;
 
 import java.util.ArrayList;
@@ -83,9 +84,11 @@ public class MinimaxRealtimeFunction implements McpFunction {
                 
                 switch (action) {
                     case "send_text":
+                        addSink(sink);
                         handleSendTextWithAutoConnect(input, sink);
                         break;
                     case "send_audio":
+                        addSink(sink);
                         handleSendAudioWithAutoConnect(input, sink);
                         break;
                     case "reconnect":
@@ -106,6 +109,11 @@ public class MinimaxRealtimeFunction implements McpFunction {
                 sink.complete();
             }
         });
+    }
+
+    private void addSink(reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink) {
+        int i = MinimaxRealtimeMessageHandler.lastIndex.addAndGet(1);
+        MinimaxRealtimeMessageHandler.sinkMap.put(String.valueOf(i), sink);
     }
 
     private void handleSendTextWithAutoConnect(Map<String, Object> input, reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink) {
@@ -229,17 +237,17 @@ public class MinimaxRealtimeFunction implements McpFunction {
             statusInfo.append("=========================\n");
             statusInfo.append("连接状态: ").append(isConnected ? "✅ 已连接" : "❌ 未连接").append("\n");
             statusInfo.append("详细信息: ").append(connectionStatus).append("\n");
-            statusInfo.append("会话ID: ").append(DEFAULT_SESSION_ID).append("\n");
-            statusInfo.append("API密钥: ").append(effectiveApiKey != null && !effectiveApiKey.trim().isEmpty() ? "已配置" : "未配置").append("\n");
-            statusInfo.append("重试设置: 最大尝试次数=").append(maxRetryAttempts).append(", 重试间隔=").append(retryIntervalMs).append("ms\n");
+            // statusInfo.append("会话ID: ").append(DEFAULT_SESSION_ID).append("\n");
+            // statusInfo.append("API密钥: ").append(effectiveApiKey != null && !effectiveApiKey.trim().isEmpty() ? "已配置" : "未配置").append("\n");
+            // statusInfo.append("重试设置: 最大尝试次数=").append(maxRetryAttempts).append(", 重试间隔=").append(retryIntervalMs).append("ms\n");
             
             // 检查响应缓冲区状态
-            StringBuilder responseBuffer = responseBuffers.get(DEFAULT_SESSION_ID);
-            if (responseBuffer != null) {
-                statusInfo.append("响应缓冲区: ").append(responseBuffer.length()).append(" 字符\n");
-            } else {
-                statusInfo.append("响应缓冲区: 未初始化\n");
-            }
+            // StringBuilder responseBuffer = responseBuffers.get(DEFAULT_SESSION_ID);
+            // if (responseBuffer != null) {
+            //     statusInfo.append("响应缓冲区: ").append(responseBuffer.length()).append(" 字符\n");
+            // } else {
+            //    statusInfo.append("响应缓冲区: 未初始化\n");
+            // }
             
             contents.add(new McpSchema.TextContent(statusInfo.toString()));
             sink.next(new McpSchema.CallToolResult(contents, false));
