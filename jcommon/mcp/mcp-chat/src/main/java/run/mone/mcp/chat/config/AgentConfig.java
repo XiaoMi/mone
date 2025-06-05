@@ -29,6 +29,8 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
+                        //支持网络搜索
+                        new TavilySearchTool(),
                         new AttemptCompletionTool(),
                         new SpeechToTextTool(),
                         new SystemInfoTool(),

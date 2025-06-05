@@ -765,6 +765,8 @@ class LLMTest {
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
     }
 
+
+    //调用私有的分类小模型
     @Test
     public void testClassify() {
         config =  LLMConfig.builder()
@@ -772,7 +774,7 @@ class LLMTest {
                 .url(System.getenv("ATLAS_URL"))
                 .build();
         LLM llm = new LLM(config);
-        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("北京今天天气"), 1);
+        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1);
         System.out.println(classify);
     }
 
