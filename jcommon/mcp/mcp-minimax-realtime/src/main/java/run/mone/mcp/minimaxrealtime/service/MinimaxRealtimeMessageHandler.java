@@ -1,7 +1,10 @@
 package run.mone.mcp.minimaxrealtime.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.FluxSink;
@@ -33,10 +36,11 @@ public class MinimaxRealtimeMessageHandler {
 
     static public final Map<String, reactor.core.publisher.FluxSink<McpSchema.CallToolResult>> sinkMap = new ConcurrentHashMap();
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Gson gson = new Gson();
+    private final JsonParser jsonParser = new JsonParser();
     
     // 消息类型到处理器的映射
-    private final Map<String, Consumer<JsonNode>> messageHandlers = new HashMap<>();
+    private final Map<String, Consumer<JsonElement>> messageHandlers = new HashMap<>();
     
     public MinimaxRealtimeMessageHandler() {
         initializeHandlers();
@@ -95,16 +99,17 @@ public class MinimaxRealtimeMessageHandler {
      */
     public void handleMessage(String rawMessage) {
         try {
-            JsonNode messageNode = objectMapper.readTree(rawMessage);
+            JsonElement messageElement = JsonParser.parseString(rawMessage);
             
             // 检查是否为数组格式（批量消息）
-            if (messageNode.isArray()) {
-                for (JsonNode node : messageNode) {
-                    processIndividualMessage(node);
+            if (messageElement.isJsonArray()) {
+                JsonArray messageArray = messageElement.getAsJsonArray();
+                for (JsonElement element : messageArray) {
+                    processIndividualMessage(element);
                 }
             } else {
                 // 单个消息
-                processIndividualMessage(messageNode);
+                processIndividualMessage(messageElement);
             }
             
         } catch (Exception e) {
@@ -115,23 +120,33 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理单个消息
      */
-    private void processIndividualMessage(JsonNode messageNode) {
+    private void processIndividualMessage(JsonElement messageElement) {
         try {
-            String messageType = messageNode.path("type").asText();
-            if (messageType.isEmpty()) {
-                log.warn("Message missing type field: {}", messageNode);
+            if (!messageElement.isJsonObject()) {
+                log.warn("Message is not a valid JSON object: {}", messageElement);
                 return;
             }
             
-            Consumer<JsonNode> handler = messageHandlers.get(messageType);
+            JsonObject messageObject = messageElement.getAsJsonObject();
+            String messageType = "";
+            if (messageObject.has("type") && !messageObject.get("type").isJsonNull()) {
+                messageType = messageObject.get("type").getAsString();
+            }
+            
+            if (messageType.isEmpty()) {
+                log.warn("Message missing type field: {}", messageElement);
+                return;
+            }
+            
+            Consumer<JsonElement> handler = messageHandlers.get(messageType);
             if (handler != null) {
-                handler.accept(messageNode);
+                handler.accept(messageElement);
             } else {
-                log.debug("No handler found for message type: {}, message: {}", messageType, messageNode);
+                log.debug("No handler found for message type: {}, message: {}", messageType, messageElement);
             }
             
         } catch (Exception e) {
-            log.error("Error processing individual message: {}, message: {}", e.getMessage(), messageNode);
+            log.error("Error processing individual message: {}, message: {}", e.getMessage(), messageElement);
         }
     }
     
@@ -140,9 +155,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理会话创建事件
      */
-    private void handleSessionCreated(JsonNode message) {
+    private void handleSessionCreated(JsonElement message) {
         try {
-            RealtimeMessage.SessionCreated event = objectMapper.treeToValue(message, RealtimeMessage.SessionCreated.class);
+            RealtimeMessage.SessionCreated event = gson.fromJson(message, RealtimeMessage.SessionCreated.class);
             log.info("Session created: {}", event.getSession().getId());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -153,9 +168,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理会话更新事件
      */
-    private void handleSessionUpdated(JsonNode message) {
+    private void handleSessionUpdated(JsonElement message) {
         try {
-            RealtimeMessage.SessionUpdated event = objectMapper.treeToValue(message, RealtimeMessage.SessionUpdated.class);
+            RealtimeMessage.SessionUpdated event = gson.fromJson(message, RealtimeMessage.SessionUpdated.class);
             log.info("Session updated: {}", event.getSession().getId());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -166,9 +181,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理对话项创建事件
      */
-    private void handleConversationItemCreated(JsonNode message) {
+    private void handleConversationItemCreated(JsonElement message) {
         try {
-            RealtimeMessage.ConversationItemCreated event = objectMapper.treeToValue(message, RealtimeMessage.ConversationItemCreated.class);
+            RealtimeMessage.ConversationItemCreated event = gson.fromJson(message, RealtimeMessage.ConversationItemCreated.class);
             log.debug("Conversation item created: {}", event.getItem().getId());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -179,10 +194,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理输入音频转录完成事件
      */
-    private void handleConversationItemInputAudioTranscriptionCompleted(JsonNode message) {
+    private void handleConversationItemInputAudioTranscriptionCompleted(JsonElement message) {
         try {
             RealtimeMessage.ConversationItemInputAudioTranscriptionCompleted event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ConversationItemInputAudioTranscriptionCompleted.class);
+                gson.fromJson(message, RealtimeMessage.ConversationItemInputAudioTranscriptionCompleted.class);
             log.info("Audio transcription completed for item {}: {}", event.getItem_id(), event.getTranscript());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -193,10 +208,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理输入音频转录失败事件
      */
-    private void handleConversationItemInputAudioTranscriptionFailed(JsonNode message) {
+    private void handleConversationItemInputAudioTranscriptionFailed(JsonElement message) {
         try {
             RealtimeMessage.ConversationItemInputAudioTranscriptionFailed event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ConversationItemInputAudioTranscriptionFailed.class);
+                gson.fromJson(message, RealtimeMessage.ConversationItemInputAudioTranscriptionFailed.class);
             log.error("Audio transcription failed for item {}: {}", event.getItem_id(), event.getError().getMessage());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -207,10 +222,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理对话项截断事件
      */
-    private void handleConversationItemTruncated(JsonNode message) {
+    private void handleConversationItemTruncated(JsonElement message) {
         try {
             RealtimeMessage.ConversationItemTruncated event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ConversationItemTruncated.class);
+                gson.fromJson(message, RealtimeMessage.ConversationItemTruncated.class);
             log.info("Conversation item truncated: {}", event.getItem_id());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -221,10 +236,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理对话项删除事件
      */
-    private void handleConversationItemDeleted(JsonNode message) {
+    private void handleConversationItemDeleted(JsonElement message) {
         try {
             RealtimeMessage.ConversationItemDeleted event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ConversationItemDeleted.class);
+                gson.fromJson(message, RealtimeMessage.ConversationItemDeleted.class);
             log.info("Conversation item deleted: {}", event.getItem_id());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -235,16 +250,19 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应创建事件
      */
-    private void handleResponseCreated(JsonNode message) {
+    private void handleResponseCreated(JsonElement message) {
         try {
-            RealtimeMessage.ResponseCreated event = objectMapper.treeToValue(message, RealtimeMessage.ResponseCreated.class);
-            log.info("Response created: {}", event.getResponse().getId());
+            RealtimeMessage.ResponseCreated event = gson.fromJson(message, RealtimeMessage.ResponseCreated.class);
+            String id = event.getResponse().getId();
+            log.info("Response created: {}", id);
             // 这里可以添加具体的业务逻辑
             log.info("handleResponseCreated: {}", event);
             int i = firstIndex.get();
             if (i < lastIndex.get()) {
-                firstIndex.incrementAndGet();
-                sinkMap.putIfAbsent(event.getEvent_id(), sinkMap.get(String.valueOf(i)));
+                i = firstIndex.incrementAndGet();
+                if (id != null) {
+                    sinkMap.putIfAbsent(id, sinkMap.get(String.valueOf(i)));
+                }
             }
         } catch (Exception e) {
             log.error("Error handling response.created: {}", e.getMessage());
@@ -254,12 +272,12 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应完成事件
      */
-    private void handleResponseDone(JsonNode message) {
+    private void handleResponseDone(JsonElement message) {
         try {
-            RealtimeMessage.ResponseDone event = objectMapper.treeToValue(message, RealtimeMessage.ResponseDone.class);
+            RealtimeMessage.ResponseDone event = gson.fromJson(message, RealtimeMessage.ResponseDone.class);
             log.info("Response done: {}, status: {}", event.getResponse().getId(), event.getResponse().getStatus());
             // 这里可以添加具体的业务逻辑
-            FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(event.getEvent_id());
+            FluxSink<McpSchema.CallToolResult> sink = sinkMap.remove(event.getResponse().getId());
             if (sink != null) {
                 sink.complete();
             }
@@ -271,10 +289,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应输出项添加事件
      */
-    private void handleResponseOutputItemAdded(JsonNode message) {
+    private void handleResponseOutputItemAdded(JsonElement message) {
         try {
             RealtimeMessage.ResponseOutputItemAdded event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseOutputItemAdded.class);
+                gson.fromJson(message, RealtimeMessage.ResponseOutputItemAdded.class);
             log.debug("Response output item added: {}", event.getItem().getId());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -285,10 +303,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应输出项完成事件
      */
-    private void handleResponseOutputItemDone(JsonNode message) {
+    private void handleResponseOutputItemDone(JsonElement message) {
         try {
             RealtimeMessage.ResponseOutputItemDone event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseOutputItemDone.class);
+                gson.fromJson(message, RealtimeMessage.ResponseOutputItemDone.class);
             log.debug("Response output item done: {}", event.getItem().getId());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -299,10 +317,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应内容部分添加事件
      */
-    private void handleResponseContentPartAdded(JsonNode message) {
+    private void handleResponseContentPartAdded(JsonElement message) {
         try {
             RealtimeMessage.ResponseContentPartAdded event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseContentPartAdded.class);
+                gson.fromJson(message, RealtimeMessage.ResponseContentPartAdded.class);
             log.debug("Response content part added for item: {}", event.getItem_id());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -313,10 +331,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应内容部分完成事件
      */
-    private void handleResponseContentPartDone(JsonNode message) {
+    private void handleResponseContentPartDone(JsonElement message) {
         try {
             RealtimeMessage.ResponseContentPartDone event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseContentPartDone.class);
+                gson.fromJson(message, RealtimeMessage.ResponseContentPartDone.class);
             log.debug("Response content part done for item: {}", event.getItem_id());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -327,12 +345,12 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应文本增量事件（流式文本响应）
      */
-    private void handleResponseTextDelta(JsonNode message) {
+    private void handleResponseTextDelta(JsonElement message) {
         try {
-            RealtimeMessage.ResponseTextDelta event = objectMapper.treeToValue(message, RealtimeMessage.ResponseTextDelta.class);
+            RealtimeMessage.ResponseTextDelta event = gson.fromJson(message, RealtimeMessage.ResponseTextDelta.class);
             log.debug("Text delta for item {}: {}", event.getItem_id(), event.getDelta());
             // 这里可以添加具体的业务逻辑，比如累积文本或实时显示
-            FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(event.getEvent_id());
+            FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(event.getResponse_id());
             if (sink != null && !sink.isCancelled()) {
                 List<McpSchema.Content> contents = new ArrayList<>();
                 contents.add(new McpSchema.TextContent(event.getDelta()));
@@ -346,9 +364,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应文本完成事件
      */
-    private void handleResponseTextDone(JsonNode message) {
+    private void handleResponseTextDone(JsonElement message) {
         try {
-            RealtimeMessage.ResponseTextDone event = objectMapper.treeToValue(message, RealtimeMessage.ResponseTextDone.class);
+            RealtimeMessage.ResponseTextDone event = gson.fromJson(message, RealtimeMessage.ResponseTextDone.class);
             log.info("Text done for item {}: {}", event.getItem_id(), event.getText());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -359,10 +377,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应音频转录增量事件
      */
-    private void handleResponseAudioTranscriptDelta(JsonNode message) {
+    private void handleResponseAudioTranscriptDelta(JsonElement message) {
         try {
             RealtimeMessage.ResponseAudioTranscriptDelta event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseAudioTranscriptDelta.class);
+                gson.fromJson(message, RealtimeMessage.ResponseAudioTranscriptDelta.class);
             log.debug("Audio transcript delta for item {}: {}", event.getItem_id(), event.getDelta());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -373,10 +391,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应音频转录完成事件
      */
-    private void handleResponseAudioTranscriptDone(JsonNode message) {
+    private void handleResponseAudioTranscriptDone(JsonElement message) {
         try {
             RealtimeMessage.ResponseAudioTranscriptDone event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseAudioTranscriptDone.class);
+                gson.fromJson(message, RealtimeMessage.ResponseAudioTranscriptDone.class);
             log.info("Audio transcript done for item {}: {}", event.getItem_id(), event.getTranscript());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -387,9 +405,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应音频增量事件（流式音频响应）
      */
-    private void handleResponseAudioDelta(JsonNode message) {
+    private void handleResponseAudioDelta(JsonElement message) {
         try {
-            RealtimeMessage.ResponseAudioDelta event = objectMapper.treeToValue(message, RealtimeMessage.ResponseAudioDelta.class);
+            RealtimeMessage.ResponseAudioDelta event = gson.fromJson(message, RealtimeMessage.ResponseAudioDelta.class);
             log.debug("Audio delta for item {}, size: {} bytes", event.getItem_id(), 
                      event.getDelta() != null ? event.getDelta().length() : 0);
             // 这里可以添加具体的业务逻辑，比如播放音频流
@@ -402,9 +420,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应音频完成事件
      */
-    private void handleResponseAudioDone(JsonNode message) {
+    private void handleResponseAudioDone(JsonElement message) {
         try {
-            RealtimeMessage.ResponseAudioDone event = objectMapper.treeToValue(message, RealtimeMessage.ResponseAudioDone.class);
+            RealtimeMessage.ResponseAudioDone event = gson.fromJson(message, RealtimeMessage.ResponseAudioDone.class);
             log.info("Audio done for item: {}", event.getItem_id());
             // 这里可以添加具体的业务逻辑
 
@@ -416,10 +434,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应函数调用参数增量事件
      */
-    private void handleResponseFunctionCallArgumentsDelta(JsonNode message) {
+    private void handleResponseFunctionCallArgumentsDelta(JsonElement message) {
         try {
             RealtimeMessage.ResponseFunctionCallArgumentsDelta event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseFunctionCallArgumentsDelta.class);
+                gson.fromJson(message, RealtimeMessage.ResponseFunctionCallArgumentsDelta.class);
             log.debug("Function call arguments delta for call {}: {}", event.getCall_id(), event.getDelta());
             // 这里可以添加具体的业务逻辑
         } catch (Exception e) {
@@ -430,10 +448,10 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理响应函数调用参数完成事件
      */
-    private void handleResponseFunctionCallArgumentsDone(JsonNode message) {
+    private void handleResponseFunctionCallArgumentsDone(JsonElement message) {
         try {
             RealtimeMessage.ResponseFunctionCallArgumentsDone event = 
-                objectMapper.treeToValue(message, RealtimeMessage.ResponseFunctionCallArgumentsDone.class);
+                gson.fromJson(message, RealtimeMessage.ResponseFunctionCallArgumentsDone.class);
             log.info("Function call arguments done for call {}: {}", event.getCall_id(), event.getArguments());
             // 这里可以添加具体的业务逻辑，比如执行函数调用
         } catch (Exception e) {
@@ -444,9 +462,9 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理速率限制更新事件
      */
-    private void handleRateLimitsUpdated(JsonNode message) {
+    private void handleRateLimitsUpdated(JsonElement message) {
         try {
-            RealtimeMessage.RateLimitsUpdated event = objectMapper.treeToValue(message, RealtimeMessage.RateLimitsUpdated.class);
+            RealtimeMessage.RateLimitsUpdated event = gson.fromJson(message, RealtimeMessage.RateLimitsUpdated.class);
             log.info("Rate limits updated: {} limits", event.getRate_limits().size());
             for (RealtimeMessage.RateLimit limit : event.getRate_limits()) {
                 log.debug("Rate limit {}: {}/{}, reset in {}s", 
@@ -461,12 +479,13 @@ public class MinimaxRealtimeMessageHandler {
     /**
      * 处理错误事件
      */
-    private void handleError(JsonNode message) {
+    private void handleError(JsonElement message) {
         try {
-            RealtimeMessage.ErrorEvent event = objectMapper.treeToValue(message, RealtimeMessage.ErrorEvent.class);
+            RealtimeMessage.ErrorEvent event = gson.fromJson(message, RealtimeMessage.ErrorEvent.class);
             log.error("Server error - Type: {}, Code: {}, Message: {}", 
                      event.getError().getType(), event.getError().getCode(), event.getError().getMessage());
             // 这里可以添加具体的业务逻辑，比如错误恢复
+
         } catch (Exception e) {
             log.error("Error handling error event: {}", e.getMessage());
         }
