@@ -67,4 +67,11 @@ public class RoleMeta {
 
     private Function<ActionContext, CompletableFuture<Message>> actFunc;
 
+    @Builder.Default
+    private boolean autoWebQuery = false;
+
+    //默认10s
+    @Builder.Default
+    private long timeout = 10000;
+
 }

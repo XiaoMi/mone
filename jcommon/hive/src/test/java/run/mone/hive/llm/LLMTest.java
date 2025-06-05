@@ -3,6 +3,7 @@ package run.mone.hive.llm;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -774,7 +775,8 @@ class LLMTest {
                 .build();
         LLM llm = new LLM(config);
         String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1);
-        System.out.println(classify);
+        String str = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
+        System.out.println(str);
     }
 
     @Test

@@ -25,6 +25,7 @@ public class AgentConfig {
                 .profile("你是一名优秀的私人助理")
                 .goal("你的目标是更好的帮助用户")
                 .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
+                .autoWebQuery(true)
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),
@@ -37,6 +38,8 @@ public class AgentConfig {
                         new TextToSpeechTool()))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
+                //30s
+                .timeout(30000)
                 .build();
     }
 

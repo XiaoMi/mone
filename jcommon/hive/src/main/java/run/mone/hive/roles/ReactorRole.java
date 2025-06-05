@@ -3,6 +3,7 @@ package run.mone.hive.roles;
 import com.google.api.client.util.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
@@ -24,6 +25,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
@@ -100,6 +102,8 @@ public class ReactorRole extends Role {
             ===========
             History:(之前的记录)
             ${history}
+            
+            ${web_query_info}
             
             ===========
             Latest Questions(最后的步骤):
@@ -473,10 +477,37 @@ public class ReactorRole extends Role {
         return prompt;
     }
 
+    //构建用户提问的prompt
     public String buildUserPrompt(Message msg, String history) {
+        String queryInfo = "";
+        //支持自动从网络查询信息
+        if (roleMeta.isAutoWebQuery()) {
+            //做下意图识别(看看是不是需要网络查询内容)
+            String classify = getClassificationLabel(msg);
+            //去网络搜索内容
+            if (!classify.equals("不需要搜索网络")) {
+                TavilySearchTool tool = new TavilySearchTool();
+                JsonObject queryObj = new JsonObject();
+                queryObj.addProperty("query", msg.getContent());
+                String res = tool.execute(this, queryObj).toString();
+                queryInfo = "===========\n" + "网络中查询到的内容:" +"\n" + res + "\n";
+            }
+        }
+
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
                 "history", history,
+                "web_query_info", queryInfo,
                 "question", msg.getContent()));
+    }
+
+    private static String getClassificationLabel(Message msg) {
+        LLM llm = new LLM(LLMConfig.builder()
+                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
+                .url(System.getenv("ATLAS_URL"))
+                .build());
+        String classify = llm.getClassifyScore("bert", "finetune-bert-20250605-73a29258", Arrays.asList(msg.getContent()), 1);
+        classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
+        return classify;
     }
 
     public void setLlm(LLM llm) {
