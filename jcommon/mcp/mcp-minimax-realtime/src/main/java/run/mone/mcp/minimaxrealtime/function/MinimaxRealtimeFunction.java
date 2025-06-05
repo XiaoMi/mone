@@ -112,8 +112,8 @@ public class MinimaxRealtimeFunction implements McpFunction {
     }
 
     private void addSink(reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink) {
-        int i = MinimaxRealtimeMessageHandler.lastIndex.addAndGet(1);
-        MinimaxRealtimeMessageHandler.sinkMap.put(String.valueOf(i), sink);
+        // 将sink添加到队列（队尾进）
+        MinimaxRealtimeMessageHandler.addSinkToQueue(sink);
     }
 
     private void handleSendTextWithAutoConnect(Map<String, Object> input, reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink) {

@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 /**
@@ -30,20 +30,45 @@ import java.util.function.Consumer;
 @Component
 public class MinimaxRealtimeMessageHandler {
 
-    static public final AtomicInteger lastIndex = new AtomicInteger(0);
-
-    static public final AtomicInteger firstIndex = new AtomicInteger(0);
-
-    static public final Map<String, reactor.core.publisher.FluxSink<McpSchema.CallToolResult>> sinkMap = new ConcurrentHashMap();
+    // 同步队列，支持队尾进、队头出
+    static public final ConcurrentLinkedQueue<reactor.core.publisher.FluxSink<McpSchema.CallToolResult>> sinkQueue = new ConcurrentLinkedQueue<>();
+    
+    // ID到Sink的映射表，用于根据response ID查找对应的sink
+    static public final Map<String, reactor.core.publisher.FluxSink<McpSchema.CallToolResult>> sinkMap = new ConcurrentHashMap<>();
 
     private final Gson gson = new Gson();
-    private final JsonParser jsonParser = new JsonParser();
-    
     // 消息类型到处理器的映射
     private final Map<String, Consumer<JsonElement>> messageHandlers = new HashMap<>();
     
     public MinimaxRealtimeMessageHandler() {
         initializeHandlers();
+    }
+    
+    /**
+     * 添加sink到队列（队尾进）
+     * @param sink 要添加的FluxSink
+     */
+    public static void addSinkToQueue(reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink) {
+        if (sink != null) {
+            sinkQueue.offer(sink);
+            log.debug("Added sink to queue, current queue size: {}", sinkQueue.size());
+        }
+    }
+    
+    /**
+     * 获取队列当前大小
+     * @return 队列大小
+     */
+    public static int getQueueSize() {
+        return sinkQueue.size();
+    }
+    
+    /**
+     * 获取当前活跃的映射数量
+     * @return 映射表大小
+     */
+    public static int getActiveMappingCount() {
+        return sinkMap.size();
     }
     
     /**
@@ -257,12 +282,13 @@ public class MinimaxRealtimeMessageHandler {
             log.info("Response created: {}", id);
             // 这里可以添加具体的业务逻辑
             log.info("handleResponseCreated: {}", event);
-            int i = firstIndex.get();
-            if (i < lastIndex.get()) {
-                i = firstIndex.incrementAndGet();
-                if (id != null) {
-                    sinkMap.putIfAbsent(id, sinkMap.get(String.valueOf(i)));
-                }
+            
+            // 从队头取出一个sink
+            reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink = sinkQueue.poll();
+            if (sink != null && id != null) {
+                // 将ID与sink关联
+                sinkMap.put(id, sink);
+                log.debug("Associated response ID {} with sink from queue", id);
             }
         } catch (Exception e) {
             log.error("Error handling response.created: {}", e.getMessage());
@@ -277,9 +303,12 @@ public class MinimaxRealtimeMessageHandler {
             RealtimeMessage.ResponseDone event = gson.fromJson(message, RealtimeMessage.ResponseDone.class);
             log.info("Response done: {}, status: {}", event.getResponse().getId(), event.getResponse().getStatus());
             // 这里可以添加具体的业务逻辑
+            
+            // 从映射表中移除并完成sink
             FluxSink<McpSchema.CallToolResult> sink = sinkMap.remove(event.getResponse().getId());
             if (sink != null) {
                 sink.complete();
+                log.debug("Completed and removed sink for response ID: {}", event.getResponse().getId());
             }
         } catch (Exception e) {
             log.error("Error handling response.done: {}", e.getMessage());
@@ -354,7 +383,7 @@ public class MinimaxRealtimeMessageHandler {
             if (sink != null && !sink.isCancelled()) {
                 List<McpSchema.Content> contents = new ArrayList<>();
                 contents.add(new McpSchema.TextContent(event.getDelta()));
-                sink.next(new McpSchema.CallToolResult(contents, true));
+                sink.next(new McpSchema.CallToolResult(contents, false));
             }
         } catch (Exception e) {
             log.error("Error handling response.text.delta: {}", e.getMessage());
@@ -383,6 +412,12 @@ public class MinimaxRealtimeMessageHandler {
                 gson.fromJson(message, RealtimeMessage.ResponseAudioTranscriptDelta.class);
             log.debug("Audio transcript delta for item {}: {}", event.getItem_id(), event.getDelta());
             // 这里可以添加具体的业务逻辑
+            FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(event.getResponse_id());
+            if (sink != null && !sink.isCancelled()) {
+                List<McpSchema.Content> contents = new ArrayList<>();
+                contents.add(new McpSchema.TextContent(event.getDelta()));
+                sink.next(new McpSchema.CallToolResult(contents, false));
+            }
         } catch (Exception e) {
             log.error("Error handling response.audio_transcript.delta: {}", e.getMessage());
         }
@@ -485,7 +520,16 @@ public class MinimaxRealtimeMessageHandler {
             log.error("Server error - Type: {}, Code: {}, Message: {}", 
                      event.getError().getType(), event.getError().getCode(), event.getError().getMessage());
             // 这里可以添加具体的业务逻辑，比如错误恢复
-
+            
+            // 从队头取出一个sink
+            reactor.core.publisher.FluxSink<McpSchema.CallToolResult> sink = sinkQueue.poll();
+            if (sink != null) {
+                List<McpSchema.Content> contents = new ArrayList<>();
+                contents.add(new McpSchema.TextContent(event.getError().getMessage()));
+                sink.next(new McpSchema.CallToolResult(contents, true));
+                sink.complete();
+                log.debug("Completed and removed sink for error event");
+            }
         } catch (Exception e) {
             log.error("Error handling error event: {}", e.getMessage());
         }
