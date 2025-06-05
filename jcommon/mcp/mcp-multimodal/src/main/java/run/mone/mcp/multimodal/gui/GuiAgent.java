@@ -36,13 +36,16 @@ public class GuiAgent {
         String imagePath = multimodalService.captureScreenshotWithRobot(null).blockFirst();
         String prompt = """
                 根据图片和需求帮我拆分下操作列表.
+                
                 支持的操作:
                 click(start_box='[x1, y1, x2, y2]')
                 left_double(start_box='[x1, y1, x2, y2]')
                 right_single(start_box='[x1, y1, x2, y2]')
                 drag(start_box='[x1, y1, x2, y2]', end_box='[x3, y3, x4, y4]')
                 hotkey(key='')
+                //输入内容
                 type(content='') #If you want to submit your input, use "\\n" at the end of `content`.
+                //滚动屏幕
                 scroll(start_box='[x1, y1, x2, y2]', direction='down or up or right or left')
                 //代表结束
                 finished()

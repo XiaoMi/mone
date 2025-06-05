@@ -142,9 +142,10 @@ public class ActionGraph {
 
                 node.setContext(sb.toString());
                 node.setGraphContext(ActionGraph.this.context);
-
                 // 执行当前节点
-                return node.run().join();
+                Message result = node.run().join();
+                node.sendMessage(result);
+                return result;
             } catch (Exception e) {
                 log.error("Error executing node {}: {}", node.getKey(), e.getMessage());
                 throw new RuntimeException("Node execution failed: " + node.getKey(), e);
