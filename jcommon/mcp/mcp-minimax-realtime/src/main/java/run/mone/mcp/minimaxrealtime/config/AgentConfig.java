@@ -17,7 +17,7 @@ import run.mone.mcp.minimaxrealtime.function.MinimaxRealtimeFunction;
 @Configuration
 public class AgentConfig {
 
-    @Value("${mcp.agent.name:minimax-realtime-agent}")
+    @Value("${mcp.agent.name:minimax_realtime_agent}")
     private String agentName;
 
     @Autowired
@@ -32,8 +32,6 @@ public class AgentConfig {
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),
-                        new AskTool(),
-                        new AttemptCompletionTool(),
                         new TextToSpeechTool(),
                         new SpeechToTextTool())
                 )
