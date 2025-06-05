@@ -57,8 +57,7 @@ public class MinimaxRealtimeFunction implements McpFunction {
     // 默认会话ID，简化使用
     private static final String DEFAULT_SESSION_ID = "default_session";
 
-    @Value("${mcp.agent.name:minimax_realtime_agent}")
-    private String name;
+    private String name = "stream_minimax_realtime_agent";
     private String desc = "MiniMax实时API接口，支持文本和音频的实时对话，自动连接和重连";
 
     @Override
