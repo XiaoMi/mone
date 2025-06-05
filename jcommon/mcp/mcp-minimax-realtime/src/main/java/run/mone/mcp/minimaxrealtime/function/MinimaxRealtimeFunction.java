@@ -34,7 +34,7 @@ public class MinimaxRealtimeFunction implements McpFunction {
                 "action": {
                   "type": "string",
                   "enum": ["send_text", "send_audio", "reconnect", "status"],
-                  "description": "要执行的操作类型: send_text(发送文本), send_audio(发送音频), reconnect(重连), status(获取连接状态)"
+                  "description": "要执行的操作类型: send_text(发送文本), send_audio(发送音频), reconnect(重连web socket), status(获取web socket接状态)"
                 },
                 "text": {
                   "type": "string",
@@ -144,11 +144,15 @@ public class MinimaxRealtimeFunction implements McpFunction {
                 log.error("Failed to send text message after retries", throwable);
                 contents.add(new McpSchema.TextContent("Failed to send text message: " + throwable.getMessage()));
                 sink.next(new McpSchema.CallToolResult(contents, true));
-            } else {
-                contents.add(new McpSchema.TextContent("Text message sent successfully"));
+                sink.complete();
+            } else if (success) {
+                contents.add(new McpSchema.TextContent("开始输出文本：\n"));
                 sink.next(new McpSchema.CallToolResult(contents, false));
+            } else {
+                contents.add(new McpSchema.TextContent("Failed to send text message"));
+                sink.next(new McpSchema.CallToolResult(contents, true));
+                sink.complete();
             }
-            sink.complete();
         });
     }
 

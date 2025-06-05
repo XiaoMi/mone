@@ -307,8 +307,11 @@ public class MinimaxRealtimeMessageHandler {
             // 从映射表中移除并完成sink
             FluxSink<McpSchema.CallToolResult> sink = sinkMap.remove(event.getResponse().getId());
             if (sink != null) {
-                sink.complete();
                 log.debug("Completed and removed sink for response ID: {}", event.getResponse().getId());
+                List<McpSchema.Content> contents = new ArrayList<>();
+                contents.add(new McpSchema.TextContent("\n文本结束\n"));
+                sink.next(new McpSchema.CallToolResult(contents, false));
+                sink.complete();
             }
         } catch (Exception e) {
             log.error("Error handling response.done: {}", e.getMessage());

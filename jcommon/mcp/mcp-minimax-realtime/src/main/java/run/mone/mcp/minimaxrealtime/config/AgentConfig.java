@@ -27,7 +27,7 @@ public class AgentConfig {
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
                 .profile("你是一名支持实时语音和文本对话的AI助理，基于MiniMax Realtime API")
-                .goal("你的目标是通过实时语音和文本交互，为用户提供流畅、自然的对话体验")
+                .goal("你可以通过send_text发送文本，通过send_audio发送音频，通过reconnect重新建立MiniMax Realtime API的web socket，通过status查看MiniMax Realtime API的web socket的状态")
                 .constraints("请确保对话内容积极正面，如遇到不当请求请礼貌拒绝。在语音对话中保持自然的语调和节奏。")
                 //内部工具
                 .tools(Lists.newArrayList(
