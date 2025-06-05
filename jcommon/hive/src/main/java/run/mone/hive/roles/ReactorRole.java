@@ -174,10 +174,14 @@ public class ReactorRole extends Role {
         log.info("think");
         this.state.set(RoleState.think);
 
+        if (this.roleMeta.getThinkFunc() != null) {
+            return this.roleMeta.getThinkFunc().apply("");
+        }
+
+        //TODO 后边改成组合模式,这么写有点怪
         if (this.type.equals("Role")) {
             return super.think();
         }
-
 
         int value = observe();
         //发生了空轮训(默认30分钟没有沟通后,就自动退出)
@@ -212,6 +216,10 @@ public class ReactorRole extends Role {
     protected int observe() {
         log.info("{} observe", this.name);
         this.state.set(RoleState.observe);
+
+        if (this.roleMeta.getObserveFunc() != null) {
+            return this.roleMeta.getObserveFunc().apply("");
+        }
 
         if (type.equals("Role")) {
             return super.observe();
@@ -305,9 +313,15 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.poll();
         FluxSink sink = msg.getSink();
 
+        context.setSink(sink);
+
+        //允许使用用户自己定义的执行逻辑
+        if (null != roleMeta.getActFunc()) {
+            return roleMeta.getActFunc().apply(context);
+        }
+
         if (type.equals("Role")) {
             sink.next("执行任务");
-            sink.complete();
             return super.act(context);
         }
 
@@ -351,6 +365,11 @@ public class ReactorRole extends Role {
                 sink.error(e);
             }
             log.error("ReactorRole act error:" + e.getMessage(), e);
+        } finally {
+            //没有副作用
+            if (null != sink) {
+                sink.complete();
+            }
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
