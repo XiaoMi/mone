@@ -26,6 +26,8 @@ public class AgentConfig {
                 .goal("你的目标是更好的帮助用户")
                 .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
                 .autoWebQuery(true)
+                //允许自动从知识库获取内容
+                .autoRag(true)
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),

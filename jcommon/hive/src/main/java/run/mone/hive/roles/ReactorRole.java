@@ -103,6 +103,8 @@ public class ReactorRole extends Role {
             History:(之前的记录)
             ${history}
             
+            ${rag_info}
+            
             ${web_query_info}
             
             ===========
@@ -478,26 +480,62 @@ public class ReactorRole extends Role {
     }
 
     //构建用户提问的prompt
+    //1.支持从网络获取内容  2.支持从知识库获取内容
     public String buildUserPrompt(Message msg, String history) {
         String queryInfo = "";
         //支持自动从网络查询信息
         if (roleMeta.isAutoWebQuery()) {
-            //做下意图识别(看看是不是需要网络查询内容)
-            String classify = getClassificationLabel(msg);
-            //去网络搜索内容
-            if (!classify.equals("不需要搜索网络")) {
-                TavilySearchTool tool = new TavilySearchTool();
-                JsonObject queryObj = new JsonObject();
-                queryObj.addProperty("query", msg.getContent());
-                String res = tool.execute(this, queryObj).toString();
-                queryInfo = "===========\n" + "网络中查询到的内容:" +"\n" + res + "\n";
-            }
+            queryInfo = getNetworkQueryInfo(msg, queryInfo);
+        }
+
+        //从知识库中获取信息内容
+        String ragInfo = "";
+        if (roleMeta.isAutoRag()) {
+            ragInfo = queryKnowledgeBase(msg);
         }
 
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
                 "history", history,
                 "web_query_info", queryInfo,
+                "rag_info", ragInfo,
                 "question", msg.getContent()));
+    }
+
+    private String getNetworkQueryInfo(Message msg, String queryInfo) {
+        //做下意图识别(看看是不是需要网络查询内容)
+        String classify = getClassificationLabel(msg);
+        //去网络搜索内容
+        if (!classify.equals("不需要搜索网络")) {
+            TavilySearchTool tool = new TavilySearchTool();
+            JsonObject queryObj = new JsonObject();
+            queryObj.addProperty("query", msg.getContent());
+            String res = tool.execute(this, queryObj).toString();
+            queryInfo = "===========\n" + "网络中查询到的内容:" + "\n" + res + "\n";
+        }
+        return queryInfo;
+    }
+
+    private static String queryKnowledgeBase(Message msg) {
+        try {
+            String ragUrl = System.getenv("RAG_URL");
+            LLM llm = new LLM(LLMConfig.builder()
+                    .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                    .url(ragUrl + "/rag/query")
+                    .build());
+
+            String result = llm.queryRag(
+                    msg.getContent(), // query
+                    5, // topK
+                    0.5, // threshold
+                    "", // tag
+                    "1" // tenant
+            );
+            result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
+            return "===========\n" + "知识库中的内容:" + "\n" + result + "\n";
+        } catch (Throwable ex) {
+            log.error(ex.getMessage());
+        }
+        return "";
     }
 
     private static String getClassificationLabel(Message msg) {

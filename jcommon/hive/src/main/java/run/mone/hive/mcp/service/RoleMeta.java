@@ -67,8 +67,14 @@ public class RoleMeta {
 
     private Function<ActionContext, CompletableFuture<Message>> actFunc;
 
+    //自动开启网络搜索
     @Builder.Default
     private boolean autoWebQuery = false;
+
+    //自动开启rag
+    @Builder.Default
+    private boolean autoRag = false;
+
 
     //默认10s
     @Builder.Default

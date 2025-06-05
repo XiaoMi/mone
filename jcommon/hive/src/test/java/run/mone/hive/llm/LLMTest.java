@@ -220,14 +220,14 @@ class LLMTest {
                                                           请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
                         """
                 , Message.builder()
-                .images(Lists.newArrayList(
-                    img
-                )).build());
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
         compoundMsg.setImageType("png");
 
-        List<String>list = new ArrayList<>();
-        IntStream.range(0,10).forEach(it->{
-            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        List<String> list = new ArrayList<>();
+        IntStream.range(0, 10).forEach(it -> {
+            String str = llm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
             System.out.println(str);
             list.add(str);
         });
@@ -769,7 +769,7 @@ class LLMTest {
     //调用私有的分类小模型
     @Test
     public void testClassify() {
-        config =  LLMConfig.builder()
+        config = LLMConfig.builder()
                 .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
                 .url(System.getenv("ATLAS_URL"))
                 .build();
@@ -779,17 +779,19 @@ class LLMTest {
         System.out.println(str);
     }
 
+    private String ragUrl = System.getenv("RAG_URL");
+
     @Test
     public void testAddRag() {
         config = LLMConfig.builder()
                 .llmProvider(LLMProvider.KNOWLEDGE_BASE) // 复用现有的provider
-                .url("http://xxx:8083/rag/add")
+                .url(ragUrl + "/rag/add")
                 .build();
         LLM llm = new LLM(config);
         String result = llm.addRag(
                 "", // id
-                "6666", // question
-                "7777", // content
+                "nacos是什么?", // question
+                "nacos是配置中心和服务发现中心", // content
                 0, // askMark
                 "", // askSpeechSkill
                 "", // serviceType
@@ -804,16 +806,17 @@ class LLMTest {
     public void testQueryRag() {
         config = LLMConfig.builder()
                 .llmProvider(LLMProvider.KNOWLEDGE_BASE)
-                .url("http://xxx:8083/rag/query")
+                .url(ragUrl + "/rag/query")
                 .build();
         LLM llm = new LLM(config);
         String result = llm.queryRag(
-                "666", // query
+                "nacos是什么?", // query
                 5, // topK
                 0.5, // threshold
                 "", // tag
                 "1" // tenant
         );
+        result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
         System.out.println("RAG查询结果: " + result);
     }
 
