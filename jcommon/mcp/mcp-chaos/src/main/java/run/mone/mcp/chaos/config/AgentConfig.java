@@ -8,7 +8,6 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
 import run.mone.mcp.chaos.function.ChaosFunction;
 import run.mone.mcp.chaos.function.CreateChaosFunction;
-import run.mone.mcp.chat.tool.SystemInfoTool;
 
 /**
  * @author zhangxiaowei6
@@ -31,10 +30,9 @@ public class AgentConfig {
                         new AskTool(),
                         new AttemptCompletionTool(),
                         new SpeechToTextTool(),
-                        new SystemInfoTool(),
                         new TextToSpeechTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName),new ChaosFunction(),new CreateChaosFunction()))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,30),new ChaosFunction(),new CreateChaosFunction()))
                 .build();
     }
 }

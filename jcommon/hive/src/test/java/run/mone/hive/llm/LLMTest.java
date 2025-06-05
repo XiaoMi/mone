@@ -1,4 +1,3 @@
-
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
@@ -774,6 +773,59 @@ class LLMTest {
         LLM llm = new LLM(config);
         String classify = llm.getClassifyScore("bert", "xxx", Arrays.asList("这是一个示例文本","这是第二个示例文本"), 1);
         System.out.println(classify);
+    }
+
+    @Test
+    public void testAddRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE) // 复用现有的provider
+                .url("http://xxx:8083/rag/add")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.addRag(
+                "", // id
+                "6666", // question
+                "7777", // content
+                0, // askMark
+                "", // askSpeechSkill
+                "", // serviceType
+                "", // conclusion
+                "", // blockId
+                "1" // tenant
+        );
+        System.out.println("RAG新增结果: " + result);
+    }
+
+    @Test
+    public void testQueryRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url("http://xxx:8083/rag/query")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRag(
+                "666", // query
+                5, // topK
+                0.5, // threshold
+                "", // tag
+                "1" // tenant
+        );
+        System.out.println("RAG查询结果: " + result);
+    }
+
+    @Test
+    public void testQueryRagById() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url("http://xxx:8083/rag/queryById")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRagById(
+                "pvyZvpYB8f3pWX_h414k", // questionId
+                "SbSZvpYByvSWuH024nBA", // contentId
+                "1" // tenant
+        );
+        System.out.println("RAG ID查询结果: " + result);
     }
 
 //    @Test
