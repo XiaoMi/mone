@@ -769,10 +769,10 @@ class LLMTest {
     public void testClassify() {
         config =  LLMConfig.builder()
                 .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
-                .url("http://xxxx")
+                .url(System.getenv("ATLAS_URL"))
                 .build();
         LLM llm = new LLM(config);
-        String classify = llm.getClassifyScore("bert", "xxx", Arrays.asList("这是一个示例文本","这是第二个示例文本"), 1);
+        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("北京今天天气"), 1);
         System.out.println(classify);
     }
 
