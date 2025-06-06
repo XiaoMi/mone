@@ -146,7 +146,7 @@ public class MinimaxRealtimeFunction implements McpFunction {
                 sink.next(new McpSchema.CallToolResult(contents, true));
                 sink.complete();
             } else if (success) {
-                contents.add(new McpSchema.TextContent("开始输出文本：\n"));
+                contents.add(new McpSchema.TextContent("\nrealtime开始处理:\n"));
                 sink.next(new McpSchema.CallToolResult(contents, false));
             } else {
                 contents.add(new McpSchema.TextContent("Failed to send text message"));
@@ -184,24 +184,15 @@ public class MinimaxRealtimeFunction implements McpFunction {
                 log.error("Failed to send audio data after retries", throwable);
                 contents.add(new McpSchema.TextContent("Failed to send audio data: " + throwable.getMessage()));
                 sink.next(new McpSchema.CallToolResult(contents, true));
-            } else {
-                contents.add(new McpSchema.TextContent("Audio data sent successfully"));
-                
-                // 等待一段时间收集响应
-                try {
-                    Thread.sleep(3000);
-                    StringBuilder responseBuffer = responseBuffers.get(DEFAULT_SESSION_ID);
-                    if (responseBuffer != null && responseBuffer.length() > 0) {
-                        contents.add(new McpSchema.TextContent("Response: " + responseBuffer.toString()));
-                        responseBuffer.setLength(0); // 清空缓冲区
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                
+                sink.complete();
+            } else if (success) {
+                contents.add(new McpSchema.TextContent("\nrealtime开始处理:\n"));
                 sink.next(new McpSchema.CallToolResult(contents, false));
+            } else {
+                contents.add(new McpSchema.TextContent("Failed to send audio data"));
+                sink.next(new McpSchema.CallToolResult(contents, true));
+                sink.complete();
             }
-            sink.complete();
         });
     }
 
