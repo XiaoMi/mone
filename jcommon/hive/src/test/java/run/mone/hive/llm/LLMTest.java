@@ -790,8 +790,8 @@ class LLMTest {
         LLM llm = new LLM(config);
         String result = llm.addRag(
                 "", // id
-                "nacos是什么?", // question
-                "nacos是配置中心和服务发现中心", // content
+                "如何使用miline平台进行服务部署?", // question
+                "使用miline平台进行服务部署的步骤包括:1.登录miline平台 2.选择要部署的服务 3.配置部署环境和参数 4.选择部署策略 5.执行部署 6.监控部署状态", // content
                 0, // askMark
                 "", // askSpeechSkill
                 "", // serviceType
