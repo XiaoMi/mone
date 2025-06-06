@@ -35,6 +35,9 @@ public class MinimaxRealtimeMessageHandler {
     
     // ID到Sink的映射表，用于根据response ID查找对应的sink
     static public final Map<String, reactor.core.publisher.FluxSink<McpSchema.CallToolResult>> sinkMap = new ConcurrentHashMap<>();
+    
+    // 存储每个response_id对应的音频片段列表
+    private final Map<String, List<String>> responseAudioMap = new ConcurrentHashMap<>();
 
     private final Gson gson = new Gson();
     // 消息类型到处理器的映射
@@ -448,8 +451,15 @@ public class MinimaxRealtimeMessageHandler {
             RealtimeMessage.ResponseAudioDelta event = gson.fromJson(message, RealtimeMessage.ResponseAudioDelta.class);
             log.debug("Audio delta for item {}, size: {} bytes", event.getItem_id(), 
                      event.getDelta() != null ? event.getDelta().length() : 0);
-            // 这里可以添加具体的业务逻辑，比如播放音频流
-
+            
+            // 收集音频数据片段
+            if (event.getDelta() != null && event.getResponse_id() != null) {
+                responseAudioMap.computeIfAbsent(event.getResponse_id(), k -> new ArrayList<>())
+                              .add(event.getDelta());
+                log.debug("Added audio delta to response {}, total segments: {}", 
+                         event.getResponse_id(), responseAudioMap.get(event.getResponse_id()).size());
+            }
+            
         } catch (Exception e) {
             log.error("Error handling response.audio.delta: {}", e.getMessage());
         }
@@ -462,7 +472,39 @@ public class MinimaxRealtimeMessageHandler {
         try {
             RealtimeMessage.ResponseAudioDone event = gson.fromJson(message, RealtimeMessage.ResponseAudioDone.class);
             log.info("Audio done for item: {}", event.getItem_id());
-            // 这里可以添加具体的业务逻辑
+            
+            // 获取并处理收集到的音频数据
+            String responseId = event.getResponse_id();
+            List<String> audioBase64List = responseAudioMap.remove(responseId);
+            
+            if (audioBase64List != null && !audioBase64List.isEmpty()) {
+                log.info("Processing {} audio segments for response {}", audioBase64List.size(), responseId);
+                
+                try {
+                    // 拼接和编码为WAV
+                    String wavBase64 = concatAndEncodeWAV(audioBase64List, 24000, 1);
+                   //  String audioDataUri = "data:audio/wav;base64," + wavBase64;
+                    
+                    // 通过sink发送音频数据
+                    FluxSink<McpSchema.CallToolResult> sink = sinkMap.get(responseId);
+                    if (sink != null && !sink.isCancelled()) {
+                        List<McpSchema.Content> contents = new ArrayList<>();
+                        String resJson = """
+                                {
+                                    "result": "%s",
+                                    "toolMsgType": "voice"
+                                }
+                                """;
+                        contents.add(new McpSchema.TextContent(String.format(resJson, wavBase64)));
+                        sink.next(new McpSchema.CallToolResult(contents, false));
+                        log.debug("Sent audio data to sink for response {}", responseId);
+                    }
+                } catch (Exception e) {
+                    log.error("Error encoding audio data for response {}: {}", responseId, e.getMessage());
+                }
+            } else {
+                log.debug("No audio data found for response {}", responseId);
+            }
 
         } catch (Exception e) {
             log.error("Error handling response.audio.done: {}", e.getMessage());
@@ -536,5 +578,107 @@ public class MinimaxRealtimeMessageHandler {
         } catch (Exception e) {
             log.error("Error handling error event: {}", e.getMessage());
         }
+    }
+    
+    // ========== 音频处理辅助方法 ==========
+    
+    /**
+     * 拼接多个 base64 PCM 音频片段并编码为 WAV（base64）
+     * @param pcmBase64List base64 PCM 音频片段数组
+     * @param sampleRate 采样率，默认24000
+     * @param numChannels 通道数，默认1
+     * @return 拼接后的WAV的base64
+     */
+    private String concatAndEncodeWAV(List<String> pcmBase64List, int sampleRate, int numChannels) {
+        try {
+            // 解码所有base64 PCM片段并拼接
+            int totalLength = 0;
+            List<byte[]> pcmBuffers = new ArrayList<>();
+            
+            for (String base64 : pcmBase64List) {
+                byte[] pcmData = java.util.Base64.getDecoder().decode(base64);
+                pcmBuffers.add(pcmData);
+                totalLength += pcmData.length;
+            }
+            
+            // 合并所有PCM数据
+            byte[] mergedPCM = new byte[totalLength];
+            int offset = 0;
+            for (byte[] buf : pcmBuffers) {
+                System.arraycopy(buf, 0, mergedPCM, offset, buf.length);
+                offset += buf.length;
+            }
+            
+            // 生成WAV
+            return encodeWAV(mergedPCM, sampleRate, numChannels);
+            
+        } catch (Exception e) {
+            log.error("Error concatenating and encoding WAV: {}", e.getMessage());
+            throw new RuntimeException("Failed to encode WAV", e);
+        }
+    }
+    
+    /**
+     * 将PCM数据编码为WAV格式并返回base64
+     * @param pcmData PCM音频数据
+     * @param sampleRate 采样率
+     * @param numChannels 通道数
+     * @return WAV格式的base64字符串
+     */
+    private String encodeWAV(byte[] pcmData, int sampleRate, int numChannels) {
+        try {
+            // WAV头部信息 (44字节)
+            byte[] header = new byte[44];
+            int pos = 0;
+            
+            // RIFF chunk descriptor
+            System.arraycopy("RIFF".getBytes(), 0, header, pos, 4); pos += 4;
+            writeInt32LE(header, pos, 36 + pcmData.length); pos += 4; // ChunkSize
+            System.arraycopy("WAVE".getBytes(), 0, header, pos, 4); pos += 4;
+            
+            // fmt sub-chunk
+            System.arraycopy("fmt ".getBytes(), 0, header, pos, 4); pos += 4;
+            writeInt32LE(header, pos, 16); pos += 4; // Subchunk1Size
+            writeInt16LE(header, pos, 1); pos += 2;  // AudioFormat (PCM)
+            writeInt16LE(header, pos, numChannels); pos += 2;
+            writeInt32LE(header, pos, sampleRate); pos += 4;
+            writeInt32LE(header, pos, sampleRate * numChannels * 2); pos += 4; // ByteRate
+            writeInt16LE(header, pos, numChannels * 2); pos += 2; // BlockAlign
+            writeInt16LE(header, pos, 16); pos += 2; // BitsPerSample
+            
+            // data sub-chunk
+            System.arraycopy("data".getBytes(), 0, header, pos, 4); pos += 4;
+            writeInt32LE(header, pos, pcmData.length); // Subchunk2Size
+            
+            // 组合header和PCM数据
+            byte[] wavData = new byte[header.length + pcmData.length];
+            System.arraycopy(header, 0, wavData, 0, header.length);
+            System.arraycopy(pcmData, 0, wavData, header.length, pcmData.length);
+            
+            // 返回base64编码
+            return java.util.Base64.getEncoder().encodeToString(wavData);
+            
+        } catch (Exception e) {
+            log.error("Error encoding WAV: {}", e.getMessage());
+            throw new RuntimeException("Failed to encode WAV", e);
+        }
+    }
+    
+    /**
+     * 写入32位小端整数
+     */
+    private void writeInt32LE(byte[] buffer, int offset, int value) {
+        buffer[offset] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) ((value >> 8) & 0xFF);
+        buffer[offset + 2] = (byte) ((value >> 16) & 0xFF);
+        buffer[offset + 3] = (byte) ((value >> 24) & 0xFF);
+    }
+    
+    /**
+     * 写入16位小端整数
+     */
+    private void writeInt16LE(byte[] buffer, int offset, int value) {
+        buffer[offset] = (byte) (value & 0xFF);
+        buffer[offset + 1] = (byte) ((value >> 8) & 0xFF);
     }
 } 
