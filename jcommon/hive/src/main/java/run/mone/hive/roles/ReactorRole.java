@@ -496,14 +496,14 @@ public class ReactorRole extends Role {
     public String buildUserPrompt(Message msg, String history, FluxSink sink) {
         String queryInfo = "";
         //支持自动从网络查询信息
-        if (roleMeta.isAutoWebQuery()) {
+        if (roleMeta.getWebQuery().isAutoWebQuery()) {
             queryInfo = getNetworkQueryInfo(msg, queryInfo, sink);
         }
 
         //从知识库中获取信息内容
         String ragInfo = "";
-        if (roleMeta.isAutoRag()) {
-            ragInfo = queryKnowledgeBase(msg,sink);
+        if (roleMeta.getRag().isAutoRag()) {
+            ragInfo = queryKnowledgeBase(msg, sink);
         }
 
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
@@ -513,13 +513,13 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
-    private static String getIntentClassification(String version, Message msg) {
+    private String getIntentClassification(String version, String modelType, Message msg) {
         //获取意图是否访问知识库
         LLM llm = new LLM(LLMConfig.builder()
                 .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
                 .url(System.getenv("ATLAS_URL"))
                 .build());
-        String classify = llm.getClassifyScore("bert", version, Arrays.asList(msg.getContent()), 1);
+        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1);
         classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
         return classify;
     }
@@ -539,10 +539,10 @@ public class ReactorRole extends Role {
         return queryInfo;
     }
 
-    private static String queryKnowledgeBase(Message msg, FluxSink sink) {
+    private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
             //是否访问知识库
-            String classify = getIntentClassification("finetune-bert-20250605-ed8acbcf", msg);
+            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), msg);
             if (classify.equals("是")) {
                 sink.next("从知识库获取信息\n");
                 String ragUrl = System.getenv("RAG_URL");
@@ -567,8 +567,8 @@ public class ReactorRole extends Role {
         return "";
     }
 
-    private static String getClassificationLabel(Message msg) {
-        return getIntentClassification("finetune-bert-20250605-73a29258", msg);
+    private String getClassificationLabel(Message msg) {
+        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), msg);
     }
 
     public void setLlm(LLM llm) {

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * @author goodjava@qq.com
@@ -69,12 +68,11 @@ public class RoleMeta {
 
     //自动开启网络搜索
     @Builder.Default
-    private boolean autoWebQuery = false;
+    private WebQuery webQuery = new WebQuery();
 
     //自动开启rag
     @Builder.Default
-    private boolean autoRag = false;
-
+    private Rag rag = new Rag();
 
     //默认10s
     @Builder.Default

@@ -5,7 +5,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.service.Rag;
 import run.mone.hive.mcp.service.RoleMeta;
+import run.mone.hive.mcp.service.WebQuery;
 import run.mone.hive.roles.tool.*;
 import run.mone.mcp.chat.tool.SystemInfoTool;
 
@@ -25,10 +27,10 @@ public class AgentConfig {
                 .profile("你是一名优秀的私人助理")
                 .goal("你的目标是更好的帮助用户")
                 .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
-                .autoWebQuery(true)
-                //允许自动从知识库获取内容
-                .autoRag(true)
-                //内部工具
+                //允许自动从知识库获取内容(意图识别的小模型)
+                .webQuery(WebQuery.builder().autoWebQuery(true).modelType("bert").version("finetune-bert-20250605-73a29258").build())
+                //内部工具(意图识别的小模型)
+                .rag(Rag.builder().autoRag(true).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
