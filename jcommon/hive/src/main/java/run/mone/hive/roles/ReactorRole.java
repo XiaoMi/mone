@@ -9,7 +9,9 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
@@ -317,8 +319,7 @@ public class ReactorRole extends Role {
         this.state.set(RoleState.act);
 
         Message msg = this.rc.news.poll();
-        FluxSink sink = msg.getSink();
-
+        FluxSink sink = getFluxSink(msg);
         context.setSink(sink);
 
         //允许使用用户自己定义的执行逻辑
@@ -333,7 +334,7 @@ public class ReactorRole extends Role {
 
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
-            String userPrompt = buildUserPrompt(msg, history);
+            String userPrompt = buildUserPrompt(msg, history, sink);
             log.info("userPrompt:{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt, msg);
@@ -378,6 +379,17 @@ public class ReactorRole extends Role {
             }
         }
         return CompletableFuture.completedFuture(Message.builder().build());
+    }
+
+    @NotNull
+    private static FluxSink getFluxSink(Message msg) {
+        FluxSink sink = msg.getSink();
+
+        if (null == sink) {
+            UnicastProcessor<String> processor = UnicastProcessor.create();
+            sink = processor.sink();
+        }
+        return sink;
     }
 
     private Map<String, String> buildToolExtraParam(Message msg) {
@@ -481,17 +493,17 @@ public class ReactorRole extends Role {
 
     //构建用户提问的prompt
     //1.支持从网络获取内容  2.支持从知识库获取内容
-    public String buildUserPrompt(Message msg, String history) {
+    public String buildUserPrompt(Message msg, String history, FluxSink sink) {
         String queryInfo = "";
         //支持自动从网络查询信息
         if (roleMeta.isAutoWebQuery()) {
-            queryInfo = getNetworkQueryInfo(msg, queryInfo);
+            queryInfo = getNetworkQueryInfo(msg, queryInfo, sink);
         }
 
         //从知识库中获取信息内容
         String ragInfo = "";
         if (roleMeta.isAutoRag()) {
-            ragInfo = queryKnowledgeBase(msg);
+            ragInfo = queryKnowledgeBase(msg,sink);
         }
 
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
@@ -501,11 +513,23 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
-    private String getNetworkQueryInfo(Message msg, String queryInfo) {
+    private static String getIntentClassification(String version, Message msg) {
+        //获取意图是否访问知识库
+        LLM llm = new LLM(LLMConfig.builder()
+                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
+                .url(System.getenv("ATLAS_URL"))
+                .build());
+        String classify = llm.getClassifyScore("bert", version, Arrays.asList(msg.getContent()), 1);
+        classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
+        return classify;
+    }
+
+    private String getNetworkQueryInfo(Message msg, String queryInfo, FluxSink sink) {
         //做下意图识别(看看是不是需要网络查询内容)
         String classify = getClassificationLabel(msg);
         //去网络搜索内容
         if (!classify.equals("不需要搜索网络")) {
+            sink.next("从网络获取信息\n");
             TavilySearchTool tool = new TavilySearchTool();
             JsonObject queryObj = new JsonObject();
             queryObj.addProperty("query", msg.getContent());
@@ -515,23 +539,28 @@ public class ReactorRole extends Role {
         return queryInfo;
     }
 
-    private static String queryKnowledgeBase(Message msg) {
+    private static String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
-            String ragUrl = System.getenv("RAG_URL");
-            LLM llm = new LLM(LLMConfig.builder()
-                    .llmProvider(LLMProvider.KNOWLEDGE_BASE)
-                    .url(ragUrl + "/rag/query")
-                    .build());
+            //是否访问知识库
+            String classify = getIntentClassification("finetune-bert-20250605-ed8acbcf", msg);
+            if (classify.equals("是")) {
+                sink.next("从知识库获取信息\n");
+                String ragUrl = System.getenv("RAG_URL");
+                LLM llm = new LLM(LLMConfig.builder()
+                        .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                        .url(ragUrl + "/rag/query")
+                        .build());
 
-            String result = llm.queryRag(
-                    msg.getContent(), // query
-                    5, // topK
-                    0.5, // threshold
-                    "", // tag
-                    "1" // tenant
-            );
-            result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
-            return "===========\n" + "知识库中的内容:" + "\n" + result + "\n";
+                String result = llm.queryRag(
+                        msg.getContent(), // query
+                        5, // topK
+                        0.5, // threshold
+                        "", // tag
+                        "1" // tenant
+                );
+                result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
+                return "===========\n" + "知识库中的内容:" + "\n" + result + "\n";
+            }
         } catch (Throwable ex) {
             log.error(ex.getMessage());
         }
@@ -539,13 +568,7 @@ public class ReactorRole extends Role {
     }
 
     private static String getClassificationLabel(Message msg) {
-        LLM llm = new LLM(LLMConfig.builder()
-                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
-                .url(System.getenv("ATLAS_URL"))
-                .build());
-        String classify = llm.getClassifyScore("bert", "finetune-bert-20250605-73a29258", Arrays.asList(msg.getContent()), 1);
-        classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
-        return classify;
+        return getIntentClassification("finetune-bert-20250605-73a29258", msg);
     }
 
     public void setLlm(LLM llm) {
