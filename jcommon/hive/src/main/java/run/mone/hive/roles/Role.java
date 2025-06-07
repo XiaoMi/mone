@@ -134,6 +134,7 @@ public class Role {
     @SneakyThrows
     protected int observe() {
         log.info("observe");
+        //阻塞模式
         if (isBlockingMessageRetrieval()) {
             //没有数据陷入阻塞
             Message msg = this.rc.news.take();

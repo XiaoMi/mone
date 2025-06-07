@@ -204,6 +204,7 @@ public class RoleService {
         ReactorRole agent = roleMap.get(from);
         if (null != agent) {
             message.setData(Const.ROLE_EXIT);
+            message.setContent(Const.ROLE_EXIT);
             agent.putMessage(message);
         }
         roleMap.remove(from);

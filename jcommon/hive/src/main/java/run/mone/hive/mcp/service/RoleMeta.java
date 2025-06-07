@@ -47,7 +47,8 @@ public class RoleMeta {
     @Builder.Default
     protected List<McpFunction> mcpTools = new ArrayList<>();
 
-    private Function<Message, Integer> checkFinishFunc;
+    @Builder.Default
+    private Function<Message, Integer> checkFinishFunc = (msg)-> 1;
 
     @Builder.Default
     private List<Action> actions = new ArrayList<>();

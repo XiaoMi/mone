@@ -233,10 +233,9 @@ public class ReactorRole extends Role {
             return super.observe();
         }
 
-        Message msg = this.rc.news.poll(10, TimeUnit.MINUTES);
-        if (null == msg) {
-            return -3;
-        }
+        //等待消息
+        Message msg = this.rc.news.take();
+        log.info("receive message:{}", msg);
 
         // 收到特殊指令直接退出
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
@@ -259,14 +258,12 @@ public class ReactorRole extends Role {
         Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
 
         //用户可以扩展退出策略
-        if (null != this.roleMeta.getCheckFinishFunc()) {
-            int v = this.roleMeta.getCheckFinishFunc().apply(lastMsg);
-            if (v < 0) {
-                if (null != lastMsg.getSink()) {
-                    lastMsg.getSink().complete();
-                }
-                return v;
+        int v = this.roleMeta.getCheckFinishFunc().apply(lastMsg);
+        if (v < 0) {
+            if (null != lastMsg.getSink()) {
+                lastMsg.getSink().complete();
             }
+            return v;
         }
 
         String lastMsgContent = lastMsg.getContent();
@@ -342,7 +339,7 @@ public class ReactorRole extends Role {
             AtomicBoolean hasError = new AtomicBoolean(false);
 
             //获取系统提示词
-            String systemPrompt = getSystemPrompt();
+            String systemPrompt = buildSystemPrompt();
 
             //调用大模型(选用合适的工具)
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
@@ -360,7 +357,7 @@ public class ReactorRole extends Role {
             ToolDataInfo it = tools.get(tools.size() - 1);
 
             String name = it.getTag();
-            if (this.toolMap.containsKey(name)) {// 执行tool
+            if (this.toolMap.containsKey(name)) {//执行内部tool
                 callTool(name, it, toolRes, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
@@ -368,15 +365,10 @@ public class ReactorRole extends Role {
                 log.warn("不支持的工具 tool:{}", name);
             }
         } catch (Exception e) {
-            if (null != sink) {
-                sink.error(e);
-            }
+            sink.error(e);
             log.error("ReactorRole act error:" + e.getMessage(), e);
         } finally {
-            //没有副作用
-            if (null != sink) {
-                sink.complete();
-            }
+            sink.complete();
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
@@ -384,7 +376,6 @@ public class ReactorRole extends Role {
     @NotNull
     private static FluxSink getFluxSink(Message msg) {
         FluxSink sink = msg.getSink();
-
         if (null == sink) {
             UnicastProcessor<String> processor = UnicastProcessor.create();
             sink = processor.sink();
@@ -469,7 +460,7 @@ public class ReactorRole extends Role {
     }
 
 
-    private String getSystemPrompt() {
+    private String buildSystemPrompt() {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
             roleDescription = """
