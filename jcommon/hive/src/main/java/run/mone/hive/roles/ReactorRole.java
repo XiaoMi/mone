@@ -469,11 +469,6 @@ public class ReactorRole extends Role {
     }
 
 
-    public void sendMsg(McpSchema.Content content, String toolName) {
-        log.info("send msg :{} {}", content, toolName);
-    }
-
-
     private String getSystemPrompt() {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
@@ -507,8 +502,11 @@ public class ReactorRole extends Role {
         }
 
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
+                //聊天记录
                 "history", history,
+                //网络上下文
                 "web_query_info", queryInfo,
+                //rag上下文
                 "rag_info", ragInfo,
                 "question", msg.getContent()));
     }
