@@ -86,14 +86,14 @@ public class ReactorRole extends Role {
 
     private List<McpFunction> functionList;
 
-    private int idlePollCount = 3;
-
     private int defaultIdlePollCount = 3;
 
     private Date lastReceiveMsgTime;
 
     //用于流式返回用户信息的
     private FluxSink fluxSink;
+
+    private ActionContext ac;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -157,7 +157,7 @@ public class ReactorRole extends Role {
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.llm = llm;
-        this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this.getName());
+        this.scheduledTaskHandler = message -> log.debug("Processing scheduled message: {}", this.getName());
 
         // Initialize scheduler with a single thread
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -172,7 +172,7 @@ public class ReactorRole extends Role {
                     scheduledTaskHandler.accept(this);
                 }
                 health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
-                log.info("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
+                log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
             });
         }, 0, 10, TimeUnit.SECONDS);
     }
@@ -181,10 +181,15 @@ public class ReactorRole extends Role {
         this(name, group, version, profile, goal, constraints, port, llm, tools, mcpTools, NetUtils.getLocalHost());
     }
 
+    @Override
+    protected void beforeReact(ActionContext ac) {
+        this.ac = ac;
+    }
+
     //think -> observe -> act
     @Override
     protected int think() {
-        log.info("think");
+        log.info("{} run think", this.name);
         this.state.set(RoleState.think);
 
         if (this.roleMeta.getThinkFunc() != null) {
@@ -197,22 +202,15 @@ public class ReactorRole extends Role {
         }
 
         int value = observe();
-        //发生了空轮训(默认30分钟没有沟通后,就自动退出)
-        if (value == -3) {
-            if (this.idlePollCount-- < 0) {
-                return value;
-            }
-        }
-        idlePollCount = defaultIdlePollCount;
 
-        if (value == -1) {
+        System.out.println("value--->" + value);
+
+        if (value == 2) {
             if (null != this.fluxSink) {
                 fluxSink.complete();
             }
-            return observe();
-        } else {
-            return value;
         }
+        return value;
     }
 
     @Override
@@ -230,7 +228,7 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected int observe() {
-        log.info("{} observe", this.name);
+        log.info("{} run observe", this.name);
         this.state.set(RoleState.observe);
 
         if (this.roleMeta.getObserveFunc() != null) {
@@ -245,6 +243,7 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.take();
         lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
+        ac.setMsg(msg);
 
         // 收到特殊指令直接退出
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
@@ -263,40 +262,26 @@ public class ReactorRole extends Role {
         //放到记忆中
         this.putMemory(msg);
 
-        // 获取memory中最后一条消息
-        Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
 
         //用户可以扩展退出策略
-        int v = this.roleMeta.getCheckFinishFunc().apply(lastMsg);
+        int v = this.roleMeta.getCheckFinishFunc().apply(msg);
         if (v < 0) {
-            if (null != lastMsg.getSink()) {
-                lastMsg.getSink().complete();
+            if (null != msg.getSink()) {
+                msg.getSink().complete();
             }
             return v;
         }
 
-        String lastMsgContent = lastMsg.getContent();
-
-        //其实只会有一个
-        List<ToolDataInfo> tools = new MultiXmlParser().parse(lastMsgContent);
-
-        //结束
-        int attemptCompletion = tools.stream().filter(it -> {
-                    String name = it.getTag();
-                    return toolMap.containsKey(name);
-                }).map(it -> toolMap.get(it.getTag()))
-                .anyMatch(ITool::completed) ? -1 : 1;
-
-        //任务已经完成
-        if (attemptCompletion == -1) {
-            if (null != lastMsg.getSink()) {
-                lastMsg.getSink().complete();
-            }
+        String lastTool = ac.getLastTool();
+        if (lastTool == null) {
+            return 1;
         }
 
-        if (attemptCompletion == 1) {
-            //没有结束就放回去,方便act再次取出
-            this.putMessage(msg);
+        int attemptCompletion = 1;
+        ITool tool = toolMap.get(lastTool);
+        if (null != tool && tool.completed()) {
+            //本质上这轮task结束了
+            attemptCompletion = 2;
         }
         return attemptCompletion;
     }
@@ -321,10 +306,10 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
-        log.info("{} act", this.name);
+        log.info("{} run act", this.name);
         this.state.set(RoleState.act);
 
-        Message msg = this.rc.news.poll();
+        Message msg = this.ac.getMsg();
         FluxSink sink = getFluxSink(msg);
         this.fluxSink = sink;
         context.setSink(sink);
@@ -361,17 +346,21 @@ public class ReactorRole extends Role {
             // 解析工具调用(有可能是tool也可能是mcp)
             List<ToolDataInfo> tools = new MultiXmlParser().parse(toolRes);
 
-            log.info("tools num:{}", tools.size());
-
             //直接使用最后一个工具(每次只会返回一个)
             ToolDataInfo it = tools.get(tools.size() - 1);
 
             String name = it.getTag();
+
+            log.info("use tool:{}", name);
+
+            this.ac.setLastTool(name);
+
             if (this.toolMap.containsKey(name)) {//执行内部tool
                 callTool(name, it, toolRes, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
+                sink.next("不支持工具:" + name);
                 log.warn("不支持的工具 tool:{}", name);
             }
         } catch (Exception e) {
