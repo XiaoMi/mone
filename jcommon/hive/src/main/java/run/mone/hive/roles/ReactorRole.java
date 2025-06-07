@@ -90,6 +90,8 @@ public class ReactorRole extends Role {
 
     private int defaultIdlePollCount = 3;
 
+    private Date lastReceiveMsgTime;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -167,9 +169,9 @@ public class ReactorRole extends Role {
                     scheduledTaskHandler.accept(this);
                 }
                 health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
-                log.info("Scheduled task executed at: {}", System.currentTimeMillis());
+                log.info("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
             });
-        }, 0, 20, TimeUnit.SECONDS);
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
@@ -235,6 +237,7 @@ public class ReactorRole extends Role {
 
         //等待消息
         Message msg = this.rc.news.take();
+        lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
 
         // 收到特殊指令直接退出
