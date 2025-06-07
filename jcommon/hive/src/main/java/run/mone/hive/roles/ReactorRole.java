@@ -92,6 +92,9 @@ public class ReactorRole extends Role {
 
     private Date lastReceiveMsgTime;
 
+    //用于流式返回用户信息的
+    private FluxSink fluxSink;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -203,6 +206,9 @@ public class ReactorRole extends Role {
         idlePollCount = defaultIdlePollCount;
 
         if (value == -1) {
+            if (null != this.fluxSink) {
+                fluxSink.complete();
+            }
             return observe();
         } else {
             return value;
@@ -320,6 +326,7 @@ public class ReactorRole extends Role {
 
         Message msg = this.rc.news.poll();
         FluxSink sink = getFluxSink(msg);
+        this.fluxSink = sink;
         context.setSink(sink);
 
         //允许使用用户自己定义的执行逻辑
@@ -346,7 +353,7 @@ public class ReactorRole extends Role {
 
             //调用大模型(选用合适的工具)
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
-            log.info("res\n:{} \nhasError:\n{}", toolRes, hasError.get());
+            log.info("call llm res:\n{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
@@ -370,8 +377,6 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             sink.error(e);
             log.error("ReactorRole act error:" + e.getMessage(), e);
-        } finally {
-            sink.complete();
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
