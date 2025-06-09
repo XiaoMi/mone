@@ -22,7 +22,6 @@ import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
-import run.mone.hive.schema.RoleContext;
 import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
@@ -175,6 +174,7 @@ public class RoleService {
             role.getRc().setReactMode(roleMeta.getReactMode());
         }
 
+        //加载配置(从 agent manager获取来的)
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
             role.setRoleConfig(configMap);
@@ -194,7 +194,13 @@ public class RoleService {
         }
         return Flux.create(sink -> {
             message.setSink(sink);
-            roleMap.get(from).putMessage(message);
+            ReactorRole rr = roleMap.get(from);
+            if (!rr.getState().get().equals(RoleState.observe)) {
+                sink.next("有正在处理中的消息\n");
+                sink.complete();
+            } else {
+                roleMap.get(from).putMessage(message);
+            }
         });
     }
 
@@ -204,6 +210,7 @@ public class RoleService {
         ReactorRole agent = roleMap.get(from);
         if (null != agent) {
             message.setData(Const.ROLE_EXIT);
+            message.setContent(Const.ROLE_EXIT);
             agent.putMessage(message);
         }
         roleMap.remove(from);

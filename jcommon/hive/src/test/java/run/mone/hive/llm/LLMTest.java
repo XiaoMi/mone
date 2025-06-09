@@ -1,9 +1,9 @@
-
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -220,14 +220,14 @@ class LLMTest {
                                                           请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
                         """
                 , Message.builder()
-                .images(Lists.newArrayList(
-                    img
-                )).build());
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
         compoundMsg.setImageType("png");
 
-        List<String>list = new ArrayList<>();
-        IntStream.range(0,10).forEach(it->{
-            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        List<String> list = new ArrayList<>();
+        IntStream.range(0, 10).forEach(it -> {
+            String str = llm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
             System.out.println(str);
             list.add(str);
         });
@@ -765,15 +765,74 @@ class LLMTest {
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
     }
 
+
+    //调用私有的分类小模型
     @Test
     public void testClassify() {
-        config =  LLMConfig.builder()
+        config = LLMConfig.builder()
                 .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
-                .url("http://xxxx")
+                .url(System.getenv("ATLAS_URL"))
                 .build();
         LLM llm = new LLM(config);
-        String classify = llm.getClassifyScore("bert", "xxx", Arrays.asList("这是一个示例文本","这是第二个示例文本"), 1);
-        System.out.println(classify);
+        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1);
+        String str = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
+        System.out.println(str);
+    }
+
+    private String ragUrl = System.getenv("RAG_URL");
+
+    @Test
+    public void testAddRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE) // 复用现有的provider
+                .url(ragUrl + "/rag/add")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.addRag(
+                "", // id
+                "如何使用miline平台进行服务部署?", // question
+                "使用miline平台进行服务部署的步骤包括:1.登录miline平台 2.选择要部署的服务 3.配置部署环境和参数 4.选择部署策略 5.执行部署 6.监控部署状态", // content
+                0, // askMark
+                "", // askSpeechSkill
+                "", // serviceType
+                "", // conclusion
+                "", // blockId
+                "1" // tenant
+        );
+        System.out.println("RAG新增结果: " + result);
+    }
+
+    @Test
+    public void testQueryRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url(ragUrl + "/rag/query")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRag(
+                "nacos是什么?", // query
+                5, // topK
+                0.5, // threshold
+                "", // tag
+                "1" // tenant
+        );
+        result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
+        System.out.println("RAG查询结果: " + result);
+    }
+
+    @Test
+    public void testQueryRagById() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url("http://xxx:8083/rag/queryById")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRagById(
+                "pvyZvpYB8f3pWX_h414k", // questionId
+                "SbSZvpYByvSWuH024nBA", // contentId
+                "1" // tenant
+        );
+        System.out.println("RAG ID查询结果: " + result);
     }
 
 //    @Test

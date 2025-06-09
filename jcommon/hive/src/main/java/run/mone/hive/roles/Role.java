@@ -18,7 +18,6 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -134,6 +133,7 @@ public class Role {
     @SneakyThrows
     protected int observe() {
         log.info("observe");
+        //阻塞模式
         if (isBlockingMessageRetrieval()) {
             //没有数据陷入阻塞
             Message msg = this.rc.news.take();
@@ -156,7 +156,6 @@ public class Role {
             //没有消息
             return -1;
         }
-
         return determineNextAction();
     }
 
@@ -313,17 +312,23 @@ public class Role {
 
 
     //执行的最大轮数
-    private int doReactNum = 15;
+    private int doReactNum = 20;
 
     /**
      * react实际执行的逻辑， 可以重写
-     *
-     * @param ac
      */
     protected void doReact(ActionContext ac) {
-        // 默认最多执行15次, 可以重写这里的逻辑
         int i = 0;
-        while (this.think() > 0 && i++ < doReactNum) {
+        for (; ; ) {
+            int v = this.think();
+            log.info("doReact think value:{}", v);
+            if (v == 2) {
+                ac.reset();
+                continue;
+            }
+            if (v < 0 || i++ > doReactNum) {
+                break;
+            }
             this.act(ac).join();
         }
     }
@@ -438,7 +443,7 @@ public class Role {
      * @param ac
      */
     protected void postReact(ActionContext ac) {
-        //子类可以重写此方法
+        log.info("postReact:{}", ac.getRoleName());
     }
 
     protected void beforeReact(ActionContext ac) {

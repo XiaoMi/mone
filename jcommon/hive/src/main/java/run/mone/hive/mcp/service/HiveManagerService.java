@@ -105,7 +105,7 @@ public class HiveManagerService {
             String heartbeatUrl = baseUrl + "/api/v1/agents/health";
             Object response = restTemplate.postForObject(heartbeatUrl, request, Object.class);
 
-            log.info("Heartbeat response: {}", response);
+            log.debug("Heartbeat clientIp:{} response: {}", healthInfo.getIp(), response);
         } catch (Exception e) {
             log.error("Error during heartbeat: {}", e.getMessage(), e);
         }

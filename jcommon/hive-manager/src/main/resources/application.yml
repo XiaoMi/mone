@@ -19,7 +19,7 @@ spring:
   profiles:
     active: dev
   r2dbc:
-    url: r2dbc:mysql://${TEST_DB_URL}/${TEST_DB_NAME}
+    url: r2dbc:mysql://10.38.165.205:13406/${TEST_DB_NAME}
     username: ${TEST_DB_USER_NAME}
     password: ${TEST_DB_PASSWORD}
   sql:

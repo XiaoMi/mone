@@ -19,6 +19,10 @@ import java.util.Map;
 @NoArgsConstructor
 public class ActionContext {
 
+    private String roleName;
+
+    private Message msg;
+
     private JsonObject ctx = new JsonObject();
 
     private RoleContext.ReactMode reactMode;
@@ -27,5 +31,16 @@ public class ActionContext {
 
     //和外部通信的
     private FluxSink sink;
+
+    private String lastTool;
+
+
+    public void reset() {
+        if (null != sink) {
+            sink.complete();
+        }
+        lastTool = "";
+        msg = null;
+    }
 
 }
