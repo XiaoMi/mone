@@ -160,7 +160,18 @@ public class ReactorRole extends Role {
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.llm = llm;
-        this.scheduledTaskHandler = message -> log.debug("Processing scheduled message: {}", this.getName());
+        this.scheduledTaskHandler = message -> {
+            log.debug("Processing scheduled message: {}", this.getName());
+            //添加退出逻辑
+            if (null != this.lastReceiveMsgTime) {
+                Date currentDate = new Date();
+                long timeDifference = currentDate.getTime() - this.lastReceiveMsgTime.getTime();
+                if (timeDifference >= TimeUnit.SECONDS.toMillis(120)) {
+                    //发出退出指令
+                    this.putMessage(Message.builder().data(Const.ROLE_EXIT).build());
+                }
+            }
+        };
 
         // Initialize scheduler with a single thread
         this.scheduler = Executors.newSingleThreadScheduledExecutor();

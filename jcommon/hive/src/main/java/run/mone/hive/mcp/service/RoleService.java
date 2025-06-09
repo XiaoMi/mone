@@ -189,8 +189,10 @@ public class RoleService {
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
         ReactorRole role = roleMap.get(from);
-        if (null == role || role.getState().get().equals(RoleState.exit)) {
+        if (null == role) {
             roleMap.putIfAbsent(from, createRole(message));
+        } else if (role.getState().get().equals(RoleState.exit)) {
+            roleMap.put(from, createRole(message));
         }
         return Flux.create(sink -> {
             message.setSink(sink);
