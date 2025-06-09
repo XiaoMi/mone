@@ -30,7 +30,7 @@ public class AgentConfig {
                 //允许自动从知识库获取内容(意图识别的小模型)
                 .webQuery(WebQuery.builder().autoWebQuery(true).modelType("bert").version("finetune-bert-20250605-73a29258").build())
                 //内部工具(意图识别的小模型)
-                .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
+                .rag(Rag.builder().autoRag(true).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
