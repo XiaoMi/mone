@@ -206,8 +206,6 @@ public class ReactorRole extends Role {
 
         int value = observe();
 
-        System.out.println("value--->" + value);
-
         if (value == 2) {
             if (null != this.fluxSink) {
                 fluxSink.complete();
