@@ -62,7 +62,7 @@ public class EsClient {
     private static final int SOCKET_TIMEOUT_MS = 10 * 60 * 1000;
     private static final int CONNECTION_REQUEST_TIMEOUT_MS = 5000 * 1000;
     private static final int CONNECT_TIMEOUT_MS = 5000 * 1000;
-    private static final long KEEP_ALIVE_DURATION_MS = TimeUnit.MINUTES.toMillis(2);
+    private static final long KEEP_ALIVE_DURATION_MS = TimeUnit.MINUTES.toMillis(25);
 
     private RestHighLevelClient client;
 
