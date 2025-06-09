@@ -312,7 +312,7 @@ public class Role {
 
 
     //执行的最大轮数
-    private int doReactNum = 20;
+    private int doReactNum = Integer.MAX_VALUE;
 
     /**
      * react实际执行的逻辑， 可以重写
