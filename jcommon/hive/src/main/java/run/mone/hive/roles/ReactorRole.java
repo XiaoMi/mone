@@ -37,6 +37,7 @@ import run.mone.hive.utils.NetUtils;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -94,6 +95,8 @@ public class ReactorRole extends Role {
     private FluxSink fluxSink;
 
     private ActionContext ac;
+
+    private AtomicInteger maxAssistantNum = new AtomicInteger();
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -210,6 +213,7 @@ public class ReactorRole extends Role {
                 fluxSink.complete();
             }
         }
+
         return value;
     }
 
@@ -243,6 +247,14 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.take();
         lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
+
+        //机器人回答太多轮了
+        if (this.maxAssistantNum.get() > 10) {
+            this.maxAssistantNum.set(0);
+            return 2;
+        }
+
+
         ac.setMsg(msg);
 
         // 收到特殊指令直接退出
@@ -310,6 +322,14 @@ public class ReactorRole extends Role {
         this.state.set(RoleState.act);
 
         Message msg = this.ac.getMsg();
+
+        //控制下,ai最多回答几轮
+        if (!"user".equals(msg.getRole())) {
+            this.maxAssistantNum.incrementAndGet();
+        } else {
+            this.maxAssistantNum.set(0);
+        }
+
         FluxSink sink = getFluxSink(msg);
         this.fluxSink = sink;
         context.setSink(sink);
