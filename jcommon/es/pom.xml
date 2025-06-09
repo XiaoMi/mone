@@ -9,7 +9,7 @@
         <version>1.6.0-jdk21-SNAPSHOT</version>
     </parent>
     <artifactId>es</artifactId>
-    <version>1.8-jdk8-SNAPSHOT-0609</version>
+    <version>1.8-jdk8-0609-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
