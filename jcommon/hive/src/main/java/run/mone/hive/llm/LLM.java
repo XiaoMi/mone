@@ -125,6 +125,167 @@ public class LLM {
         }
     }
 
+    // RAG新增接口
+    /*
+    * id 记录ID
+    * question 问题
+    * content 内容
+    * askMark 询问标记
+    * askSpeechSkill 询问语音技能
+    * serviceType 服务类型
+    * conclusion 结论
+    * blockId 块ID
+    * tenant 租户
+    * */
+    public String addRag(String id, String question, String content, Integer askMark, 
+                        String askSpeechSkill, String serviceType, String conclusion, 
+                        String blockId, String tenant) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("id", id);
+            requestBody.addProperty("question", question);
+            requestBody.addProperty("content", content);
+            requestBody.addProperty("askMark", askMark);
+            requestBody.addProperty("askSpeechSkill", askSpeechSkill);
+            requestBody.addProperty("serviceType", serviceType);
+            requestBody.addProperty("conclusion", conclusion);
+            requestBody.addProperty("blockId", blockId);
+            requestBody.addProperty("tenant", tenant);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call rag add api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("rag add response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call rag add api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用RAG新增接口失败, question:{}, content:{}, tenant:{}, error:{}", 
+                    question, content, tenant, e.getMessage(), e);
+            throw new RuntimeException("RAG新增接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
+    // RAG查询接口
+    /*
+    * query 查询内容
+    * topK 返回topK个结果
+    * threshold 阈值
+    * tag 标签
+    * tenant 租户
+    * */
+    public String queryRag(String query, Integer topK, Double threshold, String tag, String tenant) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("query", query);
+            requestBody.addProperty("topK", topK);
+            requestBody.addProperty("threshold", threshold);
+            requestBody.addProperty("tag", tag);
+            requestBody.addProperty("tenant", tenant);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call rag query api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("rag query response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call rag query api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用RAG查询接口失败, query:{}, topK:{}, threshold:{}, tenant:{}, error:{}", 
+                    query, topK, threshold, tenant, e.getMessage(), e);
+            throw new RuntimeException("RAG查询接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
+    // RAG ID查询接口
+    /*
+    * questionId 问题ID
+    * contentId 内容ID
+    * tenant 租户
+    * */
+    public String queryRagById(String questionId, String contentId, String tenant) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("questionId", questionId);
+            requestBody.addProperty("contentId", contentId);
+            requestBody.addProperty("tenant", tenant);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call rag query by id api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("rag query by id response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call rag query by id api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用RAG ID查询接口失败, questionId:{}, contentId:{}, tenant:{}, error:{}", 
+                    questionId, contentId, tenant, e.getMessage(), e);
+            throw new RuntimeException("RAG ID查询接口调用失败: " + e.getMessage(), e);
+        }
+    }
 
     public String chat(List<AiMessage> msgList) {
         return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);

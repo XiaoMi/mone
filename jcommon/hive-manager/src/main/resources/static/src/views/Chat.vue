@@ -33,11 +33,13 @@ import { streamChat, textToVoice } from '@/api/message'
 import { v4 as uuidv4 } from 'uuid';
 import { fluxCodeHandler } from '@/components/Chat/common/result-code';
 import { useTheme } from '@/styles/theme/useTheme'
+import { useFunctionPanelStore } from '@/stores/function-panel';
 
 const route = useRoute()
 const { getChatContext, setMessageList, addMessage, setProject, setModule, setLoading, messageList } =
   useChatContextStore();
 const { user, setAgent, setInstance, getSelectedInstance, getAgent} = useUserStore();
+const functionPanelStore = useFunctionPanelStore();
 
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string);
@@ -125,11 +127,14 @@ const toggleSendMethod = (val: string) => {
     }
   const onPlayAudio = (text: string) => {
     try {
+      console.log("onPlayAudio", text)
       const agent = getAgent();
       messageId.value = uuidv4();
       let params = {
         message: `语音合成处理以下文本内容："${text}"`,
         __owner_id__: user?.username,
+        __web_search__: functionPanelStore.webSearchEnabled || false,
+        __rag__: functionPanelStore.ragEnabled || false,
       }
       if (sendMethod.value === "sse") {
         // sse发送消息
@@ -182,6 +187,8 @@ const toggleSendMethod = (val: string) => {
       let params = {
         message: text,
         __owner_id__: user?.username,
+        __web_search__: functionPanelStore.webSearchEnabled || false,
+        __rag__: functionPanelStore.ragEnabled || false,
       }
       if (message.type === "audio") {
         params.voiceBase64 = message.data.content?.split("base64,")[1];

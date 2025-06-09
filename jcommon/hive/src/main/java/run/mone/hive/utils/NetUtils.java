@@ -47,6 +47,8 @@ public class NetUtils {
 
     private static InetAddress getLocalAddress0() {
         InetAddress localAddress = null;
+        InetAddress companyAddress = null; // 用于存储公司IP地址
+        
         try {
             localAddress = InetAddress.getLocalHost();
             if (localAddress instanceof Inet6Address) {
@@ -55,16 +57,21 @@ public class NetUtils {
                     return normalizeV6Address(address);
                 }
             } else if (isValidAddress(localAddress)) {
-                return localAddress;
+                if (isCompanyAddress(localAddress)) {
+                    return localAddress; // 优先返回公司IP
+                }
+                companyAddress = localAddress; // 暂存有效地址
             }
         } catch (Throwable e) {
             log.warn(e.getMessage());
         }
+        
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             if (null == interfaces) {
-                return localAddress;
+                return companyAddress != null ? companyAddress : localAddress;
             }
+            
             while (interfaces.hasMoreElements()) {
                 try {
                     NetworkInterface network = interfaces.nextElement();
@@ -78,7 +85,12 @@ public class NetUtils {
                                     return normalizeV6Address(v6Address);
                                 }
                             } else if (isValidAddress(address)) {
-                                return address;
+                                if (isCompanyAddress(address)) {
+                                    return address; // 优先返回公司IP
+                                }
+                                if (companyAddress == null) {
+                                    companyAddress = address; // 暂存有效地址
+                                }
                             }
                         } catch (Throwable e) {
                             log.warn(e.getMessage());
@@ -91,7 +103,8 @@ public class NetUtils {
         } catch (Throwable e) {
             log.warn(e.getMessage());
         }
-        return localAddress;
+        
+        return companyAddress != null ? companyAddress : localAddress;
     }
 
     static boolean isValidV6Address(Inet6Address address) {
@@ -121,6 +134,16 @@ public class NetUtils {
         return address;
     }
 
+    /**
+     * 检查是否为公司IP地址（10.开头）
+     */
+    static boolean isCompanyAddress(InetAddress address) {
+        if (address == null) {
+            return false;
+        }
+        String name = address.getHostAddress();
+        return name != null && name.startsWith("10.");
+    }
 
     static boolean isValidAddress(InetAddress address) {
         if (address == null || address.isLoopbackAddress()) {
@@ -131,17 +154,12 @@ public class NetUtils {
             log.info("address name:{} {}", name, name.startsWith("172"));
         }
 
-        if (null != name && name.startsWith("172")) {
-            return false;
-        }
-
+        // 移除对172开头IP的排除，因为我们现在优先处理10.开头的公司IP
         return (name != null
                 && !ANYHOST.equals(name)
                 && !LOCALHOST.equals(name)
                 && !DOCKERHOST.equals(name)
                 && IP_PATTERN.matcher(name).matches());
     }
-
-
 
 }
