@@ -194,4 +194,23 @@ public class AgentController {
                 .map(ApiResponse::success)
                 .defaultIfEmpty(ApiResponse.success(Map.of()));
     }
+
+    @PostMapping("/instances/by-names")
+    public Mono<ApiResponse<Map<String, List<AgentInstance>>>> getAgentInstancesByNames(@RequestBody Map<String, Object> request) {
+        String token = (String) request.get("token");
+        @SuppressWarnings("unchecked")
+        List<String> agentNames = (List<String>) request.get("agentNames");
+
+        if (token == null || agentNames == null || agentNames.isEmpty()) {
+            return Mono.just(ApiResponse.error(400, "Missing required parameters: token and agentNames"));
+        }
+
+        return userService.verifyToken(token)
+                .flatMap(isValid -> {
+                    if (!isValid) {
+                        return Mono.just(ApiResponse.<Map<String, List<AgentInstance>>>error(401, "Invalid token"));
+                    }
+                    return agentService.getAgentInstancesByNames(agentNames).map(ApiResponse::success);
+                });
+    }
 }
