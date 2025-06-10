@@ -10,6 +10,7 @@
         </el-select>
         <div class="right-btns">
             <el-icon title="配置" size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"><Setting /></el-icon>
+            <el-icon title="MCP配置" size="14px" color="var(--el-color-info)" @click="handleOpenMcpConfig"><CreditCard /></el-icon>
             <el-icon title="清除历史记录" size="14px" color="var(--el-color-warning)" @click="handleClearHistory"><Delete /></el-icon>
             <el-icon title="下线" size="16px" color="var(--el-color-danger)" @click="confirmOffline"><SwitchButton /></el-icon>
         </div>
@@ -39,6 +40,27 @@
                 </span>
             </template>
         </el-dialog>
+
+        <!-- MCP 配置对话框 -->
+        <el-dialog
+            v-model="mcpConfigDialogVisible"
+            title="MCP 配置管理"
+            width="85%"
+            :close-on-click-modal="false"
+            class="mcp-config-dialog"
+            top="5vh"
+            :destroy-on-close="true"
+        >
+            <McpConfig />
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="mcpConfigDialogVisible = false" size="default">
+                        <el-icon><Close /></el-icon>
+                        关闭
+                    </el-button>
+                </div>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -47,8 +69,9 @@ import { useUserStore } from "@/stores/user";
 import { computed, ref, watch, watchEffect } from "vue";
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { useChatContextStore } from "@/stores/chat-context";
-import { Setting } from '@element-plus/icons-vue';
-import { getAgentConfigs, setBatchAgentConfig, type AgentConfig, deleteAgentConfig } from '@/api/agent';
+import { Setting, CreditCard, Delete, SwitchButton, Close } from '@element-plus/icons-vue';
+import { getAgentConfigs, setBatchAgentConfig, deleteAgentConfig } from '@/api/agent';
+import McpConfig from './McpConfig.vue';
 
 const { getInstance, setSelectedInstance } = useUserStore();
 const { setMessageList } = useChatContextStore();
@@ -100,10 +123,17 @@ const handleClearHistory = () => {
     props.onClearHistory?.();
 };
 
+const handleOpenMcpConfig = () => {
+    mcpConfigDialogVisible.value = true;
+};
+
 // 配置相关
 const configDialogVisible = ref(false);
 const configList = ref<Array<{key: string, value: string}>>([]);
 const loading = ref(false);
+
+// MCP 配置相关
+const mcpConfigDialogVisible = ref(false);
 
 const handleOpenConfig = async () => {
     const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
@@ -289,5 +319,40 @@ const handleSubmitConfig = async () => {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+:deep(.mcp-config-dialog) {
+    .el-dialog__header {
+        background: linear-gradient(135deg, var(--el-color-primary-light-9), var(--el-color-primary-light-8));
+        border-bottom: 1px solid var(--el-border-color-light);
+        padding: 20px 24px;
+
+        .el-dialog__title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--el-color-primary);
+        }
+    }
+
+    .el-dialog__body {
+        padding: 0;
+        background: var(--el-bg-color-page);
+    }
+
+    .el-dialog__footer {
+        background: var(--el-fill-color-lighter);
+        border-top: 1px solid var(--el-border-color-light);
+        padding: 16px 24px;
+
+        .dialog-footer {
+            margin: 0;
+        }
+    }
+
+    .el-dialog {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    }
 }
 </style>
