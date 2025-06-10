@@ -257,9 +257,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                     String name = streamRequest.getName();
                     clientId = getClientIdFromContext();
 
-                    System.out.println(clientId + "----" + userConnections);
-
-                    if (StringUtils.isEmpty(clientId)) {
+                    if (StringUtils.isEmpty(clientId) || clientId.startsWith("mcp_")) {
                         return;
                     }
 
