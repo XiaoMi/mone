@@ -34,6 +34,7 @@ import org.elasticsearch.client.sniff.ElasticsearchNodesSniffer;
 import org.elasticsearch.client.sniff.NodesSniffer;
 import org.elasticsearch.client.sniff.SniffOnFailureListener;
 import org.elasticsearch.client.sniff.Sniffer;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -132,8 +133,7 @@ public class EsClient {
                                 .setConnectTimeout(5000 * 1000).build())
                         .setKeepAliveStrategy((response, context) -> TimeUnit.SECONDS.toMillis(25))
                         .setDefaultIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build()));
-        this.client = new RestHighLevelClientBuilder(clientBuilder.build()).setApiCompatibilityMode(true).build();
-        this.restClient = client.getLowLevelClient();
+        this.client = new RestHighLevelClient(clientBuilder);
     }
 
     public EsClient(List<String> restAddress, int httpPort, String username, String password, int timeOut, int snifferIntervalMillis, int snifferAfterFailDelayMillis) throws IOException {
