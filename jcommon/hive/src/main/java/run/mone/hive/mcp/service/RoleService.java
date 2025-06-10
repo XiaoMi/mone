@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
@@ -57,6 +59,9 @@ public class RoleService {
     @Value("${mcp.hub.path:}")
     private String mcpPath;
 
+    @Value("${mcp.server.list:}")
+    private String mcpServerList;
+
     @Value("${mcp.agent.name:}")
     private String agentName;
 
@@ -91,6 +96,25 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
+
+        //直接配置一个名字,自己连接过去
+        if (StringUtils.isNotEmpty(mcpServerList)) {
+            McpHub hub = new McpHub();
+            Map<String, List> map = hiveManagerService.getAgentInstancesByNames(Splitter.on(",").splitToList(mcpServerList));
+            map.entrySet().forEach(entry -> {
+                Safe.run(() -> {
+                    Map m = (Map) entry.getValue().get(0);
+                    ServerParameters parameters = new ServerParameters();
+                    parameters.setType("grpc");
+                    parameters.getEnv().put("port", String.valueOf(m.get("port")));
+                    parameters.getEnv().put("host", (String) m.get("ip"));
+                    log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
+                    hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
+                });
+            });
+            McpHubHolder.put(Const.DEFAULT, hub);
+        }
+
         //创建一个默认Agent
         createDefaultAgent();
         //优雅关机

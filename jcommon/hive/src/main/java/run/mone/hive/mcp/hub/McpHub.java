@@ -45,6 +45,13 @@ public class McpHub {
         }, false);
     }
 
+
+    public McpHub() throws IOException {
+        this(null, msg -> {
+        }, true);
+    }
+
+
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
         this(settingsPath, msgConsumer, false);
     }
@@ -156,7 +163,7 @@ public class McpHub {
         }
     }
 
-    private synchronized void updateServerConnections(Map<String, ServerParameters> newServers) {
+    public synchronized void updateServerConnections(Map<String, ServerParameters> newServers) {
         isConnecting = true;
         Set<String> currentNames = new HashSet<>(connections.keySet());
         Set<String> newNames = new HashSet<>(newServers.keySet());
@@ -348,6 +355,7 @@ public class McpHub {
             toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
+            McpHubHolder.remove(serverName);
             return Flux.create(sink -> {
                 sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)), true));
                 sink.complete();
