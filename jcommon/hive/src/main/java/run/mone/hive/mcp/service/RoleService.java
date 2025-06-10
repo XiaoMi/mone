@@ -28,8 +28,7 @@ import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +60,8 @@ public class RoleService {
 
     @Value("${mcp.server.list:}")
     private String mcpServerList;
+
+    private List<String> mcpServers = new ArrayList<>();
 
     @Value("${mcp.agent.name:}")
     private String agentName;
@@ -96,11 +97,16 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
+        //创建一个默认Agent
+        createDefaultAgent();
+        //优雅关机
+        shutdownHook();
+    }
 
-        //直接配置一个名字,自己连接过去
+    private McpHub updateMcpConnections(List<String> agentNames, String clientId) {
+        McpHub hub = new McpHub();
         if (StringUtils.isNotEmpty(mcpServerList)) {
-            McpHub hub = new McpHub();
-            Map<String, List> map = hiveManagerService.getAgentInstancesByNames(Splitter.on(",").splitToList(mcpServerList));
+            Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
             map.entrySet().forEach(entry -> {
                 Safe.run(() -> {
                     Map m = (Map) entry.getValue().get(0);
@@ -108,17 +114,21 @@ public class RoleService {
                     parameters.setType("grpc");
                     parameters.getEnv().put("port", String.valueOf(m.get("port")));
                     parameters.getEnv().put("host", (String) m.get("ip"));
+                    parameters.getEnv().put(Const.TOKEN, "");
+                    parameters.getEnv().put(Const.CLIENT_ID, "mcp_" + clientId);
                     log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
                     hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
                 });
             });
-            McpHubHolder.put(Const.DEFAULT, hub);
         }
+        return hub;
+    }
 
-        //创建一个默认Agent
-        createDefaultAgent();
-        //优雅关机
-        shutdownHook();
+    //合并两个List<String>注意去重(method)
+    public List<String> mergeLists(List<String> list1, List<String> list2) {
+        Set<String> mergedSet = new HashSet<>(list1);
+        mergedSet.addAll(list2);
+        return new ArrayList<>(mergedSet);
     }
 
     private void shutdownHook() {
@@ -202,6 +212,14 @@ public class RoleService {
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
             //每个用户的配置是不同的
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+            if (configMap.containsKey("mcp")) {
+                List<String> list = Splitter.on(",").splitToList(configMap.get("mcp"));
+                //更新mcp agent
+                McpHub hub = updateMcpConnections(list, clientId);
+                role.setMcpHub(hub);
+            } else {
+                role.setMcpHub(new McpHub());
+            }
             role.getRoleConfig().putAll(configMap);
         }
 

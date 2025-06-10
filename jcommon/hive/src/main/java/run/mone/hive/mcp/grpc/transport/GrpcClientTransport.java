@@ -245,23 +245,27 @@ public class GrpcClientTransport implements ClientMcpTransport {
         return getMetadataBlockingStub().methodNotificationInitialized(NotificationInitializedRequest.newBuilder().build());
     }
 
+    private StreamObserver<StreamResponse> reconnectingObserver = null;
+
     //连接到服务端,然后等待服务端推送消息回来(支持断线重连)
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
         // 创建带重连功能的包装观察者
-        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<>() {
+        reconnectingObserver = new StreamObserver<>() {
             @Override
             public void onNext(StreamResponse response) {
-                if (response.getCmd().equals(Const.NOTIFY_MSG)) {
+                Safe.run(() -> {
+                    if (response.getCmd().equals(Const.NOTIFY_MSG)) {
+                        String data = response.getData();
+                        Type typeOfT = new TypeToken<Map<String, String>>() {
+                        }.getType();
+                        Map map = GsonUtils.gson.fromJson(data, typeOfT);
+                        consumer.accept(map);
+                    }
+                    // 直接转发响应
                     String data = response.getData();
-                    Type typeOfT = new TypeToken<Map<String, String>>() {
-                    }.getType();
-                    Map map = GsonUtils.gson.fromJson(data, typeOfT);
-                    consumer.accept(map);
-                }
-                // 直接转发响应
-                String data = response.getData();
-                consumer.accept(data);
-                observer.onNext(response);
+                    consumer.accept(data);
+                    observer.onNext(response);
+                });
             }
 
             @Override
@@ -284,6 +288,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
             public void onCompleted() {
                 observer.onCompleted();
             }
+
         };
 
         StreamObserver<StreamRequest> req = getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver);
@@ -293,6 +298,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 .setName("observer");
 
         req.onNext(builder.build());
+        req.onCompleted();
         return req;
     }
 

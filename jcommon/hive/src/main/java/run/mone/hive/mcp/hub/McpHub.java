@@ -36,6 +36,8 @@ public class McpHub {
 
     private volatile boolean isConnecting = false;
 
+    private volatile boolean skipFile = false;
+
     //使用grpc连接mcp
     private Consumer<Object> msgConsumer = msg -> {
     };
@@ -46,7 +48,7 @@ public class McpHub {
     }
 
 
-    public McpHub() throws IOException {
+    public McpHub() {
         this(null, msg -> {
         }, true);
     }
@@ -60,6 +62,7 @@ public class McpHub {
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
         this.settingsPath = settingsPath;
         this.msgConsumer = msgConsumer;
+        this.skipFile = skipFile;
 
         if (!skipFile) {
             this.watchService = FileSystems.getDefault().newWatchService();
@@ -371,14 +374,16 @@ public class McpHub {
                 connection.getTransport().close();
                 connection.getClient().close();
             } catch (Exception e) {
-                System.err.println("Failed to close connection: " + e.getMessage());
+                log.error("Failed to close connection: " + e.getMessage());
             }
         }
         connections.clear();
-        try {
-            watchService.close();
-        } catch (IOException e) {
-            System.err.println("Failed to close watch service: " + e.getMessage());
+        if (!skipFile) {
+            try {
+                watchService.close();
+            } catch (IOException e) {
+                log.error("Failed to close watch service: " + e.getMessage());
+            }
         }
     }
 
