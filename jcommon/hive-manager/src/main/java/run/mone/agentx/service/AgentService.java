@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 import static run.mone.hive.llm.ClaudeProxy.*;
 
@@ -329,19 +330,6 @@ public class AgentService {
     }
 
     public Mono<Void> unregister(RegInfoDto regInfoDto) {
-        //从网络上也摘除
-        Safe.run(() -> {
-            if (null != regInfoDto.getClientMap()) {
-                regInfoDto.getClientMap().forEach((key, value) -> {
-                    String groupKey = Joiner.on(":").join(key, regInfoDto.getIp(), regInfoDto.getPort());
-                    McpHub hub = McpHubHolder.remove(groupKey);
-                    if (null != hub) {
-                        hub.removeConnection(groupKey);
-                    }
-                });
-            }
-        });
-
         try {
             // 查找Agent是否存在
             Agent agent = agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
@@ -525,5 +513,41 @@ public class AgentService {
                                 .orElse(agents.get(0))); // 如果没找到，返回第一个
                     });
                 });
+    }
+
+    /**
+     * 根据Agent名称列表获取AgentInstance列表
+     * 只返回utime在当前时间1分钟内的实例
+     * 
+     * @param agentNames Agent名称列表
+     * @return Map<String, List<AgentInstance>> key为Agent名称，value为该Agent的实例列表
+     */
+    public Mono<Map<String, List<AgentInstance>>> getAgentInstancesByNames(List<String> agentNames) {
+        long currentTime = System.currentTimeMillis();
+        long oneMinuteAgo = currentTime - TimeUnit.MINUTES.toMillis(1);
+        
+        return Flux.fromIterable(agentNames)
+                .flatMap(agentName -> 
+                    agentRepository.findByNameContainingIgnoreCase(agentName)
+                            .filter(agent -> agent.getState() == 1)
+                            .flatMap(agent -> 
+                                agentInstanceRepository.findByAgentId(agent.getId())
+                                        .filter(instance -> instance.getUtime() != null && instance.getUtime() >= oneMinuteAgo)
+                                        .collectList()
+                                        .map(instances -> Map.entry(agent.getName(), instances))
+                            )
+                )
+                .collectList()
+                .map(entries -> entries.stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (existing, replacement) -> {
+                                    // 如果有重复的key，合并列表
+                                    existing.addAll(replacement);
+                                    return existing;
+                                }
+                        ))
+                );
     }
 }

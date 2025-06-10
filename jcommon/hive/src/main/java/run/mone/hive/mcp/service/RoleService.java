@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
@@ -57,6 +59,9 @@ public class RoleService {
     @Value("${mcp.hub.path:}")
     private String mcpPath;
 
+    @Value("${mcp.server.list:}")
+    private String mcpServerList;
+
     @Value("${mcp.agent.name:}")
     private String agentName;
 
@@ -91,6 +96,25 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
+
+        //直接配置一个名字,自己连接过去
+        if (StringUtils.isNotEmpty(mcpServerList)) {
+            McpHub hub = new McpHub();
+            Map<String, List> map = hiveManagerService.getAgentInstancesByNames(Splitter.on(",").splitToList(mcpServerList));
+            map.entrySet().forEach(entry -> {
+                Safe.run(() -> {
+                    Map m = (Map) entry.getValue().get(0);
+                    ServerParameters parameters = new ServerParameters();
+                    parameters.setType("grpc");
+                    parameters.getEnv().put("port", String.valueOf(m.get("port")));
+                    parameters.getEnv().put("host", (String) m.get("ip"));
+                    log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
+                    hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
+                });
+            });
+            McpHubHolder.put(Const.DEFAULT, hub);
+        }
+
         //创建一个默认Agent
         createDefaultAgent();
         //优雅关机
@@ -176,8 +200,9 @@ public class RoleService {
 
         //加载配置(从 agent manager获取来的)
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+            //每个用户的配置是不同的
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-            role.setRoleConfig(configMap);
+            role.getRoleConfig().putAll(configMap);
         }
 
         //一直执行不会停下来
@@ -188,10 +213,17 @@ public class RoleService {
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
-        ReactorRole role = roleMap.get(from);
-        if (null == role || role.getState().get().equals(RoleState.exit)) {
-            roleMap.putIfAbsent(from, createRole(message));
-        }
+
+        roleMap.compute(from, (k, v) -> {
+            if (v == null) {
+                return createRole(message);
+            }
+            if (v.getState().get().equals(RoleState.exit)) {
+                return null;
+            }
+            return v;
+        });
+
         return Flux.create(sink -> {
             message.setSink(sink);
             ReactorRole rr = roleMap.get(from);
