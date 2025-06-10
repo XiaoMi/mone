@@ -176,8 +176,9 @@ public class RoleService {
 
         //加载配置(从 agent manager获取来的)
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+            //每个用户的配置是不同的
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-            role.setRoleConfig(configMap);
+            role.getRoleConfig().putAll(configMap);
         }
 
         //一直执行不会停下来
@@ -188,12 +189,17 @@ public class RoleService {
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
-        ReactorRole role = roleMap.get(from);
-        if (null == role) {
-            roleMap.putIfAbsent(from, createRole(message));
-        } else if (role.getState().get().equals(RoleState.exit)) {
-            roleMap.put(from, createRole(message));
-        }
+
+        roleMap.compute(from, (k, v) -> {
+            if (v == null) {
+                return createRole(message);
+            }
+            if (v.getState().get().equals(RoleState.exit)) {
+                return null;
+            }
+            return v;
+        });
+
         return Flux.create(sink -> {
             message.setSink(sink);
             ReactorRole rr = roleMap.get(from);
