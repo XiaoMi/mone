@@ -14,18 +14,18 @@
                 </template>
                 <ul class="info-list">
                   <li v-if="serverList[key].version">
-                    <span class="info-title">version:</span>
+                    <span class="info-title">版本:</span>
                     <el-tag size="small" effect="plain">{{serverList[key].version}}</el-tag>
                   </li>
                 </ul>
                 <el-tabs v-model="activeTabs" v-if="serverList[key].tools && Object.keys(serverList[key].tools)?.length">
-                  <el-tab-pane label="Tools" name="tools">
+                  <el-tab-pane label="工具" name="tools">
                     <div class="tool-section" v-for="(name) in Object.keys(serverList[key].tools)" :key="name">
                       <div class="tool-item">
                           <div class="tool-header">{{name}}</div>
                           <div class="tool-desc">{{serverList[key].tools[name].description || "无"}}</div>
                           <div class="param-item" v-if="serverList[key].tools[name].inputSchema">
-                            <div class="param-label">PARAMETERS</div>
+                            <div class="param-label">参数</div>
                             <div class="param-content" v-for="(item, ind) in handleParams(serverList[key].tools[name].inputSchema)" :key="ind">
                                 <div class="query-param">
                                     <dl>
@@ -38,32 +38,32 @@
                       </div>
                     </div>
                     <el-button type="primary" size="small" round plain @click="executeSql(key)" class="action-btn">
-                      Restart server
+                      重启服务器
                     </el-button>
                   </el-tab-pane>
                 </el-tabs>
                 <template v-else>
-                  <el-empty description="暂无Tools">
+                  <el-empty description="暂无工具">
                         <template #image>
                             <el-icon :size="48"><Warning /></el-icon>
                         </template>
                     </el-empty>
                   <el-button type="primary" size="small" round plain @click="executeSql(key)" class="action-btn">
-                    Retry Connection
+                    重试连接
                   </el-button>
                 </template>
             </el-collapse-item>
         </el-collapse>
         <el-button type="primary" @click="openFile" class="action-btn edit-btn">
             <el-icon><Edit /></el-icon>&emsp;
-            Edit MCP Settings
+            编辑 MCP 设置
         </el-button>
     </template>
     <el-empty v-else description="暂无数据">
         <template #image>
             <el-icon :size="48"><Warning /></el-icon>
         </template>
-        <el-button round plain class="empty-btn" @click="openFile">Edit MCP Settings</el-button>
+        <el-button round plain class="empty-btn" @click="openFile">编辑 MCP 设置</el-button>
     </el-empty>
   </div>
 </template>
@@ -72,6 +72,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ArrowDown, Edit, Warning } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useTheme } from '@/styles/theme/useTheme'
 import {
   getMcp,
   getMcpStatus,
@@ -79,8 +80,7 @@ import {
   getMcpVersion,
   mcpRetryConnection,
   openMcp,
-  type McpServer,
-  type McpTool
+  type McpServer
 } from '@/api/mcp'
 
 // 添加全局类型声明
@@ -90,10 +90,13 @@ declare global {
   }
 }
 
+// 获取主题
+const { currentTheme } = useTheme()
+
 const activeCollapse = ref<number[]>([])
 const activeTabs = ref('tools')
 const serverList = ref<Record<string, McpServer>>({})
-const winCaches = ref<Record<string, Function>>({})
+const winCaches = ref<Record<string, (isRefresh: string) => void>>({})
 
 const executeSql = async (name: string) => {
   try {
@@ -210,35 +213,41 @@ onUnmounted(() => {
   padding: 16px;
   max-height: 70vh;
   overflow-y: auto;
-  background: var(--el-bg-color);
+  background: v-bind('currentTheme.colors.chatWindowBackground');
+  color: v-bind('currentTheme.colors.textPrimary');
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
 
-  // 滚动条样式优化
+  // 滚动条样式优化，使用主题色
   &::-webkit-scrollbar {
     width: 6px;
   }
 
   &::-webkit-scrollbar-track {
-    background: var(--el-fill-color-lighter);
+    background: v-bind('currentTheme.colors.fillColorLighter');
     border-radius: 3px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--el-color-info-light-5);
+    background: v-bind('currentTheme.colors.chatLinkColor');
     border-radius: 3px;
+    opacity: 0.6;
 
     &:hover {
-      background: var(--el-color-info-light-3);
+      opacity: 0.8;
     }
   }
 
   .empty-btn {
-    background-color: var(--el-color-info);
-    border-color: var(--el-color-info);
-    color: var(--el-color-white);
+    background: linear-gradient(135deg, v-bind('currentTheme.colors.primary'), v-bind('currentTheme.colors.info'));
+    border: 1px solid v-bind('currentTheme.colors.primary');
+    color: v-bind('currentTheme.colors.background');
+    font-weight: 500;
+    transition: all 0.3s ease;
 
     &:hover {
-      background-color: var(--el-color-info-light-3);
-      border-color: var(--el-color-info-light-3);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px v-bind('currentTheme.colors.chatBorderGlow');
     }
   }
 
@@ -251,12 +260,14 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       margin-bottom: 8px;
+      padding: 4px 0;
     }
 
     .info-title {
       margin-right: 8px;
       font-weight: 500;
-      color: var(--el-text-color-regular);
+      color: v-bind('currentTheme.colors.textSecondary');
+      font-size: 13px;
     }
   }
 
@@ -265,53 +276,87 @@ onUnmounted(() => {
 
     .tool-item {
       margin-bottom: 20px;
-      padding: 16px;
-      background: var(--el-fill-color-lighter);
-      border-radius: 8px;
-      border: 1px solid var(--el-border-color-light);
+      padding: 18px;
+      background: v-bind('currentTheme.colors.fillColor');
+      border-radius: 12px;
+      border: 1px solid v-bind('currentTheme.colors.borderColorLight');
       transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+
+      // 添加微妙的渐变效果
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, v-bind('currentTheme.colors.primary'), v-bind('currentTheme.colors.success'), v-bind('currentTheme.colors.warning'));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
 
       &:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        border-color: var(--el-color-primary-light-5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px v-bind('currentTheme.colors.chatBorderGlow');
+        border-color: v-bind('currentTheme.colors.chatLinkColor');
+
+        &::before {
+          opacity: 1;
+        }
       }
 
       .tool-header {
         font-size: 16px;
         font-weight: 600;
-        color: var(--el-color-primary);
-        margin-bottom: 10px;
+        color: v-bind('currentTheme.colors.primary');
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
 
         &::before {
-          content: '🔧';
-          margin-right: 8px;
-          font-size: 14px;
+          content: '⚡';
+          margin-right: 10px;
+          font-size: 16px;
+          color: v-bind('currentTheme.colors.chatLinkColor');
         }
       }
 
       .tool-desc {
-        color: var(--el-text-color-regular);
+        color: v-bind('currentTheme.colors.textRegular');
         font-size: 14px;
-        margin-bottom: 12px;
-        line-height: 1.5;
+        margin-bottom: 15px;
+        line-height: 1.6;
+        background: v-bind('currentTheme.colors.fillColorLighter');
+        padding: 8px 12px;
+        border-radius: 6px;
+        border-left: 3px solid v-bind('currentTheme.colors.info');
       }
 
       .param-item {
-        border: 1px solid var(--el-border-color);
-        padding: 12px;
+        border: 1px solid v-bind('currentTheme.colors.borderColor');
+        padding: 14px;
         margin-bottom: 12px;
-        border-radius: 6px;
-        background: var(--el-bg-color);
+        border-radius: 8px;
+        background: v-bind('currentTheme.colors.background');
+        backdrop-filter: blur(5px);
 
         .param-label {
           font-weight: 600;
-          margin-bottom: 10px;
-          color: var(--el-color-warning);
+          margin-bottom: 12px;
+          color: v-bind('currentTheme.colors.warning');
           font-size: 12px;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
+          display: flex;
+          align-items: center;
+
+          &::before {
+            content: '📝';
+            margin-right: 6px;
+            font-size: 14px;
+          }
         }
 
         .param-content {
@@ -326,30 +371,32 @@ onUnmounted(() => {
               display: flex;
               align-items: flex-start;
               margin: 0;
-              padding: 8px 0;
-              border-bottom: 1px solid var(--el-border-color-lighter);
+              padding: 10px 0;
+              border-bottom: 1px solid v-bind('currentTheme.colors.borderColorLighter');
 
               &:last-child {
                 border-bottom: none;
               }
 
               dt {
-                color: var(--el-color-white);
-                background-color: var(--el-color-danger);
-                padding: 2px 8px;
+                color: v-bind('currentTheme.colors.background');
+                background: linear-gradient(135deg, v-bind('currentTheme.colors.danger'), v-bind('currentTheme.colors.warning'));
+                padding: 4px 10px;
                 margin-right: 12px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: 500;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
                 min-width: fit-content;
                 flex-shrink: 0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
               }
 
               dd {
-                color: var(--el-text-color-regular);
+                color: v-bind('currentTheme.colors.textRegular');
                 margin: 0;
-                line-height: 1.4;
+                line-height: 1.5;
                 flex: 1;
+                font-size: 13px;
               }
             }
           }
@@ -361,89 +408,130 @@ onUnmounted(() => {
   .action-btn {
     width: 100%;
     margin-top: 12px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background-color: transparent;
 
     &.edit-btn {
       margin-top: 24px;
-      background-color: var(--el-color-primary);
-      border-color: var(--el-color-primary);
+      background: linear-gradient(135deg, v-bind('currentTheme.colors.primary'), v-bind('currentTheme.colors.success'));
+      border: none;
+      color: v-bind('currentTheme.colors.background');
 
       &:hover {
-        background-color: var(--el-color-primary-light-3);
-        border-color: var(--el-color-primary-light-3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px v-bind('currentTheme.colors.chatBorderGlow');
       }
     }
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background-color: var(--el-color-danger);
+    background-color: v-bind('currentTheme.colors.danger');
     transition: all 0.3s ease;
+    box-shadow: 0 0 8px currentColor;
 
     &.success {
-      background-color: var(--el-color-success);
+      background-color: v-bind('currentTheme.colors.success');
     }
   }
 
   .title-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
 
     .arrow-icon {
       font-size: 14px;
-      transition: transform 0.3s ease;
+      transition: all 0.3s ease;
       transform: rotate(-90deg);
-      color: var(--el-text-color-regular);
+      color: v-bind('currentTheme.colors.textSecondary');
 
       &.is-active {
         transform: rotate(0deg);
-        color: var(--el-color-primary);
+        color: v-bind('currentTheme.colors.chatLinkColor');
       }
     }
 
     span {
-      font-weight: 500;
-      color: var(--el-text-color-primary);
+      font-weight: 600;
+      color: v-bind('currentTheme.colors.textPrimary');
       flex: 1;
+      font-size: 15px;
     }
   }
 
-  // Element Plus 组件样式覆盖
+  // Element Plus 组件样式覆盖，使用主题色
   :deep(.el-collapse-item__header) {
-    background-color: var(--el-fill-color-light);
-    border-radius: 6px;
+    background: v-bind('currentTheme.colors.fillColorLight');
+    border-radius: 10px;
     margin-bottom: 8px;
-    padding: 12px 16px;
-    border: 1px solid var(--el-border-color-light);
+    padding: 16px 20px;
+    border: 1px solid v-bind('currentTheme.colors.borderColorLight');
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: v-bind('currentTheme.colors.chatLinkColor');
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
 
     &:hover {
-      background-color: var(--el-fill-color);
-      border-color: var(--el-color-primary-light-5);
+      background: v-bind('currentTheme.colors.fillColor');
+      border-color: v-bind('currentTheme.colors.chatLinkColor');
+      transform: translateX(2px);
+
+      &::before {
+        transform: scaleY(1);
+      }
     }
   }
 
   :deep(.el-collapse-item__content) {
-    padding: 16px;
-    background-color: var(--el-bg-color);
-    border-radius: 6px;
-    border: 1px solid var(--el-border-color-lighter);
+    padding: 20px;
+    background: v-bind('currentTheme.colors.background');
+    border-radius: 8px;
+    border: 1px solid v-bind('currentTheme.colors.borderColorLighter');
     margin-bottom: 16px;
+    backdrop-filter: blur(5px);
   }
 
   :deep(.el-collapse-item__wrap) {
     border: none;
+    background-color: transparent;
   }
 
   :deep(.el-tabs__header) {
     margin-bottom: 16px;
   }
 
+  :deep(.el-tabs__item) {
+    color: v-bind('currentTheme.colors.textRegular');
+    font-weight: 500;
+
+    &.is-active {
+      color: v-bind('currentTheme.colors.primary');
+    }
+  }
+
   :deep(.el-tabs__nav-wrap::after) {
-    background-color: var(--el-border-color-light);
+    background-color: v-bind('currentTheme.colors.borderColorLight');
+  }
+
+  :deep(.el-tabs__active-bar) {
+    background-color: v-bind('currentTheme.colors.primary');
   }
 
   :deep(.el-empty) {
@@ -451,7 +539,17 @@ onUnmounted(() => {
   }
 
   :deep(.el-empty__description) {
-    color: var(--el-text-color-placeholder);
+    color: v-bind('currentTheme.colors.textSecondary');
+  }
+
+  :deep(.el-empty__image svg) {
+    fill: v-bind('currentTheme.colors.fillColor');
+  }
+
+  :deep(.el-tag) {
+    background: v-bind('currentTheme.colors.fillColorLight');
+    border-color: v-bind('currentTheme.colors.borderColorLight');
+    color: v-bind('currentTheme.colors.textRegular');
   }
 }
 </style>

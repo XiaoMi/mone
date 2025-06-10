@@ -45,7 +45,7 @@
         <el-dialog
             v-model="mcpConfigDialogVisible"
             title="MCP 配置管理"
-            width="85%"
+            width="80%"
             :close-on-click-modal="false"
             class="mcp-config-dialog"
             top="5vh"
@@ -73,6 +73,13 @@ import { Setting, CreditCard, Delete, SwitchButton, Close } from '@element-plus/
 import { getAgentConfigs, setBatchAgentConfig, deleteAgentConfig } from '@/api/agent';
 import McpConfig from './McpConfig.vue';
 
+interface InstanceType {
+  id: string | number;
+  ip: string;
+  port: string | number;
+  agentId?: string | number;
+}
+
 const { getInstance, setSelectedInstance } = useUserStore();
 const { setMessageList } = useChatContextStore();
 const selectedIp = ref('')
@@ -89,9 +96,8 @@ const props = defineProps({
 const list = computed(() => {
     return getInstance()
 })
-
-watch(()=>selectedIp.value, (newIp) => {
-    setSelectedInstance(list.value?.find((item: any) => item.ip === newIp))
+watch(() => selectedIp.value, (newIp) => {
+    setSelectedInstance(list.value?.find((item) => item.ip === newIp))
 })
 
 // 添加 watchEffect 来设置默认值
@@ -136,7 +142,7 @@ const loading = ref(false);
 const mcpConfigDialogVisible = ref(false);
 
 const handleOpenConfig = async () => {
-    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
+    const selectedInstance = getInstance()?.find((item: InstanceType) => item.ip === selectedIp.value);
     if (!selectedInstance?.agentId) {
         ElMessage.error('未找到当前实例对应的Agent');
         return;
@@ -180,7 +186,7 @@ const removeConfig = async (index: number) => {
             }
         );
 
-        const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
+        const selectedInstance = getInstance()?.find((item: InstanceType) => item.ip === selectedIp.value);
         if (!selectedInstance?.agentId) {
             ElMessage.error('未找到当前实例对应的Agent');
             return;
@@ -209,7 +215,7 @@ const handleSubmitConfig = async () => {
         return;
     }
 
-    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
+    const selectedInstance = getInstance()?.find((item: InstanceType) => item.ip === selectedIp.value);
     if (!selectedInstance?.agentId) {
         ElMessage.error('未找到当前实例对应的Agent');
         return;
