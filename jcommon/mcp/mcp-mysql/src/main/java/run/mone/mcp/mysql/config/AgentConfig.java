@@ -30,7 +30,7 @@ public class AgentConfig {
                 .tools(Lists.newArrayList( new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool()))
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20),new SqliteFunction()))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60),new SqliteFunction()))
                 .build();
     }
 

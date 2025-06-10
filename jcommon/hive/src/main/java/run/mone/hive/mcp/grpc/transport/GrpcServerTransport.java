@@ -224,7 +224,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
                 Safe.run(() -> {
                     userConnections.forEach((k, v) -> {
-//                        v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
+                        v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
                     });
                 });
             }, 5, 5, TimeUnit.SECONDS);
@@ -256,6 +256,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 public void onNext(StreamRequest streamRequest) {
                     String name = streamRequest.getName();
                     clientId = getClientIdFromContext();
+
+                    System.out.println(clientId + "----" + userConnections);
 
                     if (StringUtils.isEmpty(clientId)) {
                         return;

@@ -71,8 +71,14 @@ public class McpHub {
         }
 
         //用来发ping
+        ping();
+    }
+
+    private void ping() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping(), ex -> {
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() ->{
+                value.getClient().ping();
+                }, ex -> {
                 if (null == ex) {
                     value.setErrorNum(0);
                 } else {

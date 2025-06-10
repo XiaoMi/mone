@@ -41,7 +41,7 @@ public class AgentConfig {
                         new SystemInfoTool(),
                         new TextToSpeechTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
                 //30s
                 .timeout(30000)
                 .build();
