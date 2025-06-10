@@ -1,6 +1,44 @@
 <template>
   <div class="mcp-container">
-    <template v-if="Object.keys(serverList)?.length">
+    <!-- 编辑器模式 -->
+    <div v-if="showEditor" class="editor-container">
+      <div class="editor-header">
+        <h3>编辑 MCP 配置</h3>
+        <div class="editor-actions">
+          <el-button @click="cancelEdit" size="small">取消</el-button>
+          <el-button type="primary" @click="saveConfig" size="small">保存</el-button>
+        </div>
+      </div>
+      <div class="editor-content">
+        <!-- 尝试使用CodeMirror -->
+        <div v-if="useCodeMirror" class="codemirror-wrapper">
+          <CodemirrorEditor
+            v-model:value="configContent"
+            :extensions="extensions"
+            placeholder="请输入 MCP 配置 JSON 内容..."
+            class="config-editor"
+            :style="{ height: '400px' }"
+          />
+        </div>
+        <!-- 后备方案：普通textarea -->
+        <div v-else class="textarea-wrapper">
+          <el-input
+            v-model="configContent"
+            type="textarea"
+            :rows="20"
+            placeholder="请输入 MCP 配置 JSON 内容..."
+            class="config-textarea"
+          />
+        </div>
+        <div class="editor-controls">
+          <el-button size="small" @click="toggleEditor">
+            切换到 {{ useCodeMirror ? 'Textarea' : 'CodeMirror' }}
+          </el-button>
+        </div>
+      </div>
+    </div>
+    <!-- 服务器列表模式 -->
+    <template v-else-if="Object.keys(serverList)?.length">
         <el-collapse v-model="activeCollapse" @change="handleCollapseChange">
             <el-collapse-item v-for="(key, index) in Object.keys(serverList)" :name="index" :key="key">
                 <template #title>
@@ -69,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { ArrowDown, Edit, Warning } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useTheme } from '@/styles/theme/useTheme'
@@ -82,6 +120,9 @@ import {
   openMcp,
   type McpServer
 } from '@/api/mcp'
+import CodemirrorEditor from 'codemirror-editor-vue3'
+import { json } from '@codemirror/lang-json'
+import { oneDark } from '@codemirror/theme-one-dark'
 
 // 添加全局类型声明
 declare global {
@@ -97,6 +138,18 @@ const activeCollapse = ref<number[]>([])
 const activeTabs = ref('tools')
 const serverList = ref<Record<string, McpServer>>({})
 const winCaches = ref<Record<string, (isRefresh: string) => void>>({})
+const showEditor = ref(false)
+const configContent = ref('')
+const useCodeMirror = ref(true)
+
+// CodeMirror扩展配置
+const extensions = computed(() => {
+  const isDark = currentTheme.value.name === 'dark' || currentTheme.value.name === 'cyberpunk'
+  return [
+    json(),
+    ...(isDark ? [oneDark] : [])
+  ]
+})
 
 const executeSql = async (name: string) => {
   try {
@@ -160,8 +213,83 @@ const handleParams = (str: string) => {
   }
 }
 
-const openFile = () => {
-    openMcp()
+const openFile = async () => {
+    try {
+        // 获取当前配置内容
+        const response = await getMcp();
+        console.log('获取到的配置数据:', response);
+        const formattedContent = JSON.stringify(response.data.data, null, 2);
+        console.log('格式化后的内容:', formattedContent);
+
+        // 如果没有内容，提供一个默认示例
+        if (!formattedContent || formattedContent === '{}' || formattedContent === 'null') {
+            configContent.value = `{
+  "servers": {
+    "example-server": {
+      "command": "node",
+      "args": ["path/to/your/mcp-server.js"],
+      "env": {}
+    }
+  }
+}`;
+        } else {
+            configContent.value = formattedContent;
+        }
+
+        showEditor.value = true;
+
+        // 等待下一个 tick 确保 DOM 更新
+        await nextTick();
+        console.log('configContent.value:', configContent.value);
+    } catch (error) {
+        ElMessage.error('获取配置失败');
+        console.error(error);
+        // 即使失败也显示编辑器，提供默认内容
+        configContent.value = `{
+  "servers": {
+    "example-server": {
+      "command": "node",
+      "args": ["path/to/your/mcp-server.js"],
+      "env": {}
+    }
+  }
+}`;
+        showEditor.value = true;
+    }
+}
+
+const cancelEdit = () => {
+    showEditor.value = false;
+    configContent.value = '';
+}
+
+const toggleEditor = () => {
+    useCodeMirror.value = !useCodeMirror.value;
+}
+
+const saveConfig = async () => {
+    try {
+        // 验证JSON格式
+        JSON.parse(configContent.value);
+
+        // 这里应该调用保存配置的API
+        // 暂时先用openMcp函数，实际应该替换为保存API
+        await openMcp();
+
+        ElMessage.success('配置保存成功');
+        showEditor.value = false;
+        configContent.value = '';
+
+        // 刷新服务器列表
+        await gitList();
+    } catch (error) {
+        if (error instanceof SyntaxError) {
+            ElMessage.error('JSON格式错误，请检查配置内容');
+        } else {
+            ElMessage.error('保存配置失败');
+        }
+        console.error(error);
+    }
 }
 
 const refreshMcp = (isRefresh: string) => {
@@ -200,6 +328,12 @@ onMounted(() => {
     gitList()
     window.refreshMcp = refreshMcp
     winCaches.value.refreshMcp = refreshMcp
+
+    // 设置一个测试值看看编辑器是否能显示
+    setTimeout(() => {
+        console.log('设置测试值')
+        configContent.value = '{"test": "这是一个测试值"}'
+    }, 1000)
 })
 
 onUnmounted(() => {
@@ -217,6 +351,102 @@ onUnmounted(() => {
   color: v-bind('currentTheme.colors.textPrimary');
   backdrop-filter: blur(10px);
   border-radius: 8px;
+
+  .editor-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid v-bind('currentTheme.colors.borderColorLight');
+
+      h3 {
+        margin: 0;
+        color: v-bind('currentTheme.colors.textPrimary');
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .editor-actions {
+        display: flex;
+        gap: 8px;
+      }
+    }
+
+        .editor-content {
+      flex: 1;
+
+              .config-editor {
+        height: 400px;
+        width: 100%;
+        font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        border: 1px solid v-bind('currentTheme.colors.borderColorLight');
+        border-radius: 6px;
+        overflow: hidden;
+
+        :deep(.cm-editor) {
+          height: 100%;
+          background: v-bind('currentTheme.colors.fillColor');
+          color: v-bind('currentTheme.colors.textPrimary');
+
+          &.cm-focused {
+            outline: none;
+            border-color: v-bind('currentTheme.colors.primary');
+          }
+        }
+
+        :deep(.cm-content) {
+          color: v-bind('currentTheme.colors.textPrimary');
+          background: v-bind('currentTheme.colors.fillColor');
+          padding: 16px;
+          min-height: 400px;
+        }
+
+        :deep(.cm-scroller) {
+          font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+          line-height: 1.6;
+        }
+
+        :deep(.cm-placeholder) {
+          color: v-bind('currentTheme.colors.textSecondary');
+        }
+      }
+
+      .textarea-wrapper {
+        .config-textarea {
+          :deep(.el-textarea__inner) {
+            background: v-bind('currentTheme.colors.fillColor');
+            border: 1px solid v-bind('currentTheme.colors.borderColorLight');
+            color: v-bind('currentTheme.colors.textPrimary');
+            font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            border-radius: 6px;
+            resize: none;
+
+            &:focus {
+              border-color: v-bind('currentTheme.colors.primary');
+              box-shadow: 0 0 0 2px v-bind('currentTheme.colors.chatBorderGlow');
+            }
+
+            &::placeholder {
+              color: v-bind('currentTheme.colors.textSecondary');
+            }
+          }
+        }
+      }
+
+      .editor-controls {
+        margin-top: 12px;
+        text-align: right;
+      }
+    }
+  }
 
   // 滚动条样式优化，使用主题色
   &::-webkit-scrollbar {
