@@ -739,6 +739,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.DOUBAO_VISION ||
                     this.llmProvider == LLMProvider.GROK ||
                     this.llmProvider == LLMProvider.DOUBAO ||
+                    this.llmProvider == LLMProvider.MIFY ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -1253,6 +1254,7 @@ public class LLM {
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
+                || llm.getConfig().getLlmProvider() == LLMProvider.MIFY
         ) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();
