@@ -176,8 +176,9 @@ public class RoleService {
 
         //加载配置(从 agent manager获取来的)
         if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+            //每个用户的配置是不同的
             Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-            role.setRoleConfig(configMap);
+            role.getRoleConfig().putAll(configMap);
         }
 
         //一直执行不会停下来
@@ -189,7 +190,7 @@ public class RoleService {
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
 
-        roleMap.compute(from,(k,v)->{
+        roleMap.compute(from, (k, v) -> {
             if (v == null) {
                 return createRole(message);
             }
