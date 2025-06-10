@@ -252,7 +252,24 @@ public class ReactorRole extends Role {
         }
 
         if (type.equals("Role")) {
-            return super.observe();
+            Message lastMsg = this.rc.getMemory().getLastMessage();
+            if (null != lastMsg && lastMsg.getData().equals(Const.ROLE_EXIT)) {
+                this.state.set(RoleState.exit);
+
+                if (null != lastMsg.getSink()) {
+                    log.info("type Role sink complete");
+                    lastMsg.getSink().complete();
+                }
+            }
+
+
+            int result =  super.observe();
+            Message msg = this.rc.news.take();
+            ac.setMsg(msg);
+            lastReceiveMsgTime = new Date();
+            log.info("type Role receive message:{}", msg);
+
+            return result;
         }
 
         //等待消息
@@ -314,6 +331,15 @@ public class ReactorRole extends Role {
             attemptCompletion = 2;
         }
         return attemptCompletion;
+    }
+
+    @Override
+    public Message processMessage(Message message) {
+        if (type.equals("Role")) {
+            message.setSink(this.ac.getSink());
+        }
+
+        return message;
     }
 
     private void shutdownScheduler() {
