@@ -105,22 +105,20 @@ public class RoleService {
 
     private McpHub updateMcpConnections(List<String> agentNames, String clientId) {
         McpHub hub = new McpHub();
-        if (StringUtils.isNotEmpty(mcpServerList)) {
-            Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
-            map.entrySet().forEach(entry -> {
-                Safe.run(() -> {
-                    Map m = (Map) entry.getValue().get(0);
-                    ServerParameters parameters = new ServerParameters();
-                    parameters.setType("grpc");
-                    parameters.getEnv().put("port", String.valueOf(m.get("port")));
-                    parameters.getEnv().put("host", (String) m.get("ip"));
-                    parameters.getEnv().put(Const.TOKEN, "");
-                    parameters.getEnv().put(Const.CLIENT_ID, "mcp_" + clientId);
-                    log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
-                    hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
-                });
+        Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
+        map.entrySet().forEach(entry -> {
+            Safe.run(() -> {
+                Map m = (Map) entry.getValue().get(0);
+                ServerParameters parameters = new ServerParameters();
+                parameters.setType("grpc");
+                parameters.getEnv().put("port", String.valueOf(m.get("port")));
+                parameters.getEnv().put("host", (String) m.get("ip"));
+                parameters.getEnv().put(Const.TOKEN, "");
+                parameters.getEnv().put(Const.CLIENT_ID, "mcp_" + clientId);
+                log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
+                hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
             });
-        }
+        });
         return hub;
     }
 
