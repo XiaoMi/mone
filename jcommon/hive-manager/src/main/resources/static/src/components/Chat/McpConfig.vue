@@ -101,8 +101,16 @@
                   </el-button>
                 </div>
 
-                <el-tabs v-model="activeTabs" v-if="item.agent.goal || item.agent.profile || item.agent.constraints">
-                  <el-tab-pane label="详细信息" name="details">
+                <!-- 详细信息展开/隐藏区域 -->
+                <div v-if="item.agent.goal || item.agent.profile || item.agent.constraints" class="details-section">
+                  <div class="details-toggle" @click="toggleDetails(index)">
+                    <el-icon class="details-arrow" :class="{ 'is-expanded': expandedDetails.includes(index) }">
+                      <ArrowDown />
+                    </el-icon>
+                    <span class="details-label">详细信息</span>
+                  </div>
+
+                  <div v-if="expandedDetails.includes(index)" class="details-content">
                     <div class="tool-section">
                       <div class="tool-item" v-if="item.agent.goal">
                           <div class="tool-header">目标</div>
@@ -133,8 +141,8 @@
                           />
                       </div>
                     </div>
-                  </el-tab-pane>
-                </el-tabs>
+                  </div>
+                </div>
                 <template v-else>
                   <el-empty description="暂无详细信息">
                         <template #image>
@@ -199,7 +207,7 @@ const mcpAgentsList = computed(() => {
 
 
 const activeCollapse = ref<number[]>([])
-const activeTabs = ref('details')
+const expandedDetails = ref<number[]>([]) // 存储展开详细信息的项目索引
 const serverList = ref<{agent: Agent, instances: Array<object>, isFavorite: boolean}[]>([])
 const winCaches = ref<Record<string, (isRefresh: string) => void>>({})
 const searchQuery = ref('')
@@ -325,6 +333,18 @@ const refreshMcp = (isRefresh: string) => {
 const handleCollapseChange = async (val: number[]) => {
   // Agent列表模式下暂时不需要特殊处理
   console.log('折叠状态改变:', val);
+}
+
+// 切换详细信息的展开/隐藏状态
+const toggleDetails = (index: number) => {
+  const currentIndex = expandedDetails.value.indexOf(index)
+  if (currentIndex > -1) {
+    // 如果已展开，则隐藏
+    expandedDetails.value.splice(currentIndex, 1)
+  } else {
+    // 如果未展开，则展开
+    expandedDetails.value.push(index)
+  }
 }
 
 onMounted(async () => {
@@ -505,6 +525,62 @@ onUnmounted(() => {
       :deep(.el-icon) {
         margin-right: 6px;
       }
+    }
+  }
+
+  .details-section {
+    margin-top: 16px;
+
+    .details-toggle {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: v-bind('currentTheme.colors.fillColorLight');
+      border: 1px solid v-bind('currentTheme.colors.borderColorLight');
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 8px;
+
+      &:hover {
+        background: v-bind('currentTheme.colors.fillColor');
+        border-color: v-bind('currentTheme.colors.chatLinkColor');
+        transform: translateX(2px);
+      }
+
+      .details-arrow {
+        font-size: 14px;
+        transition: all 0.3s ease;
+        transform: rotate(-90deg);
+        color: v-bind('currentTheme.colors.textSecondary');
+        margin-right: 8px;
+
+        &.is-expanded {
+          transform: rotate(0deg);
+          color: v-bind('currentTheme.colors.chatLinkColor');
+        }
+      }
+
+      .details-label {
+        font-weight: 600;
+        color: v-bind('currentTheme.colors.textPrimary');
+        font-size: 14px;
+      }
+    }
+
+    .details-content {
+      animation: slideDown 0.3s ease-out;
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
@@ -742,30 +818,7 @@ onUnmounted(() => {
     background-color: transparent;
   }
 
-  :deep(.el-tabs__header) {
-    margin-bottom: 16px;
-  }
 
-  :deep(.el-tabs__item) {
-    color: v-bind('currentTheme.colors.textRegular');
-    font-weight: 500;
-
-    &.is-active {
-      color: v-bind('currentTheme.colors.primary');
-    }
-
-    &:hover {
-      color: v-bind('currentTheme.colors.chatLinkColor');
-    }
-  }
-
-  :deep(.el-tabs__nav-wrap::after) {
-    background-color: v-bind('currentTheme.colors.borderColorLight');
-  }
-
-  :deep(.el-tabs__active-bar) {
-    background-color: v-bind('currentTheme.colors.primary');
-  }
 
   :deep(.el-empty) {
     padding: 40px 20px;

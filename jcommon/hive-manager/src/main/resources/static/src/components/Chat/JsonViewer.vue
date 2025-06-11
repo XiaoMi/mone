@@ -1,12 +1,11 @@
 <template>
   <div class="json-viewer">
-    <div v-if="content" class="codemirror-container">
+    <div v-if="props.content" class="my-codemirror-container">
       <CodemirrorEditor
         :value="formattedContent"
         :options="cmOptions"
         :placeholder="placeholder"
         class="json-editor"
-        :style="{ height: height }"
       />
     </div>
     <div v-else class="empty-content">
@@ -21,6 +20,7 @@ import { useTheme } from '@/styles/theme/useTheme'
 import CodemirrorEditor from 'codemirror-editor-vue3'
 
 // 导入 CodeMirror 5 的必要文件
+import 'codemirror/lib/codemirror.css'
 import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/theme/material.css'
 import 'codemirror/theme/dracula.css'
@@ -43,8 +43,8 @@ const props = withDefaults(defineProps<Props>(), {
   content: '',
   placeholder: '暂无内容',
   height: '120px',
-  showLineNumbers: true,
-  enableFolding: true
+  showLineNumbers: false,
+  enableFolding: false
 })
 
 // 获取主题
@@ -92,11 +92,12 @@ const cmOptions = computed(() => {
 
 <style lang="scss" scoped>
 .json-viewer {
-  .codemirror-container {
+  .my-codemirror-container {
     border: 1px solid v-bind('currentTheme.colors.borderColorLight');
     border-radius: 8px;
     display: block;
     width: 100%;
+    height: 200px;
     overflow: hidden;
     background: v-bind('currentTheme.colors.background');
 
