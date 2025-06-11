@@ -110,7 +110,7 @@ public class ChatFunction implements McpFunction {
                         .images(images)
                         .voiceBase64(voiceBase64)
                         .build())
-                .timeout(Duration.ofSeconds(timeout))
+//                .timeout(Duration.ofSeconds(timeout))
                 .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
                 .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
     }
