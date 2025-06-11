@@ -189,6 +189,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     // 改进后的 observer 方法
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
+        log.info("=========>observer"+ observer);
         // 确保连接已经建立再创建双向流
         waitForChannelReady();
         return createObserverWithReconnect(observer, 0);
@@ -293,19 +294,14 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 throw new IllegalStateException("Channel is not available for creating stream");
             }
             
-            // 在独立的 Context 中创建双向流，避免被上游取消影响
-            io.grpc.Context independentContext = io.grpc.Context.ROOT.fork();
-            
-            req = independentContext.call(() -> 
-                getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver)
-            );
+            req = getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver);
 
             // 构建请求时添加 token
             StreamRequest.Builder builder = StreamRequest.newBuilder()
                     .setName("observer");
 
             req.onNext(builder.build());
-            log.info("连接建立成功，开始接收消息");
+            System.out.println("连接建立成功，开始接收消息");
             return req;
         } catch (Exception e) {
             System.err.println("创建双向流失败: " + e.getMessage());
@@ -330,7 +326,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 try {
                     createObserverWithReconnect(observer, attemptCount);
                 } catch (Exception e) {
-                    System.err.println("重连失败: " + e.getMessage());
+                    log.error("重连失败: {}", e.getMessage());
                     // 继续重连
                     scheduleReconnect(observer, attemptCount + 1);
                 }
@@ -340,7 +336,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     // 改进 recreateChannel 方法
     private synchronized void recreateChannel() {
-        System.out.println("开始重建gRPC通道...");
+        log.info("开始重建gRPC通道...");
         
         // 关闭旧的连接
         if (channel != null && !channel.isShutdown()) {
@@ -373,7 +369,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
         this.asyncStub = McpServiceGrpc.newStub(channel);
         
-        System.out.println("gRPC通道重建完成");
+        log.info("gRPC通道重建完成");
     }
 
     // 改进 closeGracefully 方法
@@ -529,52 +525,30 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
         String methodName = getMethodName(request);
 
+
         //protobuf map 只能是 <string,string>
         CallToolRequest.Builder builder = CallToolRequest.newBuilder()
                 .setName(METHOD_TOOLS_STREAM)
                 .putAllArguments(stringMap)
                 .setMethod(methodName);
 
-        // 创建一个独立的 Context，不会被上游的取消信号影响
-        io.grpc.Context independentContext = io.grpc.Context.ROOT.fork();
-        
-        // 在独立的 Context 中执行 gRPC 调用
-        independentContext.run(() -> {
-            this.getMetadataAsyncStub().callToolStream(builder.build(), new StreamObserver<>() {
-                private volatile boolean completed = false;
-                
-                @Override
-                public void onNext(CallToolResponse callToolResponse) {
-                    if (!completed && !sink.isCancelled()) {
-                        sink.next(callToolResponse);
-                    }
-                }
+        this.getMetadataAsyncStub().callToolStream(builder.build(), new StreamObserver<>() {
+            @Override
+            public void onNext(CallToolResponse callToolResponse) {
+                sink.next(callToolResponse);
+            }
 
-                @Override
-                public void onError(Throwable throwable) {
-                    if (!completed) {
-                        completed = true;
-                        // 只在真正的错误时才传递错误，忽略取消信号
-                        if (!(throwable instanceof StatusRuntimeException sre) || 
-                            sre.getStatus().getCode() != io.grpc.Status.Code.CANCELLED) {
-                            sink.error(throwable);
-                        } else {
-                            System.out.println("gRPC 调用被取消，但继续完成: " + throwable.getMessage());
-                            // 可以选择继续等待结果或直接完成
-                            sink.complete();
-                        }
-                    }
-                }
+            @Override
+            public void onError(Throwable throwable) {
+                sink.error(throwable);
+            }
 
-                @Override
-                public void onCompleted() {
-                    if (!completed) {
-                        completed = true;
-                        sink.complete();
-                    }
-                }
-            });
+            @Override
+            public void onCompleted() {
+                sink.complete();
+            }
         });
+
     }
 
     //grpc 的返回结果,需要手动转换下
