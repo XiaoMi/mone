@@ -1,99 +1,167 @@
 <template>
   <div class="mcp-container">
-    <!-- 编辑器模式 -->
-    <div v-if="showEditor" class="editor-container">
-      <McpConfigEditor
-        v-model="showEditor"
-        :initial-content="configContent"
-        @save="handleSaveConfig"
-        @cancel="handleCancelEdit"
-        ref="configEditorRef"
-      />
+    <!-- 搜索框 -->
+    <div class="search-container">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索 Agent 名称或描述..."
+        @input="handleSearch"
+        clearable
+        class="search-input"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+      <div class="search-stats" v-if="searchQuery">
+        找到 {{filteredServerList.length}} 个结果
+      </div>
     </div>
+
+    <!-- MCP 配置概要 -->
+    <div class="mcp-summary" v-if="currentAgentId">
+      <div class="summary-title">
+        <el-icon><Position /></el-icon>
+        当前 MCP 配置
+      </div>
+      <div class="summary-content">
+        <span v-if="mcpAgentsList.length === 0" class="no-config">未配置任何 Agent</span>
+        <el-tag
+          v-else
+          v-for="agentName in mcpAgentsList"
+          :key="agentName"
+          size="small"
+          type="success"
+          effect="plain"
+          class="agent-tag"
+        >
+          {{agentName}}
+        </el-tag>
+      </div>
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="loading-container">
+      <el-skeleton :rows="3" animated />
+    </div>
+
     <!-- 服务器列表模式 -->
-    <template v-else-if="Object.keys(serverList)?.length">
+    <template v-else-if="filteredServerList?.length">
         <el-collapse v-model="activeCollapse" @change="handleCollapseChange">
-            <el-collapse-item v-for="(key, index) in Object.keys(serverList)" :name="index" :key="key">
+                          <el-collapse-item v-for="(item, index) in filteredServerList" :name="index" :key="item.agent.id">
                 <template #title>
                     <div class="title-container">
                         <el-icon class="arrow-icon" :class="{ 'is-active': activeCollapse.includes(index) }"><ArrowDown /></el-icon>
-                        <span>{{key}}</span>
+                        <span>{{item.agent.name}}</span>
                     </div>
                 </template>
                 <template #icon>
-                    <div class="dot" :class="{'success': serverList[key].status}"></div>
+                    <div class="dot" :class="{'success': item.instances && item.instances.length > 0}"></div>
                 </template>
                 <ul class="info-list">
-                  <li v-if="serverList[key].version">
+                  <li v-if="item.agent.version">
                     <span class="info-title">版本:</span>
-                    <el-tag size="small" effect="plain">{{serverList[key].version}}</el-tag>
+                    <el-tag size="small" effect="plain">{{item.agent.version}}</el-tag>
+                  </li>
+                  <li v-if="item.agent.group">
+                    <span class="info-title">分组:</span>
+                    <el-tag size="small" effect="plain" type="info">{{item.agent.group}}</el-tag>
+                  </li>
+                  <li v-if="item.agent.description">
+                    <span class="info-title">描述:</span>
+                    <span class="info-value">{{item.agent.description}}</span>
+                  </li>
+                  <li v-if="item.agent.createdAt">
+                    <span class="info-title">创建时间:</span>
+                    <span class="info-value">{{new Date(item.agent.createdAt).toLocaleString()}}</span>
+                  </li>
+                  <li>
+                    <span class="info-title">状态:</span>
+                    <el-tag size="small" effect="plain" :type="item.instances && item.instances.length > 0 ? 'success' : 'danger'">
+                      {{item.instances && item.instances.length > 0 ? '在线' : '离线'}}
+                    </el-tag>
+                  </li>
+                  <li v-if="item.instances?.length">
+                    <span class="info-title">实例数:</span>
+                    <el-tag size="small" effect="plain" type="success">{{item.instances.length}}</el-tag>
                   </li>
                 </ul>
-                <el-tabs v-model="activeTabs" v-if="serverList[key].tools && Object.keys(serverList[key].tools)?.length">
-                  <el-tab-pane label="工具" name="tools">
-                    <div class="tool-section" v-for="(name) in Object.keys(serverList[key].tools)" :key="name">
-                      <div class="tool-item">
-                          <div class="tool-header">{{name}}</div>
-                          <div class="tool-desc">{{serverList[key].tools[name].description || "无"}}</div>
-                          <div class="param-item" v-if="serverList[key].tools[name].inputSchema">
-                            <div class="param-label">参数</div>
-                            <div class="param-content" v-for="(item, ind) in handleParams(serverList[key].tools[name].inputSchema)" :key="ind">
-                                <div class="query-param">
-                                    <dl>
-                                        <dt>{{item.name}}:</dt>
-                                        <dd>{{item.description}}</dd>
-                                    </dl>
-                                </div>
-                            </div>
-                          </div>
+
+                <!-- MCP 使用状态按钮 -->
+                <div class="mcp-actions" v-if="currentAgentId">
+                  <el-button
+                    size="small"
+                    :type="isAgentInMcp(item.agent.name) ? 'success' : 'info'"
+                    :plain="!isAgentInMcp(item.agent.name)"
+                    @click="toggleAgentInMcp(item.agent.name)"
+                    class="mcp-toggle-btn"
+                  >
+                    <el-icon><Position /></el-icon>
+                    {{ isAgentInMcp(item.agent.name) ? '已使用 MCP' : '未使用 MCP' }}
+                  </el-button>
+                </div>
+
+                <el-tabs v-model="activeTabs" v-if="item.agent.goal || item.agent.profile || item.agent.constraints">
+                  <el-tab-pane label="详细信息" name="details">
+                    <div class="tool-section">
+                      <div class="tool-item" v-if="item.agent.goal">
+                          <div class="tool-header">目标</div>
+                          <div class="tool-desc">{{item.agent.goal}}</div>
+                      </div>
+                      <div class="tool-item" v-if="item.agent.profile">
+                          <div class="tool-header">简介</div>
+                          <div class="tool-desc">{{item.agent.profile}}</div>
+                      </div>
+                      <div class="tool-item" v-if="item.agent.constraints">
+                          <div class="tool-header">约束条件</div>
+                          <div class="tool-desc">{{item.agent.constraints}}</div>
+                      </div>
+                      <div class="tool-item" v-if="item.agent.toolMap">
+                          <div class="tool-header">工具映射</div>
+                          <JsonViewer
+                            :content="item.agent.toolMap"
+                            placeholder="暂无工具映射配置"
+                            height="120px"
+                          />
+                      </div>
+                      <div class="tool-item" v-if="item.agent.mcpToolMap">
+                          <div class="tool-header">MCP工具映射</div>
+                          <JsonViewer
+                            :content="item.agent.mcpToolMap"
+                            placeholder="暂无MCP工具映射配置"
+                            height="120px"
+                          />
                       </div>
                     </div>
-                    <el-button type="primary" size="small" round plain @click="executeSql(key)" class="action-btn">
-                      重启服务器
-                    </el-button>
                   </el-tab-pane>
                 </el-tabs>
                 <template v-else>
-                  <el-empty description="暂无工具">
+                  <el-empty description="暂无详细信息">
                         <template #image>
                             <el-icon :size="48"><Warning /></el-icon>
                         </template>
                     </el-empty>
-                  <el-button type="primary" size="small" round plain @click="executeSql(key)" class="action-btn">
-                    重试连接
-                  </el-button>
                 </template>
             </el-collapse-item>
         </el-collapse>
-        <el-button type="primary" @click="openFile" class="action-btn edit-btn">
-            <el-icon><Edit /></el-icon>&emsp;
-            编辑 MCP 设置
-        </el-button>
     </template>
-    <el-empty v-else description="暂无数据">
+    <el-empty v-else :description="searchQuery ? '未找到匹配的 Agent' : '暂无数据'">
         <template #image>
             <el-icon :size="48"><Warning /></el-icon>
         </template>
-        <el-button round plain class="empty-btn" @click="openFile">编辑 MCP 设置</el-button>
     </el-empty>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { ArrowDown, Edit, Warning } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ArrowDown, Warning, Search, Position } from '@element-plus/icons-vue'
+
 import { useTheme } from '@/styles/theme/useTheme'
-import {
-  getMcp,
-  getMcpStatus,
-  getTools,
-  getMcpVersion,
-  mcpRetryConnection,
-  openMcp,
-  type McpServer
-} from '@/api/mcp'
-import McpConfigEditor from './McpConfigEditor.vue'
+import { getAgentList, getAgentConfig, setAgentConfig, type Agent } from '@/api/agent'
+import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
+import JsonViewer from './JsonViewer.vue'
 
 // 添加全局类型声明
 declare global {
@@ -105,137 +173,147 @@ declare global {
 // 获取主题
 const { currentTheme } = useTheme()
 
+// 获取用户 store
+const { getInstance } = useUserStore()
+
+// 定义实例类型
+interface InstanceType {
+  id: string | number;
+  ip: string;
+  port: string | number;
+  agentId?: string | number;
+}
+
+// 获取当前选中的实例
+const getCurrentInstance = (): InstanceType | undefined => {
+  const instances = getInstance()
+  return instances && instances.length > 0 ? instances[0] : undefined
+}
+
+// 获取 MCP 配置的 Agent 列表
+const mcpAgentsList = computed(() => {
+  if (!mcpConfig.value) return []
+  return mcpConfig.value.split(',').map(name => name.trim()).filter(name => name)
+})
+
+
+
 const activeCollapse = ref<number[]>([])
-const activeTabs = ref('tools')
-const serverList = ref<Record<string, McpServer>>({})
+const activeTabs = ref('details')
+const serverList = ref<{agent: Agent, instances: Array<object>, isFavorite: boolean}[]>([])
 const winCaches = ref<Record<string, (isRefresh: string) => void>>({})
-const showEditor = ref(false)
-const configContent = ref('')
-const configEditorRef = ref<InstanceType<typeof McpConfigEditor> | null>(null)
+const searchQuery = ref('')
+const isLoading = ref(false)
+const mcpConfig = ref('') // 存储当前实例的 MCP 配置
+const currentAgentId = ref<number | null>(null) // 存储当前实例的 agent ID
 
-const executeSql = async (name: string) => {
-  try {
-    await mcpRetryConnection(name);
-    const data = await getTools(name);
-    serverList.value[name].tools = data[name] || {};
-    const res = await getMcpStatus(name);
-    if (typeof res === 'object' && Object.keys(res)?.length) {
-      serverList.value[name].status = res[name] == "1";
-    } else if (typeof res === 'string') {
-      serverList.value[name].status = res == "1";
-    }
-    const version = await getMcpVersion(name);
-    serverList.value[name].version = version;
-    ElMessage.success('操作成功')
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : '未知错误'
-    ElMessage.error('操作失败：' + errorMessage)
+// 过滤后的列表
+const filteredServerList = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return serverList.value
   }
-}
 
-const gitList = async () => {
-    const response = await getMcp();
-    const data = response.data.data.servers;
-    const keys = Object.keys(data);
-    const list: Record<string, McpServer> = {};
-    if (keys.length) {
-        keys.forEach(key => {
-            list[key] = {
-                ...data[key],
-                status: false
-            };
-        })
-    }
-    serverList.value = list;
-    await getStatus();
-}
+  const query = searchQuery.value.toLowerCase().trim()
+  return serverList.value.filter(item => {
+    const agent = item.agent
+    return (
+      agent.name.toLowerCase().includes(query) ||
+      agent.description.toLowerCase().includes(query) ||
+      agent.group?.toLowerCase().includes(query) ||
+      agent.profile?.toLowerCase().includes(query) ||
+      agent.goal?.toLowerCase().includes(query)
+    )
+  })
+})
 
-const getStatus = async () => {
-    const res = await getMcpStatus();
-    if (typeof res === 'object' && Object.keys(res)?.length) {
-        Object.keys(res).forEach(key => {
-          if (serverList.value[key]) {
-            serverList.value[key].status = res[key] == "1"
-          }
-        })
-    }
-}
-
-const handleParams = (str: string) => {
-  try {
-    const obj = JSON.parse(str);
-    if (obj?.properties) {
-      return Object.keys(obj.properties).map(v => ({
-        name: obj.required?.includes(v) ? v + '*' : v,
-        description: obj.properties[v].description || "无"
-      }))
-    }
-  }catch {
-    return [];
-  }
-}
-
-const openFile = async () => {
+const gitList = async (name: string = '') => {
+    isLoading.value = true
     try {
-        // 获取当前配置内容
-        const response = await getMcp();
-        console.log('获取到的配置数据:', response);
-        const formattedContent = JSON.stringify(response.data.data, null, 2);
-        console.log('格式化后的内容:', formattedContent);
-
-        // 如果没有内容，提供一个默认示例
-        if (!formattedContent || formattedContent === '{}' || formattedContent === 'null') {
-            configContent.value = `{
-  "servers": {
-    "example-server": {
-      "command": "node",
-      "args": ["path/to/your/mcp-server.js"],
-      "env": {}
-    }
-  }
-}`;
-        } else {
-            configContent.value = formattedContent;
-        }
-
-        showEditor.value = true;
-    } catch (error) {
-        ElMessage.error('获取配置失败');
-        console.error(error);
-        // 即使失败也显示编辑器，提供默认内容
-        configContent.value = `{
-  "servers": {
-    "example-server": {
-      "command": "node",
-      "args": ["path/to/your/mcp-server.js"],
-      "env": {}
-    }
-  }
-}`;
-        showEditor.value = true;
+        const response = await getAgentList(name);
+        serverList.value = response.data.data || [];
+    } finally {
+        isLoading.value = false
     }
 }
 
-const handleCancelEdit = () => {
-    showEditor.value = false;
-    configContent.value = '';
+// 搜索处理 - 使用防抖
+let searchTimeout: NodeJS.Timeout | null = null
+const handleSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  searchTimeout = setTimeout(async () => {
+    // 如果有搜索内容，调用API搜索；否则获取全部
+    await gitList(searchQuery.value.trim())
+  }, 300)
 }
 
-const handleSaveConfig = async (content: string) => {
-    try {
-        // 这里应该调用保存配置的API
-        // 暂时先用openMcp函数，实际应该替换为保存API
-        await openMcp();
 
-        showEditor.value = false;
-        configContent.value = '';
 
-        // 刷新服务器列表
-        await gitList();
-    } catch (error) {
-        ElMessage.error('保存配置失败');
-        console.error(error);
+
+
+// 获取当前实例的 MCP 配置
+const getMcpConfig = async () => {
+  const currentInstance = getCurrentInstance()
+  if (!currentInstance?.agentId) {
+    return
+  }
+
+  try {
+    const response = await getAgentConfig(Number(currentInstance.agentId), 'mcp')
+    if (response.data.data?.value) {
+      mcpConfig.value = response.data.data.value
+    } else {
+      mcpConfig.value = ''
     }
+    currentAgentId.value = Number(currentInstance.agentId)
+  } catch {
+    // 如果没有配置，设置为空字符串
+    mcpConfig.value = ''
+    currentAgentId.value = Number(currentInstance.agentId)
+  }
+}
+
+// 检查 agent 是否在 MCP 配置中被使用
+const isAgentInMcp = (agentName: string) => {
+  if (!currentAgentId.value || !mcpConfig.value) {
+    return false
+  }
+  const mcpAgents = mcpConfig.value.split(',').map(name => name.trim())
+  return mcpAgents.includes(agentName)
+}
+
+// 切换 agent 在 MCP 中的使用状态
+const toggleAgentInMcp = async (agentName: string) => {
+  const currentInstance = getCurrentInstance()
+  if (!currentInstance?.agentId) {
+    ElMessage.error('未找到当前实例对应的Agent')
+    return
+  }
+
+  try {
+    const currentConfig = mcpConfig.value || ''
+    const mcpAgents = currentConfig.split(',').map(name => name.trim()).filter(name => name)
+
+    let newAgents: string[]
+    if (mcpAgents.includes(agentName)) {
+      // 移除 agent
+      newAgents = mcpAgents.filter(name => name !== agentName)
+      ElMessage.success(`已将 ${agentName} 从 MCP 配置中移除`)
+    } else {
+      // 添加 agent
+      newAgents = [...mcpAgents, agentName]
+      ElMessage.success(`已将 ${agentName} 添加到 MCP 配置中`)
+    }
+
+    const newConfig = newAgents.join(',')
+    await setAgentConfig(Number(currentInstance.agentId), 'mcp', newConfig)
+    mcpConfig.value = newConfig
+  } catch (error) {
+    console.error('更新 MCP 配置失败:', error)
+    ElMessage.error('更新 MCP 配置失败')
+  }
 }
 
 const refreshMcp = (isRefresh: string) => {
@@ -245,33 +323,14 @@ const refreshMcp = (isRefresh: string) => {
 }
 
 const handleCollapseChange = async (val: number[]) => {
-  // 获取最新展开的项
-  const lastOpened = val[val.length - 1];
-  if (lastOpened !== undefined) {
-    // 获取对应的服务器名称
-    const serverName = Object.keys(serverList.value)[lastOpened];
-    const data = await getTools(serverName);
-    const res = await getMcpStatus(serverName);
-    if (typeof res === 'object' && Object.keys(res)?.length) {
-        Object.keys(res).forEach(key => {
-          if (serverList.value[key]) {
-            serverList.value[key].status = res[key] == "1"
-          }
-        })
-    } else if (typeof res === 'string' && serverList.value[serverName]) {
-      serverList.value[serverName].status = res == "1";
-    }
-    const version = await getMcpVersion(serverName);
-    console.log("version", version)
-    if (serverList.value[serverName]) {
-      serverList.value[serverName].version = version;
-      serverList.value[serverName].tools = data[serverName] || {};
-    }
-  }
+  // Agent列表模式下暂时不需要特殊处理
+  console.log('折叠状态改变:', val);
 }
 
-onMounted(() => {
-    gitList()
+onMounted(async () => {
+    await gitList()
+    // 获取当前实例的 MCP 配置
+    await getMcpConfig()
     window.refreshMcp = refreshMcp
     winCaches.value.refreshMcp = refreshMcp
 })
@@ -292,10 +351,93 @@ onUnmounted(() => {
   backdrop-filter: blur(10px);
   border-radius: 8px;
 
-  .editor-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+  .search-container {
+    margin-bottom: 16px;
+
+    .search-input {
+      :deep(.el-input__wrapper) {
+        background: v-bind('currentTheme.colors.fillColor');
+        border: 1px solid v-bind('currentTheme.colors.borderColorLight');
+        border-radius: 12px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          border-color: v-bind('currentTheme.colors.chatLinkColor');
+        }
+
+        &.is-focus {
+          border-color: v-bind('currentTheme.colors.primary');
+          box-shadow: 0 0 8px v-bind('currentTheme.colors.chatBorderGlow');
+        }
+      }
+
+      :deep(.el-input__inner) {
+        color: v-bind('currentTheme.colors.textPrimary');
+        font-size: 14px;
+
+        &::placeholder {
+          color: v-bind('currentTheme.colors.textSecondary');
+        }
+      }
+
+      :deep(.el-input__prefix) {
+        color: v-bind('currentTheme.colors.textSecondary');
+      }
+    }
+
+    .search-stats {
+      margin-top: 8px;
+      font-size: 12px;
+      color: v-bind('currentTheme.colors.textSecondary');
+      text-align: right;
+    }
+  }
+
+  .mcp-summary {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: v-bind('currentTheme.colors.fillColorLight');
+    border: 1px solid v-bind('currentTheme.colors.borderColorLight');
+    border-radius: 8px;
+
+    .summary-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: v-bind('currentTheme.colors.primary');
+
+      .el-icon {
+        margin-right: 6px;
+      }
+    }
+
+    .summary-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+
+      .no-config {
+        font-size: 12px;
+        color: v-bind('currentTheme.colors.textSecondary');
+        font-style: italic;
+      }
+
+      .agent-tag {
+        font-size: 11px;
+        border-radius: 4px;
+      }
+    }
+  }
+
+  .loading-container {
+    padding: 20px;
+
+    :deep(.el-skeleton__item) {
+      background: v-bind('currentTheme.colors.fillColorLight');
+    }
   }
 
   // 滚动条样式优化，使用主题色
@@ -318,18 +460,7 @@ onUnmounted(() => {
     }
   }
 
-  .empty-btn {
-    background: linear-gradient(135deg, v-bind('currentTheme.colors.primary'), v-bind('currentTheme.colors.info'));
-    border: 1px solid v-bind('currentTheme.colors.primary');
-    color: v-bind('currentTheme.colors.background');
-    font-weight: 500;
-    transition: all 0.3s ease;
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px v-bind('currentTheme.colors.chatBorderGlow');
-    }
-  }
 
   .info-list {
     padding: 0;
@@ -348,6 +479,32 @@ onUnmounted(() => {
       font-weight: 500;
       color: v-bind('currentTheme.colors.textSecondary');
       font-size: 13px;
+    }
+
+    .info-value {
+      color: v-bind('currentTheme.colors.textRegular');
+      font-size: 13px;
+      line-height: 1.4;
+    }
+  }
+
+  .mcp-actions {
+    margin: 12px 0;
+
+    .mcp-toggle-btn {
+      width: 100%;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px v-bind('currentTheme.colors.chatBorderGlow');
+      }
+
+      :deep(.el-icon) {
+        margin-right: 6px;
+      }
     }
   }
 
@@ -413,6 +570,8 @@ onUnmounted(() => {
         border-radius: 6px;
         border-left: 3px solid v-bind('currentTheme.colors.info');
       }
+
+
 
       .param-item {
         border: 1px solid v-bind('currentTheme.colors.borderColor');
@@ -493,17 +652,7 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     background-color: transparent;
 
-    &.edit-btn {
-      margin-top: 24px;
-      background: linear-gradient(135deg, v-bind('currentTheme.colors.primary'), v-bind('currentTheme.colors.success'));
-      border: none;
-      color: v-bind('currentTheme.colors.background');
 
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px v-bind('currentTheme.colors.chatBorderGlow');
-      }
-    }
   }
 
   .dot {
