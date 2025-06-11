@@ -24,6 +24,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -97,6 +98,8 @@ public class ReactorRole extends Role {
     private ActionContext ac;
 
     private AtomicInteger maxAssistantNum = new AtomicInteger();
+
+    private McpHub mcpHub;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -249,7 +252,24 @@ public class ReactorRole extends Role {
         }
 
         if (type.equals("Role")) {
-            return super.observe();
+            Message lastMsg = this.rc.getMemory().getLastMessage();
+            if (null != lastMsg && lastMsg.getData().equals(Const.ROLE_EXIT)) {
+                this.state.set(RoleState.exit);
+
+                if (null != lastMsg.getSink()) {
+                    log.info("type Role sink complete");
+                    lastMsg.getSink().complete();
+                }
+            }
+
+
+            int result =  super.observe();
+            Message msg = this.rc.news.take();
+            ac.setMsg(msg);
+            lastReceiveMsgTime = new Date();
+            log.info("type Role receive message:{}", msg);
+
+            return result;
         }
 
         //等待消息
@@ -270,6 +290,12 @@ public class ReactorRole extends Role {
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
             this.state.set(RoleState.exit);
+            Safe.run(() -> {
+                log.info("close mcp");
+                if (null != this.getMcpHub()) {
+                    this.getMcpHub().dispose();
+                }
+            });
             shutdownScheduler();
             return -2;
         }
@@ -305,6 +331,15 @@ public class ReactorRole extends Role {
             attemptCompletion = 2;
         }
         return attemptCompletion;
+    }
+
+    @Override
+    public Message processMessage(Message message) {
+        if (type.equals("Role")) {
+            message.setSink(this.ac.getSink());
+        }
+
+        return message;
     }
 
     private void shutdownScheduler() {
@@ -420,7 +455,7 @@ public class ReactorRole extends Role {
     private void callMcp(ToolDataInfo it, FluxSink sink) {
         String toolName = it.getKeyValuePairs().get("tool_name");
         it.setRole(this);
-        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
             this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());

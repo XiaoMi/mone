@@ -36,4 +36,7 @@ public class AgentInstance extends BaseEntity {
      * 是否活跃
      */
     private Boolean isActive;
+
+
+    private Boolean isDefault;
 } 

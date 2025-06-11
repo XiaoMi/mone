@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.grpc.stub.StreamObserver;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,7 @@ import reactor.core.scheduler.Schedulers;
 
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
+import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
@@ -49,6 +52,7 @@ import run.mone.hive.mcp.util.Utils;
  * communication with MCP servers.
  *
  */
+@Data
 public class McpAsyncClient {
 
 	private final static Logger logger = LoggerFactory.getLogger(McpAsyncClient.class);

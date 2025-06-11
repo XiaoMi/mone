@@ -11,7 +11,6 @@ import java.io.File;
 import java.sql.*;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Data
 @Slf4j
@@ -33,6 +32,10 @@ public class SqliteFunction implements McpFunction {
                      "sql": {
                          "type": "string",
                          "description": "SQL statement to execute"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Database file path (optional, defaults to ~/sqlite.db)"
                     }
                 },
                 "required": ["type", "sql"]
@@ -44,7 +47,17 @@ public class SqliteFunction implements McpFunction {
         log.info("Initializing SqliteFunction...");
     }
 
-    private synchronized void ensureConnection() {
+    @Override
+    public String getDesc() {
+        return desc;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    private synchronized void ensureConnection(String dbPath) {
         if (connection != null) {
             try {
                 if (!connection.isClosed()) {
@@ -55,8 +68,10 @@ public class SqliteFunction implements McpFunction {
             }
         }
 
-        String defaultPath = System.getProperty("user.home") + File.separator + "sqlite.db";
-        String dbPath = System.getenv().getOrDefault("SQLITE_DB_PATH", defaultPath);
+        if (dbPath == null || dbPath.trim().isEmpty()) {
+            String defaultPath = System.getProperty("user.home") + File.separator + "sqlite.db";
+            dbPath = System.getenv().getOrDefault("SQLITE_DB_PATH", defaultPath);
+        }
 
         try {
             log.info("Attempting to connect to SQLite database at {}...", dbPath);
@@ -73,12 +88,14 @@ public class SqliteFunction implements McpFunction {
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         String type = (String) args.get("type");
         String sql = (String) args.get("sql");
+        String path = (String) args.get("path");
+        
         if (sql == null || sql.trim().isEmpty()) {
             log.error("Empty SQL provided");
             throw new IllegalArgumentException("SQL is required");
         }
         log.info("Executing {} operation: {}", type, sql);
-        ensureConnection();
+        ensureConnection(path);
 
         try {
             switch (type.toLowerCase()) {
