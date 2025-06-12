@@ -18,5 +18,6 @@ public class WebQuery {
     private boolean autoWebQuery;
     private String version;
     private String modelType;
+    private String releaseServiceName;
 
 }

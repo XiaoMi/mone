@@ -82,7 +82,7 @@ public class LLM {
     * texts 待分类文本列表
     * topK 返回topK个分类结果
     * */
-    public String getClassifyScore(String modelType, String version, List<String> texts, Integer topK) {
+    public String getClassifyScore(String modelType, String version, List<String> texts, Integer topK, String releaseServiceName) {
         try {
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(120, TimeUnit.SECONDS)
@@ -96,6 +96,9 @@ public class LLM {
             requestBody.addProperty("version", version);
             requestBody.add("texts", gson.toJsonTree(texts));
             requestBody.addProperty("top_k", topK);
+            if(StringUtils.isNotEmpty(releaseServiceName)){
+                requestBody.addProperty("releaseServiceName", releaseServiceName);
+            }
 
             String url = this.config.getUrl();
             
