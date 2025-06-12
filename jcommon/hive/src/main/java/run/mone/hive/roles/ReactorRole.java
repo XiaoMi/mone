@@ -563,13 +563,13 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
-    private String getIntentClassification(String version, String modelType, Message msg) {
+    private String getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
         //获取意图是否访问知识库
         LLM llm = new LLM(LLMConfig.builder()
                 .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
                 .url(System.getenv("ATLAS_URL"))
                 .build());
-        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1);
+        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1, releaseServiceName);
         classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
         return classify;
     }
@@ -592,7 +592,7 @@ public class ReactorRole extends Role {
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
             //是否访问知识库
-            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), msg);
+            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(),msg);
             if (classify.equals("是")) {
                 sink.next("从知识库获取信息\n");
                 String ragUrl = System.getenv("RAG_URL");
@@ -618,7 +618,7 @@ public class ReactorRole extends Role {
     }
 
     private String getClassificationLabel(Message msg) {
-        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), msg);
+        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), roleMeta.getWebQuery().getReleaseServiceName(), msg);
     }
 
     public void setLlm(LLM llm) {

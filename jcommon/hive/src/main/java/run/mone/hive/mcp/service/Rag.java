@@ -18,4 +18,5 @@ public class Rag {
     private boolean autoRag;
     private String version;
     private String modelType;
+    private String releaseServiceName;
 }
