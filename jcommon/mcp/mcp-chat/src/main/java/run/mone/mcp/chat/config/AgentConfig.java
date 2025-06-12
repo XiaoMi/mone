@@ -28,9 +28,9 @@ public class AgentConfig {
                 .goal("你的目标是更好的帮助用户")
                 .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
                 //允许自动从知识库获取内容(意图识别的小模型)
-                .webQuery(WebQuery.builder().autoWebQuery(false).modelType("bert").version("finetune-bert-20250605-73a29258").build())
+                .webQuery(WebQuery.builder().autoWebQuery(true).modelType("bert").version("finetune-bert-20250605-73a29258").build())
                 //内部工具(意图识别的小模型)
-                .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
+                .rag(Rag.builder().autoRag(true).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
@@ -41,7 +41,7 @@ public class AgentConfig {
                         new SystemInfoTool(),
                         new TextToSpeechTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
                 //30s
                 .timeout(30000)
                 .build();

@@ -11,6 +11,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.ReactorRole;
 
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +20,7 @@ import java.util.function.Function;
 @Slf4j
 public class MonerMcpClient {
 
-    public static McpResult mcpCall(ToolDataInfo toolDataInfo, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
+    public static McpResult mcpCall(ReactorRole role, ToolDataInfo toolDataInfo, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
         return Safe.call(() -> {
             String serviceName = toolDataInfo.getKeyValuePairs().get("server_name");
             String toolName = toolDataInfo.getKeyValuePairs().get("tool_name");
@@ -58,8 +59,15 @@ public class MonerMcpClient {
                     } else {
                         //外部的mcp
                         Safe.run(() -> {
-                            McpHubHolder.get(from)
-                                    .callToolStream(serviceName, toolName, toolArguments)
+                            McpHub hub = null;
+                            if (null != role) {
+                                //调用绑定在这个用户的mcp
+                                hub = role.getMcpHub();
+                            } else {
+                                //主要用来调用chat
+                                hub = McpHubHolder.get(from);
+                            }
+                            hub.callToolStream(serviceName, toolName, toolArguments)
                                     .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
                                         if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
                                             //直接返回给前端

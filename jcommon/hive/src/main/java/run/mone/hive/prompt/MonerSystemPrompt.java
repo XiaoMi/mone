@@ -67,7 +67,7 @@ public class MonerSystemPrompt {
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
 
-        List<Map<String, Object>> serverList = getMcpInfo(from);
+        List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
         if (StringUtils.isEmpty(workFlow)) {
             workFlow = "";
@@ -89,27 +89,29 @@ public class MonerSystemPrompt {
     }
 
     //获取mcp的信息(主要是tool的信息)
-    public static List<Map<String, Object>> getMcpInfo(String from) {
+    public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
         final List<Map<String, Object>> serverList = new ArrayList<>();
         List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
         if (null != sl) {
             serverList.addAll(sl);
         } else {
-            McpHub mcpHub = McpHubHolder.get(from);
+            McpHub mcpHub = role.getMcpHub();
             if (mcpHub == null) {
                 return serverList;
             }
-            McpHubHolder.get(from).getConnections().forEach((key, value) -> Safe.run(() -> {
+            mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
                 Map<String, Object> server = new HashMap<>();
                 server.put("name", key);
                 server.put("args", "");
                 server.put("connection", value);
+
                 McpSchema.ListToolsResult tools = value.getClient().listTools();
                 String toolsStr = tools
-                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
+                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "descrip tion:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
                         .collect(Collectors.joining("\n\n"));
                 server.put("tools", toolsStr);
+
                 serverList.add(server);
             }));
             if (!serverList.isEmpty()) {
