@@ -2,6 +2,8 @@ package run.mone.hive.common;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * @author goodjava@qq.com
  * @date 2025/6/3 22:37
@@ -36,6 +38,19 @@ public class CommonTest {
     @Test
     public void testAA() {
         new AA().hi();
+    }
+
+    @Test
+    public void testMap() {
+        ConcurrentHashMap<String,String> m = new ConcurrentHashMap<>();
+        m.put("a","a");
+        m.compute("a",(k,v)->{
+            if(v.equals("a1")) {
+                return null;
+            }
+            return v;
+        });
+        System.out.println(m);
     }
 
 

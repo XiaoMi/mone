@@ -5,14 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.InvokeHistory;
-import run.mone.agentx.entity.User;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
 import run.mone.agentx.utils.AgentKeyUtils;
-import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.common.McpResult;
 import run.mone.hive.common.ToolDataInfo;
 import run.mone.hive.mcp.client.MonerMcpClient;
@@ -77,7 +74,7 @@ public class McpService {
         }
 
         //调用MCP
-        return MonerMcpClient.mcpCall(toolDataInfo, key, this.mcpInterceptor, sink, (name) -> null);
+        return MonerMcpClient.mcpCall(null, toolDataInfo, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {

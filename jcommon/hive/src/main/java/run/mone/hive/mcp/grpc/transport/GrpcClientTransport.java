@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
@@ -40,6 +41,8 @@ import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -77,6 +80,13 @@ public class GrpcClientTransport implements ClientMcpTransport {
     private Consumer<Object> consumer = (msg) -> {
     };
 
+    // 添加重连相关的字段
+    private volatile boolean isReconnecting = false;
+    private final ScheduledExecutorService reconnectExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "grpc-reconnect");
+        t.setDaemon(true);
+        return t;
+    });
 
     /**
      * 创建 gRPC 客户端传输层
@@ -165,46 +175,249 @@ public class GrpcClientTransport implements ClientMcpTransport {
                     .usePlaintext()
                     // 启用自动重连
                     .enableRetry()
+                    // 添加连接配置，提高连接稳定性
+                    .keepAliveTime(30, TimeUnit.SECONDS)
+                    .keepAliveTimeout(5, TimeUnit.SECONDS)
+                    .keepAliveWithoutCalls(true)
+                    .maxInboundMessageSize(4 * 1024 * 1024)
+                    .maxRetryAttempts(3)
                     .build();
             this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
             this.asyncStub = McpServiceGrpc.newStub(channel);
         });
     }
 
+    // 改进后的 observer 方法
+    public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
+        log.info("=========>observer"+ observer);
+        // 确保连接已经建立再创建双向流
+        waitForChannelReady();
+        return createObserverWithReconnect(observer, 0);
+    }
+    
+    // 等待 Channel 准备就绪
+    private void waitForChannelReady() {
+        if (channel == null) {
+            throw new IllegalStateException("Channel not initialized. Call connect() first.");
+        }
+        
+        // 等待连接就绪，最多等待5秒
+        try {
+            boolean ready = channel.getState(true) != io.grpc.ConnectivityState.READY;
+            if (ready) {
+                // 触发连接并等待状态变化
+                for (int i = 0; i < 50; i++) { // 最多等待5秒
+                    if (channel.getState(false) == io.grpc.ConnectivityState.READY) {
+                        break;
+                    }
+                    Thread.sleep(100);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
+    private StreamObserver<StreamRequest> createObserverWithReconnect(StreamObserver<StreamResponse> observer, int attemptCount) {
+        if (close.get()) {
+            log.info("客户端已关闭，停止重连");
+            return null;
+        }
+
+        // 重建连接（每次都重建，确保连接是新的）
+        if (attemptCount > 0 || isReconnecting) {
+            log.info("重建gRPC连接... 尝试次数: {}", attemptCount);
+            recreateChannel();
+        }
+
+        // 创建带重连功能的包装观察者
+        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse response) {
+                isReconnecting = false; // 连接成功，重置重连状态
+                Safe.run(() -> {
+                    if (response.getCmd().equals(Const.NOTIFY_MSG)) {
+                        String data = response.getData();
+                        Type typeOfT = new TypeToken<Map<String, String>>() {
+                        }.getType();
+                        Map map = GsonUtils.gson.fromJson(data, typeOfT);
+                        consumer.accept(map);
+                    }
+                    // 直接转发响应
+                    String data = response.getData();
+                    consumer.accept(data);
+                    observer.onNext(response);
+                });
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                log.error("连接错误: " + t.getMessage() + "，准备重连...");
+
+                if (close.get()) {
+                    log.info("client exit");
+                    return;
+                }
+
+                if (isReconnecting) {
+                    log.warn("已在重连中，跳过本次重连请求");
+                    return;
+                }
+
+                isReconnecting = true;
+
+                if (t instanceof StatusRuntimeException) {
+                    StatusRuntimeException sre = (StatusRuntimeException) t;
+                    log.error("- gRPC状态: {}", sre.getStatus());
+                    log.error("- 状态描述: {}", sre.getStatus().getDescription());
+                    log.error("- 状态原因: {}", sre.getStatus().getCause());
+                }
+
+                // 异步执行重连，避免阻塞gRPC事件循环
+                scheduleReconnect(observer, attemptCount + 1);
+            }
+
+            @Override
+            public void onCompleted() {
+                log.info("服务端关闭连接，准备重连...");
+                if (!close.get()) {
+                    scheduleReconnect(observer, attemptCount + 1);
+                } else {
+                    observer.onCompleted();
+                }
+            }
+        };
+
+        try {
+            // 添加连接状态检查
+            if (channel == null || channel.isShutdown() || channel.isTerminated()) {
+                throw new IllegalStateException("Channel is not available for creating stream");
+            }
+            
+            req = getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver);
+
+            // 构建请求时添加 token
+            StreamRequest.Builder builder = StreamRequest.newBuilder()
+                    .setName("observer");
+
+            req.onNext(builder.build());
+            System.out.println("连接建立成功，开始接收消息");
+            return req;
+        } catch (Exception e) {
+            System.err.println("创建双向流失败: " + e.getMessage());
+            scheduleReconnect(observer, attemptCount + 1);
+            return null;
+        }
+    }
+
+    private void scheduleReconnect(StreamObserver<StreamResponse> observer, int attemptCount) {
+        if (close.get()) {
+            log.info("客户端已关闭，停止重连");
+            return;
+        }
+
+        // 计算重连延迟（指数退避，最大30秒）
+        long delay = Math.min(5 * (1L << Math.min(attemptCount - 1, 3)), 30);
+        
+        log.info("{}秒后进行第{}次重连...", delay, attemptCount);
+        
+        reconnectExecutor.schedule(() -> {
+            if (!close.get()) {
+                try {
+                    createObserverWithReconnect(observer, attemptCount);
+                } catch (Exception e) {
+                    log.error("重连失败: {}", e.getMessage());
+                    // 继续重连
+                    scheduleReconnect(observer, attemptCount + 1);
+                }
+            }
+        }, delay, TimeUnit.SECONDS);
+    }
+
+    // 改进 recreateChannel 方法
     private synchronized void recreateChannel() {
+        log.info("开始重建gRPC通道...");
+        
+        // 关闭旧的连接
         if (channel != null && !channel.isShutdown()) {
             try {
-                channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+                channel.shutdown();
+                if (!channel.awaitTermination(3, TimeUnit.SECONDS)) {
+                    System.err.println("通道关闭超时，强制关闭");
+                    channel.shutdownNow();
+                    channel.awaitTermination(2, TimeUnit.SECONDS);
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                channel.shutdownNow();
             }
         }
 
+        // 创建新的连接，添加更完善的配置
         this.channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()
                 .enableRetry()
-                // 其他设置
+                // 添加连接配置
+                .keepAliveTime(30, TimeUnit.SECONDS)
+                .keepAliveTimeout(5, TimeUnit.SECONDS)
+                .keepAliveWithoutCalls(true)
+                .maxInboundMessageSize(4 * 1024 * 1024)
+                // 添加重试配置
+                .maxRetryAttempts(3)
                 .build();
+                
         this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
         this.asyncStub = McpServiceGrpc.newStub(channel);
+        
+        log.info("gRPC通道重建完成");
     }
 
-
+    // 改进 closeGracefully 方法
     @Override
     public Mono<Void> closeGracefully() {
-        log.info("closeGracefully");
+        System.out.println("closeGracefully");
         close.set(true);
+        isReconnecting = false;
+        
         return Mono.fromRunnable(() -> {
             try {
+                // 关闭重连执行器
+                if (reconnectExecutor != null) {
+                    reconnectExecutor.shutdown();
+                    if (!reconnectExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
+                        reconnectExecutor.shutdownNow();
+                    }
+                }
+                
+                // 关闭当前连接
+                if (req != null) {
+                    try {
+                        req.onCompleted();
+                    } catch (Exception e) {
+                        System.err.println("关闭req时出错: " + e.getMessage());
+                    }
+                }
+                
                 if (channel != null) {
-                    channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+                    channel.shutdown();
+                    if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
+                        channel.shutdownNow();
+                    }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
     }
+
+    // 添加连接状态检查方法
+    public boolean isConnected() {
+        return channel != null && 
+               !channel.isShutdown() && 
+               !channel.isTerminated() &&
+               !isReconnecting;
+    }
+
 
     @Override
     public Mono<Object> sendMessage(JSONRPCMessage message) {
@@ -223,7 +436,6 @@ public class GrpcClientTransport implements ClientMcpTransport {
             }
         });
     }
-
 
     //获取初始化信息(主要是拿到Tools)
     public InitializeResponse initialize(InitializeRequest request) {
@@ -245,56 +457,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         return getMetadataBlockingStub().methodNotificationInitialized(NotificationInitializedRequest.newBuilder().build());
     }
 
-    //连接到服务端,然后等待服务端推送消息回来(支持断线重连)
-    public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
-        // 创建带重连功能的包装观察者
-        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(StreamResponse response) {
-                if (response.getCmd().equals(Const.NOTIFY_MSG)) {
-                    String data = response.getData();
-                    Type typeOfT = new TypeToken<Map<String, String>>() {
-                    }.getType();
-                    Map map = GsonUtils.gson.fromJson(data, typeOfT);
-                    consumer.accept(map);
-                }
-                // 直接转发响应
-                String data = response.getData();
-                consumer.accept(data);
-                observer.onNext(response);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                log.error("连接错误: " + t.getMessage() + "，5秒后重连...");
-                if (close.get()) {
-                    log.info("client exit");
-                    return;
-                }
-                Safe.run(() -> Thread.sleep(5000));
-
-                if (t.getMessage() != null && t.getMessage().contains("UNAVAILABLE: Channel shutdown invoked")) {
-                    recreateChannel();  // 重建通道
-                }
-                log.info("正在重新连接...");
-                observer(observer);
-            }
-
-            @Override
-            public void onCompleted() {
-                observer.onCompleted();
-            }
-        };
-
-        StreamObserver<StreamRequest> req = getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver);
-
-        // 构建请求时添加 token
-        StreamRequest.Builder builder = StreamRequest.newBuilder()
-                .setName("observer");
-
-        req.onNext(builder.build());
-        return req;
-    }
+    StreamObserver<StreamRequest> req;
 
     @SuppressWarnings("unchecked")
     private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) {
