@@ -774,7 +774,7 @@ class LLMTest {
                 .url(System.getenv("ATLAS_URL"))
                 .build();
         LLM llm = new LLM(config);
-        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1);
+        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1, null);
         String str = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
         System.out.println(str);
     }
