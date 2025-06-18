@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
+import run.mone.hive.bo.TokenReq;
+import run.mone.hive.bo.TokenRes;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -14,6 +16,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
@@ -31,6 +34,10 @@ public class ChatFunction implements McpFunction {
     private final String agentName;
 
     private final long timeout;
+
+    //支持权限验证
+    private Function<TokenReq, TokenRes> tokenFunc = (req)-> TokenRes.builder().userId(req.getUserId()).success(true).build();
+
 
     @Override
     public void setRoleService(RoleService roleService) {
@@ -65,6 +72,16 @@ public class ChatFunction implements McpFunction {
 
         //用户id
         String userId = arguments.getOrDefault(Const.USER_ID, "").toString();
+
+
+        TokenRes res = tokenFunc.apply(TokenReq.builder().userId(userId).arguments(arguments).build());
+        if (!res.isSuccess()) {
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("账号有问题")), true));
+        }
+
+        //完成id修正
+        userId = res.getUserId();
+
         String agentId = arguments.getOrDefault(Const.AGENT_ID, "").toString();
 
         String message = (String) arguments.get("message");
@@ -110,7 +127,7 @@ public class ChatFunction implements McpFunction {
                         .images(images)
                         .voiceBase64(voiceBase64)
                         .build())
-                .timeout(Duration.ofSeconds(timeout))
+//                .timeout(Duration.ofSeconds(timeout))
                 .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
                 .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
     }
