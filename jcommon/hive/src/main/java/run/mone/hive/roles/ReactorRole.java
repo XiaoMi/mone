@@ -24,6 +24,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -97,6 +98,8 @@ public class ReactorRole extends Role {
     private ActionContext ac;
 
     private AtomicInteger maxAssistantNum = new AtomicInteger();
+
+    private McpHub mcpHub;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -249,7 +252,28 @@ public class ReactorRole extends Role {
         }
 
         if (type.equals("Role")) {
-            return super.observe();
+            Message lastMsg = this.rc.getMemory().getLastMessage();
+            if (null != lastMsg && lastMsg.getData().equals(Const.ROLE_EXIT)) {
+                this.state.set(RoleState.exit);
+
+                if (null != lastMsg.getSink()) {
+                    log.info("type Role sink complete");
+                    lastMsg.getSink().complete();
+                }
+            }
+
+            if (null != fluxSink) {
+                fluxSink.complete();
+            }
+
+
+            int result =  super.observe();
+            Message msg = this.rc.news.take();
+            ac.setMsg(msg);
+            lastReceiveMsgTime = new Date();
+            log.info("type Role receive message:{}", msg);
+
+            return result;
         }
 
         //等待消息
@@ -270,6 +294,12 @@ public class ReactorRole extends Role {
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
             this.state.set(RoleState.exit);
+            Safe.run(() -> {
+                log.info("close mcp");
+                if (null != this.getMcpHub()) {
+                    this.getMcpHub().dispose();
+                }
+            });
             shutdownScheduler();
             return -2;
         }
@@ -305,6 +335,15 @@ public class ReactorRole extends Role {
             attemptCompletion = 2;
         }
         return attemptCompletion;
+    }
+
+    @Override
+    public Message processMessage(Message message) {
+        if (type.equals("Role")) {
+            message.setSink(this.ac.getSink());
+        }
+
+        return message;
     }
 
     private void shutdownScheduler() {
@@ -349,7 +388,7 @@ public class ReactorRole extends Role {
         }
 
         if (type.equals("Role")) {
-            sink.next("执行任务");
+            sink.next("执行任务\n");
             return super.act(context);
         }
 
@@ -399,15 +438,6 @@ public class ReactorRole extends Role {
         return CompletableFuture.completedFuture(Message.builder().build());
     }
 
-    @NotNull
-    private static FluxSink getFluxSink(Message msg) {
-        FluxSink sink = msg.getSink();
-        if (null == sink) {
-            UnicastProcessor<String> processor = UnicastProcessor.create();
-            sink = processor.sink();
-        }
-        return sink;
-    }
 
     private Map<String, String> buildToolExtraParam(Message msg) {
         Map<String, String> extraParam = new HashMap<>();
@@ -420,7 +450,7 @@ public class ReactorRole extends Role {
     private void callMcp(ToolDataInfo it, FluxSink sink) {
         String toolName = it.getKeyValuePairs().get("tool_name");
         it.setRole(this);
-        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
             this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());
@@ -528,13 +558,13 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
-    private String getIntentClassification(String version, String modelType, Message msg) {
+    private String getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
         //获取意图是否访问知识库
         LLM llm = new LLM(LLMConfig.builder()
                 .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
                 .url(System.getenv("ATLAS_URL"))
                 .build());
-        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1);
+        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1, releaseServiceName);
         classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
         return classify;
     }
@@ -557,7 +587,7 @@ public class ReactorRole extends Role {
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
             //是否访问知识库
-            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), msg);
+            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(),msg);
             if (classify.equals("是")) {
                 sink.next("从知识库获取信息\n");
                 String ragUrl = System.getenv("RAG_URL");
@@ -583,7 +613,7 @@ public class ReactorRole extends Role {
     }
 
     private String getClassificationLabel(Message msg) {
-        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), msg);
+        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), roleMeta.getWebQuery().getReleaseServiceName(), msg);
     }
 
     public void setLlm(LLM llm) {

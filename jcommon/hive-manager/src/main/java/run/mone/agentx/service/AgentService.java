@@ -1,6 +1,5 @@
 package run.mone.agentx.service;
 
-import com.google.common.base.Joiner;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,9 +19,6 @@ import run.mone.agentx.repository.FavoriteRepository;
 import run.mone.agentx.utils.GsonUtils;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfoDto;
-import run.mone.hive.common.Safe;
-import run.mone.hive.mcp.hub.McpHub;
-import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -58,7 +54,7 @@ public class AgentService {
     public Mono<Agent> createAgent(Agent agent) {
         return agentRepository.findByNameAndGroupAndVersion(agent.getName(), agent.getGroup(), agent.getVersion())
                 .flatMap(existingAgent -> Mono.<Agent>error(new IllegalStateException("Agent with same name, group and version already exists")))
-                .switchIfEmpty(Mono.defer(() -> {
+                .switchIfEmpty(Mono.<Agent>defer(() -> {
                     agent.setCtime(System.currentTimeMillis());
                     agent.setUtime(System.currentTimeMillis());
                     agent.setState(1);
@@ -184,7 +180,7 @@ public class AgentService {
                         // 如果修改了，需要检查新的组合是否已存在
                         return agentRepository.findByNameAndGroupAndVersion(agent.getName(), agent.getGroup(), agent.getVersion())
                                 .flatMap(duplicateAgent -> Mono.<Agent>error(new IllegalStateException("Agent with same name, group and version already exists")))
-                                .switchIfEmpty(Mono.defer(() -> {
+                                .switchIfEmpty(Mono.<Agent>defer(() -> {
                                     existingAgent.setName(agent.getName());
                                     existingAgent.setGroup(agent.getGroup());
                                     existingAgent.setVersion(agent.getVersion());
@@ -220,7 +216,7 @@ public class AgentService {
                     access.setUtime(System.currentTimeMillis());
                     return agentAccessRepository.save(access);
                 })
-                .switchIfEmpty(Mono.defer(() -> {
+                .switchIfEmpty(Mono.<AgentAccess>defer(() -> {
                     AgentAccess access = new AgentAccess();
                     access.setAgentId(agentId);
                     access.setAccessApp(String.valueOf(userId));
@@ -267,7 +263,7 @@ public class AgentService {
                     agent.setUtime(System.currentTimeMillis());
                     return agentRepository.save(agent);
                 })
-                .switchIfEmpty(Mono.defer(() -> {
+                .switchIfEmpty(Mono.<Agent>defer(() -> {
                     // 如果Agent不存在，创建一个新的
                     Agent agent = new Agent();
                     agent.setName(regInfoDto.getName());
@@ -314,7 +310,7 @@ public class AgentService {
                                 existingInstance.setUtime(System.currentTimeMillis());
                                 return agentInstanceRepository.save(existingInstance);
                             })
-                            .switchIfEmpty(Mono.defer(() -> {
+                            .switchIfEmpty(Mono.<AgentInstance>defer(() -> {
                                 // 如果AgentInstance不存在，创建一个新的
                                 AgentInstance instance = new AgentInstance();
                                 instance.setAgentId(agent.getId());
@@ -364,7 +360,7 @@ public class AgentService {
                             instance.setUtime(System.currentTimeMillis());
                             return agentInstanceRepository.save(instance);
                         })
-                        .switchIfEmpty(Mono.defer(() -> {
+                        .switchIfEmpty(Mono.<AgentInstance>defer(() -> {
                             AgentInstance newInstance = new AgentInstance();
                             newInstance.setAgentId(agent.getId());
                             newInstance.setIp(healthInfo.getIp());

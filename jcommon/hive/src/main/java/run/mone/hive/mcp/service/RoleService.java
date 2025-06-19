@@ -28,8 +28,7 @@ import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -61,6 +60,8 @@ public class RoleService {
 
     @Value("${mcp.server.list:}")
     private String mcpServerList;
+
+    private List<String> mcpServers = new ArrayList<>();
 
     @Value("${mcp.agent.name:}")
     private String agentName;
@@ -96,29 +97,36 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
-
-        //直接配置一个名字,自己连接过去
-        if (StringUtils.isNotEmpty(mcpServerList)) {
-            McpHub hub = new McpHub();
-            Map<String, List> map = hiveManagerService.getAgentInstancesByNames(Splitter.on(",").splitToList(mcpServerList));
-            map.entrySet().forEach(entry -> {
-                Safe.run(() -> {
-                    Map m = (Map) entry.getValue().get(0);
-                    ServerParameters parameters = new ServerParameters();
-                    parameters.setType("grpc");
-                    parameters.getEnv().put("port", String.valueOf(m.get("port")));
-                    parameters.getEnv().put("host", (String) m.get("ip"));
-                    log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
-                    hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
-                });
-            });
-            McpHubHolder.put(Const.DEFAULT, hub);
-        }
-
         //创建一个默认Agent
         createDefaultAgent();
         //优雅关机
         shutdownHook();
+    }
+
+    private McpHub updateMcpConnections(List<String> agentNames, String clientId) {
+        McpHub hub = new McpHub();
+        Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
+        map.entrySet().forEach(entry -> {
+            Safe.run(() -> {
+                Map m = (Map) entry.getValue().get(0);
+                ServerParameters parameters = new ServerParameters();
+                parameters.setType("grpc");
+                parameters.getEnv().put("port", String.valueOf(m.get("port")));
+                parameters.getEnv().put("host", (String) m.get("ip"));
+                parameters.getEnv().put(Const.TOKEN, "");
+                parameters.getEnv().put(Const.CLIENT_ID, "mcp_" + clientId);
+                log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
+                hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
+            });
+        });
+        return hub;
+    }
+
+    //合并两个List<String>注意去重(method)
+    public List<String> mergeLists(List<String> list1, List<String> list2) {
+        Set<String> mergedSet = new HashSet<>(list1);
+        mergedSet.addAll(list2);
+        return new ArrayList<>(mergedSet);
     }
 
     private void shutdownHook() {
@@ -199,15 +207,29 @@ public class RoleService {
         }
 
         //加载配置(从 agent manager获取来的)
-        if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
-            //每个用户的配置是不同的
-            Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-            role.getRoleConfig().putAll(configMap);
-        }
+        updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
 
         //一直执行不会停下来
         role.run();
         return role;
+    }
+
+    private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role) {
+        Safe.run(()->{
+            if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+                //每个用户的配置是不同的
+                Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+                if (configMap.containsKey("mcp")) {
+                    List<String> list = Splitter.on(",").splitToList(configMap.get("mcp"));
+                    //更新mcp agent
+                    McpHub hub = updateMcpConnections(list, clientId);
+                    role.setMcpHub(hub);
+                } else {
+                    role.setMcpHub(new McpHub());
+                }
+                role.getRoleConfig().putAll(configMap);
+            }
+        });
     }
 
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)

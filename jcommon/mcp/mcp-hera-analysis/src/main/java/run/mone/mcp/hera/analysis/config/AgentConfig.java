@@ -37,8 +37,8 @@ public class AgentConfig {
                 .goal("你的目标是更好的帮助用户")
                 .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
                 //允许自动从知识库获取内容(意图识别的小模型)
-                .webQuery(WebQuery.builder().autoWebQuery(false).modelType("bert").version("finetune-bert-20250605-73a29258").build())
-                .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
+                .webQuery(WebQuery.builder().autoWebQuery(true).modelType("bert").version("finetune-bert-20250605-73a29258").releaseServiceName("bert-is-network").build())
+                .rag(Rag.builder().autoRag(true).modelType("bert").version("finetune-bert-20250605-ed8acbcf").releaseServiceName("bert-is-knowledge-base").build())
                 //内部工具
                 .tools(Lists.newArrayList(
                         new ChatTool(),
