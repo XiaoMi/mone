@@ -36,7 +36,7 @@ public class AgentConfigService {
                     return agentConfigRepository.save(config);
                 })
                 .switchIfEmpty(
-                    Mono.defer(() -> {
+                    Mono.<AgentConfig>defer(() -> {
                         AgentConfig config = new AgentConfig();
                         config.setAgentId(agentId);
                         config.setUserId(userId);
