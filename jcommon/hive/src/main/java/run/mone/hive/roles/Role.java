@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
@@ -126,6 +129,17 @@ public class Role {
     protected void init() {
         this.rc = new RoleContext(profile);
         this.planner = createPlanner();
+    }
+
+
+    @NotNull
+    public static FluxSink getFluxSink(Message msg) {
+        FluxSink sink = msg.getSink();
+        if (null == sink) {
+            UnicastProcessor<String> processor = UnicastProcessor.create();
+            sink = processor.sink();
+        }
+        return sink;
     }
 
 
