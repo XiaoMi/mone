@@ -241,7 +241,7 @@ public class RoleService {
                 return createRole(message);
             }
             if (v.getState().get().equals(RoleState.exit)) {
-                return null;
+                return createRole(message);
             }
             return v;
         });
