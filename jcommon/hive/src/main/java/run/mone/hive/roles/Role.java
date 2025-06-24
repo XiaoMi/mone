@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
@@ -18,6 +21,7 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -81,6 +85,8 @@ public class Role {
     //role的配置
     protected Map<String, String> roleConfig = new HashMap<>();
 
+    protected AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
+
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
         this.name = name;
@@ -126,6 +132,17 @@ public class Role {
     protected void init() {
         this.rc = new RoleContext(profile);
         this.planner = createPlanner();
+    }
+
+
+    @NotNull
+    public static FluxSink getFluxSink(Message msg) {
+        FluxSink sink = msg.getSink();
+        if (null == sink) {
+            UnicastProcessor<String> processor = UnicastProcessor.create();
+            sink = processor.sink();
+        }
+        return sink;
     }
 
 

@@ -20,6 +20,10 @@ public class Const {
 
     public static final String AGENT_ID = "__agent_id__";
 
+    public static final String SEND_FROM = "__send_from__";
+
+    public static final String SEND_TO = "__send_to__";
+
     public static final String ROLE = "__role__";
 
     //有这个agent的拥有者
