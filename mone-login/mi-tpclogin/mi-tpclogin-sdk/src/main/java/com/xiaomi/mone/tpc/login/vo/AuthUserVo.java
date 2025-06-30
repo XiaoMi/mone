@@ -2,6 +2,8 @@ package com.xiaomi.mone.tpc.login.vo;
 
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 
+import java.util.Map;
+
 public class AuthUserVo {
     private String account;
     private Integer userType;
@@ -9,14 +11,28 @@ public class AuthUserVo {
     private String token;
     private String avatarUrl;
     private String name;
-    private String setCookUrl;
+    private String enName;
+    private String openId;
+    private String unionId;
+    private String tenantKey;
+    private String employeeNo;
+    private String mobile;
+    private String userId;
     private String email;
+    private String setCookUrl;
     private String casUid;
     private String departmentName;
     private String loginUrl;
     private String logoutUrl;
     private String code;
     private String state;
+    private Map<String, Object> attachments;
+
+    public AuthUserVo buildRst() {
+        AuthUserVo userVo = new AuthUserVo();
+        userVo.setSetCookUrl(getSetCookUrl());
+        return userVo;
+    }
 
     public String getAccount() {
         return account;
@@ -64,6 +80,62 @@ public class AuthUserVo {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getEnName() {
+        return enName;
+    }
+
+    public void setEnName(String enName) {
+        this.enName = enName;
+    }
+
+    public String getOpenId() {
+        return openId;
+    }
+
+    public void setOpenId(String openId) {
+        this.openId = openId;
+    }
+
+    public String getUnionId() {
+        return unionId;
+    }
+
+    public void setUnionId(String unionId) {
+        this.unionId = unionId;
+    }
+
+    public String getTenantKey() {
+        return tenantKey;
+    }
+
+    public void setTenantKey(String tenantKey) {
+        this.tenantKey = tenantKey;
+    }
+
+    public String getEmployeeNo() {
+        return employeeNo;
+    }
+
+    public void setEmployeeNo(String employeeNo) {
+        this.employeeNo = employeeNo;
+    }
+
+    public String getMobile() {
+        return mobile;
+    }
+
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getEmail() {
@@ -132,6 +204,21 @@ public class AuthUserVo {
 
     public String genFullAccount() {
         return UserUtil.getFullAccount(account, userType);
+    }
+
+    public Map<String, Object> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(Map<String, Object> attachments) {
+        this.attachments = attachments;
+    }
+
+    public <T> T getAttachmentVal(String key) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        return (T)attachments.get(key);
     }
 
     @Override

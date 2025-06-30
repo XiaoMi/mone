@@ -18,4 +18,14 @@ public class UserEntity extends BaseEntity{
     @Column
     private String account;
 
+    public UserEntity updateForContent(String content) {
+        UserEntity entity = new UserEntity();
+        entity.setId(this.getId());
+        entity.setType(this.getType());
+        entity.setAccount(this.getAccount());
+        entity.setContent(content);
+        return entity;
+    }
+
+
 }

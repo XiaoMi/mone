@@ -1,7 +1,7 @@
 package com.xiaomi.mone.tpc.dao.impl;
 
-import com.xiaomi.mone.tpc.login.common.vo.PageDataVo;
 import com.xiaomi.mone.tpc.dao.entity.BaseEntity;
+import com.xiaomi.mone.tpc.login.common.vo.PageDataVo;
 import lombok.extern.slf4j.Slf4j;
 import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;

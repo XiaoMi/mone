@@ -13,5 +13,6 @@ import java.lang.annotation.*;
 public @interface ArgCheck {
 
     boolean needUser() default true;
+    boolean needToken() default false;
     boolean allowArgUser() default false;
 }

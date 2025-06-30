@@ -5,6 +5,7 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @project: mi-tpc
@@ -81,5 +82,6 @@ public class NodeVo implements Serializable {
     private boolean iamListOper;
 
     private NodeVo parentNode;
+    private Map<String,String> env;
 
 }

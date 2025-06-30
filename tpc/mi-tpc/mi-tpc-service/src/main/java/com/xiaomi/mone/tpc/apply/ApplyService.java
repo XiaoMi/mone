@@ -209,6 +209,9 @@ public class ApplyService implements ApplyHelper{
                 && !applyEntity.getCreaterId().equals(param.getUserId())) {
             return ResponseCode.OPER_ILLEGAL.build("工单当前状态不能重新提交");
         }
+        if (!param.getUserId().equals(applyEntity.getApplyUserId())) {
+            return ResponseCode.OPER_ILLEGAL.build();
+        }
         //更新节点工单
         ApplyEntity entity = new ApplyEntity();
         entity.setType(applyEntity.getType());
@@ -280,6 +283,9 @@ public class ApplyService implements ApplyHelper{
                 || ApplyStatusEnum.REJECT.getCode().equals(applyEntity.getStatus()))
                 && !ApplyStatusEnum.CLOSE.getCode().equals(param.getStatus())) {
             return ResponseCode.OPER_ILLEGAL.build("只能关闭工单");
+        }
+        if (!param.getUserId().equals(applyEntity.getApplyUserId())) {
+            return ResponseCode.OPER_ILLEGAL.build();
         }
         //关闭
         ApplyEntity entity = new ApplyEntity();

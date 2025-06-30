@@ -8,6 +8,17 @@
     <artifactId>mi-tpclogin</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
+    <description>The parent project of mi-tpclogin</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <modules>
         <module>mi-tpclogin-common</module>
@@ -26,6 +37,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.8.6</version>
+            </dependency>
             <dependency>
                 <artifactId>fastjson</artifactId>
                 <groupId>com.alibaba</groupId>
@@ -125,7 +141,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <fork>true</fork>
+                    <fork>false</fork>
                     <verbose>true</verbose>
                     <encoding>UTF-8</encoding>
                     <compilerArguments>
@@ -152,7 +168,9 @@
                             <failOnMissing>false</failOnMissing>
                             <licenseMerges>
                                 <licenseMerge>Apache License, Version 2.0|The Apache Software License, Version
-                                    2.0|ASF 2.0|Apache 2|Apache-2.0|Apache 2.0 License|Apache 2.0|Apache License v2.0|Apache License 2.0|The Apache License, Version 2.0|The Apache Software License, Version 2.0
+                                    2.0|ASF 2.0|Apache 2|Apache-2.0|Apache 2.0 License|Apache 2.0|Apache License
+                                    v2.0|Apache License 2.0|The Apache License, Version 2.0|The Apache Software License,
+                                    Version 2.0
                                 </licenseMerge>
                                 <licenseMerge>The MIT License|MIT License</licenseMerge>
                                 <licenseMerge>The 3-Clause BSD License|New BSD License|3-Clause BSD

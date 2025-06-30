@@ -1,6 +1,7 @@
 package com.xiaomi.mone.tpc.aop;
 
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.common.param.BaseParam;
 import com.xiaomi.mone.tpc.common.vo.ResponseCode;
@@ -37,6 +38,8 @@ public class ArgCheckAspect {
 
     @Autowired
     private UserService userService;
+    @NacosValue("${tpc.req.token}")
+    private String tpcReqToken;
 
     @Pointcut("@annotation(com.xiaomi.mone.tpc.aop.ArgCheck)")
     public void argCheck(){}
@@ -61,6 +64,12 @@ public class ArgCheckAspect {
                 BaseParam baseParam = (BaseParam)arg;
                 //不需要用户信息
                 if (!argCheck.needUser()) {
+                    if (argCheck.needToken() && StringUtils.isNotBlank(tpcReqToken)) {
+                        if (!tpcReqToken.equals(baseParam.getToken())) {
+                            log.info("接口{}请求参数{},请求token非法", method.getName(), arg);
+                            return getResult(resultCls, ResponseCode.OPER_ILLEGAL);
+                        }
+                    }
                     //允许前端传递用户信息
                     if (!argCheck.allowArgUser()) {
                         baseParam.setAccount(null);

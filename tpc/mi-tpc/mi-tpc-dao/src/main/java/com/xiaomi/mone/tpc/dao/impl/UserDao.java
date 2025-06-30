@@ -86,7 +86,10 @@ public class UserDao extends BaseDao{
             sqlExpr = sqlExpr.andEquals("status", status);
         }
         if (StringUtils.isNotBlank(account)) {
-            sqlExpr = sqlExpr.andLike("account", account);
+            SqlExpressionGroup subSqlExpr = new SqlExpressionGroup();
+            subSqlExpr = subSqlExpr.orLike("account", account);
+            subSqlExpr = subSqlExpr.orLike("json_value(content,'$.name')", account);
+            sqlExpr.and(subSqlExpr);
         }
         return getListByPage(sqlExpr, pageData, UserEntity.class);
     }

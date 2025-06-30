@@ -29,4 +29,5 @@ public class UserVo implements Serializable {
     private long updateTime;
     private String account;
     private boolean topMgr;
+    private String showAccount;
 }
