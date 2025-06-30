@@ -5,15 +5,21 @@
       class="pop-box nowheel"
       v-show="visible"
       :style="{ width: width + 'px', right: -Math.abs(props.width + 25) + 'px' }"
+      @wheel="handleNoWheelFn"
     >
       <p class="t">{{ title }}</p>
-      <slot></slot>
+      <div class="content">
+        <slot></slot>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { handleNoWheel } from '@/views/workflow/work-flow/baseInfo.js'
+
+const handleNoWheelFn = ref(handleNoWheel)
 
 const props = defineProps({
   visible: {},
@@ -42,17 +48,19 @@ const rightVal = computed(() => {
     0 0 1px 0 rgba(0, 0, 0, 0.3),
     0 4px 68px 3px rgba(0, 0, 0, 0.14);
   background: #f7f7fa;
-  padding: 12px;
   z-index: 2000;
   top: -14px;
   border-radius: 8px;
   min-width: 150px;
-  max-height: 700px;
-  overflow-y: auto;
+  .content {
+    max-height: 700px;
+    overflow-y: auto;
+    padding: 0 12px 12px 12px;
+  }
 }
 .t {
   font-size: 15px;
   font-weight: 600;
-  padding: 5px 0 8px 0;
+  padding: 12px;
 }
 </style>

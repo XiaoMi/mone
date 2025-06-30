@@ -1,0 +1,111 @@
+.vue-flow__minimap {
+  transform: scale(75%);
+  transform-origin: bottom right;
+}
+
+.dndflow {
+  flex-direction: column;
+  display: flex;
+  height: calc(100vh - 77px);
+  background: #f1f1f4;
+  :deep(.base-fold) {
+    .left {
+      width: fit-content;
+    }
+    .main,
+    .left {
+      padding: 0;
+    }
+  }
+  :deep(.sidebar) {
+    position: relative;
+    z-index: 10;
+  }
+  :deep(.vue-flow__node-default) {
+    width: auto;
+  }
+  :deep(.vue-flow__node-custom) {
+    background: #fff;
+    border-radius: 7px;
+    border: solid 2px #d8d8d8;
+  }
+  :deep(.vue-flow__node-nodeif),
+  :deep(.vue-flow__node-custom),
+  :deep(.vue-flow__node-nodeelse) {
+    .vue-flow__handle {
+      background: #4d53e8 !important;
+      filter: none !important;
+      border: solid 1px #fff;
+      width: 10px;
+      height: 10px;
+      &:hover {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  :deep(.vue-flow__node-custom.selected) {
+    border: solid 2px #4d53e8;
+  }
+  :deep(.vue-flow__arrowhead polyline) {
+    fill: #4d53e8 !important;
+    stroke: #4d53e8 !important;
+  }
+  :deep(.vue-flow__edge-path) {
+    stroke: #4d53e8;
+    stroke-width: 1.3;
+  }
+  :deep(.vue-flow__edge.selected .vue-flow__edge-path) {
+    stroke: #37d0ff;
+  }
+  :deep(.vue-flow__controls) {
+    display: flex;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: #fff;
+    .vue-flow__controls-button {
+      border-bottom: none;
+      position: relative;
+    }
+    .vue-flow__controls-button + .vue-flow__controls-button {
+      margin-left: 5px;
+      &::before {
+        content: '';
+        position: absolute;
+        left: -3px;
+        top: 4px;
+        width: 1px;
+        height: 18px;
+        background: #eee;
+      }
+    }
+  }
+}
+.dndflow aside .description {
+  margin-bottom: 10px;
+}
+.dndflow .work-flow {
+  flex-grow: 1;
+  height: 100%;
+  // overflow: scroll;
+}
+@media screen and (min-width: 640px) {
+  .dndflow {
+    flex-direction: row;
+  }
+  .dndflow aside {
+    min-width: 25%;
+  }
+}
+.top-btn {
+  padding: 4px 20px;
+  font-size: 14px;
+}
+
+.icon-juzhong {
+  font-size: 12px;
+}
+.active-btn {
+  color: var(--oz-color-primary);
+}

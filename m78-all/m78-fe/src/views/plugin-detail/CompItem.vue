@@ -26,7 +26,7 @@
 
 <script lang="ts" setup>
 import { reactive, watch } from 'vue'
-import { E_PLUGIN } from '@/views/probot/my-space/plugins/constants.ts'
+import { E_PLUGIN } from '@/views/probot-space/plugins/constants'
 const props = defineProps({
   item: {
     type: Object,

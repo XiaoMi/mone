@@ -40,6 +40,7 @@ const options: Options = {
   showToolbar: false,
   showGrid: true,
   showContextmenu: false,
+  // showBottomBar: false,
   view: {
     width: () => document.getElementById('divExcle')?.offsetWidth,
     height: () => document.getElementById('divExcle')?.offsetHeight
@@ -135,6 +136,14 @@ const initSheet = (data) => {
   saveData()
 }
 
+// const uploadFile = (fileV) => {  读文件不需要了
+//   if (fileV) {
+//     fileV.arrayBuffer().then((arrayBuffer) => {
+//       const content = stox(XLSX.read(arrayBuffer))
+//       grid.loadData(content)
+//     })
+//   }
+// }
 const emits = defineEmits(['uploadSuccess'])
 const uploadSuccess = (params) => {
   emits('uploadSuccess', params)

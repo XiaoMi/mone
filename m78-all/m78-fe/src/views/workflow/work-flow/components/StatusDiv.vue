@@ -5,6 +5,19 @@
         <component :is="statusIcon['icon' + resOutputs?.status || 2]" />
       </el-icon>
       <span class="label">{{ statusMap.label }} </span>
+      <TimerTag
+        class="timer"
+        :type="statusMap.tagType"
+        v-if="[2, 3].includes(resOutputs?.status)"
+        >{{ showTime }}</TimerTag
+      >
+      <FlowRecordIdJump
+        :jump="true"
+        :flowRecordIdStatus="flowRecordIdVal"
+        v-if="flowRecordIdVal"
+        :flowId="nodeData.coreSetting.flowId"
+        :hasPermission="hasPermission"
+      />
     </div>
     <ResultPop
       :title="`${nodeData.nodeMetaInfo.nodeName} 执行结果`"
@@ -12,64 +25,74 @@
       :visible="visible"
     >
       <BatchResult
-        v-if="nodeData.nodeType == 'llm' && nodeData.batchType == 'batch'"
+        v-if="nodeData.nodeType.startsWith('llm') && nodeData.batchType == 'batch'"
         :batchRes="batchRes"
         :resInputs="resInputs"
         :nodeData="nodeData"
         :resOutputs="resOutputs"
       />
       <template v-else>
-        <StatusInputs :resInputs="resInputs" :nodeData="nodeData" />
-        <StatusError :resOutputs="resOutputs" v-if="resOutputs.status == 3" />
-        <StatusOutputs v-else :resOutputs="resOutputs" :nodeData="nodeData" />
+        <ResultNewCondition
+          v-if="conditionTypes.includes(nodeData.nodeType)"
+          :nodes="nodes"
+          :resInputs="resInputs"
+          :nodeData="nodeData"
+          :resOutputs="resOutputs"
+        />
+        <StatusInputs v-else :resInputs="resInputs" :nodeData="nodeData" />
+        <StatusOutputs :resOutputs="resOutputs" :nodeData="nodeData" />
+        <StatusError :resOutputs="resOutputs" />
       </template>
-      <template #reference>
-        <el-button link @click="switchShow">{{ visible ? '收起' : '展开' }}运行结果</el-button>
+      <!-- 如果时候code类型节点要展示日志 -->
+      <template v-if="nodeData.nodeType == 'code'">
+        <StatusOutputsLog :codeLog="codeLog" v-if="codeLog" />
+      </template>
+
+      <template #reference v-if="nodeData.nodeType !== 'manualConfirm'">
+        <TestNodeRetry @click="emits('retryFn')" v-if="resOutputs?.status == 3" />
+        <el-button link @click="switchShow">{{ visible ? '收起' : '展开' }}运行结果 </el-button>
       </template>
     </ResultPop>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { opList } from '../baseInfo'
+import { computed, ref, defineEmits } from 'vue'
+import { opList, formatTime, flowStatusArr, nodesBase } from '../baseInfo'
 import ResultPop from './components/ResultPop'
-import { nodesBase } from '../baseInfo.js'
 import BatchResult from './components/BatchResult'
 import StatusInputs from './components/StatusInputs'
 import StatusOutputs from './components/StatusOutputs'
+import StatusOutputsLog from './components/StatusOutputsLog'
 import StatusError from './components/StatusError'
+import TimerTag from '../../components/TimerTag'
 import { SuccessFilled, CircleCloseFilled, WarningFilled } from '@element-plus/icons-vue'
+import FlowRecordIdJump from '../../components/components/FlowRecordIdJump.vue'
+import ResultNewCondition from './components/ResultNewCondition.vue'
+import { conditionTypes } from '@/views/workflow/common/base.js'
+import TestNodeRetry from './TestNodeRetry.vue'
 
 const props = defineProps({
   resInputs: {},
   resOutputs: {},
-  nodeData: {}
+  nodes: {},
+  nodeData: {},
+  hasPermission: {}
 })
+const emits = defineEmits(['retryFn'])
 const statusIcon = {
   icon2: SuccessFilled,
   icon1: WarningFilled,
-  icon3: CircleCloseFilled
+  icon3: CircleCloseFilled,
+  icon4: CircleCloseFilled,
+  icon5: WarningFilled
 }
 const visible = ref(props?.nodeData?.nodeType == 'end')
 const statusMap = computed(() => {
-  const arr = statusArr.filter((item) => item.code === props.resOutputs.status)
+  const arr = flowStatusArr.filter((item) => item.code === props.resOutputs.status)
   return arr[0] || {}
 })
-const statusArr = [
-  {
-    code: 1,
-    label: '运行开始'
-  },
-  {
-    code: 2,
-    label: '运行成功'
-  },
-  {
-    code: 3,
-    label: '运行失败'
-  }
-]
+
 const batchRes = ref([
   {
     key: 1,
@@ -92,6 +115,21 @@ const batchRes = ref([
     disabled: true
   }
 ])
+
+const showTime = computed(() => {
+  return formatTime(props.resOutputs?.durationTime)
+})
+const flowRecordIdVal = computed(() => {
+  if (props.nodeData.nodeType != 'subFlow') return ''
+  return props.resOutputs?.outputDetails?.find((it) => it.name == '$$TY_SUB_FLOW_RECORD_ID$$')
+    ?.value
+})
+
+// code类型会展示log
+const codeLog = computed(() => {
+  if (props.nodeData.nodeType != 'code') return ''
+  return props.resOutputs?.outputDetails?.find((it) => it.name == '$$TY_CODE_LOG$$')?.value
+})
 const switchShow = () => {
   visible.value = !visible.value
 }
@@ -118,6 +156,7 @@ const switchShow = () => {
   .name-i,
   :deep(.name-i) {
     color: #535ce0;
+    word-break: keep-all;
   }
   .text-p,
   :deep(.text-p) {
@@ -161,11 +200,15 @@ const switchShow = () => {
 .icon {
   font-size: 18px;
 }
+.timer {
+  margin-left: 6px;
+}
 // 开始
-.status-1 {
-  background: #fdf6ec;
+.status-1,
+.status-5 {
+  background: #ecf5ff;
   .icon {
-    color: #e6a23c;
+    color: #45a0ff;
   }
 }
 .status-2 {
@@ -176,7 +219,8 @@ const switchShow = () => {
   }
 }
 // 失败
-.status-3 {
+.status-3,
+.status-4 {
   background: #fde2e2;
   .icon {
     color: #f56c6c;
