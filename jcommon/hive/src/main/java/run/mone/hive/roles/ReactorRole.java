@@ -72,7 +72,6 @@ public class ReactorRole extends Role {
 
     private ScheduledExecutorService scheduler;
 
-    private AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
 
     private String owner;
 
@@ -262,6 +261,10 @@ public class ReactorRole extends Role {
                 }
             }
 
+            if (null != fluxSink) {
+                fluxSink.complete();
+            }
+
 
             int result =  super.observe();
             Message msg = this.rc.news.take();
@@ -384,8 +387,14 @@ public class ReactorRole extends Role {
         }
 
         if (type.equals("Role")) {
-            sink.next("执行任务");
-            return super.act(context);
+            sink.next("执行任务\n");
+            try {
+                return super.act(context);
+            } catch (Throwable ex) {
+                log.error(ex.getMessage(),ex);
+                this.fluxSink.next(ex.getMessage());
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
         }
 
         try {
@@ -434,15 +443,6 @@ public class ReactorRole extends Role {
         return CompletableFuture.completedFuture(Message.builder().build());
     }
 
-    @NotNull
-    private static FluxSink getFluxSink(Message msg) {
-        FluxSink sink = msg.getSink();
-        if (null == sink) {
-            UnicastProcessor<String> processor = UnicastProcessor.create();
-            sink = processor.sink();
-        }
-        return sink;
-    }
 
     private Map<String, String> buildToolExtraParam(Message msg) {
         Map<String, String> extraParam = new HashMap<>();

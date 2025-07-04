@@ -207,23 +207,29 @@ public class RoleService {
         }
 
         //加载配置(从 agent manager获取来的)
-        if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
-            //每个用户的配置是不同的
-            Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-            if (configMap.containsKey("mcp")) {
-                List<String> list = Splitter.on(",").splitToList(configMap.get("mcp"));
-                //更新mcp agent
-                McpHub hub = updateMcpConnections(list, clientId);
-                role.setMcpHub(hub);
-            } else {
-                role.setMcpHub(new McpHub());
-            }
-            role.getRoleConfig().putAll(configMap);
-        }
+        updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
 
         //一直执行不会停下来
         role.run();
         return role;
+    }
+
+    private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role) {
+        Safe.run(()->{
+            if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+                //每个用户的配置是不同的
+                Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+                if (configMap.containsKey("mcp")) {
+                    List<String> list = Splitter.on(",").splitToList(configMap.get("mcp"));
+                    //更新mcp agent
+                    McpHub hub = updateMcpConnections(list, clientId);
+                    role.setMcpHub(hub);
+                } else {
+                    role.setMcpHub(new McpHub());
+                }
+                role.getRoleConfig().putAll(configMap);
+            }
+        });
     }
 
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
@@ -235,7 +241,7 @@ public class RoleService {
                 return createRole(message);
             }
             if (v.getState().get().equals(RoleState.exit)) {
-                return null;
+                return createRole(message);
             }
             return v;
         });
