@@ -21,6 +21,7 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -83,6 +84,8 @@ public class Role {
 
     //role的配置
     protected Map<String, String> roleConfig = new HashMap<>();
+
+    protected AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
 
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {

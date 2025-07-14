@@ -72,7 +72,6 @@ public class ReactorRole extends Role {
 
     private ScheduledExecutorService scheduler;
 
-    private AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
 
     private String owner;
 
@@ -389,7 +388,13 @@ public class ReactorRole extends Role {
 
         if (type.equals("Role")) {
             sink.next("执行任务\n");
-            return super.act(context);
+            try {
+                return super.act(context);
+            } catch (Throwable ex) {
+                log.error(ex.getMessage(),ex);
+                this.fluxSink.next(ex.getMessage());
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
         }
 
         try {
