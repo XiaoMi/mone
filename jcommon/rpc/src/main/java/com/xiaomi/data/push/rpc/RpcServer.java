@@ -36,6 +36,7 @@ import com.xiaomi.data.push.rpc.netty.NettyServerConfig;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.data.push.task.Task;
 import io.netty.channel.Channel;
+import lombok.Data;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ import java.util.stream.Stream;
  * @author zhangzhiyong
  * @date 30/05/2018
  */
+@Data
 public class RpcServer implements Service {
 
     private static final Logger logger = LoggerFactory.getLogger(RpcServer.class);
@@ -82,6 +84,8 @@ public class RpcServer implements Service {
     @Setter
     private int listenPort;
 
+    private boolean virtualThread;
+
     /**
      * 注册到nacos
      */
@@ -98,6 +102,11 @@ public class RpcServer implements Service {
         this.name = name;
         this.regNacos = regNacos;
         this.defaultPool = creatThreadPool(200);
+
+        if (virtualThread) {
+            this.defaultPool =  Executors.newVirtualThreadPerTaskExecutor();
+        }
+
         if (regNacos) {
             String[] ss = this.nacosAddrs.split("\\$");
             Arrays.stream(ss).forEach(it -> {
