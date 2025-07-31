@@ -145,6 +145,7 @@ public class ActionGraph {
                 node.setContext(sb.toString());
                 node.setGraphContext(ActionGraph.this.context);
                 // 执行当前节点
+                node.sendBeginMessage();
                 Message result = node.run().join();
                 node.sendMessage(result);
                 return result;
