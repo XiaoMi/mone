@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
 import { useAppStore } from '@/stores'
-import { setLocale } from '@/locales'
+import { setLocale } from '@/locales';
 import type { Language } from '@/stores/app/helper'
 
 const appStore = useAppStore()

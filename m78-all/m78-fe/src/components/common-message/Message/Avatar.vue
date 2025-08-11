@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { isString } from '@/utils/is'
 import { UserFilled } from '@element-plus/icons-vue'
-import Logo2 from './m78.png'
+import Logo2 from './robot.png'
+import BaseIcon from '@/components/BaseIcon.vue'
 
 interface Props {
   image?: boolean
   avatar?: string
+  avatarUrl?: string
   username?: string
 }
 
@@ -20,7 +22,10 @@ const name = computed(() => userStore.userInfo.name)
 </script>
 
 <template>
-  <template v-if="props.username">
+  <template v-if="props.avatarUrl">
+    <BaseIcon size="small" :index="props.avatarUrl"></BaseIcon>
+  </template>
+  <template v-else-if="props.username">
     <el-avatar>{{ props.username.toUpperCase().substring(0, 1) }}</el-avatar>
   </template>
   <template v-else-if="image">
