@@ -57,6 +57,12 @@ public class DubboPlugin implements IPlugin {
         Config config = ioc.getBean(Config.class);
         applicationConfig = new ApplicationConfig(config.get(Cons.DUBBO_APP_NAME, ""));
         applicationConfig.setQosEnable(false);
+
+        //3.0 才有的参数
+        if (!config.get("serializeCheckStatus", "").isEmpty()) {
+            applicationConfig.setSerializeCheckStatus(config.get("serializeCheckStatus",""));
+        }
+
         registryConfig = new RegistryConfig(config.get(Cons.DUBBO_REG_ADDRESS, ""));
         //启动的时候是否check 注册中心
         registryConfig.setCheck(Boolean.valueOf(config.get(Cons.DUBBO_REG_CHECK, Boolean.FALSE.toString())));
