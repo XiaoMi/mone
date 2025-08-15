@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>docean-plugin-dubbo-serverless</artifactId>
-
+    <version>1.4-dubbo3-SNAPSHOT</version>
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
@@ -24,13 +24,13 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-serverless-v15-SNAPSHOT</version>
+            <version>3.3.4-mone-serverless-v1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.xiaomi.youpin</groupId>
                     <artifactId>youpin-infra-rpc</artifactId>
+                    <groupId>com.xiaomi.youpin</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
