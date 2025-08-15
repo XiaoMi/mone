@@ -752,6 +752,15 @@ public class LLM {
             }
         }
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
+        // 设置关闭思考模型的思考能力
+        if(!config.isReasoningOutPut()){
+            // 各个模型关闭思考能力的数据结构
+            if(this.llmProvider == LLMProvider.DOUBAO_VISION){
+                JsonObject thinkingType = new JsonObject();
+                thinkingType.addProperty("type", "disabled");
+                requestBody.add("thinking", thinkingType);
+            }
+        }
 
         Request.Builder rb = new Request.Builder();
 
