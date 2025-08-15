@@ -17,6 +17,7 @@ public enum UserTypeEnum implements Base {
     GITEE_TYPE(4, "GITEE"),
     SERVICE_TYPE(5, "服务账号"),
     FEISHU_TYPE(6, "飞书"),
+    DINGDING_TYPE(7, "钉钉"),
     ;
     private Integer code;
     private String desc;

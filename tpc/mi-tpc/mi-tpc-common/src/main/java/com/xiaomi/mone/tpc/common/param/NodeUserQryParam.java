@@ -16,10 +16,13 @@ import java.io.Serializable;
 public class NodeUserQryParam extends BaseParam implements Serializable {
 
     private Long nodeId;
+    private Long outId;
+    private Integer outIdType;
     private Long id;
     private Integer type;
     private Long memberId;
     private Integer tester;
+    private Integer extType;
     @Override
     public boolean argCheck() {
         if (type != null && NodeUserRelTypeEnum.getEnum(type) == null) {
