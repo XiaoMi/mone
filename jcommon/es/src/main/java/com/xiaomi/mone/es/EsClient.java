@@ -46,6 +46,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentType;
 
 import java.io.IOException;
 import java.util.*;
@@ -104,7 +105,8 @@ public class EsClient {
                                 .build())
                         .setKeepAliveStrategy((response, context) -> TimeUnit.SECONDS.toMillis(25))
                         .setDefaultIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build()));
-        this.client = new RestHighLevelClient(builder);
+        this.client = new RestHighLevelClientBuilder(builder.build()).setApiCompatibilityMode(true).build();
+        this.restClient = client.getLowLevelClient();
     }
 
     public EsClient(String esAddr, String user, String pwd) {
