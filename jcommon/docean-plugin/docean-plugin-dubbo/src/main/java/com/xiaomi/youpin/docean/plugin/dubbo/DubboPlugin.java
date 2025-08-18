@@ -32,10 +32,7 @@ import org.apache.dubbo.config.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author goodjava@qq.com
@@ -57,6 +54,10 @@ public class DubboPlugin implements IPlugin {
         Config config = ioc.getBean(Config.class);
         applicationConfig = new ApplicationConfig(config.get(Cons.DUBBO_APP_NAME, ""));
         applicationConfig.setQosEnable(false);
+
+        Map<String, String> appParams = new HashMap<>();
+        appParams.put("nacos.subscribe.legacy-name","true");
+        applicationConfig.setParameters(appParams);
 
         //3.0 才有的参数
         if (!config.get("serializeCheckStatus", "").isEmpty()) {
