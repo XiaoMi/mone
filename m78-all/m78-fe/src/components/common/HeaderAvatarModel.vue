@@ -1,3 +1,8 @@
+<!--
+ * @Description:
+ * @Date: 2024-01-15 11:36:05
+ * @LastEditTime: 2024-08-11 17:41:09
+-->
 <template>
   <el-form
     ref="formRef"
@@ -15,14 +20,7 @@
       >
         <div class="from-item-content">
           <span> :</span>
-          <el-select style="width: 100%" v-model="item.value">
-            <el-option
-              v-for="item of modelOptions"
-              :key="item.cname"
-              :label="item.cname"
-              :value="item.cname"
-            />
-          </el-select>
+          <LLMModelSel v-model="item.value" style="width: 100%" />
         </div>
       </el-form-item>
     </div>
@@ -42,7 +40,8 @@ import { ref } from 'vue'
 import { t } from '@/locales'
 import { ElMessage } from 'element-plus'
 import { useSettingStore } from '@/stores/settings'
-import { updateUserConfig, getModelList } from '@/api/index'
+import { updateUserConfig } from '@/api/index'
+import LLMModelSel from '@/components/LLMModelSel.vue'
 
 type modelType = 'chatModel' | 'codeModel' | 'documentModel' | 'translateModel'
 
@@ -61,17 +60,6 @@ const form = ref<{
   }[]
 }>({
   dynamic: []
-})
-// 模型
-const modelOptions = ref<{ name: string }[]>([])
-
-// 模型下拉列表
-getModelList({}).then((res) => {
-  if (res?.data?.length) {
-    modelOptions.value = res?.data
-  } else {
-    modelOptions.value = []
-  }
 })
 
 async function fetchModels() {

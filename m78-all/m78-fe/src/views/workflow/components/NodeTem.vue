@@ -1,15 +1,15 @@
 <template>
-  <div class="node-item" :draggable="true" @dragstart="onDragStartFn($event)">
+  <div class="node-item" :draggable="draggable" @dragstart="onDragStartFn($event)" @click="addNode">
     <p class="top-p">
-      <div>
+      <div class="top-l">
         <img v-if="img" :src="img" alt="33" class="header" />
         <span class="title">{{ title }}</span>
       </div>
-      <el-button link class="add-btn" @click="addNode">
+      <el-button link class="add-btn" >
         <el-icon color="#4d53e8"><Plus /></el-icon>
       </el-button>
     </p>
-    <p class="desc">{{ desc }}</p>
+    <p class="desc" v-if="showDetail">{{ desc }}</p>
   </div>
 </template>
 
@@ -21,6 +21,13 @@ const props=defineProps({
   },
   desc: {
     default: '调用大语言模型，使用变量和提示词生成回复'
+  },
+  showDetail:{
+    default: true
+  },
+  draggable:{
+    default: true,
+    type: Boolean
   }
 })
 
@@ -67,5 +74,9 @@ const addNode=()=>{
     color: rgba(28, 31, 35, 0.6);
     text-align: left;
     margin-top: 5px;
+  }
+  .top-l{
+    display: flex;
+    align-items: center;
   }
 </style>

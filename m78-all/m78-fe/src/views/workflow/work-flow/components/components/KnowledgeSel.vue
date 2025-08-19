@@ -1,15 +1,22 @@
 <template>
   <el-select v-model="val" placeholder="请选择知识库">
-    <el-option v-for="item in options" :key="item.id" :label="item.name" :value="item.id" />
+    <el-option
+      v-for="item in options"
+      :key="item.knowledgeBaseId"
+      :label="item.knowledgeBaseName"
+      :value="item.knowledgeBaseId"
+    />
   </el-select>
 </template>
 
 <script setup>
-import { getKnowledgeMyList } from '@/api/chat'
+import { getKnowledgeList } from '@/api/probot-knowledge'
 
 import { computed, ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 const props = defineProps({
-  modelValue: {}
+  modelValue: {},
+  workspaceId: {}
 })
 const options = ref()
 const emits = defineEmits(['update:modelValue'])
@@ -21,9 +28,10 @@ const val = computed({
     emits('update:modelValue', val)
   }
 })
+const route = useRoute()
 const getApiList = () => {
-  getKnowledgeMyList().then((res) => {
-    options.value = res.data || []
+  getKnowledgeList({ workSpaceId: props.workspaceId, pageSize: 100, pageNum: 1 }).then((res) => {
+    options.value = res?.data?.records || []
   })
 }
 onMounted(() => {

@@ -14,6 +14,6 @@ import { t } from '@/locales'
   text-indent: 2em;
   font-size: 17px;
   line-height: 36px;
-  color: #666;
+  color:#666;
 }
 </style>

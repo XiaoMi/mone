@@ -1,7 +1,7 @@
 <!--
  * @Description: 
  * @Date: 2024-03-11 14:49:51
- * @LastEditTime: 2024-03-27 19:38:14
+ * @LastEditTime: 2024-08-15 11:18:13
 -->
 <template>
   <ProbotBaseTitle title="分类管理"></ProbotBaseTitle>
@@ -57,7 +57,7 @@ import CreateClass from './CreateClass'
 import { getCategoryList, deleteCategory } from '@/api/probot-classification'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useProbotStore } from '@/stores/probot'
-import ProbotBaseTitle from '@/components/ProbotBaseTitle.vue'
+import ProbotBaseTitle from '@/components/probot/ProbotBaseTitle.vue'
 
 const probotStore = useProbotStore()
 const categoryTypeList = computed(() => probotStore.categoryTypeList)
@@ -117,7 +117,7 @@ onMounted(() => {})
 
 <style lang="scss" scoped>
 .category-wrap {
-  padding: 20px;
+  padding: 10px;
   min-height: 300px;
 }
 .category-container {

@@ -4,142 +4,150 @@
     size="small"
     label-position="top"
     inline
-    class="ddl-form"
+    class="plugin-form"
     ref="codeFormRef"
   >
-    <div class="pt-[10px]">
-      <el-form-item props="action">
-        <el-radio-group v-model="node.action" size="small">
-          <el-radio-button label="single" value="single">单次</el-radio-button>
-          <el-radio-button label="batch" value="batch">批处理</el-radio-button>
-        </el-radio-group>
-      </el-form-item>
-    </div>
-    <div class="inputs-box">
-      <el-collapse v-model="activeNames">
-        <el-collapse-item name="1">
-          <template #title>
-            <div class="t-box">
-              <div class="t-left">
-                <el-icon>
-                  <ArrowDown v-if="activeNames.includes('1')" />
-                  <ArrowRight v-else />
-                </el-icon>
+    <template v-if="node.coreSetting.pluginType == 'dubbo'">
+      <CommonInputs v-model="node.inputs" :referOps="referOps" />
+      <CommonCollapse
+        title="dubbo入参"
+        content="dubbo入参"
+        :showAdd="false"
+        v-if="node.inputsPlugin"
+      >
+        <el-form-item
+          label=""
+          class="nowheel"
+          @wheel="handleNoWheelFn"
+          prop="inputsPlugin.dubboParam"
+          :rules="{
+            validator: (rule, value, cb) => {
+              testDubboParam(rule, value, cb)
+            },
+            trigger: 'blur'
+          }"
+        >
+          <div class="dubbo-params">
+            <el-input
+              v-model="node.inputsPlugin.dubboParam"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+              :placeholder="dubboPlaceholder"
+            />
+          </div>
+        </el-form-item>
+      </CommonCollapse>
+    </template>
+    <template v-else>
+      <div class="inputs-box">
+        <el-collapse v-model="activeNames">
+          <el-collapse-item name="1">
+            <template #title>
+              <div class="t-box">
+                <div class="t-left">
+                  <CollapseTitle
+                    :activeNames="activeNames"
+                    title="输入"
+                    content="输入需要添加到提示词的信息，这些信息可以被下方的提示词引用"
+                    tipClass="title-tooltip"
+                    :showAdd="false"
+                  />
+                </div>
+              </div>
+            </template>
+            <div v-for="(item, i) in node.inputs" :key="item" class="output-item">
+              <el-form-item
+                label="参数名"
+                :prop="'inputs.' + i + '.name'"
+                :rules="{
+                  required: item.required,
+                  message: '参数名不可为空',
+                  trigger: 'blur'
+                }"
+              >
+                <!-- <el-input v-model="item.name" placeholder="请输入参数名" style="width: 150px" /> -->
                 <TitleTooltip
-                  title="输入"
-                  content="输入需要添加到提示词的信息，这些信息可以被下方的提示词引用"
+                  :title="item.name"
+                  :content="item.desc || '没有相关参数描述'"
                   class="title-tooltip"
                   :showAdd="false"
                 />
+              </el-form-item>
+              <div class="val-box">
+                <el-form-item
+                  label="参量值"
+                  :prop="'inputs.' + i + '.type'"
+                  :rules="{
+                    required: item.required,
+                    message: '请选择',
+                    trigger: 'blur'
+                  }"
+                >
+                  <OutputTypeSel v-model="item.type" />
+                </el-form-item>
+                <el-form-item
+                  label=""
+                  class="empty-item"
+                  :prop="'inputs.' + i + '.value'"
+                  :rules="{
+                    validator: (rule, value, cb) => {
+                      testFn(rule, value, cb, node.inputs[i])
+                    },
+                    trigger: 'blur'
+                  }"
+                  v-if="item.type == 'value'"
+                >
+                  <el-input v-model="item.value" placeholder="请输入参数值" :style="refreStyle" />
+                </el-form-item>
+                <el-form-item
+                  v-else
+                  label=""
+                  class="empty-item"
+                  :prop="'inputs.' + i + '.referenceInfo'"
+                  :rules="{
+                    validator: (rule, value, cb) => {
+                      testFn(rule, value, cb, node.inputs[i])
+                    },
+                    trigger: 'blur'
+                  }"
+                >
+                  <QuotaCas v-model="item.referenceInfo" :style="refreStyle" :options="referOps" />
+                </el-form-item>
+                <!-- <el-form-item class="empty-item">
+                <el-button
+                  link
+                  @click.stop="
+                    () => {
+                      delInFn(i)
+                    }
+                  "
+                >
+                  <i class="iconfont icon-jian" style="font-size: 14px"></i>
+                </el-button>
+              </el-form-item> -->
               </div>
             </div>
-          </template>
-          <div v-for="(item, i) in node.inputs" :key="item" class="output-item">
-            <el-form-item
-              label="变量名"
-              :prop="'inputs.' + i + '.name'"
-              :rules="{
-                required: true,
-                message: '参数值不可为空',
-                trigger: 'blur'
-              }"
-            >
-              <TitleTooltip
-                :title="item.name"
-                :content="item.desc || '没有相关参数描述'"
-                class="title-tooltip"
-                :showAdd="false"
-              />
-            </el-form-item>
-            <div class="val-box">
-              <el-form-item
-                label="变量值"
-                :prop="'inputs.' + i + '.type'"
-                :rules="{
-                  required: true,
-                  message: '参数值不可为空',
-                  trigger: 'blur'
-                }"
-              >
-                <OutputTypeSel v-model="item.type" />
-              </el-form-item>
-              <el-form-item
-                label=""
-                class="empty-item"
-                :prop="'inputs.' + i + '.value'"
-                :rules="{
-                  validator: (rule, value, cb) => {
-                    validateRef(rule, value, cb, node.inputs[i])
-                  },
-                  trigger: 'blur'
-                }"
-                v-if="item.type == 'value'"
-              >
-                <el-input v-model="item.value" placeholder="请输入参数值" :style="refreStyle" />
-              </el-form-item>
-              <el-form-item
-                v-else
-                label=""
-                class="empty-item"
-                :prop="'inputs.' + i + '.referenceInfo'"
-                :rules="{
-                  validator: (rule, value, cb) => {
-                    validateRef(rule, value, cb, node.inputs[i])
-                  },
-                  trigger: 'blur'
-                }"
-              >
-                <QuotaCas :nodeId="node.id" v-model="item.referenceInfo" :style="refreStyle" />
-              </el-form-item>
-            </div>
-          </div>
-        </el-collapse-item>
-      </el-collapse>
-    </div>
+          </el-collapse-item>
+        </el-collapse>
+      </div>
+    </template>
     <div class="inputs-box">
       <el-collapse v-model="activeNames2">
         <el-collapse-item name="1">
           <template #title>
             <div class="t-box">
               <div class="t-left">
-                <el-icon>
-                  <ArrowDown v-if="activeNames2.includes('1')" />
-                  <ArrowRight v-else />
-                </el-icon>
-                <TitleTooltip
+                <CollapseTitle
+                  :activeNames="activeNames2"
                   title="输出"
                   content="插件运行完成后生成的内容"
-                  class="title-tooltip"
+                  tipClass="title-tooltip"
                   :showAdd="false"
                 />
               </div>
-              <!-- <el-button link @click.stop="addFn" size="small">
-                <i class="iconfont icon-plus1"></i>
-              </el-button> -->
             </div>
           </template>
-          <div v-for="(item, i) in node.outputs" :key="item" class="arr-item">
-            <el-form-item
-              :label="i == 0 ? '变量名' : ''"
-              :prop="'outputs.' + i + '.name'"
-              :rules="{
-                validator: (rule, value, cb) => {
-                  validPName(rule, value, cb, node.outputs)
-                },
-                trigger: 'blur'
-              }"
-            >
-              <el-input
-                v-model="item.name"
-                disabled
-                style="width: 250px"
-                placeholder="请输入参数名"
-              />
-            </el-form-item>
-            <el-form-item :label="i == 0 ? '变量类型' : ''" class="m-r-0">
-              <VariateTypeSel disabled v-model="item.type" />
-            </el-form-item>
-          </div>
+          <OutPutsTree v-model="node.outputs" :showDesc="true" :disabled="true" />
         </el-collapse-item>
       </el-collapse>
     </div>
@@ -147,20 +155,32 @@
 </template>
 
 <script setup>
-import { ref, computed, defineExpose } from 'vue'
+import { ref, computed, defineExpose, nextTick } from 'vue'
 import TitleTooltip from './TitleTooltip.vue'
 import OutputTypeSel from './components/OutputTypeSel.vue'
 import VariateTypeSel from './components/VariateTypeSel'
-import { validateRef, validPName } from '../baseInfo'
+import { validateRef, validPName, getReferOps } from '../baseInfo'
 import 'codemirror/theme/erlang-dark.css'
 import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/mode/groovy/groovy.js'
 import QuotaCas from './components/QuotaCas'
+import { useVueFlow } from '@vue-flow/core'
+import { useWfStore } from '@/stores/workflow1'
+import OutPutsTree from '@/views/workflow/work-flow/components/components/OutPutsTree.vue'
+import CollapseTitle from './components/CollapseTitle.vue'
+import CommonInputs from '@/views/workflow/work-flow/components/components/CommonInputs.vue'
+import CommonCollapse from './components/CommonCollapse.vue'
+import { handleNoWheel } from '@/views/workflow/work-flow/baseInfo.js'
 
+const handleNoWheelFn = ref(handleNoWheel)
+const wfStore = useWfStore()
+const draging = computed(() => wfStore.nodeDragging)
 const props = defineProps({
   modelValue: {},
   nodes: {},
-  lines: {}
+  lines: {},
+  getDetailed: {},
+  referOps: {}
 })
 const emits = defineEmits(['update:modelValue'])
 const node = computed({
@@ -171,11 +191,16 @@ const node = computed({
     emits('update:modelValue', v)
   }
 })
+const dubboPlaceholder = ref(
+  '可以使用${变量名}的方式引入输入参数中的变量，例：[{"page":${page},"pageSize":2,"name":${name}}]'
+)
+const { toObject } = useVueFlow()
+
 const refreStyle = ref({
   width: '170px'
 })
-const activeNames = ref('1')
-const activeNames2 = ref('1')
+const activeNames = ref(['1'])
+const activeNames2 = ref(['1'])
 
 const addParam = () => {
   node.value.inputs.push({ name: '', val: '' })
@@ -196,6 +221,46 @@ const addFn = () => {
 const delFn = (i) => {
   node.value.outputs.splice(i, 1)
 }
+
+const testFn = (rule, value, cb, input) => {
+  if (input.required) {
+    validateRef(rule, value, cb, input)
+  } else {
+    return cb()
+  }
+}
+
+// 判断字符串必须以"["开头，并且以"]"结尾的
+const isWrappedInBrackets = (str) => {
+  // 使用正则表达式检查字符串格式
+  return /^\[.*\]$/.test(str)
+}
+// 校验dubbo入参
+const testDubboParam = (rule, value, callback) => {
+  if (!value) {
+    return callback(new Error('此项为必填项'))
+  } else {
+    try {
+      // 判断字符串必须以"["开头，并且以"]"结尾的
+      if (!isWrappedInBrackets(value)) {
+        return callback(new Error('此项应为数组！'))
+      } else {
+        return callback()
+      }
+    } catch (error) {
+      return callback('请检查，格式错误', error)
+    }
+  }
+}
+const validateType = (rule, value, callback, curObj) => {
+  const { required } = curObj
+  if ((required == null || required) && !value) {
+    return callback(new Error('此为必填项'))
+  } else {
+    return callback()
+  }
+}
+
 const codeFormRef = ref(null)
 const validate = async () => {
   try {
@@ -296,5 +361,10 @@ defineExpose({ validate })
 .arr-item {
   display: flex;
   align-items: center;
+}
+.dubbo-params {
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>

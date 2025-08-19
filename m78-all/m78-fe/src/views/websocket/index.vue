@@ -16,20 +16,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import SockJS from 'sockjs-client'
 
 const text = ref('')
 const res = ref('')
-let sock: WebSocket | null = null
+let sock: SockJS | null = null
 
 onMounted(() => {
-  if (window.location.origin.startsWith('http://')) {
-    sock = new WebSocket(`ws://${window.location.host}/api/ai-plugin-new/ws/bot`)
-  } else {
-    sock = new WebSocket(`wss://${window.location.host}/api/ai-plugin-new/ws/bot`)
-  }
+  sock = new SockJS(
+    `${window.location.origin}${import.meta.env.VITE_GLOB_API_NEW_URL}ws/sockjs/bot/execute`
+  )
 
-  sock.onopen = function (event) {
-    console.log('WebSocket is open now.', event)
+  sock.onopen = function () {
+    console.log('SockJS is open now.')
   }
 
   sock.onmessage = function (event) {
@@ -38,8 +37,8 @@ onMounted(() => {
     console.log('Received message: ' + message)
   }
 
-  sock.onclose = function (event) {
-    console.log('WebSocket is closed now.', event)
+  sock.onclose = function () {
+    console.log('SockJS is closed now.')
     sock?.close()
   }
 

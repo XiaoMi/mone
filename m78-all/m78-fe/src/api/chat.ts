@@ -6,6 +6,9 @@ import qs from 'qs'
 export function getChatList<T = any>() {
   return get<T>({
     url: '/v1/chat/messagetopic/list',
+    data: {
+      type: 0
+    },
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }
@@ -121,6 +124,7 @@ export const embedding = (
 ): Promise<IResponse<any>> =>
   post({
     url: '/knowledge/base/files/embedding',
+    // headers: { 'content-type': 'application/x-www-form-urlencoded' },
     data,
     baseURL: import.meta.env.VITE_GLOB_Z_API_URL
   })
