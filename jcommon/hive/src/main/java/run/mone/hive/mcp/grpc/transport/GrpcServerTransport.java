@@ -6,6 +6,7 @@ import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
@@ -255,6 +256,11 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 public void onNext(StreamRequest streamRequest) {
                     String name = streamRequest.getName();
                     clientId = getClientIdFromContext();
+
+                    if (StringUtils.isEmpty(clientId) || clientId.startsWith("mcp_")) {
+                        return;
+                    }
+
                     log.info("bidirectionalToolStream name:{} clientId:{}", name, clientId);
                     //连接过来,随时可以通过服务器推回去信息
                     if (name.equals("observer")) {

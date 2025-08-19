@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
@@ -26,8 +28,7 @@ import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,11 @@ public class RoleService {
 
     @Value("${mcp.hub.path:}")
     private String mcpPath;
+
+    @Value("${mcp.server.list:}")
+    private String mcpServerList;
+
+    private List<String> mcpServers = new ArrayList<>();
 
     @Value("${mcp.agent.name:}")
     private String agentName;
@@ -95,6 +101,32 @@ public class RoleService {
         createDefaultAgent();
         //优雅关机
         shutdownHook();
+    }
+
+    private McpHub updateMcpConnections(List<String> agentNames, String clientId) {
+        McpHub hub = new McpHub();
+        Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
+        map.entrySet().forEach(entry -> {
+            Safe.run(() -> {
+                Map m = (Map) entry.getValue().get(0);
+                ServerParameters parameters = new ServerParameters();
+                parameters.setType("grpc");
+                parameters.getEnv().put("port", String.valueOf(m.get("port")));
+                parameters.getEnv().put("host", (String) m.get("ip"));
+                parameters.getEnv().put(Const.TOKEN, "");
+                parameters.getEnv().put(Const.CLIENT_ID, "mcp_" + clientId);
+                log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
+                hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
+            });
+        });
+        return hub;
+    }
+
+    //合并两个List<String>注意去重(method)
+    public List<String> mergeLists(List<String> list1, List<String> list2) {
+        Set<String> mergedSet = new HashSet<>(list1);
+        mergedSet.addAll(list2);
+        return new ArrayList<>(mergedSet);
     }
 
     private void shutdownHook() {
@@ -165,27 +197,64 @@ public class RoleService {
         role.setConstraints(roleMeta.getConstraints());
         role.setWorkflow(roleMeta.getWorkflow());
         role.setOutputFormat(roleMeta.getOutputFormat());
-
-        if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
-            Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-            role.setRoleConfig(configMap);
+        role.setActions(roleMeta.getActions());
+        role.setType(roleMeta.getRoleType());
+        if (null != roleMeta.getLlm()) {
+            role.setLlm(roleMeta.getLlm());
         }
+        if (null != roleMeta.getReactMode()) {
+            role.getRc().setReactMode(roleMeta.getReactMode());
+        }
+
+        //加载配置(从 agent manager获取来的)
+        updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
 
         //一直执行不会停下来
         role.run();
         return role;
     }
 
+    private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role) {
+        Safe.run(()->{
+            if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
+                //每个用户的配置是不同的
+                Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+                if (configMap.containsKey("mcp")) {
+                    List<String> list = Splitter.on(",").splitToList(configMap.get("mcp"));
+                    //更新mcp agent
+                    McpHub hub = updateMcpConnections(list, clientId);
+                    role.setMcpHub(hub);
+                } else {
+                    role.setMcpHub(new McpHub());
+                }
+                role.getRoleConfig().putAll(configMap);
+            }
+        });
+    }
+
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
-        ReactorRole role = roleMap.get(from);
-        if (null == role || role.getState().get().equals(RoleState.exit)) {
-            roleMap.putIfAbsent(from, createRole(message));
-        }
+
+        roleMap.compute(from, (k, v) -> {
+            if (v == null) {
+                return createRole(message);
+            }
+            if (v.getState().get().equals(RoleState.exit)) {
+                return createRole(message);
+            }
+            return v;
+        });
+
         return Flux.create(sink -> {
             message.setSink(sink);
-            roleMap.get(from).putMessage(message);
+            ReactorRole rr = roleMap.get(from);
+            if (!rr.getState().get().equals(RoleState.observe)) {
+                sink.next("有正在处理中的消息\n");
+                sink.complete();
+            } else {
+                roleMap.get(from).putMessage(message);
+            }
         });
     }
 
@@ -195,6 +264,7 @@ public class RoleService {
         ReactorRole agent = roleMap.get(from);
         if (null != agent) {
             message.setData(Const.ROLE_EXIT);
+            message.setContent(Const.ROLE_EXIT);
             agent.putMessage(message);
         }
         roleMap.remove(from);

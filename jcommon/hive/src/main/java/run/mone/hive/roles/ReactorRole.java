@@ -3,12 +3,15 @@ package run.mone.hive.roles;
 import com.google.api.client.util.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
@@ -21,9 +24,11 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
@@ -33,6 +38,7 @@ import run.mone.hive.utils.NetUtils;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -47,9 +53,10 @@ import java.util.stream.Collectors;
 @Data
 public class ReactorRole extends Role {
 
-    private LLM llm;
-
     private String customInstructions = "";
+
+    //ReactorRole or Role
+    private String type = "ReactorRole";
 
     private List<ITool> tools = new ArrayList<>();
 
@@ -65,7 +72,6 @@ public class ReactorRole extends Role {
 
     private ScheduledExecutorService scheduler;
 
-    private AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
 
     private String owner;
 
@@ -81,9 +87,18 @@ public class ReactorRole extends Role {
 
     private List<McpFunction> functionList;
 
-    private int idlePollCount = 3;
-
     private int defaultIdlePollCount = 3;
+
+    private Date lastReceiveMsgTime;
+
+    //用于流式返回用户信息的
+    private FluxSink fluxSink;
+
+    private ActionContext ac;
+
+    private AtomicInteger maxAssistantNum = new AtomicInteger();
+
+    private McpHub mcpHub;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -99,6 +114,10 @@ public class ReactorRole extends Role {
             ===========
             History:(之前的记录)
             ${history}
+            
+            ${rag_info}
+            
+            ${web_query_info}
             
             ===========
             Latest Questions(最后的步骤):
@@ -143,7 +162,18 @@ public class ReactorRole extends Role {
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.llm = llm;
-        this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this.getName());
+        this.scheduledTaskHandler = message -> {
+            log.debug("Processing scheduled message: {}", this.getName());
+            //添加退出逻辑
+            if (null != this.lastReceiveMsgTime) {
+                Date currentDate = new Date();
+                long timeDifference = currentDate.getTime() - this.lastReceiveMsgTime.getTime();
+                if (timeDifference >= TimeUnit.SECONDS.toMillis(120)) {
+                    //发出退出指令
+                    this.putMessage(Message.builder().data(Const.ROLE_EXIT).build());
+                }
+            }
+        };
 
         // Initialize scheduler with a single thread
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -158,34 +188,49 @@ public class ReactorRole extends Role {
                     scheduledTaskHandler.accept(this);
                 }
                 health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
-                log.info("Scheduled task executed at: {}", System.currentTimeMillis());
+                log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
             });
-        }, 0, 20, TimeUnit.SECONDS);
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
         this(name, group, version, profile, goal, constraints, port, llm, tools, mcpTools, NetUtils.getLocalHost());
     }
 
+    @Override
+    protected void beforeReact(ActionContext ac) {
+        this.ac = ac;
+    }
+
     //think -> observe -> act
     @Override
     protected int think() {
-        log.info("think");
+        log.info("{} run think", this.name);
         this.state.set(RoleState.think);
+
+        if (this.roleMeta.getThinkFunc() != null) {
+            return this.roleMeta.getThinkFunc().apply("");
+        }
+
+        //TODO 后边改成组合模式,这么写有点怪
+        if (this.type.equals("Role")) {
+            return super.think();
+        }
+
         int value = observe();
-        //发生了空轮训(默认30分钟没有沟通后,就自动退出)
-        if (value == -3) {
-            if (this.idlePollCount-- < 0) {
-                return value;
+
+        if (value == 2) {
+            if (null != this.fluxSink) {
+                fluxSink.complete();
             }
         }
-        idlePollCount = defaultIdlePollCount;
 
-        if (value == -1) {
-            return observe();
-        } else {
-            return value;
-        }
+        return value;
+    }
+
+    @Override
+    public boolean isBlockingMessageRetrieval() {
+        return true;
     }
 
     @Override
@@ -194,20 +239,66 @@ public class ReactorRole extends Role {
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
 
+
     @SneakyThrows
     @Override
     protected int observe() {
-        log.info("{} observe", this.name);
+        log.info("{} run observe", this.name);
         this.state.set(RoleState.observe);
-        Message msg = this.rc.getNews().poll(10, TimeUnit.MINUTES);
-        if (null == msg) {
-            return -3;
+
+        if (this.roleMeta.getObserveFunc() != null) {
+            return this.roleMeta.getObserveFunc().apply("");
         }
+
+        if (type.equals("Role")) {
+            Message lastMsg = this.rc.getMemory().getLastMessage();
+            if (null != lastMsg && lastMsg.getData().equals(Const.ROLE_EXIT)) {
+                this.state.set(RoleState.exit);
+
+                if (null != lastMsg.getSink()) {
+                    log.info("type Role sink complete");
+                    lastMsg.getSink().complete();
+                }
+            }
+
+            if (null != fluxSink) {
+                fluxSink.complete();
+            }
+
+
+            int result =  super.observe();
+            Message msg = this.rc.news.take();
+            ac.setMsg(msg);
+            lastReceiveMsgTime = new Date();
+            log.info("type Role receive message:{}", msg);
+
+            return result;
+        }
+
+        //等待消息
+        Message msg = this.rc.news.take();
+        lastReceiveMsgTime = new Date();
+        log.info("receive message:{}", msg);
+
+        //机器人回答太多轮了
+        if (this.maxAssistantNum.get() > 10) {
+            this.maxAssistantNum.set(0);
+            return 2;
+        }
+
+
+        ac.setMsg(msg);
 
         // 收到特殊指令直接退出
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
             this.state.set(RoleState.exit);
+            Safe.run(() -> {
+                log.info("close mcp");
+                if (null != this.getMcpHub()) {
+                    this.getMcpHub().dispose();
+                }
+            });
             shutdownScheduler();
             return -2;
         }
@@ -221,43 +312,37 @@ public class ReactorRole extends Role {
         //放到记忆中
         this.putMemory(msg);
 
-        // 获取memory中最后一条消息
-        Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
 
         //用户可以扩展退出策略
-        if (null != this.roleMeta.getCheckFinishFunc()) {
-            int v = this.roleMeta.getCheckFinishFunc().apply(lastMsg);
-            if (v < 0) {
-                if (null != lastMsg.getSink()) {
-                    lastMsg.getSink().complete();
-                }
-                return v;
+        int v = this.roleMeta.getCheckFinishFunc().apply(msg);
+        if (v < 0) {
+            if (null != msg.getSink()) {
+                msg.getSink().complete();
             }
+            return v;
         }
 
-        String lastMsgContent = lastMsg.getContent();
-
-        //其实只会有一个
-        List<ToolDataInfo> tools = new MultiXmlParser().parse(lastMsgContent);
-
-        //结束
-        int attemptCompletion = tools.stream().filter(it -> {
-                    String name = it.getTag();
-                    return toolMap.containsKey(name);
-                }).map(it -> toolMap.get(it.getTag()))
-                .anyMatch(ITool::completed) ? -1 : 1;
-
-        //任务已经完成
-        if (attemptCompletion == -1) {
-            if (null != lastMsg.getSink()) {
-                lastMsg.getSink().complete();
-            }
+        String lastTool = ac.getLastTool();
+        if (lastTool == null) {
+            return 1;
         }
 
-        if (attemptCompletion == 1) {
-            this.putMessage(msg);
+        int attemptCompletion = 1;
+        ITool tool = toolMap.get(lastTool);
+        if (null != tool && tool.completed()) {
+            //本质上这轮task结束了
+            attemptCompletion = 2;
         }
         return attemptCompletion;
+    }
+
+    @Override
+    public Message processMessage(Message message) {
+        if (type.equals("Role")) {
+            message.setSink(this.ac.getSink());
+        }
+
+        return message;
     }
 
     private void shutdownScheduler() {
@@ -280,14 +365,41 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
-        log.info("{} act", this.name);
+        log.info("{} run act", this.name);
         this.state.set(RoleState.act);
-        Message msg = this.rc.news.poll();
-        FluxSink sink = msg.getSink();
+
+        Message msg = this.ac.getMsg();
+
+        //控制下,ai最多回答几轮
+        if (!"user".equals(msg.getRole())) {
+            this.maxAssistantNum.incrementAndGet();
+        } else {
+            this.maxAssistantNum.set(0);
+        }
+
+        FluxSink sink = getFluxSink(msg);
+        this.fluxSink = sink;
+        context.setSink(sink);
+
+        //允许使用用户自己定义的执行逻辑
+        if (null != roleMeta.getActFunc()) {
+            return roleMeta.getActFunc().apply(context);
+        }
+
+        if (type.equals("Role")) {
+            sink.next("执行任务\n");
+            try {
+                return super.act(context);
+            } catch (Throwable ex) {
+                log.error(ex.getMessage(),ex);
+                this.fluxSink.next(ex.getMessage());
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
+        }
 
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
-            String userPrompt = buildUserPrompt(msg, history);
+            String userPrompt = buildUserPrompt(msg, history, sink);
             log.info("userPrompt:{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt, msg);
@@ -295,11 +407,11 @@ public class ReactorRole extends Role {
             AtomicBoolean hasError = new AtomicBoolean(false);
 
             //获取系统提示词
-            String systemPrompt = getSystemPrompt();
+            String systemPrompt = buildSystemPrompt();
 
             //调用大模型(选用合适的工具)
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
-            log.info("res\n:{} \nhasError:\n{}", toolRes, hasError.get());
+            log.info("call llm res:\n{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
@@ -307,27 +419,30 @@ public class ReactorRole extends Role {
             // 解析工具调用(有可能是tool也可能是mcp)
             List<ToolDataInfo> tools = new MultiXmlParser().parse(toolRes);
 
-            log.info("tools num:{}", tools.size());
-
             //直接使用最后一个工具(每次只会返回一个)
             ToolDataInfo it = tools.get(tools.size() - 1);
 
             String name = it.getTag();
-            if (this.toolMap.containsKey(name)) {// 执行tool
+
+            log.info("use tool:{}", name);
+
+            this.ac.setLastTool(name);
+
+            if (this.toolMap.containsKey(name)) {//执行内部tool
                 callTool(name, it, toolRes, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
+                sink.next("不支持工具:" + name);
                 log.warn("不支持的工具 tool:{}", name);
             }
         } catch (Exception e) {
-            if (null != sink) {
-                sink.error(e);
-            }
+            sink.error(e);
             log.error("ReactorRole act error:" + e.getMessage(), e);
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
+
 
     private Map<String, String> buildToolExtraParam(Message msg) {
         Map<String, String> extraParam = new HashMap<>();
@@ -340,7 +455,7 @@ public class ReactorRole extends Role {
     private void callMcp(ToolDataInfo it, FluxSink sink) {
         String toolName = it.getKeyValuePairs().get("tool_name");
         it.setRole(this);
-        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         McpSchema.Content content = result.getContent();
         if (content instanceof McpSchema.TextContent textContent) {
             this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());
@@ -406,12 +521,7 @@ public class ReactorRole extends Role {
     }
 
 
-    public void sendMsg(McpSchema.Content content, String toolName) {
-        log.info("send msg :{} {}", content, toolName);
-    }
-
-
-    private String getSystemPrompt() {
+    private String buildSystemPrompt() {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
             roleDescription = """
@@ -428,10 +538,90 @@ public class ReactorRole extends Role {
         return prompt;
     }
 
-    public String buildUserPrompt(Message msg, String history) {
+    //构建用户提问的prompt
+    //1.支持从网络获取内容  2.支持从知识库获取内容
+    public String buildUserPrompt(Message msg, String history, FluxSink sink) {
+        String queryInfo = "";
+        //支持自动从网络查询信息
+        if (roleMeta.getWebQuery().isAutoWebQuery()) {
+            queryInfo = getNetworkQueryInfo(msg, queryInfo, sink);
+        }
+
+        //从知识库中获取信息内容
+        String ragInfo = "";
+        if (roleMeta.getRag().isAutoRag()) {
+            ragInfo = queryKnowledgeBase(msg, sink);
+        }
+
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
+                //聊天记录
                 "history", history,
+                //网络上下文
+                "web_query_info", queryInfo,
+                //rag上下文
+                "rag_info", ragInfo,
                 "question", msg.getContent()));
     }
 
+    private String getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
+        //获取意图是否访问知识库
+        LLM llm = new LLM(LLMConfig.builder()
+                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
+                .url(System.getenv("ATLAS_URL"))
+                .build());
+        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1, releaseServiceName);
+        classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
+        return classify;
+    }
+
+    private String getNetworkQueryInfo(Message msg, String queryInfo, FluxSink sink) {
+        //做下意图识别(看看是不是需要网络查询内容)
+        String classify = getClassificationLabel(msg);
+        //去网络搜索内容
+        if (!classify.equals("不需要搜索网络")) {
+            sink.next("从网络获取信息\n");
+            TavilySearchTool tool = new TavilySearchTool();
+            JsonObject queryObj = new JsonObject();
+            queryObj.addProperty("query", msg.getContent());
+            String res = tool.execute(this, queryObj).toString();
+            queryInfo = "===========\n" + "网络中查询到的内容:" + "\n" + res + "\n";
+        }
+        return queryInfo;
+    }
+
+    private String queryKnowledgeBase(Message msg, FluxSink sink) {
+        try {
+            //是否访问知识库
+            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(),msg);
+            if (classify.equals("是")) {
+                sink.next("从知识库获取信息\n");
+                String ragUrl = System.getenv("RAG_URL");
+                LLM llm = new LLM(LLMConfig.builder()
+                        .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                        .url(ragUrl + "/rag/query")
+                        .build());
+
+                String result = llm.queryRag(
+                        msg.getContent(), // query
+                        5, // topK
+                        0.5, // threshold
+                        "", // tag
+                        "1" // tenant
+                );
+                result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
+                return "===========\n" + "知识库中的内容:" + "\n" + result + "\n";
+            }
+        } catch (Throwable ex) {
+            log.error(ex.getMessage());
+        }
+        return "";
+    }
+
+    private String getClassificationLabel(Message msg) {
+        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), roleMeta.getWebQuery().getReleaseServiceName(), msg);
+    }
+
+    public void setLlm(LLM llm) {
+        this.llm = llm;
+    }
 }

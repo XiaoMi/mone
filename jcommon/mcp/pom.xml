@@ -64,6 +64,7 @@
         <module>mcp-custom-model</module>
         <module>mcp-image</module>
         <module>mcp-remote-file</module>
+        <module>mcp-miapi-cursor</module>
     </modules>
 
     <properties>

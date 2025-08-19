@@ -18,6 +18,9 @@ public enum OutIdTypeEnum implements Base {
     SPACE(6, "日志SPACE"),
     STORE(7, "日志STORE"),
     GATE_REGION(8, "区域"),
+    HERA_BIZ_SCENE(13,"OzHera业务场景"),
+    HERA_BIZ_METRIC(14,"OzHera业务指标"),
+    HERA_BIZ_TEAM(15,"OzHera业务团队")
     ;
     private Integer code;
     private String desc;

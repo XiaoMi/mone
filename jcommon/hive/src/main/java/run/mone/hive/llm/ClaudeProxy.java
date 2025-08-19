@@ -118,6 +118,7 @@ public class ClaudeProxy {
         switch (selectedClaude()) {
             case "CLAUDE35": return System.getenv("CLAUDE35_TOKEN");
             case "CLAUDE37": return System.getenv("CLAUDE37_TOKEN");
+            case "CLAUDE4": return System.getenv("CLAUDE4_TOKEN");
         }
         return System.getenv("CLAUDE35_TOKEN");
     }
@@ -133,6 +134,10 @@ public class ClaudeProxy {
                 tokens = System.getenv("CLAUDE37_MAX_TOKENS");
                 break;
             }
+            case "CLAUDE4": {
+                tokens = System.getenv("CLAUDE4_MAX_TOKENS");
+                break;
+            }
         }
 
         if (StringUtils.isNotEmpty(tokens)) {
@@ -146,6 +151,7 @@ public class ClaudeProxy {
         switch (selectedClaude()) {
             case "CLAUDE35": return System.getenv("CLAUDE35_NAME");
             case "CLAUDE37": return System.getenv("CLAUDE37_NAME");
+            case "CLAUDE4": return System.getenv("CLAUDE4_NAME");
         }
         return System.getenv("CLAUDE35_NAME");
     }
@@ -154,6 +160,7 @@ public class ClaudeProxy {
         switch (selectedClaude()) {
             case "CLAUDE35": return System.getenv("CLAUDE35_URL");
             case "CLAUDE37": return System.getenv("CLAUDE37_URL");
+            case "CLAUDE4": return System.getenv("CLAUDE4_URL");
         }
         return System.getenv("CLAUDE35_URL");
     }
@@ -162,11 +169,12 @@ public class ClaudeProxy {
         switch (selectedClaude()) {
             case "CLAUDE35": return System.getenv("CLAUDE35_VERSION");
             case "CLAUDE37": return System.getenv("CLAUDE37_VERSION");
+            case "CLAUDE4": return System.getenv("CLAUDE4_VERSION");
         }
         return System.getenv("CLAUDE35_VERSION");
     }
 
-    //目前支持CLAUDE35，CLAUDE37
+    //目前支持CLAUDE35，CLAUDE37，CLAUDE4
     private static String selectedClaude() {
         return Optional.ofNullable(System.getenv("CLAUDE_SELECTED"))
                 .filter(StringUtils::isNotEmpty)

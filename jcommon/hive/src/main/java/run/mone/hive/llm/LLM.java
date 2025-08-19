@@ -75,6 +75,220 @@ public class LLM {
         return ask(prompt).join();
     }
 
+    // cloudml上训练的分类模型
+    /*
+    * modelType 模型类型 bert or qwen
+    * version 模型版本
+    * texts 待分类文本列表
+    * topK 返回topK个分类结果
+    * */
+    public String getClassifyScore(String modelType, String version, List<String> texts, Integer topK, String releaseServiceName) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("model_type", modelType);
+            requestBody.addProperty("version", version);
+            requestBody.add("texts", gson.toJsonTree(texts));
+            requestBody.addProperty("top_k", topK);
+            if(StringUtils.isNotEmpty(releaseServiceName)){
+                requestBody.addProperty("releaseServiceName", releaseServiceName);
+            }
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call classify api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("classify response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call classify api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用接口失败, modelType:{}, version:{}, texts:{}, topK:{}, error:{}", 
+                    modelType, version, texts, topK, e.getMessage(), e);
+            throw new RuntimeException("接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
+    // RAG新增接口
+    /*
+    * id 记录ID
+    * question 问题
+    * content 内容
+    * askMark 询问标记
+    * askSpeechSkill 询问语音技能
+    * serviceType 服务类型
+    * conclusion 结论
+    * blockId 块ID
+    * tenant 租户
+    * */
+    public String addRag(String id, String question, String content, Integer askMark, 
+                        String askSpeechSkill, String serviceType, String conclusion, 
+                        String blockId, String tenant) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("id", id);
+            requestBody.addProperty("question", question);
+            requestBody.addProperty("content", content);
+            requestBody.addProperty("askMark", askMark);
+            requestBody.addProperty("askSpeechSkill", askSpeechSkill);
+            requestBody.addProperty("serviceType", serviceType);
+            requestBody.addProperty("conclusion", conclusion);
+            requestBody.addProperty("blockId", blockId);
+            requestBody.addProperty("tenant", tenant);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call rag add api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("rag add response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call rag add api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用RAG新增接口失败, question:{}, content:{}, tenant:{}, error:{}", 
+                    question, content, tenant, e.getMessage(), e);
+            throw new RuntimeException("RAG新增接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
+    // RAG查询接口
+    /*
+    * query 查询内容
+    * topK 返回topK个结果
+    * threshold 阈值
+    * tag 标签
+    * tenant 租户
+    * */
+    public String queryRag(String query, Integer topK, Double threshold, String tag, String tenant) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("query", query);
+            requestBody.addProperty("topK", topK);
+            requestBody.addProperty("threshold", threshold);
+            requestBody.addProperty("tag", tag);
+            requestBody.addProperty("tenant", tenant);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call rag query api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("rag query response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call rag query api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用RAG查询接口失败, query:{}, topK:{}, threshold:{}, tenant:{}, error:{}", 
+                    query, topK, threshold, tenant, e.getMessage(), e);
+            throw new RuntimeException("RAG查询接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
+    // RAG ID查询接口
+    /*
+    * questionId 问题ID
+    * contentId 内容ID
+    * tenant 租户
+    * */
+    public String queryRagById(String questionId, String contentId, String tenant) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(120, TimeUnit.SECONDS)
+                    .writeTimeout(120, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("questionId", questionId);
+            requestBody.addProperty("contentId", contentId);
+            requestBody.addProperty("tenant", tenant);
+
+            String url = this.config.getUrl();
+            
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .build();
+
+            String rb = requestBody.toString();
+            log.info("call rag query by id api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+            
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("rag query by id response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call rag query by id api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用RAG ID查询接口失败, questionId:{}, contentId:{}, tenant:{}, error:{}", 
+                    questionId, contentId, tenant, e.getMessage(), e);
+            throw new RuntimeException("RAG ID查询接口调用失败: " + e.getMessage(), e);
+        }
+    }
 
     public String chat(List<AiMessage> msgList) {
         return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
@@ -161,6 +375,7 @@ public class LLM {
             requestBody.remove("model");
         }
 
+        // former web search
         if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
             JsonObject tool = new JsonObject();
@@ -171,6 +386,11 @@ public class LLM {
             tools.add(tool);
             requestBody.add("tools", tools);
             systemPrompt = systemPrompt + "\n每个提问先通过web search，然后通过web search的结果，回答用户问题\n";
+        }
+
+        // live search (xai/grok)
+        if (clientConfig.getLiveSearchConfig() != null) {
+            requestBody.add("search_parameters", gson.toJsonTree(clientConfig.getLiveSearchConfig()));
         }
 
 
@@ -522,6 +742,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.DOUBAO_VISION ||
                     this.llmProvider == LLMProvider.GROK ||
                     this.llmProvider == LLMProvider.DOUBAO ||
+                    this.llmProvider == LLMProvider.MIFY ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -531,12 +752,24 @@ public class LLM {
             }
         }
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
+        // 设置关闭思考模型的思考能力
+        if(!config.isReasoningOutPut()){
+            // 各个模型关闭思考能力的数据结构
+            if(this.llmProvider == LLMProvider.DOUBAO_VISION){
+                JsonObject thinkingType = new JsonObject();
+                thinkingType.addProperty("type", "disabled");
+                requestBody.add("thinking", thinkingType);
+            }
+        }
 
         Request.Builder rb = new Request.Builder();
 
+        // 设置API key
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
             if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
                 rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else if (this.llmProvider == LLMProvider.MIFY) {
+                rb.addHeader("api-key", apiKey);
             } else {
                 rb.addHeader("Authorization", "Bearer " + apiKey);
             }
@@ -668,12 +901,20 @@ public class LLM {
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
                                 String content = "";
                                 try {
-                                    JsonObject delta = jsonResponse.getAsJsonArray("choices")
+                                    JsonArray choicesJson = jsonResponse.getAsJsonArray("choices");
+                                    if (choicesJson == null || choicesJson.isEmpty()) {
+                                        continue;
+                                    }
+                                    JsonObject delta = choicesJson
                                             .get(0).getAsJsonObject()
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
                                     if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
+                                        // 当Content为空并且设置了不输出思考内容时，直接跳过
+                                        if(!config.isReasoningOutPut()){
+                                            continue;
+                                        }
                                         JsonElement rc = delta.get("reasoning_content");
                                         if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();
@@ -1025,6 +1266,7 @@ public class LLM {
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
+                || llm.getConfig().getLlmProvider() == LLMProvider.MIFY
         ) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();

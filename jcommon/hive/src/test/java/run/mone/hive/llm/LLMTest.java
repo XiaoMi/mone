@@ -1,9 +1,9 @@
-
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,13 +13,15 @@ import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+import static run.mone.hive.llm.ClaudeProxy.*;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeMaxToekns;
 
 @Slf4j
 class LLMTest {
@@ -218,14 +220,14 @@ class LLMTest {
                                                           请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
                         """
                 , Message.builder()
-                .images(Lists.newArrayList(
-                    img
-                )).build());
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
         compoundMsg.setImageType("png");
 
-        List<String>list = new ArrayList<>();
-        IntStream.range(0,10).forEach(it->{
-            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        List<String> list = new ArrayList<>();
+        IntStream.range(0, 10).forEach(it -> {
+            String str = llm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
             System.out.println(str);
             list.add(str);
         });
@@ -278,16 +280,16 @@ class LLMTest {
     }
 
     @Test
-    public void testClaude35() {
+    public void testClaude() {
         ClaudeProxy claudeProxy = new ClaudeProxy();
-        claudeProxy.initGCPClaude("Claude-3.5-Sonnet-company-inner");
+        String model = "Claude-4-Sonnet";
+        claudeProxy.initGCPClaude(model);
 
-        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好").build());
-
-        String result = claudeProxy.callGCP("Claude-3.5-Sonnet-company-inner", msgs);
+        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好, 44+22是多少").build());
+        String result = claudeProxy.callGCP(model, msgs);
         System.out.println(result);
 
-        String apiKey = getClaudeKey("Claude-3.5-Sonnet-company-inner");
+        String apiKey = getClaudeKey(model);
 
         StringBuilder responseBuilder = new StringBuilder();
         List<JsonObject> jsonResponses = new ArrayList<>();
@@ -300,7 +302,7 @@ class LLMTest {
         llm.chatCompletionStream(
                 apiKey,
                 msgs,
-                "Claude-3.5-Sonnet-company-inner",
+                model,
                 (content, jsonResponse) -> {
                     if ("[DONE]".equals(content)) {
                         latch.countDown();
@@ -762,6 +764,123 @@ class LLMTest {
         assertFalse(fullResponse.isEmpty(), "Response should not be empty");
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
     }
+
+
+    //调用私有的分类小模型
+    @Test
+    public void testClassify() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
+                .url(System.getenv("ATLAS_URL"))
+                .build();
+        LLM llm = new LLM(config);
+        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1, null);
+        String str = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
+        System.out.println(str);
+    }
+
+    private String ragUrl = System.getenv("RAG_URL");
+
+    @Test
+    public void testAddRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE) // 复用现有的provider
+                .url(ragUrl + "/rag/add")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.addRag(
+                "", // id
+                "如何使用miline平台进行服务部署?", // question
+                "使用miline平台进行服务部署的步骤包括:1.登录miline平台 2.选择要部署的服务 3.配置部署环境和参数 4.选择部署策略 5.执行部署 6.监控部署状态", // content
+                0, // askMark
+                "", // askSpeechSkill
+                "", // serviceType
+                "", // conclusion
+                "", // blockId
+                "1" // tenant
+        );
+        System.out.println("RAG新增结果: " + result);
+    }
+
+    @Test
+    public void testQueryRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url(ragUrl + "/rag/query")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRag(
+                "nacos是什么?", // query
+                5, // topK
+                0.5, // threshold
+                "", // tag
+                "1" // tenant
+        );
+        result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
+        System.out.println("RAG查询结果: " + result);
+    }
+
+    @Test
+    public void testQueryRagById() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url("http://xxx:8083/rag/queryById")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRagById(
+                "pvyZvpYB8f3pWX_h414k", // questionId
+                "SbSZvpYByvSWuH024nBA", // contentId
+                "1" // tenant
+        );
+        System.out.println("RAG ID查询结果: " + result);
+    }
+
+    @Test
+    public void testMifyProxy(){
+        String img = llm.imageToBase64("/Users/hoho/Desktop/screenshot2.png", "png");
+        LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(
+                """
+                        请提取并整理这张IM聊天截图中的对话内容：
+                        
+                                                          1. 首先，从截图左上角识别客户信息，通常会显示为"[客户名称]@微信"或类似格式。提取出客户的实际名称，用于后续标记客户发送的消息。
+                                                          2. 图片从上到下按时间顺序排列，最早消息在顶部，最新消息在底部
+                                                          3. 如果图片包含多页截图拼接（可能由红线或其他明显标记分隔），请识别并去除拼接处的重复内容
+                                                          4. 【重要】必须提取截图最底部显示的消息，无论其内容长短，这是时间上最新的一条消息，具有最高优先级
+                                                          5. 特别注意查找截图底部可能出现的简短回复（如"好的"、"你好"、"谢谢"等单句消息），这些短消息同样重要
+                                                          6. 按发送方区分内容，并包含消息时间，使用以下固定格式整理：
+                                                             - [客服] [时间]：[消息内容]  (通常为右侧气泡，如蓝色气泡)
+                                                             - [[客户名称]] [时间]：[消息内容]  (通常为左侧气泡，使用从左上角提取的实际客户名称)
+                                                          7. 识别发送方的规则：
+                                                             - 右侧气泡（通常为蓝色或绿色）一律标记为 [客服]
+                                                             - 左侧气泡（通常为灰色或白色）一律标记为 [[客户名称]]，使用在步骤1中提取的客户实际名称
+                                                             - 如果无法提取到客户名称，则使用 [客户] 作为默认标记
+                                                          8. 提取每条消息旁显示的时间，如果消息只显示具体时间（如"18:32"）没有日期，则只提取这个时间
+                                                          9. 保持消息的原始时间顺序，确保对话逻辑连贯
+                                                          10. 如有消息包含链接、图片描述或特殊格式，请完整保留
+                                                          11. 在提取完成后，请特别核对截图最底部是否有任何消息未被提取，包括单词短句
+                        
+                                                          最后，请在回答的开头标明客户信息，格式为：
+                                                          "客户信息：[客户名称]"
+                        
+                                                          并在回答的末尾明确标注出最新一条消息，格式为：
+                                                          "最新消息：[发送方] [时间]：[消息内容]"
+                        
+                                                          请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
+                        """
+                , Message.builder()
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
+        compoundMsg.setImageType("png");
+        LLM vllm = new LLM(LLMConfig.builder()
+                .llmProvider(LLMProvider.MIFY)
+                // update mify api url
+                .url("https://xxxx//open/api/v1/chat/completions")
+                .build());
+        String str = vllm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        System.out.println(str);
+    }
+
 
 //    @Test
 //    public void testChatWithBot() {

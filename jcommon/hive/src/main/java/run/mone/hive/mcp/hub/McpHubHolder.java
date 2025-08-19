@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class McpHubHolder {
 
-    private static final Map<String, McpHub> FROM_MCP_HUB = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, McpHub> FROM_MCP_HUB = new ConcurrentHashMap<>();
 
     public static void put(String from, McpHub mcpHub){
         FROM_MCP_HUB.put(from, mcpHub);
@@ -28,6 +28,15 @@ public class McpHubHolder {
 
     public static McpHub get(String key){
         return FROM_MCP_HUB.get(key);
+    }
+
+    public static McpHub getOrCreate(String key){
+        return FROM_MCP_HUB.compute(key,(k,v)->{
+            if (null == v) {
+                return new McpHub();
+            }
+            return v;
+        });
     }
 
     public static McpHub remove(String key) {

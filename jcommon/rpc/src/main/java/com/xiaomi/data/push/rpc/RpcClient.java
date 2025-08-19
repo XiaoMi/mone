@@ -74,6 +74,8 @@ public class RpcClient implements Service {
 
     private int serverPort;
 
+    private boolean virtualThread;
+
     @Getter
     private NacosNaming nacosNaming;
 
@@ -131,6 +133,9 @@ public class RpcClient implements Service {
         this.nacosAddrs = nacosAddrs;
         this.serverName = serverName;
         nacosNaming = new NacosNaming();
+        if (virtualThread) {
+            this.defaultPool =  Executors.newVirtualThreadPerTaskExecutor();
+        }
     }
 
     /**
