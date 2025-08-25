@@ -9,12 +9,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM.LLMPart;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -147,7 +149,9 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.MINIMAX);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO_UI_TARS);
-        config.setLlmProvider(LLMProvider.DOUBAO_VISION);
+        // config.setLlmProvider(LLMProvider.DOUBAO_VISION);
+
+        config.setLlmProvider(LLMProvider.MIFY_GATEWAY); // testCallWithCustomConfig
 
         //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -168,7 +172,15 @@ class LLMTest {
             config.setModel("Qwen3-14B");
         }
 
+        if (config.getLlmProvider() == LLMProvider.MIFY_GATEWAY) {
+            // 测试时使用环境变量
+            // 对应testcase: testCallWithCustomConfig
+            config.setUrl("测试时可以直接填充这里的host url");
+            config.setToken("测试时可以直接填充这里的apikey");
+        }
+
         llm = new LLM(config);
+        llm.setConfigFunction(provider -> Optional.of(config));
 
 
         // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理
@@ -248,6 +260,15 @@ class LLMTest {
     public void testCall() {
         llm.call(Lists.newArrayList(AiMessage.builder().role("user").content("hi").build())).subscribe(System.out::println);
         System.in.read();
+    }
+
+    @Test
+    public void testCallWithCustomConfig() {
+        CustomConfig customConfig = new CustomConfig();
+        customConfig.setModel("deepseek-v3.1"); //这里可以用来设置不同的模型
+        customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, "openai_api_compatible");
+        String res = llm.call(LLMPart.builder().type("text").text("hi").build(), "hi", customConfig);
+        System.out.println(res);
     }
 
     //调用doubao 多模态
