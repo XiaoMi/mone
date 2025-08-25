@@ -77,11 +77,11 @@ public class LLM {
 
     // cloudml上训练的分类模型
     /*
-    * modelType 模型类型 bert or qwen
-    * version 模型版本
-    * texts 待分类文本列表
-    * topK 返回topK个分类结果
-    * */
+     * modelType 模型类型 bert or qwen
+     * version 模型版本
+     * texts 待分类文本列表
+     * topK 返回topK个分类结果
+     * */
     public String getClassifyScore(String modelType, String version, List<String> texts, Integer topK, String releaseServiceName) {
         try {
             OkHttpClient client = new OkHttpClient.Builder()
@@ -96,12 +96,12 @@ public class LLM {
             requestBody.addProperty("version", version);
             requestBody.add("texts", gson.toJsonTree(texts));
             requestBody.addProperty("top_k", topK);
-            if(StringUtils.isNotEmpty(releaseServiceName)){
+            if (StringUtils.isNotEmpty(releaseServiceName)) {
                 requestBody.addProperty("releaseServiceName", releaseServiceName);
             }
 
             String url = this.config.getUrl();
-            
+
             Request request = new Request.Builder()
                     .url(url)
                     .post(RequestBody.create(requestBody.toString(), JSON))
@@ -110,7 +110,7 @@ public class LLM {
             String rb = requestBody.toString();
             log.info("call classify api:{}\nrequest:{}\n", url, rb);
             Stopwatch sw = Stopwatch.createStarted();
-            
+
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
@@ -122,7 +122,7 @@ public class LLM {
                 log.info("call classify api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
             }
         } catch (Exception e) {
-            log.error("调用接口失败, modelType:{}, version:{}, texts:{}, topK:{}, error:{}", 
+            log.error("调用接口失败, modelType:{}, version:{}, texts:{}, topK:{}, error:{}",
                     modelType, version, texts, topK, e.getMessage(), e);
             throw new RuntimeException("接口调用失败: " + e.getMessage(), e);
         }
@@ -130,19 +130,19 @@ public class LLM {
 
     // RAG新增接口
     /*
-    * id 记录ID
-    * question 问题
-    * content 内容
-    * askMark 询问标记
-    * askSpeechSkill 询问语音技能
-    * serviceType 服务类型
-    * conclusion 结论
-    * blockId 块ID
-    * tenant 租户
-    * */
-    public String addRag(String id, String question, String content, Integer askMark, 
-                        String askSpeechSkill, String serviceType, String conclusion, 
-                        String blockId, String tenant) {
+     * id 记录ID
+     * question 问题
+     * content 内容
+     * askMark 询问标记
+     * askSpeechSkill 询问语音技能
+     * serviceType 服务类型
+     * conclusion 结论
+     * blockId 块ID
+     * tenant 租户
+     * */
+    public String addRag(String id, String question, String content, Integer askMark,
+                         String askSpeechSkill, String serviceType, String conclusion,
+                         String blockId, String tenant) {
         try {
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(120, TimeUnit.SECONDS)
@@ -163,7 +163,7 @@ public class LLM {
             requestBody.addProperty("tenant", tenant);
 
             String url = this.config.getUrl();
-            
+
             Request request = new Request.Builder()
                     .url(url)
                     .post(RequestBody.create(requestBody.toString(), JSON))
@@ -172,7 +172,7 @@ public class LLM {
             String rb = requestBody.toString();
             log.info("call rag add api:{}\nrequest:{}\n", url, rb);
             Stopwatch sw = Stopwatch.createStarted();
-            
+
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
@@ -184,7 +184,7 @@ public class LLM {
                 log.info("call rag add api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
             }
         } catch (Exception e) {
-            log.error("调用RAG新增接口失败, question:{}, content:{}, tenant:{}, error:{}", 
+            log.error("调用RAG新增接口失败, question:{}, content:{}, tenant:{}, error:{}",
                     question, content, tenant, e.getMessage(), e);
             throw new RuntimeException("RAG新增接口调用失败: " + e.getMessage(), e);
         }
@@ -192,12 +192,12 @@ public class LLM {
 
     // RAG查询接口
     /*
-    * query 查询内容
-    * topK 返回topK个结果
-    * threshold 阈值
-    * tag 标签
-    * tenant 租户
-    * */
+     * query 查询内容
+     * topK 返回topK个结果
+     * threshold 阈值
+     * tag 标签
+     * tenant 租户
+     * */
     public String queryRag(String query, Integer topK, Double threshold, String tag, String tenant) {
         try {
             OkHttpClient client = new OkHttpClient.Builder()
@@ -215,7 +215,7 @@ public class LLM {
             requestBody.addProperty("tenant", tenant);
 
             String url = this.config.getUrl();
-            
+
             Request request = new Request.Builder()
                     .url(url)
                     .post(RequestBody.create(requestBody.toString(), JSON))
@@ -224,7 +224,7 @@ public class LLM {
             String rb = requestBody.toString();
             log.info("call rag query api:{}\nrequest:{}\n", url, rb);
             Stopwatch sw = Stopwatch.createStarted();
-            
+
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
@@ -236,7 +236,7 @@ public class LLM {
                 log.info("call rag query api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
             }
         } catch (Exception e) {
-            log.error("调用RAG查询接口失败, query:{}, topK:{}, threshold:{}, tenant:{}, error:{}", 
+            log.error("调用RAG查询接口失败, query:{}, topK:{}, threshold:{}, tenant:{}, error:{}",
                     query, topK, threshold, tenant, e.getMessage(), e);
             throw new RuntimeException("RAG查询接口调用失败: " + e.getMessage(), e);
         }
@@ -244,10 +244,10 @@ public class LLM {
 
     // RAG ID查询接口
     /*
-    * questionId 问题ID
-    * contentId 内容ID
-    * tenant 租户
-    * */
+     * questionId 问题ID
+     * contentId 内容ID
+     * tenant 租户
+     * */
     public String queryRagById(String questionId, String contentId, String tenant) {
         try {
             OkHttpClient client = new OkHttpClient.Builder()
@@ -263,7 +263,7 @@ public class LLM {
             requestBody.addProperty("tenant", tenant);
 
             String url = this.config.getUrl();
-            
+
             Request request = new Request.Builder()
                     .url(url)
                     .post(RequestBody.create(requestBody.toString(), JSON))
@@ -272,7 +272,7 @@ public class LLM {
             String rb = requestBody.toString();
             log.info("call rag query by id api:{}\nrequest:{}\n", url, rb);
             Stopwatch sw = Stopwatch.createStarted();
-            
+
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
@@ -284,7 +284,7 @@ public class LLM {
                 log.info("call rag query by id api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
             }
         } catch (Exception e) {
-            log.error("调用RAG ID查询接口失败, questionId:{}, contentId:{}, tenant:{}, error:{}", 
+            log.error("调用RAG ID查询接口失败, questionId:{}, contentId:{}, tenant:{}, error:{}",
                     questionId, contentId, tenant, e.getMessage(), e);
             throw new RuntimeException("RAG ID查询接口调用失败: " + e.getMessage(), e);
         }
@@ -684,6 +684,19 @@ public class LLM {
         return call(messages, "");
     }
 
+    public Flux<String> call(List<AiMessage> messages, String systemPrompt, CustomConfig customConfig) {
+        return Flux.create(sink -> chatCompletionStream(getToken(),
+                customConfig,
+                messages,
+                getModel(),
+                (a, b) -> {
+                },
+                (a) -> {
+                },
+                systemPrompt,
+                sink));
+    }
+
     public Flux<String> call(List<AiMessage> messages, String systemPrompt) {
         return Flux.create(sink -> chatCompletionStream(getToken(),
                 messages,
@@ -711,7 +724,7 @@ public class LLM {
         chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model, messageHandler, lineConsumer, systemPrompt, sink);
     }
 
-    public void chatCompletionStream(String apiKey, CustomConfig customConfig,  List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
+    public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
         JsonObject requestBody = new JsonObject();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
@@ -786,9 +799,9 @@ public class LLM {
         }
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
         // 设置关闭思考模型的思考能力
-        if(!config.isReasoningOutPut()){
+        if (!config.isReasoningOutPut()) {
             // 各个模型关闭思考能力的数据结构
-            if(this.llmProvider == LLMProvider.DOUBAO_VISION){
+            if (this.llmProvider == LLMProvider.DOUBAO_VISION) {
                 JsonObject thinkingType = new JsonObject();
                 thinkingType.addProperty("type", "disabled");
                 requestBody.add("thinking", thinkingType);
@@ -953,7 +966,7 @@ public class LLM {
                                     JsonElement c = delta.get("content");
                                     if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
                                         // 当Content为空并且设置了不输出思考内容时，直接跳过
-                                        if(!config.isReasoningOutPut()){
+                                        if (!config.isReasoningOutPut()) {
                                             continue;
                                         }
                                         JsonElement rc = delta.get("reasoning_content");
@@ -1243,8 +1256,8 @@ public class LLM {
     /**
      * 同步调用LLM，发送文本和图像输入，并返回结果
      *
-     * @param msg       消息
-     * @param sysPrompt 系统提示
+     * @param msg          消息
+     * @param sysPrompt    系统提示
      * @param customConfig 自定义配置
      * @return 结果字符串
      */
@@ -1278,9 +1291,9 @@ public class LLM {
 
     /**
      * 同步调用LLM，发送文本和图像输入，并返回结果
-     * 
-     * @param msg 消息
-     * @param sysPrompt 系统提示
+     *
+     * @param msg          消息
+     * @param sysPrompt    系统提示
      * @param customConfig 自定义配置
      * @return 结果字符串
      */
