@@ -1095,5 +1095,261 @@ class LLMTest {
         System.out.println();
 
     }
+
+    /**
+     * 测试模型复杂度分类功能
+     * 根据问题难度自动选择合适的模型类型
+     */
+    @Test
+    public void testModelComplexityClassification() {
+        // 测试用例1：高复杂度任务 - 复杂推理和专业分析
+        String prompt1 = "请分析量子计算在密码学领域的应用前景，包括对现有加密算法的威胁和新的安全解决方案";
+        LLM.ModelComplexityResult result1 = llm.classifyModelComplexity(prompt1);
+
+        System.out.println("=== 测试用例1：高复杂度任务 - 复杂推理和专业分析 ===");
+        System.out.println("问题: " + prompt1);
+        System.out.println("推荐模型: " + result1.getSelectedModel());
+        System.out.println("模型代码: " + result1.getModelTypeCode());
+        System.out.println("置信度: " + result1.getConfidence());
+        System.out.println("选择理由: " + result1.getReason());
+        System.out.println("复杂度分析: " + result1.getComplexityAnalysis());
+        System.out.println("所需能力: " + result1.getRequiredCapabilities());
+        System.out.println("难度等级: " + result1.getDifficultyLevel());
+        System.out.println("是否高复杂度: " + result1.isHighComplexity());
+        System.out.println("是否简单任务: " + result1.isSimpleTask());
+        System.out.println("摘要: " + result1.getSummary());
+        System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
+        System.out.println("JSON结果: " + result1.toJson());
+        System.out.println();
+
+        // 测试用例2：高复杂度任务 - 创意写作
+        String prompt2 = "写一篇科幻小说，描述人工智能与人类共存的未来社会，要求情节复杂，人物丰满，思想深刻";
+        LLM.ModelComplexityResult result2 = llm.classifyModelComplexity(prompt2);
+
+        System.out.println("=== 测试用例2：高复杂度任务 - 创意写作 ===");
+        System.out.println("问题: " + prompt2);
+        System.out.println("推荐模型: " + result2.getSelectedModel());
+        System.out.println("模型代码: " + result2.getModelTypeCode());
+        System.out.println("置信度: " + result2.getConfidence());
+        System.out.println("选择理由: " + result2.getReason());
+        System.out.println("复杂度分析: " + result2.getComplexityAnalysis());
+        System.out.println("难度等级: " + result2.getDifficultyLevel());
+        System.out.println("摘要: " + result2.getSummary());
+        System.out.println();
+
+        // 测试用例3：标准复杂度任务 - 一般问答
+        String prompt3 = "请解释一下什么是机器学习，它有哪些主要的应用领域？";
+        LLM.ModelComplexityResult result3 = llm.classifyModelComplexity(prompt3);
+
+        System.out.println("=== 测试用例3：标准复杂度任务 - 一般问答 ===");
+        System.out.println("问题: " + prompt3);
+        System.out.println("推荐模型: " + result3.getSelectedModel());
+        System.out.println("模型代码: " + result3.getModelTypeCode());
+        System.out.println("置信度: " + result3.getConfidence());
+        System.out.println("选择理由: " + result3.getReason());
+        System.out.println("复杂度分析: " + result3.getComplexityAnalysis());
+        System.out.println("难度等级: " + result3.getDifficultyLevel());
+        System.out.println("摘要: " + result3.getSummary());
+        System.out.println();
+
+        // 测试用例4：标准复杂度任务 - 基础分析
+        String prompt4 = "帮我分析一下这个数据：销售额从1月的100万增长到12月的150万，请计算增长率";
+        LLM.ModelComplexityResult result4 = llm.classifyModelComplexity(prompt4);
+
+        System.out.println("=== 测试用例4：标准复杂度任务 - 基础分析 ===");
+        System.out.println("问题: " + prompt4);
+        System.out.println("推荐模型: " + result4.getSelectedModel());
+        System.out.println("模型代码: " + result4.getModelTypeCode());
+        System.out.println("置信度: " + result4.getConfidence());
+        System.out.println("选择理由: " + result4.getReason());
+        System.out.println("复杂度分析: " + result4.getComplexityAnalysis());
+        System.out.println("难度等级: " + result4.getDifficultyLevel());
+        System.out.println("摘要: " + result4.getSummary());
+        System.out.println();
+
+        // 测试用例5：基础复杂度任务 - 简单问答
+        String prompt5 = "今天天气怎么样？";
+        LLM.ModelComplexityResult result5 = llm.classifyModelComplexity(prompt5);
+
+        System.out.println("=== 测试用例5：基础复杂度任务 - 简单问答 ===");
+        System.out.println("问题: " + prompt5);
+        System.out.println("推荐模型: " + result5.getSelectedModel());
+        System.out.println("模型代码: " + result5.getModelTypeCode());
+        System.out.println("置信度: " + result5.getConfidence());
+        System.out.println("选择理由: " + result5.getReason());
+        System.out.println("复杂度分析: " + result5.getComplexityAnalysis());
+        System.out.println("难度等级: " + result5.getDifficultyLevel());
+        System.out.println("是否简单任务: " + result5.isSimpleTask());
+        System.out.println("摘要: " + result5.getSummary());
+        System.out.println();
+
+        // 测试用例6：基础复杂度任务 - 格式转换
+        String prompt6 = "请把这个日期 2025-01-08 转换成中文格式";
+        LLM.ModelComplexityResult result6 = llm.classifyModelComplexity(prompt6);
+
+        System.out.println("=== 测试用例6：基础复杂度任务 - 格式转换 ===");
+        System.out.println("问题: " + prompt6);
+        System.out.println("推荐模型: " + result6.getSelectedModel());
+        System.out.println("模型代码: " + result6.getModelTypeCode());
+        System.out.println("置信度: " + result6.getConfidence());
+        System.out.println("选择理由: " + result6.getReason());
+        System.out.println("复杂度分析: " + result6.getComplexityAnalysis());
+        System.out.println("难度等级: " + result6.getDifficultyLevel());
+        System.out.println("是否简单任务: " + result6.isSimpleTask());
+        System.out.println("摘要: " + result6.getSummary());
+        System.out.println();
+
+        // 测试用例7：极高复杂度任务 - 多步骤推理
+        String prompt7 = "设计一个完整的分布式系统架构，要求支持百万级并发，具备高可用性、可扩展性和容错能力，并详细说明每个组件的选型理由和交互机制";
+        LLM.ModelComplexityResult result7 = llm.classifyModelComplexity(prompt7);
+
+        System.out.println("=== 测试用例7：极高复杂度任务 - 多步骤推理 ===");
+        System.out.println("问题: " + prompt7);
+        System.out.println("推荐模型: " + result7.getSelectedModel());
+        System.out.println("模型代码: " + result7.getModelTypeCode());
+        System.out.println("置信度: " + result7.getConfidence());
+        System.out.println("选择理由: " + result7.getReason());
+        System.out.println("复杂度分析: " + result7.getComplexityAnalysis());
+        System.out.println("所需能力: " + result7.getRequiredCapabilities());
+        System.out.println("难度等级: " + result7.getDifficultyLevel());
+        System.out.println("是否高复杂度: " + result7.isHighComplexity());
+        System.out.println("摘要: " + result7.getSummary());
+        System.out.println();
+
+        // 验证结果
+        assertNotNull(result1.getSelectedModel());
+        assertNotNull(result2.getSelectedModel());
+        assertNotNull(result3.getSelectedModel());
+        assertNotNull(result4.getSelectedModel());
+        assertNotNull(result5.getSelectedModel());
+        assertNotNull(result6.getSelectedModel());
+        assertNotNull(result7.getSelectedModel());
+
+        // 验证模型类型在预期范围内
+        List<String> validModels = Arrays.asList("高级模型", "标准模型", "基础模型");
+        assertTrue(validModels.contains(result1.getSelectedModel()));
+        assertTrue(validModels.contains(result2.getSelectedModel()));
+        assertTrue(validModels.contains(result3.getSelectedModel()));
+        assertTrue(validModels.contains(result4.getSelectedModel()));
+        assertTrue(validModels.contains(result5.getSelectedModel()));
+        assertTrue(validModels.contains(result6.getSelectedModel()));
+        assertTrue(validModels.contains(result7.getSelectedModel()));
+
+        // 验证模型代码映射正确
+        assertEquals("ADVANCED", result1.getModelTypeCode().equals("高级模型") ? "ADVANCED" : result1.getModelTypeCode());
+        assertEquals("STANDARD", result3.getModelTypeCode().equals("标准模型") ? "STANDARD" : result3.getModelTypeCode());
+        assertEquals("BASIC", result5.getModelTypeCode().equals("基础模型") ? "BASIC" : result5.getModelTypeCode());
+
+        System.out.println("=== 模型复杂度分类测试完成 ===");
+        System.out.println("所有测试用例都成功执行，AI能够根据问题复杂度准确推荐合适的模型类型");
+    }
+
+    /**
+     * 测试模型复杂度分类的边界情况
+     */
+    @Test
+    public void testModelComplexityClassificationEdgeCases() {
+        // 测试空字符串（应该抛出异常）
+        try {
+            llm.classifyModelComplexity("");
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理空字符串: " + e.getMessage());
+        }
+
+        // 测试null prompt（应该抛出异常）
+        try {
+            llm.classifyModelComplexity(null);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理null prompt: " + e.getMessage());
+        }
+
+        // 测试极短的输入
+        String shortPrompt = "hi";
+        LLM.ModelComplexityResult shortResult = llm.classifyModelComplexity(shortPrompt);
+        assertNotNull(shortResult.getSelectedModel());
+        System.out.println("极短输入测试 - 问题: " + shortPrompt + ", 推荐模型: " + shortResult.getSelectedModel());
+
+        // 测试极长的输入
+        StringBuilder longPromptBuilder = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            longPromptBuilder.append("这是一个非常复杂的问题，涉及多个领域的知识，需要深度分析和推理。");
+        }
+        String longPrompt = longPromptBuilder.toString();
+        LLM.ModelComplexityResult longResult = llm.classifyModelComplexity(longPrompt);
+        assertNotNull(longResult.getSelectedModel());
+        System.out.println("极长输入测试 - 推荐模型: " + longResult.getSelectedModel());
+
+        // 测试包含特殊字符的输入
+        String specialPrompt = "请分析这个公式：E=mc²，以及它在相对论中的意义！@#$%^&*()";
+        LLM.ModelComplexityResult specialResult = llm.classifyModelComplexity(specialPrompt);
+        assertNotNull(specialResult.getSelectedModel());
+        System.out.println("特殊字符输入测试 - 问题: " + specialPrompt + ", 推荐模型: " + specialResult.getSelectedModel());
+
+        // 测试多语言混合输入
+        String multiLangPrompt = "请解释什么是artificial intelligence，以及它与人工智能的关系";
+        LLM.ModelComplexityResult multiLangResult = llm.classifyModelComplexity(multiLangPrompt);
+        assertNotNull(multiLangResult.getSelectedModel());
+        System.out.println("多语言输入测试 - 问题: " + multiLangPrompt + ", 推荐模型: " + multiLangResult.getSelectedModel());
+
+        System.out.println("模型复杂度分类边界情况测试完成");
+    }
+
+    /**
+     * 测试模型复杂度分类结果的辅助方法
+     */
+    @Test
+    public void testModelComplexityResultMethods() {
+        String prompt = "请设计一个机器学习算法来预测股票价格";
+        LLM.ModelComplexityResult result = llm.classifyModelComplexity(prompt);
+
+        // 测试基本属性
+        assertNotNull(result.getSelectedModel());
+        assertNotNull(result.getModelTypeCode());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getComplexityAnalysis());
+        assertNotNull(result.getRequiredCapabilities());
+        assertNotNull(result.getDifficultyLevel());
+        assertNotNull(result.getOriginalPrompt());
+        assertNotNull(result.getAvailableModels());
+
+        // 测试置信度范围
+        assertTrue(result.getConfidence() >= 0.0 && result.getConfidence() <= 1.0);
+
+        // 测试模型代码映射
+        String modelCode = result.getModelTypeCode();
+        assertTrue(Arrays.asList("ADVANCED", "STANDARD", "BASIC").contains(modelCode));
+
+        // 测试布尔判断方法
+        boolean isHighComplexity = result.isHighComplexity();
+        boolean isSimpleTask = result.isSimpleTask();
+        // 高复杂度和简单任务不能同时为true
+        assertFalse(isHighComplexity && isSimpleTask);
+
+        // 测试可靠性判断
+        boolean isReliable = result.isReliable(0.5);
+        assertEquals(result.getConfidence() >= 0.5, isReliable);
+
+        // 测试JSON序列化
+        String json = result.toJson();
+        assertNotNull(json);
+        assertTrue(json.contains("selectedModel"));
+        assertTrue(json.contains("confidence"));
+
+        // 测试摘要生成
+        String summary = result.getSummary();
+        assertNotNull(summary);
+        assertTrue(summary.contains("推荐模型"));
+        assertTrue(summary.contains("难度"));
+        assertTrue(summary.contains("置信度"));
+
+        System.out.println("模型复杂度分类结果辅助方法测试完成");
+        System.out.println("测试结果 - 推荐模型: " + result.getSelectedModel());
+        System.out.println("模型代码: " + modelCode);
+        System.out.println("是否高复杂度: " + isHighComplexity);
+        System.out.println("是否简单任务: " + isSimpleTask);
+        System.out.println("是否可靠: " + isReliable);
+        System.out.println("摘要: " + summary);
+    }
 }
-        

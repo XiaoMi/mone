@@ -1455,6 +1455,200 @@ public class LLM {
     }
 
     /**
+     * 模型复杂度分类方法
+     * 根据问题的难度和复杂性，自动选择合适的模型类型
+     * 
+     * @param prompt 用户输入的问题或任务描述
+     * @return ModelComplexityResult 包含模型选择结果的对象
+     */
+    public ModelComplexityResult classifyModelComplexity(String prompt) {
+        if (StringUtils.isEmpty(prompt)) {
+            throw new IllegalArgumentException("问题描述不能为空");
+        }
+
+        // 预定义的模型复杂度分类
+        List<String> modelTypes = Lists.newArrayList("高级模型", "标准模型", "基础模型");
+
+        try {
+            // 构造系统提示词，要求AI根据问题复杂度选择合适的模型
+            String systemPrompt = """
+                你是一个专业的AI模型选择助手。请根据用户的问题或任务描述，分析其复杂度和难度，然后选择最合适的模型类型。
+                
+                模型类型说明：
+                1. 高级模型：适用于复杂推理、创意写作、专业分析、多步骤问题解决、需要深度思考的任务
+                2. 标准模型：适用于一般性问答、常规对话、基础分析、中等复杂度的任务
+                3. 基础模型：适用于简单问答、基础信息查询、格式转换、简单的文本处理任务
+                
+                评估标准：
+                - 问题的逻辑复杂度（是否需要多步推理）
+                - 专业知识要求（是否涉及专业领域）
+                - 创造性要求（是否需要创新思维）
+                - 上下文理解深度（是否需要深度理解）
+                - 任务的综合性（是否涉及多个方面）
+                
+                请严格按照以下JSON格式返回结果：
+                {
+                    "selectedModel": "选中的模型类型",
+                    "confidence": 0.95,
+                    "reason": "选择这个模型的详细理由",
+                    "complexityAnalysis": "对问题复杂度的分析",
+                    "requiredCapabilities": ["需要的能力1", "需要的能力2"],
+                    "difficultyLevel": "简单/中等/困难/极难"
+                }
+                
+                要求：
+                1. selectedModel 必须是：高级模型、标准模型、基础模型 中的一个
+                2. confidence 是置信度，范围0-1
+                3. reason 详细说明选择理由
+                4. complexityAnalysis 分析问题的复杂度特征
+                5. requiredCapabilities 列出解决该问题需要的主要能力
+                6. difficultyLevel 评估问题的整体难度等级
+                7. 只返回JSON，不要其他内容
+                """;
+
+            // 构造消息
+            List<AiMessage> messages = Lists.newArrayList(
+                AiMessage.builder().role(ROLE_USER).content(prompt).build()
+            );
+
+            // 调用LLM进行分类
+            String response = chatCompletion(getToken(), messages, getModel(), systemPrompt, config);
+            
+            log.info("模型复杂度分类请求 - prompt: {}", prompt);
+            log.info("模型复杂度分类响应: {}", response);
+
+            // 解析JSON响应
+            JsonObject jsonResponse = gson.fromJson(response, JsonObject.class);
+            
+            String selectedModel = jsonResponse.get("selectedModel").getAsString();
+            double confidence = jsonResponse.has("confidence") ? jsonResponse.get("confidence").getAsDouble() : 0.0;
+            String reason = jsonResponse.has("reason") ? jsonResponse.get("reason").getAsString() : "";
+            String complexityAnalysis = jsonResponse.has("complexityAnalysis") ? jsonResponse.get("complexityAnalysis").getAsString() : "";
+            String difficultyLevel = jsonResponse.has("difficultyLevel") ? jsonResponse.get("difficultyLevel").getAsString() : "未知";
+            
+            // 解析所需能力列表
+            List<String> requiredCapabilities = new ArrayList<>();
+            if (jsonResponse.has("requiredCapabilities") && jsonResponse.get("requiredCapabilities").isJsonArray()) {
+                JsonArray capabilitiesArray = jsonResponse.getAsJsonArray("requiredCapabilities");
+                for (JsonElement element : capabilitiesArray) {
+                    requiredCapabilities.add(element.getAsString());
+                }
+            }
+
+            // 验证选中的模型是否在预定义列表中
+            if (!modelTypes.contains(selectedModel)) {
+                log.warn("AI选择的模型类型 '{}' 不在预定义列表中，使用标准模型作为默认值", selectedModel);
+                selectedModel = "标准模型";
+                confidence = 0.5; // 降低置信度
+                reason = "AI选择的模型类型不在列表中，使用默认的标准模型";
+            }
+
+            return ModelComplexityResult.builder()
+                    .selectedModel(selectedModel)
+                    .confidence(confidence)
+                    .reason(reason)
+                    .complexityAnalysis(complexityAnalysis)
+                    .requiredCapabilities(requiredCapabilities)
+                    .difficultyLevel(difficultyLevel)
+                    .originalPrompt(prompt)
+                    .availableModels(modelTypes)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("模型复杂度分类失败 - prompt: {}, error: {}", prompt, e.getMessage(), e);
+            
+            // 返回默认结果（使用标准模型）
+            return ModelComplexityResult.builder()
+                    .selectedModel("标准模型")
+                    .confidence(0.0)
+                    .reason("模型复杂度分类失败，使用默认的标准模型: " + e.getMessage())
+                    .complexityAnalysis("无法分析")
+                    .requiredCapabilities(Lists.newArrayList("基础处理"))
+                    .difficultyLevel("未知")
+                    .originalPrompt(prompt)
+                    .availableModels(modelTypes)
+                    .build();
+        }
+    }
+
+    /**
+     * 模型复杂度分类结果类
+     */
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ModelComplexityResult {
+        private String selectedModel;         // 选中的模型类型
+        private double confidence;            // 置信度 (0-1)
+        private String reason;               // 选择理由
+        private String complexityAnalysis;   // 复杂度分析
+        private List<String> requiredCapabilities; // 所需能力列表
+        private String difficultyLevel;     // 难度等级
+        private String originalPrompt;       // 原始问题
+        private List<String> availableModels; // 可用模型列表
+        
+        /**
+         * 判断分类结果是否可信
+         * @param threshold 置信度阈值
+         * @return 是否可信
+         */
+        public boolean isReliable(double threshold) {
+            return confidence >= threshold;
+        }
+        
+        /**
+         * 获取JSON格式的结果
+         * @return JSON字符串
+         */
+        public String toJson() {
+            return new Gson().toJson(this);
+        }
+        
+        /**
+         * 获取模型类型的英文标识
+         * @return 英文标识
+         */
+        public String getModelTypeCode() {
+            switch (selectedModel) {
+                case "高级模型":
+                    return "ADVANCED";
+                case "标准模型":
+                    return "STANDARD";
+                case "基础模型":
+                    return "BASIC";
+                default:
+                    return "STANDARD";
+            }
+        }
+        
+        /**
+         * 判断是否为高复杂度任务
+         * @return 是否为高复杂度
+         */
+        public boolean isHighComplexity() {
+            return "高级模型".equals(selectedModel);
+        }
+        
+        /**
+         * 判断是否为简单任务
+         * @return 是否为简单任务
+         */
+        public boolean isSimpleTask() {
+            return "基础模型".equals(selectedModel);
+        }
+        
+        /**
+         * 获取简要的分类摘要
+         * @return 分类摘要
+         */
+        public String getSummary() {
+            return String.format("推荐模型: %s, 难度: %s, 置信度: %.2f", 
+                    selectedModel, difficultyLevel, confidence);
+        }
+    }
+
+    /**
      * 意图识别结果类
      */
     @Data
