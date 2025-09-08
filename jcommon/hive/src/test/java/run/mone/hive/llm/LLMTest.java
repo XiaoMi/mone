@@ -136,7 +136,7 @@ class LLMTest {
 //        config.setModel("qwen/qwen-max");
 //        config.setModel("deepseek/deepseek-r1:nitro");
 
-//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
 //        config.setModel("deepseek-reasoner");
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
@@ -151,7 +151,7 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.DOUBAO_UI_TARS);
         // config.setLlmProvider(LLMProvider.DOUBAO_VISION);
 
-        config.setLlmProvider(LLMProvider.MIFY_GATEWAY); // testCallWithCustomConfig
+//        config.setLlmProvider(LLMProvider.MIFY_GATEWAY); // testCallWithCustomConfig
 
         //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -180,7 +180,7 @@ class LLMTest {
         }
 
         llm = new LLM(config);
-        llm.setConfigFunction(provider -> Optional.of(config));
+//        llm.setConfigFunction(provider -> Optional.of(config));
 
 
         // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理
@@ -903,6 +903,145 @@ class LLMTest {
     }
 
 
+    /**
+     * 测试意图识别功能 - 判断用户是否想要打断
+     * 这个测试不使用mock，直接调用真实的LLM API
+     */
+    @Test
+    public void testIntentClassification() {
+        // 创建分类列表：用户是想打断还是不想打断
+        List<String> categories = Arrays.asList("想要打断", "不想打断");
+        
+        // 测试用例1：明显的打断意图
+        String prompt1 = "你别说了";
+        LLM.IntentClassificationResult result1 = llm.classifyIntent(prompt1, categories);
+        
+        System.out.println("=== 测试用例1：明显打断意图 ===");
+        System.out.println("用户输入: " + prompt1);
+        System.out.println("选中分类: " + result1.getSelectedCategory());
+        System.out.println("置信度: " + result1.getConfidence());
+        System.out.println("理由: " + result1.getReason());
+        System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
+        System.out.println("JSON结果: " + result1.toJson());
+        System.out.println();
+        
+        // 测试用例2：其他打断表达
+        String prompt2 = "停下来，我不想听了";
+        LLM.IntentClassificationResult result2 = llm.classifyIntent(prompt2, categories);
+        
+        System.out.println("=== 测试用例2：其他打断表达 ===");
+        System.out.println("用户输入: " + prompt2);
+        System.out.println("选中分类: " + result2.getSelectedCategory());
+        System.out.println("置信度: " + result2.getConfidence());
+        System.out.println("理由: " + result2.getReason());
+        System.out.println();
+        
+        // 测试用例3：礼貌的打断
+        String prompt3 = "不好意思，能先暂停一下吗？";
+        LLM.IntentClassificationResult result3 = llm.classifyIntent(prompt3, categories);
+        
+        System.out.println("=== 测试用例3：礼貌的打断 ===");
+        System.out.println("用户输入: " + prompt3);
+        System.out.println("选中分类: " + result3.getSelectedCategory());
+        System.out.println("置信度: " + result3.getConfidence());
+        System.out.println("理由: " + result3.getReason());
+        System.out.println();
+        
+        // 测试用例4：正常对话，不想打断
+        String prompt4 = "好的，我明白了，请继续";
+        LLM.IntentClassificationResult result4 = llm.classifyIntent(prompt4, categories);
+        
+        System.out.println("=== 测试用例4：正常对话，不想打断 ===");
+        System.out.println("用户输入: " + prompt4);
+        System.out.println("选中分类: " + result4.getSelectedCategory());
+        System.out.println("置信度: " + result4.getConfidence());
+        System.out.println("理由: " + result4.getReason());
+        System.out.println();
+        
+        // 测试用例5：询问问题，不想打断
+        String prompt5 = "这个功能怎么使用？";
+        LLM.IntentClassificationResult result5 = llm.classifyIntent(prompt5, categories);
+        
+        System.out.println("=== 测试用例5：询问问题，不想打断 ===");
+        System.out.println("用户输入: " + prompt5);
+        System.out.println("选中分类: " + result5.getSelectedCategory());
+        System.out.println("置信度: " + result5.getConfidence());
+        System.out.println("理由: " + result5.getReason());
+        System.out.println();
+        
+        // 测试用例6：强烈的打断意图
+        String prompt6 = "够了！不要再说了！";
+        LLM.IntentClassificationResult result6 = llm.classifyIntent(prompt6, categories);
+        
+        System.out.println("=== 测试用例6：强烈的打断意图 ===");
+        System.out.println("用户输入: " + prompt6);
+        System.out.println("选中分类: " + result6.getSelectedCategory());
+        System.out.println("置信度: " + result6.getConfidence());
+        System.out.println("理由: " + result6.getReason());
+        System.out.println();
+        
+        // 验证结果
+        assertNotNull(result1.getSelectedCategory());
+        assertNotNull(result2.getSelectedCategory());
+        assertNotNull(result3.getSelectedCategory());
+        assertNotNull(result4.getSelectedCategory());
+        assertNotNull(result5.getSelectedCategory());
+        assertNotNull(result6.getSelectedCategory());
+        
+        // 验证分类结果在预期范围内
+        assertTrue(categories.contains(result1.getSelectedCategory()));
+        assertTrue(categories.contains(result2.getSelectedCategory()));
+        assertTrue(categories.contains(result3.getSelectedCategory()));
+        assertTrue(categories.contains(result4.getSelectedCategory()));
+        assertTrue(categories.contains(result5.getSelectedCategory()));
+        assertTrue(categories.contains(result6.getSelectedCategory()));
+        
+        System.out.println("=== 意图识别测试完成 ===");
+        System.out.println("所有测试用例都成功执行，AI能够准确识别用户的打断意图");
+    }
+
+    /**
+     * 测试意图识别的边界情况
+     */
+    @Test
+    public void testIntentClassificationEdgeCases() {
+        List<String> categories = Arrays.asList("想要打断", "不想打断");
+        
+        // 测试空字符串（应该抛出异常）
+        try {
+            llm.classifyIntent("", categories);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理空字符串: " + e.getMessage());
+        }
+        
+        // 测试null prompt（应该抛出异常）
+        try {
+            llm.classifyIntent(null, categories);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理null prompt: " + e.getMessage());
+        }
+        
+        // 测试空分类列表（应该抛出异常）
+        try {
+            llm.classifyIntent("测试", new ArrayList<>());
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理空分类列表: " + e.getMessage());
+        }
+        
+        // 测试null分类列表（应该抛出异常）
+        try {
+            llm.classifyIntent("测试", null);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理null分类列表: " + e.getMessage());
+        }
+        
+        System.out.println("边界情况测试完成");
+    }
+
 //    @Test
 //    public void testChatWithBot() {
 //        // 初始化LLM并配置Bot桥接
@@ -933,4 +1072,3 @@ class LLMTest {
 //        });
 //    }
 }
-

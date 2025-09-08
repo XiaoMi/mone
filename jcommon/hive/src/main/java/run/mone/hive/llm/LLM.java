@@ -1207,6 +1207,123 @@ public class LLM {
         return urls[randomIndex].trim(); // 去除可能的空白字符
     }
 
+    /**
+     * 意图识别方法
+     * 根据用户输入的prompt和提供的分类列表，让AI判断应该使用哪个分类
+     * 
+     * @param prompt 用户输入的文本
+     * @param categories 可选的分类列表
+     * @return IntentClassificationResult 包含分类结果的对象
+     */
+    public IntentClassificationResult classifyIntent(String prompt, List<String> categories) {
+        if (StringUtils.isEmpty(prompt)) {
+            throw new IllegalArgumentException("prompt不能为空");
+        }
+        if (categories == null || categories.isEmpty()) {
+            throw new IllegalArgumentException("分类列表不能为空");
+        }
+
+        try {
+            // 构造系统提示词，要求AI返回JSON格式的分类结果
+            String systemPrompt = String.format("""
+                你是一个专业的意图识别助手。请根据用户的输入文本，从给定的分类列表中选择最合适的分类。
+                
+                分类列表：%s
+                
+                请严格按照以下JSON格式返回结果：
+                {
+                    "selectedCategory": "选中的分类",
+                    "confidence": 0.95,
+                    "reason": "选择这个分类的原因"
+                }
+                
+                要求：
+                1. selectedCategory 必须是分类列表中的一个
+                2. confidence 是置信度，范围0-1
+                3. reason 简要说明选择理由
+                4. 只返回JSON，不要其他内容
+                """, gson.toJson(categories));
+
+            // 构造消息
+            List<AiMessage> messages = Lists.newArrayList(
+                AiMessage.builder().role(ROLE_USER).content(prompt).build()
+            );
+
+            // 调用LLM进行分类
+            String response = chatCompletion(getToken(), messages, getModel(), systemPrompt, config);
+            
+            log.info("意图识别请求 - prompt: {}, categories: {}", prompt, categories);
+            log.info("意图识别响应: {}", response);
+
+            // 解析JSON响应
+            JsonObject jsonResponse = gson.fromJson(response, JsonObject.class);
+            
+            String selectedCategory = jsonResponse.get("selectedCategory").getAsString();
+            double confidence = jsonResponse.has("confidence") ? jsonResponse.get("confidence").getAsDouble() : 0.0;
+            String reason = jsonResponse.has("reason") ? jsonResponse.get("reason").getAsString() : "";
+
+            // 验证选中的分类是否在原始列表中
+            if (!categories.contains(selectedCategory)) {
+                log.warn("AI选择的分类 '{}' 不在原始分类列表中，使用第一个分类作为默认值", selectedCategory);
+                selectedCategory = categories.get(0);
+                confidence = 0.5; // 降低置信度
+                reason = "AI选择的分类不在列表中，使用默认分类";
+            }
+
+            return IntentClassificationResult.builder()
+                    .selectedCategory(selectedCategory)
+                    .confidence(confidence)
+                    .reason(reason)
+                    .originalPrompt(prompt)
+                    .availableCategories(categories)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("意图识别失败 - prompt: {}, categories: {}, error: {}", prompt, categories, e.getMessage(), e);
+            
+            // 返回默认结果
+            return IntentClassificationResult.builder()
+                    .selectedCategory(categories.get(0))
+                    .confidence(0.0)
+                    .reason("意图识别失败，使用默认分类: " + e.getMessage())
+                    .originalPrompt(prompt)
+                    .availableCategories(categories)
+                    .build();
+        }
+    }
+
+    /**
+     * 意图识别结果类
+     */
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class IntentClassificationResult {
+        private String selectedCategory;      // 选中的分类
+        private double confidence;            // 置信度 (0-1)
+        private String reason;               // 选择理由
+        private String originalPrompt;       // 原始输入
+        private List<String> availableCategories; // 可用分类列表
+        
+        /**
+         * 判断分类结果是否可信
+         * @param threshold 置信度阈值
+         * @return 是否可信
+         */
+        public boolean isReliable(double threshold) {
+            return confidence >= threshold;
+        }
+        
+        /**
+         * 获取JSON格式的结果
+         * @return JSON字符串
+         */
+        public String toJson() {
+            return new Gson().toJson(this);
+        }
+    }
+
     /*********************************** 增强的调用方法系列 ***********************************/
     public static final String ROLE_ASSISTANT = "assistant";
     public static final String ROLE_USER = "user";
