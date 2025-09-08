@@ -857,7 +857,7 @@ class LLMTest {
     }
 
     @Test
-    public void testMifyProxy(){
+    public void testMifyProxy() {
         String img = llm.imageToBase64("/Users/hoho/Desktop/screenshot2.png", "png");
         LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(
                 """
@@ -911,11 +911,11 @@ class LLMTest {
     public void testIntentClassification() {
         // 创建分类列表：用户是想打断还是不想打断
         List<String> categories = Arrays.asList("想要打断", "不想打断");
-        
+
         // 测试用例1：明显的打断意图
         String prompt1 = "你别说了";
         LLM.IntentClassificationResult result1 = llm.classifyIntent(prompt1, categories);
-        
+
         System.out.println("=== 测试用例1：明显打断意图 ===");
         System.out.println("用户输入: " + prompt1);
         System.out.println("选中分类: " + result1.getSelectedCategory());
@@ -924,62 +924,62 @@ class LLMTest {
         System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
         System.out.println("JSON结果: " + result1.toJson());
         System.out.println();
-        
+
         // 测试用例2：其他打断表达
         String prompt2 = "停下来，我不想听了";
         LLM.IntentClassificationResult result2 = llm.classifyIntent(prompt2, categories);
-        
+
         System.out.println("=== 测试用例2：其他打断表达 ===");
         System.out.println("用户输入: " + prompt2);
         System.out.println("选中分类: " + result2.getSelectedCategory());
         System.out.println("置信度: " + result2.getConfidence());
         System.out.println("理由: " + result2.getReason());
         System.out.println();
-        
+
         // 测试用例3：礼貌的打断
         String prompt3 = "不好意思，能先暂停一下吗？";
         LLM.IntentClassificationResult result3 = llm.classifyIntent(prompt3, categories);
-        
+
         System.out.println("=== 测试用例3：礼貌的打断 ===");
         System.out.println("用户输入: " + prompt3);
         System.out.println("选中分类: " + result3.getSelectedCategory());
         System.out.println("置信度: " + result3.getConfidence());
         System.out.println("理由: " + result3.getReason());
         System.out.println();
-        
+
         // 测试用例4：正常对话，不想打断
         String prompt4 = "好的，我明白了，请继续";
         LLM.IntentClassificationResult result4 = llm.classifyIntent(prompt4, categories);
-        
+
         System.out.println("=== 测试用例4：正常对话，不想打断 ===");
         System.out.println("用户输入: " + prompt4);
         System.out.println("选中分类: " + result4.getSelectedCategory());
         System.out.println("置信度: " + result4.getConfidence());
         System.out.println("理由: " + result4.getReason());
         System.out.println();
-        
+
         // 测试用例5：询问问题，不想打断
         String prompt5 = "这个功能怎么使用？";
         LLM.IntentClassificationResult result5 = llm.classifyIntent(prompt5, categories);
-        
+
         System.out.println("=== 测试用例5：询问问题，不想打断 ===");
         System.out.println("用户输入: " + prompt5);
         System.out.println("选中分类: " + result5.getSelectedCategory());
         System.out.println("置信度: " + result5.getConfidence());
         System.out.println("理由: " + result5.getReason());
         System.out.println();
-        
+
         // 测试用例6：强烈的打断意图
         String prompt6 = "够了！不要再说了！";
         LLM.IntentClassificationResult result6 = llm.classifyIntent(prompt6, categories);
-        
+
         System.out.println("=== 测试用例6：强烈的打断意图 ===");
         System.out.println("用户输入: " + prompt6);
         System.out.println("选中分类: " + result6.getSelectedCategory());
         System.out.println("置信度: " + result6.getConfidence());
         System.out.println("理由: " + result6.getReason());
         System.out.println();
-        
+
         // 验证结果
         assertNotNull(result1.getSelectedCategory());
         assertNotNull(result2.getSelectedCategory());
@@ -987,7 +987,7 @@ class LLMTest {
         assertNotNull(result4.getSelectedCategory());
         assertNotNull(result5.getSelectedCategory());
         assertNotNull(result6.getSelectedCategory());
-        
+
         // 验证分类结果在预期范围内
         assertTrue(categories.contains(result1.getSelectedCategory()));
         assertTrue(categories.contains(result2.getSelectedCategory()));
@@ -995,7 +995,7 @@ class LLMTest {
         assertTrue(categories.contains(result4.getSelectedCategory()));
         assertTrue(categories.contains(result5.getSelectedCategory()));
         assertTrue(categories.contains(result6.getSelectedCategory()));
-        
+
         System.out.println("=== 意图识别测试完成 ===");
         System.out.println("所有测试用例都成功执行，AI能够准确识别用户的打断意图");
     }
@@ -1006,7 +1006,7 @@ class LLMTest {
     @Test
     public void testIntentClassificationEdgeCases() {
         List<String> categories = Arrays.asList("想要打断", "不想打断");
-        
+
         // 测试空字符串（应该抛出异常）
         try {
             llm.classifyIntent("", categories);
@@ -1014,7 +1014,7 @@ class LLMTest {
         } catch (IllegalArgumentException e) {
             System.out.println("正确处理空字符串: " + e.getMessage());
         }
-        
+
         // 测试null prompt（应该抛出异常）
         try {
             llm.classifyIntent(null, categories);
@@ -1022,7 +1022,7 @@ class LLMTest {
         } catch (IllegalArgumentException e) {
             System.out.println("正确处理null prompt: " + e.getMessage());
         }
-        
+
         // 测试空分类列表（应该抛出异常）
         try {
             llm.classifyIntent("测试", new ArrayList<>());
@@ -1030,7 +1030,7 @@ class LLMTest {
         } catch (IllegalArgumentException e) {
             System.out.println("正确处理空分类列表: " + e.getMessage());
         }
-        
+
         // 测试null分类列表（应该抛出异常）
         try {
             llm.classifyIntent("测试", null);
@@ -1038,37 +1038,62 @@ class LLMTest {
         } catch (IllegalArgumentException e) {
             System.out.println("正确处理null分类列表: " + e.getMessage());
         }
-        
+
         System.out.println("边界情况测试完成");
     }
 
-//    @Test
-//    public void testChatWithBot() {
-//        // 初始化LLM并配置Bot桥接
-//        llm.setBotBridge(new BotHttpBridge(
-//                "xxxxxxxxxx",
-//                "xxxxxxxxx",
-//                "xxxxxx",
-//                "xxxxxxx"
-//        ));
-//
-//        Teacher aaa = new Teacher("aaa");
-//
-//        // 简单调用
-//        String simple = llm.chatWithBot(aaa, "你好");
-//        System.out.println("simple call : " + simple);
-//
-//        // 带参数调用
-//        JsonObject params = new JsonObject();
-//        params.addProperty("key", "value");
-//        String withParam = llm.chatWithBot(aaa, "你好", params);
-//        System.out.println("with param : " + withParam);
-//
-//        // 自定义响应处理
-//        String response = llm.chatWithBot(aaa, "你好", params, res -> {
-//            // 自定义处理逻辑
-//            System.out.println("function call : " + res);
-//            return res;
-//        });
-//    }
+    /**
+     * 测试情感AI主动聊天判断功能
+     * 这个测试不使用mock，直接调用真实的LLM API
+     */
+    @Test
+    public void testEmotionalChatDecision() {
+        // 测试用例1：用户情绪低落，需要关怀
+        List<String> chatHistory1 = Arrays.asList(
+                "[2025-01-08 08:30] 用户: 早上好",
+                "[2025-01-08 08:31] AI: 早上好！今天感觉怎么样？",
+                "[2025-01-08 08:32] 用户: 不太好，昨天工作出了问题",
+                "[2025-01-08 08:33] AI: 听起来你遇到了困难，愿意和我聊聊吗？",
+                "[2025-01-08 08:35] 用户: 算了，不想说了"
+        );
+        String currentTime1 = "2025-01-08 14:30:00";
+
+        LLM.EmotionalChatDecisionResult result1 = llm.shouldInitiateChat(chatHistory1, currentTime1);
+
+        System.out.println("=== 测试用例1：用户情绪低落，需要关怀 ===");
+        System.out.println("当前时间: " + currentTime1);
+        System.out.println("聊天记录条数: " + chatHistory1.size());
+        System.out.println("是否需要主动聊天: " + result1.isShouldInitiate());
+        System.out.println("置信度: " + result1.getConfidence());
+        System.out.println("判断理由: " + result1.getReason());
+        System.out.println("建议消息: " + result1.getSuggestedMessage());
+        System.out.println("情绪分析: " + result1.getEmotionalAnalysis());
+        System.out.println("时间分析: " + result1.getTimeAnalysis());
+        System.out.println("决策摘要: " + result1.getSummary());
+        System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
+        System.out.println("JSON结果: " + result1.toJson());
+        System.out.println();
+
+        // 测试用例2：长时间未聊天，可能需要主动关怀
+        List<String> chatHistory2 = Arrays.asList(
+                "[2025-01-06 20:00] 用户: 晚安",
+                "[2025-01-06 20:01] AI: 晚安，好梦！"
+        );
+        String currentTime2 = "2025-01-08 09:00:00";
+
+        LLM.EmotionalChatDecisionResult result2 = llm.shouldInitiateChat(chatHistory2, currentTime2);
+
+        System.out.println("=== 测试用例2：长时间未聊天，可能需要主动关怀 ===");
+        System.out.println("当前时间: " + currentTime2);
+        System.out.println("聊天记录条数: " + chatHistory2.size());
+        System.out.println("是否需要主动聊天: " + result2.isShouldInitiate());
+        System.out.println("置信度: " + result2.getConfidence());
+        System.out.println("判断理由: " + result2.getReason());
+        System.out.println("建议消息: " + result2.getSuggestedMessage());
+        System.out.println("情绪分析: " + result2.getEmotionalAnalysis());
+        System.out.println("时间分析: " + result2.getTimeAnalysis());
+        System.out.println();
+
+    }
 }
+        

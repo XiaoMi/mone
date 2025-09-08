@@ -1293,6 +1293,168 @@ public class LLM {
     }
 
     /**
+     * 情感AI主动聊天判断方法
+     * 根据聊天记录和当前时间，判断AI是否需要主动和用户聊天
+     * 
+     * @param chatHistory 聊天记录列表，按时间顺序排列
+     * @param currentTime 当前时间（格式：yyyy-MM-dd HH:mm:ss）
+     * @return EmotionalChatDecisionResult 包含判断结果的对象
+     */
+    public EmotionalChatDecisionResult shouldInitiateChat(List<String> chatHistory, String currentTime) {
+        if (chatHistory == null) {
+            chatHistory = new ArrayList<>();
+        }
+        if (StringUtils.isEmpty(currentTime)) {
+            throw new IllegalArgumentException("当前时间不能为空");
+        }
+
+        try {
+            // 构造系统提示词，让AI作为情感AI来判断是否需要主动聊天
+            String systemPrompt = """
+                你是一个具有情感智能的AI助手。请根据用户的聊天记录和当前时间，判断是否需要主动和用户聊天。
+                
+                作为情感AI，你需要考虑以下因素：
+                1. 用户的情绪状态（从聊天记录中分析）
+                2. 聊天的频率和间隔时间
+                3. 用户可能的作息时间和生活规律
+                4. 是否有未完成的话题或关怀需要跟进
+                5. 特殊时间节点（如节假日、生日等）
+                6. 用户是否表现出需要陪伴或支持的迹象
+                
+                判断标准：
+                - 需要主动聊天：用户情绪低落、长时间未聊天、有未完成关怀、特殊时间节点等
+                - 不需要主动聊天：用户状态良好、刚刚聊过、用户可能在休息时间等
+                
+                请严格按照以下JSON格式返回结果：
+                {
+                    "shouldInitiate": true/false,
+                    "confidence": 0.85,
+                    "reason": "判断理由",
+                    "suggestedMessage": "如果需要主动聊天，建议发送的消息内容",
+                    "emotionalAnalysis": "对用户情绪状态的分析",
+                    "timeAnalysis": "对时间因素的分析"
+                }
+                
+                要求：
+                1. shouldInitiate 表示是否需要主动聊天
+                2. confidence 是置信度，范围0-1
+                3. reason 详细说明判断理由
+                4. suggestedMessage 如果需要主动聊天，提供温暖、贴心的消息建议
+                5. emotionalAnalysis 分析用户的情绪状态
+                6. timeAnalysis 分析时间因素的影响
+                7. 只返回JSON，不要其他内容
+                """;
+
+            // 构造用户输入，包含聊天记录和当前时间
+            String userInput = String.format("""
+                当前时间：%s
+                
+                聊天记录（按时间顺序）：
+                %s
+                
+                请分析以上信息，判断我是否需要主动和用户聊天。
+                """, 
+                currentTime, 
+                chatHistory.isEmpty() ? "暂无聊天记录" : String.join("\n", chatHistory)
+            );
+
+            // 构造消息
+            List<AiMessage> messages = Lists.newArrayList(
+                AiMessage.builder().role(ROLE_USER).content(userInput).build()
+            );
+
+            // 调用LLM进行判断
+            String response = chatCompletion(getToken(), messages, getModel(), systemPrompt, config);
+            
+            log.info("情感AI主动聊天判断请求 - 当前时间: {}, 聊天记录条数: {}", currentTime, chatHistory.size());
+            log.info("情感AI主动聊天判断响应: {}", response);
+
+            // 解析JSON响应
+            JsonObject jsonResponse = gson.fromJson(response, JsonObject.class);
+            
+            boolean shouldInitiate = jsonResponse.has("shouldInitiate") ? jsonResponse.get("shouldInitiate").getAsBoolean() : false;
+            double confidence = jsonResponse.has("confidence") ? jsonResponse.get("confidence").getAsDouble() : 0.0;
+            String reason = jsonResponse.has("reason") ? jsonResponse.get("reason").getAsString() : "";
+            String suggestedMessage = jsonResponse.has("suggestedMessage") ? jsonResponse.get("suggestedMessage").getAsString() : "";
+            String emotionalAnalysis = jsonResponse.has("emotionalAnalysis") ? jsonResponse.get("emotionalAnalysis").getAsString() : "";
+            String timeAnalysis = jsonResponse.has("timeAnalysis") ? jsonResponse.get("timeAnalysis").getAsString() : "";
+
+            return EmotionalChatDecisionResult.builder()
+                    .shouldInitiate(shouldInitiate)
+                    .confidence(confidence)
+                    .reason(reason)
+                    .suggestedMessage(suggestedMessage)
+                    .emotionalAnalysis(emotionalAnalysis)
+                    .timeAnalysis(timeAnalysis)
+                    .currentTime(currentTime)
+                    .chatHistorySize(chatHistory.size())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("情感AI主动聊天判断失败 - 当前时间: {}, 聊天记录条数: {}, error: {}", 
+                    currentTime, chatHistory.size(), e.getMessage(), e);
+            
+            // 返回保守的默认结果（不主动聊天）
+            return EmotionalChatDecisionResult.builder()
+                    .shouldInitiate(false)
+                    .confidence(0.0)
+                    .reason("判断失败，采用保守策略: " + e.getMessage())
+                    .suggestedMessage("")
+                    .emotionalAnalysis("无法分析")
+                    .timeAnalysis("无法分析")
+                    .currentTime(currentTime)
+                    .chatHistorySize(chatHistory.size())
+                    .build();
+        }
+    }
+
+    /**
+     * 情感AI主动聊天判断结果类
+     */
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class EmotionalChatDecisionResult {
+        private boolean shouldInitiate;       // 是否需要主动聊天
+        private double confidence;            // 置信度 (0-1)
+        private String reason;               // 判断理由
+        private String suggestedMessage;     // 建议发送的消息内容
+        private String emotionalAnalysis;    // 情绪分析
+        private String timeAnalysis;         // 时间分析
+        private String currentTime;          // 当前时间
+        private int chatHistorySize;         // 聊天记录条数
+        
+        /**
+         * 判断结果是否可信
+         * @param threshold 置信度阈值
+         * @return 是否可信
+         */
+        public boolean isReliable(double threshold) {
+            return confidence >= threshold;
+        }
+        
+        /**
+         * 获取JSON格式的结果
+         * @return JSON字符串
+         */
+        public String toJson() {
+            return new Gson().toJson(this);
+        }
+        
+        /**
+         * 获取简要的决策摘要
+         * @return 决策摘要
+         */
+        public String getSummary() {
+            return String.format("决策: %s, 置信度: %.2f, 理由: %s", 
+                    shouldInitiate ? "需要主动聊天" : "不需要主动聊天", 
+                    confidence, 
+                    reason);
+        }
+    }
+
+    /**
      * 意图识别结果类
      */
     @Data
