@@ -26,7 +26,7 @@
         <dependency>
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
-            <version>3.3.4-mone-serverless-v1-SNAPSHOT</version>
+            <version>3.3.5-mone-serverless-v1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <artifactId>youpin-infra-rpc</artifactId>
