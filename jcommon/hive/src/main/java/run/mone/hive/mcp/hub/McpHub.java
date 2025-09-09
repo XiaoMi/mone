@@ -36,6 +36,8 @@ public class McpHub {
 
     private volatile boolean isConnecting = false;
 
+    private volatile boolean skipFile = false;
+
     //使用grpc连接mcp
     private Consumer<Object> msgConsumer = msg -> {
     };
@@ -45,6 +47,13 @@ public class McpHub {
         }, false);
     }
 
+
+    public McpHub() {
+        this(null, msg -> {
+        }, true);
+    }
+
+
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
         this(settingsPath, msgConsumer, false);
     }
@@ -53,6 +62,7 @@ public class McpHub {
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
         this.settingsPath = settingsPath;
         this.msgConsumer = msgConsumer;
+        this.skipFile = skipFile;
 
         if (!skipFile) {
             this.watchService = FileSystems.getDefault().newWatchService();
@@ -61,8 +71,14 @@ public class McpHub {
         }
 
         //用来发ping
+        ping();
+    }
+
+    private void ping() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping(), ex -> {
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() ->{
+                value.getClient().ping();
+                }, ex -> {
                 if (null == ex) {
                     value.setErrorNum(0);
                 } else {
@@ -156,7 +172,7 @@ public class McpHub {
         }
     }
 
-    private synchronized void updateServerConnections(Map<String, ServerParameters> newServers) {
+    public synchronized void updateServerConnections(Map<String, ServerParameters> newServers) {
         isConnecting = true;
         Set<String> currentNames = new HashSet<>(connections.keySet());
         Set<String> newNames = new HashSet<>(newServers.keySet());
@@ -348,6 +364,7 @@ public class McpHub {
             toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
+            McpHubHolder.remove(serverName);
             return Flux.create(sink -> {
                 sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)), true));
                 sink.complete();
@@ -363,14 +380,16 @@ public class McpHub {
                 connection.getTransport().close();
                 connection.getClient().close();
             } catch (Exception e) {
-                System.err.println("Failed to close connection: " + e.getMessage());
+                log.error("Failed to close connection: " + e.getMessage());
             }
         }
         connections.clear();
-        try {
-            watchService.close();
-        } catch (IOException e) {
-            System.err.println("Failed to close watch service: " + e.getMessage());
+        if (!skipFile) {
+            try {
+                watchService.close();
+            } catch (IOException e) {
+                log.error("Failed to close watch service: " + e.getMessage());
+            }
         }
     }
 

@@ -6,7 +6,6 @@ import run.mone.agentx.dto.FavoriteRequest;
 import run.mone.agentx.entity.Favorite;
 import run.mone.agentx.dto.enums.FavoriteType;
 import run.mone.agentx.repository.FavoriteRepository;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.common.ListResult;
 
@@ -27,7 +26,7 @@ public class FavoriteService {
                 existingFavorite.setUtime(System.currentTimeMillis());
                 return favoriteRepository.save(existingFavorite);
             })
-            .switchIfEmpty(Mono.defer(() -> {
+            .switchIfEmpty(Mono.<Favorite>defer(() -> {
                 Favorite favorite = new Favorite();
                 favorite.setUserId(request.getUserId());
                 favorite.setTargetId(request.getTargetId());

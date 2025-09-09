@@ -40,6 +40,9 @@ public class LLMConfig {
 
     private String systemPrompt;
 
+    // 在思考模型下，是否返回思考内容，默认返回
+    private boolean reasoningOutPut = true;
+
     @Builder.Default
     private LLMProvider llmProvider = LLMProvider.DEEPSEEK;
 

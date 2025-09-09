@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
@@ -18,7 +21,7 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -82,6 +85,8 @@ public class Role {
     //role的配置
     protected Map<String, String> roleConfig = new HashMap<>();
 
+    protected AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
+
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
         this.name = name;
@@ -130,12 +135,26 @@ public class Role {
     }
 
 
+    @NotNull
+    public static FluxSink getFluxSink(Message msg) {
+        FluxSink sink = msg.getSink();
+        if (null == sink) {
+            UnicastProcessor<String> processor = UnicastProcessor.create();
+            sink = processor.sink();
+        }
+        return sink;
+    }
+
+
     // 观察环境
     @SneakyThrows
     protected int observe() {
         log.info("observe");
-        if (this.blockingMessageRetrieval) {
-            Message msg = this.rc.news.poll(2, TimeUnit.MINUTES);
+        //阻塞模式
+        if (isBlockingMessageRetrieval()) {
+            //没有数据陷入阻塞
+            Message msg = this.rc.news.take();
+            this.rc.getMemory().add(msg);
             this.rc.news.put(msg);
             return this.rc.news.size();
         } else {
@@ -149,11 +168,15 @@ public class Role {
     protected int think() {
         log.info("think");
         //观测消息
-        if (this.observe() == 0) {
+        int value = observe();
+        if (value == 0) {
             //没有消息
             return -1;
         }
+        return determineNextAction();
+    }
 
+    protected int determineNextAction() {
         //思考模式(让ai选出来用那个action来执行)
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
             return selectActionBasedOnPrompt();
@@ -203,7 +226,7 @@ public class Role {
 
 
     // 判断消息是否相关
-    protected boolean isRelevantMessage(Message message) {
+    public boolean isRelevantMessage(Message message) {
         return watchList.contains(message.getCauseBy()) ||
                 message.getReceivers().contains(name);
     }
@@ -265,50 +288,64 @@ public class Role {
     }
 
     public CompletableFuture<Message> react() {
-        //需要ai来制定计划
-        if (this.rc.getReactMode().equals(RoleContext.ReactMode.PLAN_AND_ACT)) {
-            this.observe();
-            return planAndAct();
-        }
-
-        //依次执行每个Action(按顺序)
-        int actionsToken = 0;
-        Message res = null;
         ActionContext ac = new ActionContext();
+        ac.setReactMode(this.rc.getReactMode());
+        beforeReact(ac);
+        try {
+            //需要ai来制定计划
+            if (this.rc.getReactMode().equals(RoleContext.ReactMode.PLAN_AND_ACT)) {
+                this.observe();
+                return planAndAct();
+            }
 
-        //按顺序挨个action去执行
-        if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
-            while (actionsToken < this.actions.size()) {
-                if (this.think() > 0) {
-                    res = this.act(ac).join();
-                    actionsToken++;
-                } else {
-                    break;
+            //依次执行每个Action(按顺序)
+            int actionsToken = 0;
+            Message res = null;
+
+            //按顺序挨个action去执行
+            if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
+                while (actionsToken < this.actions.size()) {
+                    if (this.think() > 0) {
+                        res = this.act(ac).join();
+                        actionsToken++;
+                    } else {
+                        break;
+                    }
                 }
             }
+            //自己决策用那个action
+            if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
+                //需要使用llm来选择action
+                doReact(ac);
+            }
+            return CompletableFuture.completedFuture(res);
+        } finally {
+            if (null != ac.getSink()) {
+                ac.getSink().complete();
+            }
+            postReact(ac);
         }
-        //自己决策用那个action
-        if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
-            //需要使用llm来选择action
-            doReact(ac);
-        }
-        postReact(ac);
-        return CompletableFuture.completedFuture(res);
     }
 
 
     //执行的最大轮数
-    private int doReactNum = 15;
+    private int doReactNum = Integer.MAX_VALUE;
 
     /**
      * react实际执行的逻辑， 可以重写
-     *
-     * @param ac
      */
     protected void doReact(ActionContext ac) {
-        // 默认最多执行15次, 可以重写这里的逻辑
         int i = 0;
-        while (this.think() > 0 && i++ < doReactNum) {
+        for (; ; ) {
+            int v = this.think();
+            log.info("doReact think value:{}", v);
+            if (v == 2) {
+                ac.reset();
+                continue;
+            }
+            if (v < 0 || i++ > doReactNum) {
+                break;
+            }
             this.act(ac).join();
         }
     }
@@ -423,7 +460,11 @@ public class Role {
      * @param ac
      */
     protected void postReact(ActionContext ac) {
-        //子类可以重写此方法
+        log.info("postReact:{}", ac.getRoleName());
+    }
+
+    protected void beforeReact(ActionContext ac) {
+
     }
 
     public void putMessage(Message message) {

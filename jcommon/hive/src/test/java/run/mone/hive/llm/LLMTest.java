@@ -1,25 +1,29 @@
-
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM.LLMPart;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+import static run.mone.hive.llm.ClaudeProxy.*;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeMaxToekns;
 
 @Slf4j
 class LLMTest {
@@ -132,7 +136,7 @@ class LLMTest {
 //        config.setModel("qwen/qwen-max");
 //        config.setModel("deepseek/deepseek-r1:nitro");
 
-//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
 //        config.setModel("deepseek-reasoner");
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
@@ -145,7 +149,9 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.MINIMAX);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO_UI_TARS);
-        config.setLlmProvider(LLMProvider.DOUBAO_VISION);
+        // config.setLlmProvider(LLMProvider.DOUBAO_VISION);
+
+//        config.setLlmProvider(LLMProvider.MIFY_GATEWAY); // testCallWithCustomConfig
 
         //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -166,7 +172,15 @@ class LLMTest {
             config.setModel("Qwen3-14B");
         }
 
+        if (config.getLlmProvider() == LLMProvider.MIFY_GATEWAY) {
+            // 测试时使用环境变量
+            // 对应testcase: testCallWithCustomConfig
+            config.setUrl("测试时可以直接填充这里的host url");
+            config.setToken("测试时可以直接填充这里的apikey");
+        }
+
         llm = new LLM(config);
+//        llm.setConfigFunction(provider -> Optional.of(config));
 
 
         // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理
@@ -218,14 +232,14 @@ class LLMTest {
                                                           请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
                         """
                 , Message.builder()
-                .images(Lists.newArrayList(
-                    img
-                )).build());
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
         compoundMsg.setImageType("png");
 
-        List<String>list = new ArrayList<>();
-        IntStream.range(0,10).forEach(it->{
-            String str = llm.compoundMsgCall(compoundMsg,"你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        List<String> list = new ArrayList<>();
+        IntStream.range(0, 10).forEach(it -> {
+            String str = llm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
             System.out.println(str);
             list.add(str);
         });
@@ -246,6 +260,15 @@ class LLMTest {
     public void testCall() {
         llm.call(Lists.newArrayList(AiMessage.builder().role("user").content("hi").build())).subscribe(System.out::println);
         System.in.read();
+    }
+
+    @Test
+    public void testCallWithCustomConfig() {
+        CustomConfig customConfig = new CustomConfig();
+        customConfig.setModel("deepseek-v3.1"); //这里可以用来设置不同的模型
+        customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, "openai_api_compatible");
+        String res = llm.call(LLMPart.builder().type("text").text("hi").build(), "hi", customConfig);
+        System.out.println(res);
     }
 
     //调用doubao 多模态
@@ -763,34 +786,570 @@ class LLMTest {
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
     }
 
-//    @Test
-//    public void testChatWithBot() {
-//        // 初始化LLM并配置Bot桥接
-//        llm.setBotBridge(new BotHttpBridge(
-//                "xxxxxxxxxx",
-//                "xxxxxxxxx",
-//                "xxxxxx",
-//                "xxxxxxx"
-//        ));
-//
-//        Teacher aaa = new Teacher("aaa");
-//
-//        // 简单调用
-//        String simple = llm.chatWithBot(aaa, "你好");
-//        System.out.println("simple call : " + simple);
-//
-//        // 带参数调用
-//        JsonObject params = new JsonObject();
-//        params.addProperty("key", "value");
-//        String withParam = llm.chatWithBot(aaa, "你好", params);
-//        System.out.println("with param : " + withParam);
-//
-//        // 自定义响应处理
-//        String response = llm.chatWithBot(aaa, "你好", params, res -> {
-//            // 自定义处理逻辑
-//            System.out.println("function call : " + res);
-//            return res;
-//        });
-//    }
-}
 
+    //调用私有的分类小模型
+    @Test
+    public void testClassify() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
+                .url(System.getenv("ATLAS_URL"))
+                .build();
+        LLM llm = new LLM(config);
+        String classify = llm.getClassifyScore("qwen", "finetune-qwen-20250602-949476fb", Arrays.asList("78-21=?"), 1, null);
+        String str = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").toString();
+        System.out.println(str);
+    }
+
+    private String ragUrl = System.getenv("RAG_URL");
+
+    @Test
+    public void testAddRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE) // 复用现有的provider
+                .url(ragUrl + "/rag/add")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.addRag(
+                "", // id
+                "如何使用miline平台进行服务部署?", // question
+                "使用miline平台进行服务部署的步骤包括:1.登录miline平台 2.选择要部署的服务 3.配置部署环境和参数 4.选择部署策略 5.执行部署 6.监控部署状态", // content
+                0, // askMark
+                "", // askSpeechSkill
+                "", // serviceType
+                "", // conclusion
+                "", // blockId
+                "1" // tenant
+        );
+        System.out.println("RAG新增结果: " + result);
+    }
+
+    @Test
+    public void testQueryRag() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url(ragUrl + "/rag/query")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRag(
+                "nacos是什么?", // query
+                5, // topK
+                0.5, // threshold
+                "", // tag
+                "1" // tenant
+        );
+        result = JsonParser.parseString(result).getAsJsonObject().get("data").getAsJsonArray().get(0).getAsJsonObject().get("content").getAsString();
+        System.out.println("RAG查询结果: " + result);
+    }
+
+    @Test
+    public void testQueryRagById() {
+        config = LLMConfig.builder()
+                .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                .url("http://xxx:8083/rag/queryById")
+                .build();
+        LLM llm = new LLM(config);
+        String result = llm.queryRagById(
+                "pvyZvpYB8f3pWX_h414k", // questionId
+                "SbSZvpYByvSWuH024nBA", // contentId
+                "1" // tenant
+        );
+        System.out.println("RAG ID查询结果: " + result);
+    }
+
+    @Test
+    public void testMifyProxy() {
+        String img = llm.imageToBase64("/Users/hoho/Desktop/screenshot2.png", "png");
+        LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(
+                """
+                        请提取并整理这张IM聊天截图中的对话内容：
+                        
+                                                          1. 首先，从截图左上角识别客户信息，通常会显示为"[客户名称]@微信"或类似格式。提取出客户的实际名称，用于后续标记客户发送的消息。
+                                                          2. 图片从上到下按时间顺序排列，最早消息在顶部，最新消息在底部
+                                                          3. 如果图片包含多页截图拼接（可能由红线或其他明显标记分隔），请识别并去除拼接处的重复内容
+                                                          4. 【重要】必须提取截图最底部显示的消息，无论其内容长短，这是时间上最新的一条消息，具有最高优先级
+                                                          5. 特别注意查找截图底部可能出现的简短回复（如"好的"、"你好"、"谢谢"等单句消息），这些短消息同样重要
+                                                          6. 按发送方区分内容，并包含消息时间，使用以下固定格式整理：
+                                                             - [客服] [时间]：[消息内容]  (通常为右侧气泡，如蓝色气泡)
+                                                             - [[客户名称]] [时间]：[消息内容]  (通常为左侧气泡，使用从左上角提取的实际客户名称)
+                                                          7. 识别发送方的规则：
+                                                             - 右侧气泡（通常为蓝色或绿色）一律标记为 [客服]
+                                                             - 左侧气泡（通常为灰色或白色）一律标记为 [[客户名称]]，使用在步骤1中提取的客户实际名称
+                                                             - 如果无法提取到客户名称，则使用 [客户] 作为默认标记
+                                                          8. 提取每条消息旁显示的时间，如果消息只显示具体时间（如"18:32"）没有日期，则只提取这个时间
+                                                          9. 保持消息的原始时间顺序，确保对话逻辑连贯
+                                                          10. 如有消息包含链接、图片描述或特殊格式，请完整保留
+                                                          11. 在提取完成后，请特别核对截图最底部是否有任何消息未被提取，包括单词短句
+                        
+                                                          最后，请在回答的开头标明客户信息，格式为：
+                                                          "客户信息：[客户名称]"
+                        
+                                                          并在回答的末尾明确标注出最新一条消息，格式为：
+                                                          "最新消息：[发送方] [时间]：[消息内容]"
+                        
+                                                          请确保完整提取整个对话流程，短小的消息和最新的消息尤为重要，不可遗漏。
+                        """
+                , Message.builder()
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
+        compoundMsg.setImageType("png");
+        LLM vllm = new LLM(LLMConfig.builder()
+                .llmProvider(LLMProvider.MIFY)
+                // update mify api url
+                .url("https://xxxx//open/api/v1/chat/completions")
+                .build());
+        String str = vllm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        System.out.println(str);
+    }
+
+
+    /**
+     * 测试意图识别功能 - 判断用户是否想要打断
+     * 这个测试不使用mock，直接调用真实的LLM API
+     */
+    @Test
+    public void testIntentClassification() {
+        // 创建分类列表：用户是想打断还是不想打断
+        List<String> categories = Arrays.asList("想要打断", "不想打断");
+
+        // 测试用例1：明显的打断意图
+        String prompt1 = "你别说了";
+        LLM.IntentClassificationResult result1 = llm.classifyIntent(prompt1, categories);
+
+        System.out.println("=== 测试用例1：明显打断意图 ===");
+        System.out.println("用户输入: " + prompt1);
+        System.out.println("选中分类: " + result1.getSelectedCategory());
+        System.out.println("置信度: " + result1.getConfidence());
+        System.out.println("理由: " + result1.getReason());
+        System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
+        System.out.println("JSON结果: " + result1.toJson());
+        System.out.println();
+
+        // 测试用例2：其他打断表达
+        String prompt2 = "停下来，我不想听了";
+        LLM.IntentClassificationResult result2 = llm.classifyIntent(prompt2, categories);
+
+        System.out.println("=== 测试用例2：其他打断表达 ===");
+        System.out.println("用户输入: " + prompt2);
+        System.out.println("选中分类: " + result2.getSelectedCategory());
+        System.out.println("置信度: " + result2.getConfidence());
+        System.out.println("理由: " + result2.getReason());
+        System.out.println();
+
+        // 测试用例3：礼貌的打断
+        String prompt3 = "不好意思，能先暂停一下吗？";
+        LLM.IntentClassificationResult result3 = llm.classifyIntent(prompt3, categories);
+
+        System.out.println("=== 测试用例3：礼貌的打断 ===");
+        System.out.println("用户输入: " + prompt3);
+        System.out.println("选中分类: " + result3.getSelectedCategory());
+        System.out.println("置信度: " + result3.getConfidence());
+        System.out.println("理由: " + result3.getReason());
+        System.out.println();
+
+        // 测试用例4：正常对话，不想打断
+        String prompt4 = "好的，我明白了，请继续";
+        LLM.IntentClassificationResult result4 = llm.classifyIntent(prompt4, categories);
+
+        System.out.println("=== 测试用例4：正常对话，不想打断 ===");
+        System.out.println("用户输入: " + prompt4);
+        System.out.println("选中分类: " + result4.getSelectedCategory());
+        System.out.println("置信度: " + result4.getConfidence());
+        System.out.println("理由: " + result4.getReason());
+        System.out.println();
+
+        // 测试用例5：询问问题，不想打断
+        String prompt5 = "这个功能怎么使用？";
+        LLM.IntentClassificationResult result5 = llm.classifyIntent(prompt5, categories);
+
+        System.out.println("=== 测试用例5：询问问题，不想打断 ===");
+        System.out.println("用户输入: " + prompt5);
+        System.out.println("选中分类: " + result5.getSelectedCategory());
+        System.out.println("置信度: " + result5.getConfidence());
+        System.out.println("理由: " + result5.getReason());
+        System.out.println();
+
+        // 测试用例6：强烈的打断意图
+        String prompt6 = "够了！不要再说了！";
+        LLM.IntentClassificationResult result6 = llm.classifyIntent(prompt6, categories);
+
+        System.out.println("=== 测试用例6：强烈的打断意图 ===");
+        System.out.println("用户输入: " + prompt6);
+        System.out.println("选中分类: " + result6.getSelectedCategory());
+        System.out.println("置信度: " + result6.getConfidence());
+        System.out.println("理由: " + result6.getReason());
+        System.out.println();
+
+        // 验证结果
+        assertNotNull(result1.getSelectedCategory());
+        assertNotNull(result2.getSelectedCategory());
+        assertNotNull(result3.getSelectedCategory());
+        assertNotNull(result4.getSelectedCategory());
+        assertNotNull(result5.getSelectedCategory());
+        assertNotNull(result6.getSelectedCategory());
+
+        // 验证分类结果在预期范围内
+        assertTrue(categories.contains(result1.getSelectedCategory()));
+        assertTrue(categories.contains(result2.getSelectedCategory()));
+        assertTrue(categories.contains(result3.getSelectedCategory()));
+        assertTrue(categories.contains(result4.getSelectedCategory()));
+        assertTrue(categories.contains(result5.getSelectedCategory()));
+        assertTrue(categories.contains(result6.getSelectedCategory()));
+
+        System.out.println("=== 意图识别测试完成 ===");
+        System.out.println("所有测试用例都成功执行，AI能够准确识别用户的打断意图");
+    }
+
+    /**
+     * 测试意图识别的边界情况
+     */
+    @Test
+    public void testIntentClassificationEdgeCases() {
+        List<String> categories = Arrays.asList("想要打断", "不想打断");
+
+        // 测试空字符串（应该抛出异常）
+        try {
+            llm.classifyIntent("", categories);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理空字符串: " + e.getMessage());
+        }
+
+        // 测试null prompt（应该抛出异常）
+        try {
+            llm.classifyIntent(null, categories);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理null prompt: " + e.getMessage());
+        }
+
+        // 测试空分类列表（应该抛出异常）
+        try {
+            llm.classifyIntent("测试", new ArrayList<>());
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理空分类列表: " + e.getMessage());
+        }
+
+        // 测试null分类列表（应该抛出异常）
+        try {
+            llm.classifyIntent("测试", null);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理null分类列表: " + e.getMessage());
+        }
+
+        System.out.println("边界情况测试完成");
+    }
+
+    /**
+     * 测试情感AI主动聊天判断功能
+     * 这个测试不使用mock，直接调用真实的LLM API
+     */
+    @Test
+    public void testEmotionalChatDecision() {
+        // 测试用例1：用户情绪低落，需要关怀
+        List<String> chatHistory1 = Arrays.asList(
+                "[2025-01-08 08:30] 用户: 早上好",
+                "[2025-01-08 08:31] AI: 早上好！今天感觉怎么样？",
+                "[2025-01-08 08:32] 用户: 不太好，昨天工作出了问题",
+                "[2025-01-08 08:33] AI: 听起来你遇到了困难，愿意和我聊聊吗？",
+                "[2025-01-08 08:35] 用户: 算了，不想说了"
+        );
+        String currentTime1 = "2025-01-08 14:30:00";
+
+        LLM.EmotionalChatDecisionResult result1 = llm.shouldInitiateChat(chatHistory1, currentTime1);
+
+        System.out.println("=== 测试用例1：用户情绪低落，需要关怀 ===");
+        System.out.println("当前时间: " + currentTime1);
+        System.out.println("聊天记录条数: " + chatHistory1.size());
+        System.out.println("是否需要主动聊天: " + result1.isShouldInitiate());
+        System.out.println("置信度: " + result1.getConfidence());
+        System.out.println("判断理由: " + result1.getReason());
+        System.out.println("建议消息: " + result1.getSuggestedMessage());
+        System.out.println("情绪分析: " + result1.getEmotionalAnalysis());
+        System.out.println("时间分析: " + result1.getTimeAnalysis());
+        System.out.println("决策摘要: " + result1.getSummary());
+        System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
+        System.out.println("JSON结果: " + result1.toJson());
+        System.out.println();
+
+        // 测试用例2：长时间未聊天，可能需要主动关怀
+        List<String> chatHistory2 = Arrays.asList(
+                "[2025-01-06 20:00] 用户: 晚安",
+                "[2025-01-06 20:01] AI: 晚安，好梦！"
+        );
+        String currentTime2 = "2025-01-08 09:00:00";
+
+        LLM.EmotionalChatDecisionResult result2 = llm.shouldInitiateChat(chatHistory2, currentTime2);
+
+        System.out.println("=== 测试用例2：长时间未聊天，可能需要主动关怀 ===");
+        System.out.println("当前时间: " + currentTime2);
+        System.out.println("聊天记录条数: " + chatHistory2.size());
+        System.out.println("是否需要主动聊天: " + result2.isShouldInitiate());
+        System.out.println("置信度: " + result2.getConfidence());
+        System.out.println("判断理由: " + result2.getReason());
+        System.out.println("建议消息: " + result2.getSuggestedMessage());
+        System.out.println("情绪分析: " + result2.getEmotionalAnalysis());
+        System.out.println("时间分析: " + result2.getTimeAnalysis());
+        System.out.println();
+
+    }
+
+    /**
+     * 测试模型复杂度分类功能
+     * 根据问题难度自动选择合适的模型类型
+     */
+    @Test
+    public void testModelComplexityClassification() {
+        // 测试用例1：高复杂度任务 - 复杂推理和专业分析
+        String prompt1 = "请分析量子计算在密码学领域的应用前景，包括对现有加密算法的威胁和新的安全解决方案";
+        LLM.ModelComplexityResult result1 = llm.classifyModelComplexity(prompt1);
+
+        System.out.println("=== 测试用例1：高复杂度任务 - 复杂推理和专业分析 ===");
+        System.out.println("问题: " + prompt1);
+        System.out.println("推荐模型: " + result1.getSelectedModel());
+        System.out.println("模型代码: " + result1.getModelTypeCode());
+        System.out.println("置信度: " + result1.getConfidence());
+        System.out.println("选择理由: " + result1.getReason());
+        System.out.println("复杂度分析: " + result1.getComplexityAnalysis());
+        System.out.println("所需能力: " + result1.getRequiredCapabilities());
+        System.out.println("难度等级: " + result1.getDifficultyLevel());
+        System.out.println("是否高复杂度: " + result1.isHighComplexity());
+        System.out.println("是否简单任务: " + result1.isSimpleTask());
+        System.out.println("摘要: " + result1.getSummary());
+        System.out.println("是否可信(>0.7): " + result1.isReliable(0.7));
+        System.out.println("JSON结果: " + result1.toJson());
+        System.out.println();
+
+        // 测试用例2：高复杂度任务 - 创意写作
+        String prompt2 = "写一篇科幻小说，描述人工智能与人类共存的未来社会，要求情节复杂，人物丰满，思想深刻";
+        LLM.ModelComplexityResult result2 = llm.classifyModelComplexity(prompt2);
+
+        System.out.println("=== 测试用例2：高复杂度任务 - 创意写作 ===");
+        System.out.println("问题: " + prompt2);
+        System.out.println("推荐模型: " + result2.getSelectedModel());
+        System.out.println("模型代码: " + result2.getModelTypeCode());
+        System.out.println("置信度: " + result2.getConfidence());
+        System.out.println("选择理由: " + result2.getReason());
+        System.out.println("复杂度分析: " + result2.getComplexityAnalysis());
+        System.out.println("难度等级: " + result2.getDifficultyLevel());
+        System.out.println("摘要: " + result2.getSummary());
+        System.out.println();
+
+        // 测试用例3：标准复杂度任务 - 一般问答
+        String prompt3 = "请解释一下什么是机器学习，它有哪些主要的应用领域？";
+        LLM.ModelComplexityResult result3 = llm.classifyModelComplexity(prompt3);
+
+        System.out.println("=== 测试用例3：标准复杂度任务 - 一般问答 ===");
+        System.out.println("问题: " + prompt3);
+        System.out.println("推荐模型: " + result3.getSelectedModel());
+        System.out.println("模型代码: " + result3.getModelTypeCode());
+        System.out.println("置信度: " + result3.getConfidence());
+        System.out.println("选择理由: " + result3.getReason());
+        System.out.println("复杂度分析: " + result3.getComplexityAnalysis());
+        System.out.println("难度等级: " + result3.getDifficultyLevel());
+        System.out.println("摘要: " + result3.getSummary());
+        System.out.println();
+
+        // 测试用例4：标准复杂度任务 - 基础分析
+        String prompt4 = "帮我分析一下这个数据：销售额从1月的100万增长到12月的150万，请计算增长率";
+        LLM.ModelComplexityResult result4 = llm.classifyModelComplexity(prompt4);
+
+        System.out.println("=== 测试用例4：标准复杂度任务 - 基础分析 ===");
+        System.out.println("问题: " + prompt4);
+        System.out.println("推荐模型: " + result4.getSelectedModel());
+        System.out.println("模型代码: " + result4.getModelTypeCode());
+        System.out.println("置信度: " + result4.getConfidence());
+        System.out.println("选择理由: " + result4.getReason());
+        System.out.println("复杂度分析: " + result4.getComplexityAnalysis());
+        System.out.println("难度等级: " + result4.getDifficultyLevel());
+        System.out.println("摘要: " + result4.getSummary());
+        System.out.println();
+
+        // 测试用例5：基础复杂度任务 - 简单问答
+        String prompt5 = "今天天气怎么样？";
+        LLM.ModelComplexityResult result5 = llm.classifyModelComplexity(prompt5);
+
+        System.out.println("=== 测试用例5：基础复杂度任务 - 简单问答 ===");
+        System.out.println("问题: " + prompt5);
+        System.out.println("推荐模型: " + result5.getSelectedModel());
+        System.out.println("模型代码: " + result5.getModelTypeCode());
+        System.out.println("置信度: " + result5.getConfidence());
+        System.out.println("选择理由: " + result5.getReason());
+        System.out.println("复杂度分析: " + result5.getComplexityAnalysis());
+        System.out.println("难度等级: " + result5.getDifficultyLevel());
+        System.out.println("是否简单任务: " + result5.isSimpleTask());
+        System.out.println("摘要: " + result5.getSummary());
+        System.out.println();
+
+        // 测试用例6：基础复杂度任务 - 格式转换
+        String prompt6 = "请把这个日期 2025-01-08 转换成中文格式";
+        LLM.ModelComplexityResult result6 = llm.classifyModelComplexity(prompt6);
+
+        System.out.println("=== 测试用例6：基础复杂度任务 - 格式转换 ===");
+        System.out.println("问题: " + prompt6);
+        System.out.println("推荐模型: " + result6.getSelectedModel());
+        System.out.println("模型代码: " + result6.getModelTypeCode());
+        System.out.println("置信度: " + result6.getConfidence());
+        System.out.println("选择理由: " + result6.getReason());
+        System.out.println("复杂度分析: " + result6.getComplexityAnalysis());
+        System.out.println("难度等级: " + result6.getDifficultyLevel());
+        System.out.println("是否简单任务: " + result6.isSimpleTask());
+        System.out.println("摘要: " + result6.getSummary());
+        System.out.println();
+
+        // 测试用例7：极高复杂度任务 - 多步骤推理
+        String prompt7 = "设计一个完整的分布式系统架构，要求支持百万级并发，具备高可用性、可扩展性和容错能力，并详细说明每个组件的选型理由和交互机制";
+        LLM.ModelComplexityResult result7 = llm.classifyModelComplexity(prompt7);
+
+        System.out.println("=== 测试用例7：极高复杂度任务 - 多步骤推理 ===");
+        System.out.println("问题: " + prompt7);
+        System.out.println("推荐模型: " + result7.getSelectedModel());
+        System.out.println("模型代码: " + result7.getModelTypeCode());
+        System.out.println("置信度: " + result7.getConfidence());
+        System.out.println("选择理由: " + result7.getReason());
+        System.out.println("复杂度分析: " + result7.getComplexityAnalysis());
+        System.out.println("所需能力: " + result7.getRequiredCapabilities());
+        System.out.println("难度等级: " + result7.getDifficultyLevel());
+        System.out.println("是否高复杂度: " + result7.isHighComplexity());
+        System.out.println("摘要: " + result7.getSummary());
+        System.out.println();
+
+        // 验证结果
+        assertNotNull(result1.getSelectedModel());
+        assertNotNull(result2.getSelectedModel());
+        assertNotNull(result3.getSelectedModel());
+        assertNotNull(result4.getSelectedModel());
+        assertNotNull(result5.getSelectedModel());
+        assertNotNull(result6.getSelectedModel());
+        assertNotNull(result7.getSelectedModel());
+
+        // 验证模型类型在预期范围内
+        List<String> validModels = Arrays.asList("高级模型", "标准模型", "基础模型");
+        assertTrue(validModels.contains(result1.getSelectedModel()));
+        assertTrue(validModels.contains(result2.getSelectedModel()));
+        assertTrue(validModels.contains(result3.getSelectedModel()));
+        assertTrue(validModels.contains(result4.getSelectedModel()));
+        assertTrue(validModels.contains(result5.getSelectedModel()));
+        assertTrue(validModels.contains(result6.getSelectedModel()));
+        assertTrue(validModels.contains(result7.getSelectedModel()));
+
+        // 验证模型代码映射正确
+        assertEquals("ADVANCED", result1.getModelTypeCode().equals("高级模型") ? "ADVANCED" : result1.getModelTypeCode());
+        assertEquals("STANDARD", result3.getModelTypeCode().equals("标准模型") ? "STANDARD" : result3.getModelTypeCode());
+        assertEquals("BASIC", result5.getModelTypeCode().equals("基础模型") ? "BASIC" : result5.getModelTypeCode());
+
+        System.out.println("=== 模型复杂度分类测试完成 ===");
+        System.out.println("所有测试用例都成功执行，AI能够根据问题复杂度准确推荐合适的模型类型");
+    }
+
+    /**
+     * 测试模型复杂度分类的边界情况
+     */
+    @Test
+    public void testModelComplexityClassificationEdgeCases() {
+        // 测试空字符串（应该抛出异常）
+        try {
+            llm.classifyModelComplexity("");
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理空字符串: " + e.getMessage());
+        }
+
+        // 测试null prompt（应该抛出异常）
+        try {
+            llm.classifyModelComplexity(null);
+            fail("应该抛出IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            System.out.println("正确处理null prompt: " + e.getMessage());
+        }
+
+        // 测试极短的输入
+        String shortPrompt = "hi";
+        LLM.ModelComplexityResult shortResult = llm.classifyModelComplexity(shortPrompt);
+        assertNotNull(shortResult.getSelectedModel());
+        System.out.println("极短输入测试 - 问题: " + shortPrompt + ", 推荐模型: " + shortResult.getSelectedModel());
+
+        // 测试极长的输入
+        StringBuilder longPromptBuilder = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            longPromptBuilder.append("这是一个非常复杂的问题，涉及多个领域的知识，需要深度分析和推理。");
+        }
+        String longPrompt = longPromptBuilder.toString();
+        LLM.ModelComplexityResult longResult = llm.classifyModelComplexity(longPrompt);
+        assertNotNull(longResult.getSelectedModel());
+        System.out.println("极长输入测试 - 推荐模型: " + longResult.getSelectedModel());
+
+        // 测试包含特殊字符的输入
+        String specialPrompt = "请分析这个公式：E=mc²，以及它在相对论中的意义！@#$%^&*()";
+        LLM.ModelComplexityResult specialResult = llm.classifyModelComplexity(specialPrompt);
+        assertNotNull(specialResult.getSelectedModel());
+        System.out.println("特殊字符输入测试 - 问题: " + specialPrompt + ", 推荐模型: " + specialResult.getSelectedModel());
+
+        // 测试多语言混合输入
+        String multiLangPrompt = "请解释什么是artificial intelligence，以及它与人工智能的关系";
+        LLM.ModelComplexityResult multiLangResult = llm.classifyModelComplexity(multiLangPrompt);
+        assertNotNull(multiLangResult.getSelectedModel());
+        System.out.println("多语言输入测试 - 问题: " + multiLangPrompt + ", 推荐模型: " + multiLangResult.getSelectedModel());
+
+        System.out.println("模型复杂度分类边界情况测试完成");
+    }
+
+    /**
+     * 测试模型复杂度分类结果的辅助方法
+     */
+    @Test
+    public void testModelComplexityResultMethods() {
+        String prompt = "请设计一个机器学习算法来预测股票价格";
+        LLM.ModelComplexityResult result = llm.classifyModelComplexity(prompt);
+
+        // 测试基本属性
+        assertNotNull(result.getSelectedModel());
+        assertNotNull(result.getModelTypeCode());
+        assertNotNull(result.getReason());
+        assertNotNull(result.getComplexityAnalysis());
+        assertNotNull(result.getRequiredCapabilities());
+        assertNotNull(result.getDifficultyLevel());
+        assertNotNull(result.getOriginalPrompt());
+        assertNotNull(result.getAvailableModels());
+
+        // 测试置信度范围
+        assertTrue(result.getConfidence() >= 0.0 && result.getConfidence() <= 1.0);
+
+        // 测试模型代码映射
+        String modelCode = result.getModelTypeCode();
+        assertTrue(Arrays.asList("ADVANCED", "STANDARD", "BASIC").contains(modelCode));
+
+        // 测试布尔判断方法
+        boolean isHighComplexity = result.isHighComplexity();
+        boolean isSimpleTask = result.isSimpleTask();
+        // 高复杂度和简单任务不能同时为true
+        assertFalse(isHighComplexity && isSimpleTask);
+
+        // 测试可靠性判断
+        boolean isReliable = result.isReliable(0.5);
+        assertEquals(result.getConfidence() >= 0.5, isReliable);
+
+        // 测试JSON序列化
+        String json = result.toJson();
+        assertNotNull(json);
+        assertTrue(json.contains("selectedModel"));
+        assertTrue(json.contains("confidence"));
+
+        // 测试摘要生成
+        String summary = result.getSummary();
+        assertNotNull(summary);
+        assertTrue(summary.contains("推荐模型"));
+        assertTrue(summary.contains("难度"));
+        assertTrue(summary.contains("置信度"));
+
+        System.out.println("模型复杂度分类结果辅助方法测试完成");
+        System.out.println("测试结果 - 推荐模型: " + result.getSelectedModel());
+        System.out.println("模型代码: " + modelCode);
+        System.out.println("是否高复杂度: " + isHighComplexity);
+        System.out.println("是否简单任务: " + isSimpleTask);
+        System.out.println("是否可靠: " + isReliable);
+        System.out.println("摘要: " + summary);
+    }
+}

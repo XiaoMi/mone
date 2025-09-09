@@ -2,6 +2,31 @@
 <template>
   <div class="sc-user-input-wrapper" @keydown.tab="close" @keydown.esc="handleKeyEscape" @keydown="handleKeyDown"
     @keydown.up="highlight(highlightedIndex - 1)" @keydown.down="highlight(highlightedIndex + 1)">
+    <!-- 独立功能面板 -->
+    <transition name="panel-slide">
+      <div v-show="showFunctionPanel" class="function-panel">
+        <div class="function-item">
+          <el-switch
+            v-model="webSearchModel"
+            size="small"
+            active-text=""
+            inactive-text="搜索"
+            :active-value="true"
+            :inactive-value="false"
+          />
+        </div>
+        <div class="function-item">
+          <el-switch
+            v-model="ragModel"
+            size="small"
+            active-text=""
+            inactive-text="RAG"
+            :active-value="true"
+            :inactive-value="false"
+          />
+        </div>
+      </div>
+    </transition>
     <div class="sc-user-input" :class="{ active: inputActive }">
       <div class="sc-user-input-body">
         <!-- <div class="file-list">
@@ -72,6 +97,13 @@
           <div class="sc-user-input--buttons h-100">
             <div class="sc-user-input--button">
               <Screenshot v-model="screenshotImages" />
+            </div>
+            <div class="sc-user-input--button">
+              <div class="function-toggle" @click="toggleFunctionPanel">
+                <el-icon :size="16" :color="showFunctionPanel ? '#67C23A' : '#565867'">
+                  <component :is="'Operation'" />
+                </el-icon>
+              </div>
             </div>
             <div class="sc-user-input--button test">
               <ImageUpload :limit="1" v-model="files" type="file" />
@@ -174,6 +206,7 @@ import { useUserStore } from "@/stores/user";
 import { useEditStore } from "@/stores/edit";
 import { useChatContextStore, legalMaxNums } from "@/stores/chat-context";
 import { useIdeaInfoStore } from "@/stores/idea-info";
+import { useFunctionPanelStore } from "@/stores/function-panel";
 import Recoder from "@/components/recorder/index.vue";
 import UserInputButton from "./UserInputButton.vue";
 import IconSend from "./components/icons/IconSend.vue";
@@ -190,8 +223,10 @@ import AddDoc from "./components/add-doc/index.vue";
 import KnowledgeIcon from "./components/knowledge-icon/index.vue";
 import { vClickOutside } from '@/plugins/click-outside'
 import { voiceToText } from "@/api/audio";
+import { ArrowUp, ArrowDown, Operation } from '@element-plus/icons-vue';
 const { disableContext, enableContext, setMaxNum, setKnowledgeLoading } =
   useChatContextStore();
+const functionPanelStore = useFunctionPanelStore();
 
 interface IFileItem {
   id: string | number;
@@ -235,6 +270,8 @@ export default {
     AutoCompleteInput,
     AddDoc,
     KnowledgeIcon,
+    ArrowUp,
+    ArrowDown,
   },
   directives: {
     clickOutside: vClickOutside
@@ -396,6 +433,7 @@ export default {
       "knowledgeData",
     ]),
     ...mapState(useIdeaInfoStore, ["vision", "showFileMenu"]),
+    ...mapState(useFunctionPanelStore, ["webSearchEnabled", "ragEnabled", "showFunctionPanel"]),
     cmds() {
       if (this.activeCommondLabel?.length) {
         return this.activeCommondLabel;
@@ -441,6 +479,25 @@ export default {
         );
       }
       return [];
+    },
+    activeFunctionCount() {
+      return functionPanelStore.getActiveFunctionCount();
+    },
+    webSearchModel: {
+      get() {
+        return this.webSearchEnabled;
+      },
+      set(value: boolean) {
+        functionPanelStore.setWebSearchEnabled(value);
+      }
+    },
+    ragModel: {
+      get() {
+        return this.ragEnabled;
+      },
+      set(value: boolean) {
+        functionPanelStore.setRagEnabled(value);
+      }
     },
   },
   created() {
@@ -534,6 +591,15 @@ export default {
       //   localStorage.setItem("isEnter", "true");
       // }
       // this.isEnter = !this.isEnter;
+    },
+    toggleFunctionPanel() {
+      functionPanelStore.toggleFunctionPanel();
+    },
+    getFunctionConfig() {
+      return {
+        webSearch: this.webSearchEnabled,
+        rag: this.ragEnabled,
+      };
     },
     filterJavaFile(list: Array<IItems>) {
       if (this.rootKey == TYPE_LIST.file) {
@@ -943,6 +1009,7 @@ export default {
           composer_config: this.composerList,
           text: url,
           content: base64,
+          ...this.getFunctionConfig(),
         },
       });
     },
@@ -995,6 +1062,7 @@ export default {
               text: image?.url,
               content: text,
               files: this.files,
+              ...this.getFunctionConfig(),
             },
           });
           await util.myVision({
@@ -1071,6 +1139,7 @@ export default {
                       },
                     }
                     : undefined,
+                ...this.getFunctionConfig(),
               },
             });
           } catch (e) {
@@ -1108,6 +1177,7 @@ export default {
             value: "clear",
           },
           knowledgeBase: undefined,
+          ...this.getFunctionConfig(),
         },
       });
     },
@@ -1611,5 +1681,71 @@ export default {
   border-bottom-right-radius: 10px;
   border-bottom-left-radius: 10px;
   padding: 10px;
+}
+
+.function-panel {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 15px;
+  background: rgba(20, 20, 50, 0.3);
+  border-bottom: 1px solid rgba(100, 100, 255, 0.2);
+  border-radius: 10px 10px 0 0;
+
+  .function-item {
+    display: flex;
+    align-items: center;
+    margin: 0 5px;
+
+    .el-switch {
+      --el-switch-on-color: #00ffff;
+      --el-switch-off-color: #565867;
+
+      :deep(.el-switch__label) {
+        color: #e0e0e0;
+        font-size: 12px;
+      }
+
+      :deep(.el-switch__label--left) {
+        margin-right: 8px;
+      }
+
+      :deep(.el-switch__label--right) {
+        margin-left: 8px;
+      }
+    }
+  }
+}
+
+.function-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 过渡动画 */
+.panel-slide-enter-active,
+.panel-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.panel-slide-enter-from {
+  height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.panel-slide-leave-to {
+  height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.panel-slide-enter-to,
+.panel-slide-leave-from {
+  height: auto;
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>

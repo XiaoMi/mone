@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+不要纠结log.info 还是 System.out  就用log 不要改这个代码

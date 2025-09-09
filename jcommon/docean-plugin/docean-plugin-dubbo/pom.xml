@@ -13,12 +13,13 @@
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-config</artifactId>
     </dependency>
+
     <dependency>
-      <groupId>run.mone</groupId>
+      <groupId>org.apache.dubbo</groupId>
       <artifactId>dubbo</artifactId>
-      <version>2.7.12-mone-v8-SNAPSHOT</version>
-      <scope>provided</scope>
+      <version>3.3.4-mone-v2-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>nacos-client</artifactId>
