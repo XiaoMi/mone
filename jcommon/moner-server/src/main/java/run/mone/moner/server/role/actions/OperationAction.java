@@ -1,5 +1,6 @@
 package run.mone.moner.server.role.actions;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
 import lombok.Data;
@@ -79,8 +80,9 @@ public class OperationAction extends Action {
         setFunction((req, action, ctx) -> {
             Message reqMsg = req.getMessage();
             Result data = (Result) reqMsg.getData();
-            String actions = JsonParser.parseString(data.getKeyValuePairs().get("arguments")).getAsJsonObject().get("actions").toString();
+            String actions = data.getKeyValuePairs().get("arguments");
             String xml = new MultiXmlParser().jsonToXml(actions);
+            //先暂停下,给浏览器时间
             xml = Const.pause + xml;
             return Message.builder().content(xml).build();
         });

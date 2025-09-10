@@ -102,6 +102,11 @@ public class ChromeAgent extends Role {
 
         this.rolePrompt = this.rolePrompt.formatted(
                 this.roleList.stream().map(it -> "角色名称:" + it.getName() + "\n工具使用流程:\n" + it.getGoal()).collect(Collectors.joining("\n")));
+
+        this.rolePrompt = this.rolePrompt + "\n\n一些chrome工具的定义:\n";
+        this.actionList.stream().forEach(it->{
+             this.rolePrompt = this.rolePrompt + "\n" + it.getDescription()+"\n";
+        });
         this.session = session;
     }
 
@@ -204,7 +209,9 @@ public class ChromeAgent extends Role {
 
         String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
 
-        String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
+        String systemPrompt = getSystemPrompt();
+
+        String res = llmService.callStream(this, this.llm, userPrompt, images, systemPrompt);
         log.info("res:{}", res);
         List<Result> list = new MultiXmlParser().parse(res);
         Result result = list.stream().filter(it -> !it.getTag().equals("thinking")).findFirst().orElse(new Result("ask_followup_question", Map.of("tool_name", "chat")));
