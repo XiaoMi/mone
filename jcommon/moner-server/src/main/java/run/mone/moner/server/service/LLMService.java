@@ -97,7 +97,8 @@ public class LLMService {
         }
 
         if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
-                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT
+                || llm.getConfig().getLlmProvider() == LLMProvider.MIFY) {
             req.addProperty("role", "user");
             JsonArray array = new JsonArray();
 
@@ -224,6 +225,13 @@ public class LLMService {
                     model = gemini.getModel();
                     break;
                 }
+                case "mify": {
+                    McpModelSettingDTO.Mify mify = setting.getMify();
+                    provider = LLMProvider.valueOf("MIFY");
+                    apiKey = mify.getApiKey();
+                    url = mify.getBaseUrl();
+                    break;
+                }
                 default: {
                     provider = LLMProvider.valueOf("GOOGLE_2");
                     apiKey = System.getenv(provider.getEnvName());
@@ -237,12 +245,13 @@ public class LLMService {
         LLMConfig.LLMConfigBuilder configBuilder = LLMConfig.builder();
         if (provider.equals(LLMProvider.OPENROUTER)
                 || provider.equals(LLMProvider.GOOGLE_2)
-                || provider.equals(LLMProvider.OPENAICOMPATIBLE)) {
+                || provider.equals(LLMProvider.OPENAICOMPATIBLE)
+                || provider.equals(LLMProvider.MIFY)) {
             if (StringUtils.isNotEmpty(url)) {
                 configBuilder.url(url);
             }
         }
-        LLMConfig config = configBuilder.llmProvider(provider).build();
+        LLMConfig config = configBuilder.llmProvider(provider).token(apiKey).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2
                 && StringUtils.isNotEmpty(System.getenv("GOOGLE_AI_GATEWAY"))) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
