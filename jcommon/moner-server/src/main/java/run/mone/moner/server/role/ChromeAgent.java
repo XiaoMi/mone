@@ -252,8 +252,9 @@ public class ChromeAgent extends Role {
     @Override
     protected void postReact(ActionContext context) {
         //如果只是向你询问问题,历史记录不要清除
+        log.info("context:{}", context);
         if (!context.getCtx().has("ask_followup_question") 
-        | !context.getCtx().get("ask_followup_question").getAsBoolean()) {
+            || !context.getCtx().get("ask_followup_question").getAsBoolean()) {
             this.getRc().getNews().clear();
             this.getRc().getMemory().clear();
         }
