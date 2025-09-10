@@ -145,7 +145,7 @@ function buildDomTree(args = { doHighlightElements: true, focusHighlightIndex: -
             'button', 'menu', 'menuitem', 'link', 'checkbox', 'radio',
             'slider', 'tab', 'tabpanel', 'textbox', 'combobox', 'grid',
             'listbox', 'option', 'progressbar', 'scrollbar', 'searchbox',
-            'switch', 'tree', 'treeitem', 'spinbutton', 'tooltip', 'a-button-inner', 'a-dropdown-button', 'click', 
+            'switch', 'tree', 'treeitem', 'spinbutton', 'tooltip', 'a-button-inner', 'a-dropdown-button', 'click',
             'menuitemcheckbox', 'menuitemradio', 'a-button-text', 'button-text', 'button-icon', 'button-icon-only', 'button-text-icon-only', 'dropdown', 'combobox'
         ]);
 
@@ -238,12 +238,16 @@ function buildDomTree(args = { doHighlightElements: true, focusHighlightIndex: -
         const isDraggable = element.draggable ||
             element.getAttribute('draggable') === 'true';
 
+        // Check if element is data-sku
+        const isDataSku = element.getAttribute('data-sku') !== null;
+
         return hasAriaProps ||
             // hasClickStyling ||
             hasClickHandler ||
             hasClickListeners ||
             // isFormRelated ||
-            isDraggable;
+            isDraggable ||
+            isDataSku;
 
     }
 
