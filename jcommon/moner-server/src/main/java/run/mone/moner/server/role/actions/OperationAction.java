@@ -64,14 +64,16 @@ public class OperationAction extends Action {
                     "name": "fill",
                     "elementId": "12",
                     "value": "冰箱",
-                    "tabId": "2"
+                    "tabId": "2",
+                    "next": "false"
                   },
                   "action2": {
                     "type": "action",
                     "name": "click",
                     "elementId": "13",
                     "desc": "点击搜索按钮",
-                    "tabId": "2"
+                    "tabId": "2",
+                    "next": "false"
                   }
                 }
                 </arguments>

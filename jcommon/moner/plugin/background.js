@@ -281,6 +281,7 @@ function connectWebSocket() {
                                 
                                 await sendWebSocketMessage(JSON.stringify({
                                     actionType: 'action',
+                                    attributes: action.attributes,
                                     success: true,
                                     details: {
                                         selector: selector,
@@ -1181,7 +1182,7 @@ async function removeHighlightIfNeeded(tabId, shouldRemove = false) {
 stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
     try {
         // 添加延迟确保页面重绘完成
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2000ms 延迟
 
         // 使用stateUpdate中的tabId，不再需要查询当前tab
         if (!stateUpdate.tabId) {

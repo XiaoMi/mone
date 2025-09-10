@@ -131,6 +131,15 @@ public class ChromeAgent extends Role {
             if (msg.getType().equals("reply")) {
                 // 如果页面没有变化，则等待1秒后继续观察
                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
+
+                if (obj.has("next")) {
+                    String next = obj.get("next").getAsString();
+                    if (next.equals("true")) {
+                        this.rc.getNews().put(Message.builder().role("user").content("执行调用成功,请执行下一步操作").build());
+                        return 1;
+                    }
+                }
+
                 if ((!obj.has("urlChanged") 
                     || !obj.get("urlChanged").getAsBoolean()) 
                     && (!obj.has("contentChanged") || !obj.get("contentChanged").getAsBoolean())) {

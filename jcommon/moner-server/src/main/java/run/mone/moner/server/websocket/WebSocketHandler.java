@@ -1,5 +1,6 @@
 package run.mone.moner.server.websocket;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
@@ -110,6 +111,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     chromeAthena.getRc().news.put(Message.builder().type("reply").role("user").content(data).build());
                 } else {
                     log.info("action:{} success", obj.get("actionType"));
+
+                    if (obj.has("attributes")) {
+                        JsonElement je = obj.get("attributes");
+                        if (je.isJsonObject()) {
+                            String next = je.getAsJsonObject().get("next").getAsString();
+                            if (next.equals("true")) {
+                                JsonObject jo = new JsonObject();
+                                jo.addProperty("next","true");
+                                chromeAthena.getRc().news.put(Message.builder().type("reply").role("user").content(jo.toString()).build());
+                            }
+                        }
+                    }
+
                 }
                 return;
             }
