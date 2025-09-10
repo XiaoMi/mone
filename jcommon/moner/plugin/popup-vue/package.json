@@ -32,6 +32,8 @@
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^6.0.3",
     "@tsconfig/node22": "^22.0.0",
+    "@types/chrome": "^0.1.9",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.10.7",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",

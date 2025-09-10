@@ -43,8 +43,8 @@ const props = defineProps({
 })
 
 const text = ref('')
-const table = ref([])
-const tableKey = ref([])
+const table = ref<Record<string, unknown>[]>([])
+const tableKey = ref<string[]>([])
 const emits = defineEmits(['enterFn'])
 
 const idClick = (id: string) => {

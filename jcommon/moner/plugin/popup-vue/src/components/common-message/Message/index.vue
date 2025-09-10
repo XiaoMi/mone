@@ -127,6 +127,7 @@ interface Props {
   loading?: boolean
   showCursor?: boolean
   hideMore?: boolean // 是否隐藏刷新、删除、复制
+  showOperate?: boolean // 是否是插件调试页面
   textType?: string // 文本类型 translate类型则展示翻译
   translateData?: any
   voiceSetting?: object // 语音播报配置
@@ -136,7 +137,7 @@ interface Props {
 interface Emit {
   (ev: 'regenerate'): void
   (ev: 'delete'): void
-  (ev: 'replaceFn'): void
+  (ev: 'replaceFn', text: string): void
   (ev: 'onTryAgain'): void
 }
 
@@ -146,7 +147,7 @@ const emit = defineEmits<Emit>()
 
 const textRef = ref<HTMLElement>()
 
-const asRawText = computed(() => props.inversion)
+const asRawText = ref(props.inversion || false)
 
 const messageRef = ref<HTMLElement>()
 
@@ -196,7 +197,7 @@ const handlePlay = async () => {
   }
 }
 
-function handleSelect(key: 'copyText' | 'delete' | 'toggleRenderType' | 'play') {
+function handleSelect(key: string) {
   switch (key) {
     case 'copyText':
       handleCopy()

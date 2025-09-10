@@ -77,9 +77,9 @@ interface ChatMessage {
   loading?: boolean
   showCursor?: boolean
   isShowOperate?: boolean
-  flowData?: Object
+  flowData?: object
   //  如果上一条是bot Message 则新发送时需要加一个Type
-  isBotMessage?: Boolean
+  isBotMessage?: boolean
   imgList?: UploadUserFile[]
 }
 
@@ -130,8 +130,8 @@ const clearMessages = () => {
 const sendMessage = async (msg: string = "") => {
   // 获取粘贴的图片数据
   const imgList = []
-  if (inputRef.value?.pasteFileList?.length) {
-    for (const file of inputRef.value.pasteFileList) {
+  if ((inputRef.value as any)?.pasteFileList?.length) {
+    for (const file of (inputRef.value as any).pasteFileList) {
       // 将图片URL转换为base64
       try {
         const response = await fetch(file.url)
@@ -161,7 +161,7 @@ const sendMessage = async (msg: string = "") => {
     inversion: true,
     avatar: '',
     name: '用户',
-    imgList: imgList?.length ? [...inputRef.value?.pasteFileList] : []
+    imgList: imgList?.length ? [...(inputRef.value as any)?.pasteFileList] : []
   })
 
   messageInput.value = ''
@@ -179,7 +179,7 @@ const sendMessage = async (msg: string = "") => {
     }, response => {
       if (response.success) {
         if (inputRef.value) {
-          inputRef.value.pasteFileList = []
+          ;(inputRef.value as any).pasteFileList = []
         }
       } else {
         ElMessage.error('发送消息失败')
