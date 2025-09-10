@@ -142,6 +142,13 @@ public class ActionNode {
     }
 
     /**
+     * 允许将ActionNode开始执行标识发送出去
+     */
+    public void sendBeginMessage(){
+
+    }
+
+    /**
      * 允许将ActionNode执行结果发送出去
      * @param message
      */

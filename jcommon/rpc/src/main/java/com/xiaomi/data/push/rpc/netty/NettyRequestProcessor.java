@@ -41,4 +41,12 @@ public interface NettyRequestProcessor {
     default int poolSize() {
         return 0;
     }
+
+    /**
+     * 队列长度
+     * @return
+     */
+    default int queueSize() {
+        return 20000;
+    }
 }

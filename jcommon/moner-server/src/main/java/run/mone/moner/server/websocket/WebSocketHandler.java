@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -13,17 +12,14 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import run.mone.hive.common.JsonUtils;
-import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.llm.LLMProvider;
-import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.schema.Message;
 import run.mone.moner.server.bo.McpModel;
 import run.mone.moner.server.constant.ResultType;
 import run.mone.moner.server.context.ApplicationContextProvider;
 import run.mone.moner.server.mcp.FromType;
 import run.mone.moner.server.mcp.McpOperationService;
-import run.mone.moner.server.role.ChromeAthena;
+import run.mone.moner.server.role.ChromeAgent;
 import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.ChromeTestService;
 import run.mone.moner.server.service.LLMService;
@@ -48,7 +44,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Resource
     private LLMService llmService;
 
-    private static final Map<String, ChromeAthena> sessionIdShopper = new ConcurrentHashMap<>();
+    private static final Map<String, ChromeAgent> sessionIdShopper = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -66,7 +62,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        ChromeAthena chromeAthena = sessionIdShopper.get(session.getId());
+        ChromeAgent chromeAthena = sessionIdShopper.get(session.getId());
 
         JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
         String from = JsonUtils.getValueOrDefault(req, "from", "chrome");
@@ -161,7 +157,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         Pair<LLM, McpModel> llmConf = llmService.getLLM(FromType.CHROME.getValue());
 
         llm = llmConf.getLeft();
-        ChromeAthena chromeAthena = new ChromeAthena(session);
+        ChromeAgent chromeAthena = new ChromeAgent(session);
         chromeAthena.setLlm(llm);
         chromeAthena.setActions(
                 //打开页面

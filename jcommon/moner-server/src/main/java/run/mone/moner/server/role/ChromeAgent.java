@@ -11,7 +11,6 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.TextMessage;
@@ -26,16 +25,10 @@ import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 import run.mone.moner.server.bo.ChatWebSocketResp;
-import run.mone.moner.server.common.Const;
-import run.mone.moner.server.common.GsonUtils;
-import run.mone.moner.server.common.JsonUtils;
-import run.mone.moner.server.common.MultiXmlParser;
-import run.mone.moner.server.common.Result;
-import run.mone.moner.server.common.Safe;
+import run.mone.moner.server.common.*;
 import run.mone.moner.server.constant.ResultType;
 import run.mone.moner.server.context.ApplicationContextProvider;
 import run.mone.moner.server.mcp.FromType;
-import run.mone.moner.server.mcp.MonerMcpClient;
 import run.mone.moner.server.prompt.MonerSystemPrompt;
 import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.LLMService;
@@ -46,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -57,7 +49,7 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class ChromeAthena extends Role {
+public class ChromeAgent extends Role {
 
     private Consumer<String> consumer;
 
@@ -103,13 +95,18 @@ public class ChromeAthena extends Role {
                 """;
 
 
-    public ChromeAthena(WebSocketSession session) {
+    public ChromeAgent(WebSocketSession session) {
         super("ChromeAthena", "Chrome浏览器插件");
         setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
 
         this.rolePrompt = this.rolePrompt.formatted(
                 this.roleList.stream().map(it -> "角色名称:" + it.getName() + "\n工具使用流程:\n" + it.getGoal()).collect(Collectors.joining("\n")));
+
+        this.rolePrompt = this.rolePrompt + "\n\n一些chrome工具的定义:\n";
+        this.actionList.stream().forEach(it->{
+             this.rolePrompt = this.rolePrompt + "\n" + it.getDescription()+"\n";
+        });
         this.session = session;
     }
 
@@ -194,7 +191,6 @@ public class ChromeAthena extends Role {
     @SneakyThrows
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
-
         String tabs = (String) this.rc.getContext().getOrDefault("tabs", "");
         String code = (String) this.rc.getContext().getOrDefault("code", "");
         List<String> images = (List<String>) this.rc.getContext().getOrDefault("images", null);
@@ -213,7 +209,9 @@ public class ChromeAthena extends Role {
 
         String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
 
-        String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
+        String systemPrompt = getSystemPrompt();
+
+        String res = llmService.callStream(this, this.llm, userPrompt, images, systemPrompt);
         log.info("res:{}", res);
         List<Result> list = new MultiXmlParser().parse(res);
         Result result = list.stream().filter(it -> !it.getTag().equals("thinking")).findFirst().orElse(new Result("ask_followup_question", Map.of("tool_name", "chat")));
@@ -245,8 +243,9 @@ public class ChromeAthena extends Role {
     @Override
     protected void postReact(ActionContext context) {
         //如果只是向你询问问题,历史记录不要清除
+        log.info("context:{}", context);
         if (!context.getCtx().has("ask_followup_question") 
-        | !context.getCtx().get("ask_followup_question").getAsBoolean()) {
+            || !context.getCtx().get("ask_followup_question").getAsBoolean()) {
             this.getRc().getNews().clear();
             this.getRc().getMemory().clear();
         }
