@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.mcp.idea.composer.function.BashCommandGeneratorFunction;
 import run.mone.mcp.idea.composer.function.CodeReviewFunction;
 import run.mone.mcp.idea.composer.function.ComposerFunction;
 import run.mone.mcp.idea.composer.function.MethodRenameFunction;
@@ -53,7 +54,9 @@ public class AgentConfig {
                         //代码review
                         new CodeReviewFunction(ideaService),
                         //给方法重命名
-                        new MethodRenameFunction(ideaService)
+                        new MethodRenameFunction(ideaService),
+                        //生成bash命令但不执行
+                        new BashCommandGeneratorFunction()
                 ))
                 .build();
     }

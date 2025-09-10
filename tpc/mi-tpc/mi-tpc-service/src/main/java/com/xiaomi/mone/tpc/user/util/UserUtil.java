@@ -1,9 +1,13 @@
 package com.xiaomi.mone.tpc.user.util;
 
+import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
+import com.xiaomi.mone.tpc.common.util.GsonUtil;
 import com.xiaomi.mone.tpc.dao.entity.UserEntity;
 import com.xiaomi.mone.tpc.common.vo.UserVo;
+import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +40,26 @@ public class UserUtil {
         if (entity.getUpdateTime() != null) {
             vo.setUpdateTime(entity.getUpdateTime().getTime());
         }
+        StringBuilder showAccount = new StringBuilder();
+        showAccount.append(entity.getAccount());
+        UserTypeEnum typeEnum = UserTypeEnum.getEnum(entity.getType());
+        if (UserTypeEnum.CAS_TYPE.equals(typeEnum)
+                || UserTypeEnum.EMAIL.equals(typeEnum)
+                || UserTypeEnum.SERVICE_TYPE.equals(typeEnum)
+                || UserTypeEnum.GITLAB_TYPE.equals(typeEnum)
+                || UserTypeEnum.GITEE_TYPE.equals(typeEnum)
+                || UserTypeEnum.GITHUB_TYPE.equals(typeEnum)) {
+            showAccount.append("(").append(typeEnum.getDesc()).append(")");
+        } else if (UserTypeEnum.FEISHU_TYPE.equals(typeEnum) || UserTypeEnum.DINGDING_TYPE.equals(typeEnum)) {
+            AuthUserVo userVo = GsonUtil.gsonToBean(entity.getContent(), AuthUserVo.class);
+            if (userVo != null && !StringUtils.isEmpty(userVo.getName())) {
+                showAccount.append("[").append(userVo.getName()).append("]");
+            }
+            showAccount.append("(").append(typeEnum.getDesc()).append(")");
+        } else {
+            showAccount.append(entity.getAccount()).append("(unknown)");
+        }
+        vo.setShowAccount(showAccount.toString());
         return vo;
     }
 

@@ -1,4 +1,5 @@
-+ 可以操控本地idea的mcp
++ 支持 ide 的 agent
++ 可以操控本地idea 和 cline 的mcp
 + 支持功能
   + composer功能
 

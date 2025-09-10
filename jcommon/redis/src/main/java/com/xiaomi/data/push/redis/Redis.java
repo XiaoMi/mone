@@ -74,6 +74,15 @@ public class Redis {
     @Value("${redis.enable:true}")
     private boolean enable;
 
+    @Value("${max.total:100}")
+    private int maxTotal;
+
+    @Value("${max.idle:40}")
+    private int maxIdle;
+
+    @Value("${min.idle:20}")
+    private int minIdle;
+
     @Setter
     @Value("${redis.cluster.pwd:}")
     private String redisPwd = null;
@@ -124,7 +133,7 @@ public class Redis {
 
         boolean success = true;
         try {
-            final GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+
             int timeout = 2000;
             if (null == redisHosts || redisHosts.equals("")) {
                 logger.error("[Redis.init()] invalid redisHosts info: {}", redisHosts);
@@ -132,15 +141,21 @@ public class Redis {
             }
             String[] serverArray = redisHosts.split(",");
 
-            config.setTestOnBorrow(true);
-            config.setTimeBetweenEvictionRunsMillis(5000);
-            config.setMinEvictableIdleTimeMillis(TimeUnit.MINUTES.toMillis(15));
-            config.setTestWhileIdle(true);
 
             //下边的判断是按照空来判断的
             if (null == redisPwd || redisPwd.equals("")) {
                 redisPwd = null;
             }
+
+            final GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+            config.setTimeBetweenEvictionRunsMillis(5000);
+            config.setMinEvictableIdleTimeMillis(TimeUnit.MINUTES.toMillis(15));
+            config.setTestWhileIdle(true);
+            config.setTestOnBorrow(true);
+            config.setMaxWaitMillis(TimeUnit.SECONDS.toMillis(2));
+            config.setMaxTotal(maxTotal);
+            config.setMaxIdle(maxIdle);
+            config.setMinIdle(minIdle);
 
             //开发环境
             if (serverType.equals("dev") || !redisCluster) {

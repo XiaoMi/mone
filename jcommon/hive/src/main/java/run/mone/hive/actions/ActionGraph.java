@@ -126,8 +126,10 @@ public class ActionGraph {
                     ActionNode n = this.getNodes().get(it.getKey());
                     //提取出来的值
                     JsonElement je = n.extractValue(it.isInput(), it.getExpr());
-                    it.setValue(je);
-                    sb.append("\n").append(null != it.getDesc() ? it.getDesc() : it.getExpr()).append(":").append(je.toString());
+                    if (null != je) {
+                        it.setValue(je);
+                        sb.append("\n").append(null != it.getDesc() ? it.getDesc() : it.getExpr()).append(":").append(je);
+                    }
                 });
                 sb.append("\n").append("其他上下文 结束").append("\n");
 
@@ -143,6 +145,7 @@ public class ActionGraph {
                 node.setContext(sb.toString());
                 node.setGraphContext(ActionGraph.this.context);
                 // 执行当前节点
+                node.sendBeginMessage();
                 Message result = node.run().join();
                 node.sendMessage(result);
                 return result;

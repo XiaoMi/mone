@@ -85,7 +85,7 @@ public class MonerSystemPrompt {
 
     // mcp 调用的会使用这个prompt
     public static final String MCP_PROMPT = """
-            You are Athena, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+            You are a highly skilled Chrome browser power user and agent with extensive knowledge of Chrome features, extensions, developer tools, automation, and optimization techniques.
 
             ====
 

@@ -123,4 +123,11 @@ public class NodeFacadeImpl implements NodeFacade {
         ResultVo<PageDataVo<OrgInfoVo>>  resultVo = nodeOrgService.list(param);
         return ResultUtil.build(resultVo);
     }
+
+    @ApiDoc("根据节点外部ID查询节点信息")
+    @Override
+    public Result<NodeVo> getNodeByOutId(NodeQryParam param) {
+        ResultVo<NodeVo> resultVo = nodeService.getNodeByOutId(param);
+        return ResultUtil.build(resultVo);
+    }
 }

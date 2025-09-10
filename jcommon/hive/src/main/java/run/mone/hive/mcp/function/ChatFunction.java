@@ -2,7 +2,11 @@ package run.mone.hive.mcp.function;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
+import run.mone.hive.bo.TokenReq;
+import run.mone.hive.bo.TokenRes;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -12,13 +16,17 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
+ * goodjava@qq.com
  * 每个Agent都具备chat能力
+ *
  */
 @RequiredArgsConstructor
 @Data
+@Slf4j
 public class ChatFunction implements McpFunction {
 
     private RoleService roleService;
@@ -26,6 +34,10 @@ public class ChatFunction implements McpFunction {
     private final String agentName;
 
     private final long timeout;
+
+    //支持权限验证
+    private Function<TokenReq, TokenRes> tokenFunc = (req)-> TokenRes.builder().userId(req.getUserId()).success(true).build();
+
 
     @Override
     public void setRoleService(RoleService roleService) {
@@ -60,9 +72,22 @@ public class ChatFunction implements McpFunction {
 
         //用户id
         String userId = arguments.getOrDefault(Const.USER_ID, "").toString();
+
+
+        TokenRes res = tokenFunc.apply(TokenReq.builder().userId(userId).arguments(arguments).build());
+        if (!res.isSuccess()) {
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("账号有问题")), true));
+        }
+
+        //完成id修正
+        userId = res.getUserId();
+
         String agentId = arguments.getOrDefault(Const.AGENT_ID, "").toString();
 
         String message = (String) arguments.get("message");
+
+        log.info("message:{}", message);
+
         String voiceBase64 = arguments.get("voiceBase64") == null ? null : (String) arguments.get("voiceBase64");
         List<String> images = null;
         if (arguments.get("images") != null) {
@@ -72,43 +97,57 @@ public class ChatFunction implements McpFunction {
 
         //清空历史记录
         if ("/clear".equalsIgnoreCase(message.trim())) {
-            roleService.clearHistory(Message.builder().sentFrom(ownerId).build());
-            return Flux.just(new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("聊天历史已清空")),
-                    false
-            ));
+            return clear(ownerId);
         }
 
         //退出agent
         if ("/exit".equalsIgnoreCase(message.trim())) {
-            roleService.offlineAgent(Message.builder().sentFrom(ownerId).build());
-            return Flux.just(new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("agent已退出")),
-                    false
-            ));
+            return exit(ownerId);
         }
 
-
-        //会创建一个Agent instance
         try {
-            return roleService.receiveMsg(run.mone.hive.schema.Message.builder()
-                            .clientId(clientId)
-                            .userId(userId)
-                            .agentId(agentId)
-                            .role("user")
-                            .sentFrom(ownerId)
-                            .content(message)
-                            .data(message)
-                            .images(images)
-                            .voiceBase64(voiceBase64)
-                            .build())
-                    .timeout(Duration.ofSeconds(timeout))
-                    .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
-                    .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+            //发送消息
+            return sendMsgToAgent(clientId, userId, agentId, ownerId, message, images, voiceBase64, timeout);
         } catch (Exception e) {
             String errorMessage = "ERROR: " + e.getMessage();
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
         }
+    }
+
+    @NotNull
+    private Flux<McpSchema.CallToolResult> sendMsgToAgent(String clientId, String userId, String agentId, String ownerId, String message, List<String> images, String voiceBase64, long timeout) {
+        return roleService.receiveMsg(Message.builder()
+                        .clientId(clientId)
+                        .userId(userId)
+                        .agentId(agentId)
+                        .role("user")
+                        .sentFrom(ownerId)
+                        .content(message)
+                        .data(message)
+                        .images(images)
+                        .voiceBase64(voiceBase64)
+                        .build())
+//                .timeout(Duration.ofSeconds(timeout))
+                .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
+                .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+    }
+
+    @NotNull
+    private Flux<McpSchema.CallToolResult> exit(String ownerId) {
+        roleService.offlineAgent(Message.builder().sentFrom(ownerId).build());
+        return Flux.just(new McpSchema.CallToolResult(
+                List.of(new McpSchema.TextContent("agent已退出")),
+                false
+        ));
+    }
+
+    @NotNull
+    private Flux<McpSchema.CallToolResult> clear(String ownerId) {
+        roleService.clearHistory(Message.builder().sentFrom(ownerId).build());
+        return Flux.just(new McpSchema.CallToolResult(
+                List.of(new McpSchema.TextContent("聊天历史已清空")),
+                false
+        ));
     }
 
     public String getName() {

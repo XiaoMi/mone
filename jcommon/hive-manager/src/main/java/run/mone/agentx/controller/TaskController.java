@@ -209,10 +209,8 @@ public class TaskController {
                     );
                     return ApiResponse.success(statusInfo);
                 })
-                .switchIfEmpty(Mono.defer(() -> {
-                    ApiResponse<Map<String, Object>> errorResponse = new ApiResponse<>(404, "任务不存在: " + taskUuid, null);
-                    return Mono.just(errorResponse);
-                }));
+                .switchIfEmpty(Mono.<ApiResponse<Map<String, Object>>>defer(() -> 
+                    Mono.just(ApiResponse.<Map<String, Object>>error(404, "任务不存在: " + taskUuid))));
     }
     
     /**

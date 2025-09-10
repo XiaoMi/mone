@@ -32,8 +32,12 @@ public enum LLMProvider {
     QWEN3("", "xxx", "Qwen3-14B", ""),
     // 这里的模型设置不生效，需要去对应Agent上修改
     MIFY("XXX", "MIFY_API_KEY", "deepseek-r1", null),
+    // MIFY 统一网关模型
+    MIFY_GATEWAY("XXX", "MIFY_API_KEY", "deepseek-r1", null),
     // url只能从llmConfig里取
-    CLOUDML_CLASSIFY("", "xxx", "CLOUDML_CLASSIFY", "");
+    CLOUDML_CLASSIFY("", "xxx", "CLOUDML_CLASSIFY", ""),
+
+    KNOWLEDGE_BASE("", "xxx", "KNOWLEDGE_BASE", "");
 
     private final String url;
 

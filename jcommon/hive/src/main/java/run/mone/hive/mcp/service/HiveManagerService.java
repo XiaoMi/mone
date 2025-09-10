@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -7,12 +8,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import run.mone.hive.bo.HealthInfo;
-import run.mone.hive.bo.RegInfo;
-import run.mone.hive.bo.RegInfoDto;
-import run.mone.hive.bo.TaskExecutionInfo;
+import run.mone.hive.bo.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -86,6 +85,29 @@ public class HiveManagerService {
         }
     }
 
+
+    public Map<String, List> getAgentInstancesByNames(List<String> agentNames) {
+        if (!enableRegHiveManager) {
+            return new HashMap<>();
+        }
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> req = new HashMap<>();
+            req.put("token", token);
+            req.put("agentNames", agentNames);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(req, headers);
+            String url = baseUrl + "/api/v1/agents/instances/by-names";
+            ApiResponse response = restTemplate.postForObject(url, request, ApiResponse.class);
+            log.info("getAgentInstancesByNames response: {}", response);
+            return (Map<String, List>) response.getData();
+        } catch (Exception e) {
+            log.error("Error during unregistration: {}", e.getMessage(), e);
+        }
+        return new HashMap<>();
+    }
+
+
     /**
      * 发送心跳
      */
@@ -105,7 +127,7 @@ public class HiveManagerService {
             String heartbeatUrl = baseUrl + "/api/v1/agents/health";
             Object response = restTemplate.postForObject(heartbeatUrl, request, Object.class);
 
-            log.info("Heartbeat response: {}", response);
+            log.debug("Heartbeat clientIp:{} response: {}", healthInfo.getIp(), response);
         } catch (Exception e) {
             log.error("Error during heartbeat: {}", e.getMessage(), e);
         }

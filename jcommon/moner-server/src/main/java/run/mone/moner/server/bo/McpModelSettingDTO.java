@@ -12,6 +12,7 @@ public class McpModelSettingDTO {
     private Gemini gemini;
     private DouBao doubao;
     private OpenAICompatible openAICompatible;
+    private Mify mify;
     private String customInstructions;
     
     @Data
@@ -53,6 +54,12 @@ public class McpModelSettingDTO {
         private String modelID;
         private String baseUrl;
         private Boolean setAzureAPIVersion;
+    }
+
+    @Data
+    public static class Mify {
+        private String apiKey;
+        private String baseUrl;
     }
 
     public static McpModelSettingDTO buildEmpty() {
