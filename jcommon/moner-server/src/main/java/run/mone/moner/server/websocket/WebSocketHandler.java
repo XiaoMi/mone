@@ -118,7 +118,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                     if (obj.has("attributes")) {
                         JsonElement je = obj.get("attributes");
-                        if (je.isJsonObject()) {
+                        if (je.isJsonObject() && je.getAsJsonObject().has("next")) {
                             String next = je.getAsJsonObject().get("next").getAsString();
                             if (next.equals("true")) {
                                 JsonObject jo = new JsonObject();
