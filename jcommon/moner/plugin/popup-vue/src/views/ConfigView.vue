@@ -114,7 +114,7 @@ const handleDelete = async (row: SelectorConfig) => {
   
   try {
     await ElMessageBox.confirm('确认删除该配置？')
-    await configApi.delete(row.id)
+    await configApi.delete(String(row.id))
     ElMessage.success('删除成功')
     loadConfigs()
   } catch (error) {

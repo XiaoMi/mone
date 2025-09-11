@@ -221,8 +221,8 @@ const selectorInput = ref('')
 const actionType = ref('click')
 const actionSelector = ref('')
 const fillContent = ref('')
-const tabsList = ref([])
-const messages = ref([])
+const tabsList = ref<any[]>([])
+const messages = ref<any[]>([])
 const autoRemoveHighlight = ref(false)
 
 // 方法定义
@@ -370,7 +370,7 @@ const redrawDomTree = async () => {
 				func: (args) => {
 					const buildDomTreeFunc = window['buildDomTree']
 					if (buildDomTreeFunc) {
-						return buildDomTreeFunc(args)
+						return buildDomTreeFunc()
 					} else {
 						throw new Error('buildDomTree函数未找到')
 					}

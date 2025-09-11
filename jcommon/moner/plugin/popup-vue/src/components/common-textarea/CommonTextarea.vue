@@ -225,7 +225,7 @@ const beforeAvatarUpload = (file: any) => {
     reader?.readAsDataURL(file.raw)
     reader.onload = function (event) {
       // 获取Base64编码的字符串
-      const base64String = event.target.result
+      const base64String = event.target?.result as string
 
       const arr = base64String?.split('base64,')
       const url = URL.createObjectURL(file.raw)

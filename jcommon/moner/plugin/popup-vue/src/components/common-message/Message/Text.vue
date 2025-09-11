@@ -23,7 +23,7 @@ interface Props {
   asRawText?: boolean
   showCursor?: boolean
   textType?: string // 文本类型如果是translate怎展示 描述和翻译结果
-  translateData?: {}
+  translateData?: { toNewText?: string; aiDetail?: string }
   showOperate?: boolean // 是否是插件调试页面
   voiceSetting?: object // 语音播报配置
   imgList?: UploadUserFile[]
@@ -42,7 +42,7 @@ const pos = reactive({ x: 0, y: 0 })
 const mdi = new MarkdownIt({
   html: true,
   linkify: true,
-  highlight(code, language) {
+  highlight(code: string, language: string) {
     if (language == 'mermaid') {
       return code
     }
@@ -120,7 +120,7 @@ function clickToClip() {
   copyToClip(props?.translateData?.toNewText || '')
   ElMessage.success(t('common.copySuccess'))
 }
-function copyText(text) {
+function copyText(text: string) {
   copyToClip(text)
   ElMessage.success(t('common.copySuccess'))
 }
@@ -128,7 +128,7 @@ function replaceFn() {
   emits('replaceFn', props?.translateData?.toNewText || '')
 }
 
-function getLastTextNode(dom: HTMLElement | ChildNode) {
+function getLastTextNode(dom: HTMLElement | ChildNode): Node | null {
   const childNodes = dom.childNodes
   for (let i = childNodes.length - 1; i >= 0; i--) {
     const node = childNodes[i]
@@ -169,11 +169,11 @@ function updateCursor() {
 }
 
 function tryAgainFn() {
-  soundRef.value?.stopRead?.()
+  ;(soundRef.value as any)?.stopRead?.()
   emits('onTryAgain')
 }
 
-function addZoomControls(mermaidContainer) {
+function addZoomControls(mermaidContainer: HTMLElement) {
   const outerWrapper = document.createElement('div')
   outerWrapper.className = 'mermaid-outer-wrapper'
 
@@ -196,22 +196,22 @@ function addZoomControls(mermaidContainer) {
   }
 
   // 处理拖拽
-  const handleDragStart = (e) => {
-    if (e.type.startsWith('mouse') && e.button !== 0) return
+  const handleDragStart = (e: MouseEvent | TouchEvent) => {
+    if (e.type.startsWith('mouse') && (e as MouseEvent).button !== 0) return
     isDragging = true
     dragContainer.style.cursor = 'grabbing'
 
-    const point = e.type.startsWith('mouse') ? e : e.touches[0]
+    const point = e.type.startsWith('mouse') ? (e as MouseEvent) : (e as TouchEvent).touches[0]
     startX = point.pageX - translateX * currentScale
     startY = point.pageY - translateY * currentScale
 
     e.preventDefault()
   }
 
-  const handleDragMove = (e) => {
+  const handleDragMove = (e: MouseEvent | TouchEvent) => {
     if (!isDragging) return
 
-    const point = e.type.startsWith('mouse') ? e : e.touches[0]
+    const point = e.type.startsWith('mouse') ? (e as MouseEvent) : (e as TouchEvent).touches[0]
     translateX = (point.pageX - startX) / currentScale
     translateY = (point.pageY - startY) / currentScale
 
@@ -394,7 +394,7 @@ function addZoomControls(mermaidContainer) {
   }
 
   // 在组件卸载时清理事件监听
-  outerWrapper.cleanup = cleanup
+  ;(outerWrapper as any).cleanup = cleanup
 
   // 将原始的 mermaid 容器移到拖拽容器中
   dragContainer.appendChild(mermaidContainer)
