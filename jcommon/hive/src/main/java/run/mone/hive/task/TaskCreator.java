@@ -8,10 +8,10 @@ import java.util.List;
  */
 public class TaskCreator {
     
-    private final LLM llm;
+    private final LLMTaskProcessor llm;
     private final TaskCallbacks callbacks;
     
-    public TaskCreator(LLM llm, TaskCallbacks callbacks) {
+    public TaskCreator(LLMTaskProcessor llm, TaskCallbacks callbacks) {
         this.llm = llm;
         this.callbacks = callbacks;
     }

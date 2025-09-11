@@ -10,7 +10,8 @@ run.mone.hive.task/
 ├── TaskState.java               # 任务状态管理
 ├── Mode.java                    # 任务执行模式枚举
 ├── FocusChainFileUtils.java     # 文件操作工具类
-├── LLM.java                     # LLM大模型调用接口
+├── LLMTaskProcessor.java        # LLM任务处理接口
+├── LLMTaskProcessorImpl.java    # LLM任务处理接口实现类
 ├── FocusChainPrompts.java       # 提示词模板类
 ├── FocusChainManager.java       # 核心管理器类
 ├── TaskCallbacks.java           # 任务回调接口
@@ -51,8 +52,8 @@ TaskState taskState = new TaskState();
 // 创建Focus Chain设置
 FocusChainSettings settings = new FocusChainSettings(true, 6);
 
-// 实现LLM接口
-LLM llm = new YourLLMImplementation();
+// 实现LLMTaskProcessor接口
+LLMTaskProcessor llm = new LLMTaskProcessorImpl(config);
 
 // 创建Focus Chain管理器
 FocusChainManager manager = new FocusChainManager(

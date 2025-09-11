@@ -11,7 +11,7 @@ public class FocusChainExample {
     
     private FocusChainManager focusChainManager;
     private TaskState taskState;
-    private LLM llm;
+    private LLMTaskProcessor llm;
     private TaskCallbacks callbacks;
     
     public static void main(String[] args) {
@@ -167,7 +167,7 @@ public class FocusChainExample {
     /**
      * 模拟的LLM实现
      */
-    private static class MockLLM implements LLM {
+    private static class MockLLM implements LLMTaskProcessor {
         @Override
         public String sendMessage(String message) {
             return "Mock LLM Response: " + message.substring(0, Math.min(50, message.length())) + "...";
