@@ -17,7 +17,7 @@
                 <el-tooltip effect="dark" :content="t('common.copy')" placement="top">
                   <el-button link size="small" @click="copyItem(item)" type="primary">
                     <el-icon class="action-icon">
-                      <CopyDocument />
+                     <CopyDocument />
                     </el-icon>
                   </el-button>
                 </el-tooltip>
@@ -48,7 +48,7 @@
       </div>
     </template>
   </CommonHistory>
-  <CreateExportApi v-model="showDialog" :itemId="itemId" @update="init" />
+  <CreateExportApi v-model="showDialog" :itemId="itemId" @update="init"/>
   <el-drawer title="调试" v-model="showTest" size="700px">
     <JsonView v-model="jsonData" />
   </el-drawer>
@@ -147,13 +147,14 @@ const testItem = (row) => {
   })
 }
 
-const copyItem = async (row) => {
+const copyItem=async (row)=>{
   try {
     await copyToClip(row.curl)
-    ElMessage.success(t('common.copySuccess'))
+    ElMessage.success( t('common.copySuccess'))
   } catch {
     ElMessage.error(t('common.copyError'))
   }
+  
 }
 onMounted(() => {
   init()

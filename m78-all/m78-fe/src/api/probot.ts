@@ -1,3 +1,8 @@
+/*
+ * @Description:
+ * @Date: 2024-03-05 15:59:49
+ * @LastEditTime: 2024-08-08 10:17:36
+ */
 import { post, get } from '@/utils/request'
 
 interface BOT {
@@ -40,6 +45,18 @@ export function getWorkspaceList<T = any>() {
   return get<T>({
     url: '/v1/workspace/list',
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+// getmyProbotList
+export function getMyProbotList<T = any>(data: {}) {
+  return get<T>({
+    url: '/v1/bot/listAllBotsInMySpace',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
 }
 
@@ -111,11 +128,14 @@ export function aiRecordNotes<T = any>(data?: { botId: string }) {
 }
 
 //工作流
-export function getFlowList<T = any>(data: {}) {
+export function getFlowList<T = any>(data: { workSpaceId: string }) {
   return post<T>({
     url: '/v1/flow/list',
     data,
-    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      workSpaceId: data.workSpaceId
+    }
   })
 }
 
@@ -310,7 +330,7 @@ export function initFormData(data: {}) {
 
 export function uploadBotAvatar<T = any>(data: { base64: string; botId?: number }) {
   return post<T>({
-    url: '/v1/image/bot/upload',
+    url: '/v1/file/image/avatar/upload',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
     headers: {
@@ -320,9 +340,9 @@ export function uploadBotAvatar<T = any>(data: { base64: string; botId?: number 
   })
 }
 
-export function createBotAvatar<T = any>(data: { botName: string; botDesc: string }) {
+export function createBotAvatar<T = any>(data: { name: string; desc: string }) {
   return get<T>({
-    url: '/v1/image/bot/generate',
+    url: '/v1/multiModal/avatar',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
@@ -330,7 +350,7 @@ export function createBotAvatar<T = any>(data: { botName: string; botDesc: strin
 
 export function getAiGenApi(data) {
   return post<T>({
-    url: '/v1/ai_table/generate',
+    url: '/v1/ai_table/generateDDL',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
@@ -350,6 +370,20 @@ export function updateFormInfo(data) {
     url: `/v1/ai_table/updateColumnInfos`,
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+export function getTopicId<T = any>(data: {
+  botId: string
+  topicType: string
+  createIfNotExist: string
+}) {
+  return post<T>({
+    url: '/v1/chat/chattopic/findOrCreate',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      botId: data.botId
+    }
   })
 }
 

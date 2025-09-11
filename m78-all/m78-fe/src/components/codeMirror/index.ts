@@ -1,6 +1,10 @@
 import { ref } from 'vue'
 import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/theme/idea.css'
+// import 'codemirror/addon/lint/lint.css'
+// require('script-loader!jsonlint')
+// import 'codemirror/addon/lint/lint'
+// import 'codemirror/addon/lint/json-lint'
 import 'codemirror/addon/display/autorefresh'
 import 'codemirror/addon/display/placeholder.js'
 

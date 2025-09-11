@@ -4,6 +4,7 @@ import { fetchUser } from '@/api'
 const LOCAL_NAME = 'userStorage'
 
 export interface UserInfo {
+  admin: boolean
   avatar: string
   username: string
   name: string
@@ -11,6 +12,7 @@ export interface UserInfo {
   loginUrl: string
   logoutUrl: string
   description: string
+  fullAccount: string
 }
 
 export interface UserState {
@@ -20,13 +22,15 @@ export interface UserState {
 export function defaultSetting(): UserState {
   return {
     userInfo: {
+      admin: false,
       avatar: '',
       name: '',
       username: '',
       ztoken: '',
       loginUrl: '',
       logoutUrl: '',
-      description: '欢迎您使用'
+      description: '欢迎您使用',
+      fullAccount: ''
     }
   }
 }
@@ -38,12 +42,14 @@ export async function getUser(): Promise<UserInfo> {
   try {
     const { code, data } = await fetchUser()
     if (code == 0) {
+      user.userInfo.admin = data.admin || user.userInfo.admin
       user.userInfo.avatar = data.avatar || user.userInfo.avatar
       user.userInfo.name = data.name || user.userInfo.name
       user.userInfo.username = data.username || user.userInfo.username
       user.userInfo.ztoken = data.ztoken || user.userInfo.ztoken
       user.userInfo.loginUrl = data.loginUrl || user.userInfo.loginUrl
       user.userInfo.logoutUrl = data.logoutUrl || user.userInfo.logoutUrl
+      user.userInfo.fullAccount = data.fullAccount || user.userInfo.fullAccount
     }
   } catch (e) {
     console.error(e)

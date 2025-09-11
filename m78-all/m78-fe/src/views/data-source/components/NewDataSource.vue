@@ -120,7 +120,9 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   await formEl.validate((valid, fields) => {
     if (valid) {
       const fn = isUpdate.value ? updateDataSource : createDataSource
-      fn({ ...ruleForm, userName: userStore.userInfo.username }).then(
+      fn({ ...ruleForm,
+      userName:userStore.userInfo.username
+     }).then(
         ({ code }) => {
           if (code == 0) {
             emits('update:modelValue', false)

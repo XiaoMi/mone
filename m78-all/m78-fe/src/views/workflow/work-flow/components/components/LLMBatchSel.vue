@@ -20,7 +20,8 @@
 <script setup>
 import { computed } from 'vue'
 const props = defineProps({
-  modelValue: {}
+  modelValue: {},
+  disabled: {}
 })
 const emits = defineEmits(['update:modelValue', 'change'])
 const val = computed({
@@ -33,6 +34,7 @@ const val = computed({
   }
 })
 const changeActive = (p) => {
+  if (props.disabled) return
   val.value = p
 }
 </script>

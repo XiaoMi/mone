@@ -1,3 +1,8 @@
+<!--
+ * @Description:
+ * @Date: 2024-01-10 14:24:16
+ * @LastEditTime: 2024-10-22 14:33:05
+-->
 <template>
   <div class="page-wrap">
     <div
@@ -20,7 +25,7 @@ const state = reactive({
   active: '/'
 })
 const route = useRoute()
-const paths: string[] = ['/', '/code', '/about', '/probot', '/probot-index']
+const paths: string[] = ['/', '/code', '/about']
 
 const bindScroll = () => {
   if (!paths.includes(route.path)) {
@@ -46,11 +51,13 @@ onMounted(() => {
   state.active = route.path
   bindScroll()
   document.querySelector('.page-wrap')?.addEventListener('scroll', bindScroll, false)
+  // document.addEventListener('scroll', bindScroll, false)
 })
 </script>
 
 <style scoped lang="scss">
 .page-wrap {
+  min-width: 1200px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -61,6 +68,7 @@ onMounted(() => {
     top: 0;
     right: 0;
     z-index: 999;
+    // background-color: var(--oz-menu-bg-color);
     background-color: transparent;
     color: #fff !important;
     transition: all 0.3s;
