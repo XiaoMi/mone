@@ -203,7 +203,7 @@ parser.registerCommand(new CustomCommand());
 
 ### 2. LLM集成
 ```java
-public class RealLLM implements LLM {
+public class RealLLM implements LLMTaskProcessor {
     @Override
     public String sendMessage(String message) {
         // 调用实际的大模型API

@@ -18,7 +18,7 @@ public class FocusChainManager {
     private Mode mode;
     private final String taskDirectory;
     private final FocusChainSettings focusChainSettings;
-    private final LLM llm;
+    private final LLMTaskProcessor llm;
     
     // 回调接口
     private Consumer<String> sayCallback;
@@ -33,7 +33,7 @@ public class FocusChainManager {
     private String focusChainFilePath;
     
     public FocusChainManager(String taskId, TaskState taskState, Mode mode, 
-                           String taskDirectory, FocusChainSettings focusChainSettings, LLM llm) {
+                           String taskDirectory, FocusChainSettings focusChainSettings, LLMTaskProcessor llm) {
         this.taskId = taskId;
         this.taskState = taskState;
         this.mode = mode;

@@ -1,10 +1,10 @@
 package run.mone.hive.task;
 
 /**
- * LLM大模型调用接口
+ * LLM任务处理接口
  * 这里只定义接口，具体实现由调用方提供
  */
-public interface LLM {
+public interface LLMTaskProcessor {
     
     /**
      * 发送消息给大模型
