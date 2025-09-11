@@ -128,6 +128,18 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.22</version>
         </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>m78</artifactId>
+            <version>1.4-jdk20-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>hive</artifactId>
+            <version>1.6.2-jdk21-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
