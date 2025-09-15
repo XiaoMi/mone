@@ -22,6 +22,7 @@ public class VectorStoreConfig {
      * 向量存储提供商类型
      */
     public enum Provider {
+        LOCAL("local"),
         QDRANT("qdrant"),
         CHROMA("chroma"),
         WEAVIATE("weaviate"),
@@ -107,7 +108,7 @@ public class VectorStoreConfig {
      * 从Map创建配置
      */
     public static VectorStoreConfig fromMap(Map<String, Object> configMap) {
-        VectorStoreConfig.VectorStoreConfigBuilder builder = VectorStoreConfig.builder();
+        var builder = VectorStoreConfig.builder();
         
         if (configMap.containsKey("provider")) {
             String providerStr = (String) configMap.get("provider");
@@ -149,6 +150,18 @@ public class VectorStoreConfig {
         }
         
         return builder.build();
+    }
+    
+    /**
+     * 获取本地存储默认配置
+     */
+    public static VectorStoreConfig localDefault() {
+        return VectorStoreConfig.builder()
+                .provider(Provider.LOCAL)
+                .path("./data/memory")
+                .collectionName("mem0")
+                .embeddingModelDims(1536)
+                .build();
     }
     
     /**

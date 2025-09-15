@@ -12,9 +12,9 @@
 
 ### 🤖 **多LLM提供商支持**
 - **OpenAI** (GPT-4, GPT-3.5, etc.) ✅ 已实现
-- **Claude** (Anthropic) 🚧 接口已定义
-- **Gemini** (Google) 🚧 接口已定义
-- **Ollama** (本地模型) 🚧 接口已定义
+- **Claude** (Anthropic) ✅ 已实现 - 支持Claude-3.5系列
+- **Gemini** (Google) ✅ 已实现 - 支持Gemini-1.5系列
+- **Ollama** (本地模型) ✅ 已实现 - 支持本地部署模型
 - **Groq** 🚧 接口已定义
 - **Azure OpenAI** 🚧 接口已定义
 - **AWS Bedrock** 🚧 接口已定义
@@ -24,11 +24,11 @@
 
 ### 🧠 **多嵌入模型支持**
 - **OpenAI Embeddings** (text-embedding-3-small/large) ✅ 已实现
-- **Hugging Face** Transformers 🚧 接口已定义
+- **Hugging Face** Transformers ✅ 已实现 - 支持各种开源模型
+- **Ollama** Embeddings ✅ 已实现 - 支持本地嵌入模型
 - **Azure OpenAI** Embeddings 🚧 接口已定义
 - **Google Vertex AI** 🚧 接口已定义
 - **AWS Bedrock** Embeddings 🚧 接口已定义
-- **Ollama** Embeddings 🚧 接口已定义
 
 ### 🗄️ **多向量存储后端**
 - **Qdrant** 🚧 架构已实现，待完善
@@ -40,6 +40,12 @@
 - **Redis** 🚧 接口已定义
 - **PgVector** 🚧 接口已定义
 - **Milvus** 🚧 接口已定义
+
+### 🕸️ **图数据库支持**
+- **Neo4j** ✅ 已实现 - 支持实体关系建模和向量相似度搜索
+- **Memgraph** ✅ 已实现 - 优化的向量索引和高性能图查询
+- **Kuzu** 🚧 接口已定义
+- **Neptune** 🚧 接口已定义
 
 ## 🏗️ 架构设计
 
@@ -69,13 +75,23 @@ run.mone.hive.memory.longterm/
 │   ├── VectorStoreBase.java    # 向量存储接口
 │   ├── VectorStoreFactory.java # 向量存储工厂
 │   └── impl/                   # 向量存储实现
+├── graph/               # 图存储
+│   ├── GraphStoreBase.java     # 图存储接口
+│   ├── GraphStoreFactory.java  # 图存储工厂
+│   ├── GraphTools.java         # 图存储工具定义
+│   ├── GraphUtils.java         # 图存储工具类
+│   └── impl/                   # 图存储实现
+│       ├── Neo4jGraphStore.java    # Neo4j实现
+│       └── MemgraphGraphStore.java # Memgraph实现
 ├── storage/             # 历史存储
 │   └── HistoryManager.java     # 历史记录管理
 ├── utils/               # 工具类
 │   ├── MessageParser.java      # 消息解析器
 │   └── MemoryUtils.java        # 记忆工具类
 └── examples/            # 使用示例
-    └── MemoryExample.java      # 示例代码
+    ├── MemoryExample.java            # 基础示例代码
+    ├── GraphMemoryExample.java       # 图存储示例代码
+    └── ComprehensiveMemoryExample.java # 综合功能示例
 ```
 
 ## 🚀 快速开始
@@ -148,7 +164,42 @@ memory.add(conversation, null, agentId, null,
     true, "procedural_memory", null);
 ```
 
-### 5. 异步操作
+### 5. 图存储支持
+
+```java
+// 创建带图存储的配置
+MemoryConfig config = MemoryConfig.builder()
+    .llm(LlmConfig.builder()
+        .provider(LlmConfig.Provider.OPENAI)
+        .model("gpt-4o-mini")
+        .apiKey("your-api-key")
+        .build())
+    .embedder(EmbedderConfig.builder()
+        .provider(EmbedderConfig.Provider.OPENAI)
+        .model("text-embedding-3-small")
+        .build())
+    .vectorStore(VectorStoreConfig.builder()
+        .provider(VectorStoreConfig.Provider.QDRANT)
+        .host("localhost")
+        .port(6333)
+        .build())
+    .graphStore(GraphStoreConfig.builder()
+        .provider(GraphStoreConfig.Provider.NEO4J)
+        .url("bolt://localhost:7687")
+        .username("neo4j")
+        .password("password")
+        .enabled(true)
+        .build())
+    .build();
+
+Memory memory = new Memory(config);
+
+// 添加包含实体关系的记忆
+memory.add("张三是北京大学的教授，他住在海淀区。李四是他的学生。", 
+          userId, null, null, null, true, null, null);
+```
+
+### 6. 异步操作
 
 ```java
 // 异步添加记忆
@@ -198,6 +249,33 @@ VectorStoreConfig vectorConfig = VectorStoreConfig.builder()
     .host("localhost")                            // 主机地址
     .port(6333)                                   // 端口
     .embeddingModelDims(1536)                     // 向量维度
+    .build();
+```
+
+### 图存储配置
+
+```java
+// Neo4j配置
+GraphStoreConfig neo4jConfig = GraphStoreConfig.builder()
+    .provider(GraphStoreConfig.Provider.NEO4J)   // 提供商
+    .url("bolt://localhost:7687")                // 连接URL
+    .username("neo4j")                           // 用户名
+    .password("password")                        // 密码
+    .database("neo4j")                           // 数据库名
+    .enabled(true)                               // 是否启用
+    .config(Map.of(
+        "base_label", true,                      // 使用基础标签
+        "custom_prompt", "Extract person and location entities"  // 自定义提示词
+    ))
+    .build();
+
+// Memgraph配置
+GraphStoreConfig memgraphConfig = GraphStoreConfig.builder()
+    .provider(GraphStoreConfig.Provider.MEMGRAPH)
+    .url("bolt://localhost:7687")
+    .username("memgraph")
+    .password("memgraph")
+    .enabled(true)
     .build();
 ```
 
@@ -272,9 +350,16 @@ try {
 
 ## 🚧 开发状态
 
-- ✅ **已完成**: 核心架构、OpenAI集成、配置管理
-- 🚧 **进行中**: 向量存储实现、其他LLM提供商
-- 📋 **计划中**: 图数据库支持、高级记忆策略
+- ✅ **已完成**: 
+  - 核心架构和配置管理
+  - LLM提供商: OpenAI、Claude、Gemini、Ollama
+  - 嵌入模型: OpenAI、HuggingFace、Ollama
+  - 图数据库支持: Neo4j、Memgraph架构
+  - 向量存储架构: Qdrant等接口
+  - 异步操作和记忆管理
+  - 完整示例和文档
+- 🚧 **进行中**: 其他向量存储后端、其他图数据库实现
+- 📋 **计划中**: 高级记忆策略、知识图谱推理、多模态支持
 
 ## 🤝 贡献指南
 
