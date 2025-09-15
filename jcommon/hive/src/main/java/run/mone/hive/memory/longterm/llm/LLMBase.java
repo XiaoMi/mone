@@ -37,6 +37,23 @@ public interface LLMBase {
     }
     
     /**
+     * 生成带工具调用的响应
+     * 
+     * @param messages 消息列表
+     * @param tools 可用工具列表
+     * @return 包含工具调用的响应Map
+     */
+    default Map<String, Object> generateResponseWithTools(List<Map<String, Object>> messages, 
+                                                         List<Map<String, Object>> tools) {
+        // 默认实现：调用普通的generateResponse并包装结果
+        String response = generateResponse(messages, tools, null, null);
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("content", response);
+        result.put("tool_calls", new java.util.ArrayList<>());
+        return result;
+    }
+    
+    /**
      * 检查模型是否支持视觉功能
      * 
      * @return 是否支持视觉

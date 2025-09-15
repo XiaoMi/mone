@@ -21,24 +21,26 @@ public class VectorStoreFactory {
         }
         
         switch (config.getProvider()) {
+            case LOCAL:
+                return new LocalVectorStore(config);
             case QDRANT:
                 return new QdrantVectorStore(config);
             case CHROMA:
-                return new ChromaVectorStore(config);
+                throw new UnsupportedOperationException("Chroma not implemented yet");
             case WEAVIATE:
-                return new WeaviateVectorStore(config);
+                throw new UnsupportedOperationException("Weaviate not implemented yet");
             case PINECONE:
-                return new PineconeVectorStore(config);
+                throw new UnsupportedOperationException("Pinecone not implemented yet");
             case FAISS:
-                return new FaissVectorStore(config);
+                throw new UnsupportedOperationException("FAISS not implemented yet");
             case ELASTICSEARCH:
-                return new ElasticsearchVectorStore(config);
+                throw new UnsupportedOperationException("Elasticsearch not implemented yet");
             case REDIS:
-                return new RedisVectorStore(config);
+                throw new UnsupportedOperationException("Redis not implemented yet");
             case PGVECTOR:
-                return new PgVectorStore(config);
+                throw new UnsupportedOperationException("PgVector not implemented yet");
             case MILVUS:
-                return new MilvusVectorStore(config);
+                throw new UnsupportedOperationException("Milvus not implemented yet");
             default:
                 throw new IllegalArgumentException("Unsupported vector store provider: " + config.getProvider());
         }

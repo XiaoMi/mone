@@ -15,6 +15,8 @@ import run.mone.hive.memory.longterm.vectorstore.VectorStoreBase;
 import run.mone.hive.memory.longterm.storage.HistoryManager;
 import run.mone.hive.memory.longterm.utils.MessageParser;
 import run.mone.hive.memory.longterm.utils.MemoryUtils;
+import run.mone.hive.memory.longterm.graph.GraphStoreBase;
+import run.mone.hive.memory.longterm.graph.GraphStoreFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +38,7 @@ public class Memory implements MemoryBase {
     private LLMBase llm;
     private EmbeddingBase embeddingModel;
     private VectorStoreBase vectorStore;
+    private GraphStoreBase graphStore;
     private HistoryManager historyManager;
     private boolean enableGraph;
     private String collectionName;
@@ -62,6 +65,7 @@ public class Memory implements MemoryBase {
         this.llm = LLMFactory.create(config.getLlm());
         this.embeddingModel = EmbeddingFactory.create(config.getEmbedder());
         this.vectorStore = VectorStoreFactory.create(config.getVectorStore());
+        this.graphStore = GraphStoreFactory.create(config.getGraphStore());
         this.historyManager = new HistoryManager(config.getHistoryDbPath());
         
         // 初始化线程池
@@ -646,13 +650,41 @@ public class Memory implements MemoryBase {
     }
     
     private List<String> addToGraph(List<Message> messages, Map<String, Object> filters) {
-        // 图存储功能的占位符实现
-        if (!enableGraph) {
+        if (!enableGraph || graphStore == null) {
             return new ArrayList<>();
         }
         
-        // TODO: 实现图存储功能
-        return new ArrayList<>();
+        try {
+            // 解析消息为字符串
+            String parsedMessages = MessageParser.parseMessagesToString(messages);
+            
+            // 设置用户ID过滤器
+            if (filters.get("user_id") == null) {
+                filters.put("user_id", "user");
+            }
+            
+            // 从文本中提取实体关系
+            List<GraphStoreBase.GraphEntity> entities = graphStore.establishRelations(parsedMessages);
+            
+            // 添加关系到图存储
+            List<Map<String, Object>> addResults = graphStore.addMemories(entities);
+            
+            // 格式化返回的关系
+            List<String> relations = new ArrayList<>();
+            for (GraphStoreBase.GraphEntity entity : entities) {
+                if (entity.getSource() != null && entity.getRelationship() != null && entity.getDestination() != null) {
+                    relations.add(String.format("%s -- %s -- %s", 
+                        entity.getSource(), entity.getRelationship(), entity.getDestination()));
+                }
+            }
+            
+            log.debug("Added {} relations to graph", relations.size());
+            return relations;
+            
+        } catch (Exception e) {
+            log.error("Error adding to graph store", e);
+            return new ArrayList<>();
+        }
     }
     
     private String calculateHash(String data) {
@@ -725,5 +757,208 @@ public class Memory implements MemoryBase {
         if (vectorStore != null) {
             vectorStore.close();
         }
+        
+        if (graphStore != null) {
+            graphStore.close();
+        }
+    }
+    
+    // ==================== 图存储相关方法 ====================
+    
+    /**
+     * 获取图存储统计信息
+     */
+    public Map<String, Object> getGraphStats() {
+        if (!enableGraph || graphStore == null) {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("enabled", false);
+            stats.put("message", "Graph store is not enabled");
+            return stats;
+        }
+        
+        return graphStore.getStats();
+    }
+    
+    /**
+     * 搜索图记忆
+     */
+    public List<Map<String, Object>> searchGraph(String query, int limit) {
+        if (!enableGraph || graphStore == null) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            return graphStore.search(query, limit);
+        } catch (Exception e) {
+            log.error("Error searching graph memories", e);
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 获取所有图记忆
+     */
+    public List<Map<String, Object>> getAllGraphMemories(int limit) {
+        if (!enableGraph || graphStore == null) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            return graphStore.getAll(limit);
+        } catch (Exception e) {
+            log.error("Error getting all graph memories", e);
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 获取节点的所有关系
+     */
+    public List<Map<String, Object>> getNodeRelationships(String nodeName) {
+        if (!enableGraph || graphStore == null) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            return graphStore.getNodeRelationships(nodeName);
+        } catch (Exception e) {
+            log.error("Error getting node relationships", e);
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 删除特定的图记忆关系
+     */
+    public Map<String, Object> deleteGraphMemory(String source, String destination, String relationship) {
+        if (!enableGraph || graphStore == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "Graph store is not enabled");
+            return result;
+        }
+        
+        try {
+            return graphStore.deleteMemory(source, destination, relationship);
+        } catch (Exception e) {
+            log.error("Error deleting graph memory", e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("error", e.getMessage());
+            return result;
+        }
+    }
+    
+    /**
+     * 更新图记忆关系
+     */
+    public Map<String, Object> updateGraphMemory(String source, String destination, String relationship) {
+        if (!enableGraph || graphStore == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "Graph store is not enabled");
+            return result;
+        }
+        
+        try {
+            return graphStore.updateMemory(source, destination, relationship);
+        } catch (Exception e) {
+            log.error("Error updating graph memory", e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("error", e.getMessage());
+            return result;
+        }
+    }
+    
+    /**
+     * 添加单个图记忆关系
+     */
+    public Map<String, Object> addGraphMemory(String source, String destination, String relationship, 
+                                             String sourceType, String destinationType) {
+        if (!enableGraph || graphStore == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "Graph store is not enabled");
+            return result;
+        }
+        
+        try {
+            return graphStore.addMemory(source, destination, relationship, sourceType, destinationType);
+        } catch (Exception e) {
+            log.error("Error adding graph memory", e);
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("error", e.getMessage());
+            return result;
+        }
+    }
+    
+    /**
+     * 检查关系是否存在
+     */
+    public boolean relationshipExists(String source, String destination, String relationship) {
+        if (!enableGraph || graphStore == null) {
+            return false;
+        }
+        
+        try {
+            return graphStore.relationshipExists(source, destination, relationship);
+        } catch (Exception e) {
+            log.error("Error checking relationship existence", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 从文本提取实体
+     */
+    public List<Map<String, Object>> extractEntities(String text) {
+        if (!enableGraph || graphStore == null) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            return graphStore.extractEntities(text);
+        } catch (Exception e) {
+            log.error("Error extracting entities", e);
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
+     * 删除所有图数据
+     */
+    public void deleteAllGraphData() {
+        if (!enableGraph || graphStore == null) {
+            log.warn("Graph store is not enabled, cannot delete graph data");
+            return;
+        }
+        
+        try {
+            graphStore.deleteAll();
+            log.info("All graph data deleted successfully");
+        } catch (Exception e) {
+            log.error("Error deleting all graph data", e);
+            throw new RuntimeException("Failed to delete all graph data", e);
+        }
+    }
+    
+    /**
+     * 验证图存储连接
+     */
+    public boolean validateGraphConnection() {
+        if (!enableGraph || graphStore == null) {
+            return false;
+        }
+        
+        return graphStore.validateConnection();
+    }
+    
+    /**
+     * 是否启用图存储
+     */
+    public boolean isGraphEnabled() {
+        return enableGraph && graphStore != null;
     }
 }
