@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class MacShellFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class ShellFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
     private String name = "macShellOperation";
 
