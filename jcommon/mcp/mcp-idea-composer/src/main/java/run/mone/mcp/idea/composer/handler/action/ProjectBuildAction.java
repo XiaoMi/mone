@@ -1,13 +1,11 @@
 package run.mone.mcp.idea.composer.handler.action;
 
-import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.actions.Action;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
