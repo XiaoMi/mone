@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.ReactorRole;
 
 import java.io.IOException;
@@ -30,7 +32,7 @@ class ReplaceInFileToolTest {
     @BeforeEach
     void setUp() {
         tool = new ReplaceInFileTool();
-        role = new ReactorRole(); // 假设有默认构造函数
+        role = new ReactorRole("test",null,new LLM(LLMConfig.builder().build())); // 假设有默认构造函数
     }
 
     @Test

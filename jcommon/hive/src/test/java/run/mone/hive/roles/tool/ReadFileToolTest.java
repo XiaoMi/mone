@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.ReactorRole;
 
 import java.io.IOException;
@@ -31,7 +33,7 @@ class ReadFileToolTest {
     @BeforeEach
     void setUp() {
         tool = new ReadFileTool();
-        role = new ReactorRole(); // Assuming default constructor exists
+        role = new ReactorRole("test",null,new LLM(LLMConfig.builder().build())); // Assuming default constructor exists
     }
 
     @Test
