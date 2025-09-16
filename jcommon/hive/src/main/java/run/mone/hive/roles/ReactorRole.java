@@ -28,6 +28,7 @@ import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
+import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
@@ -99,6 +100,9 @@ public class ReactorRole extends Role {
     private McpHub mcpHub;
 
     private FocusChainManager focusChainManager;
+
+    //工作区根目录路径，用于路径解析
+    private String workspacePath = System.getProperty("user.dir");
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -493,6 +497,10 @@ public class ReactorRole extends Role {
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
+            
+            // 在工具执行前进行路径解析，将相对路径转换为绝对路径
+            PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
+            
             ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(this, params);
             if (toolRes.has("toolMsgType")) {
@@ -647,5 +655,24 @@ public class ReactorRole extends Role {
 
     public void setLlm(LLM llm) {
         this.llm = llm;
+    }
+
+    /**
+     * 设置工作区根目录路径
+     * @param workspacePath 工作区根目录的绝对路径
+     */
+    public void setWorkspacePath(String workspacePath) {
+        if (StringUtils.isNotEmpty(workspacePath)) {
+            this.workspacePath = workspacePath;
+            log.info("ReactorRole '{}' workspace path set to: {}", this.name, workspacePath);
+        }
+    }
+
+    /**
+     * 获取当前工作区路径
+     * @return 工作区根目录路径
+     */
+    public String getWorkspacePath() {
+        return this.workspacePath;
     }
 }
