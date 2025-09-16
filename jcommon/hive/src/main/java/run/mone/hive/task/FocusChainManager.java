@@ -1,5 +1,7 @@
 package run.mone.hive.task;
 
+import lombok.Data;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.concurrent.Executors;
@@ -11,6 +13,7 @@ import java.util.function.Consumer;
  * Focus Chain管理器
  * 对应Cline中的FocusChainManager类
  */
+@Data
 public class FocusChainManager {
     
     private final String taskId;
