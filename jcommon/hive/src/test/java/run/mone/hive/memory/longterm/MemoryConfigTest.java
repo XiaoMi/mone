@@ -94,14 +94,14 @@ public class MemoryConfigTest {
         
         // 测试HuggingFace嵌入配置
         EmbedderConfig hfEmbedder = EmbedderConfig.builder()
-            .provider(EmbedderConfig.Provider.HUGGING_FACE)
+            .provider(EmbedderConfig.Provider.HUGGINGFACE)
             .model("sentence-transformers/all-MiniLM-L6-v2")
             .apiKey("hf-key")
             .embeddingDims(384)
             .build();
         
         assertNotNull(hfEmbedder);
-        assertEquals(EmbedderConfig.Provider.HUGGING_FACE, hfEmbedder.getProvider());
+        assertEquals(EmbedderConfig.Provider.HUGGINGFACE, hfEmbedder.getProvider());
         assertEquals("sentence-transformers/all-MiniLM-L6-v2", hfEmbedder.getModel());
         assertEquals(384, hfEmbedder.getEmbeddingDims());
         
