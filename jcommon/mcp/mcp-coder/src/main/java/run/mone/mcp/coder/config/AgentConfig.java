@@ -6,9 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
-import run.mone.hive.roles.tool.AskTool;
-import run.mone.hive.roles.tool.AttemptCompletionTool;
-import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.*;
 
 /**
  * @author goodjava@qq.com
@@ -27,6 +25,13 @@ public class AgentConfig {
                 .goal("你的目标是更好的帮助用户写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .tools(Lists.newArrayList(
+                        new ListFilesTool(),
+                        new ExecuteCommandTool(),
+                        new ReadFileTool(),
+                        new SearchFilesTool(),
+                        new ReplaceInFileTool(),
+                        new ListCodeDefinitionNamesTool(),
+                        new WriteToFileTool(),
                         new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool()
@@ -34,8 +39,6 @@ public class AgentConfig {
                 )
                 //mcp工具
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
-                //30s
-                .timeout(30000)
                 .build();
     }
 
