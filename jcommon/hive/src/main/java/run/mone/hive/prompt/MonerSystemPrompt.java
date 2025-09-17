@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import run.mone.hive.bo.InternalServer;
 import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.common.function.DefaultValueFunction;
@@ -47,6 +48,9 @@ public class MonerSystemPrompt {
 
     //当前工作目录
     public static String cwd(ReactorRole role) {
+        if (role.getRoleConfig().containsKey(Constants.WORKSPACE_PATH)) {
+            return role.getRoleConfig().get(Constants.WORKSPACE_PATH);
+        }
         return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
     }
 
