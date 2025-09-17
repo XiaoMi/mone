@@ -154,11 +154,13 @@ function buildDomTree(args = { doHighlightElements: true, focusHighlightIndex: -
         const ariaRole = element.getAttribute('aria-role');
         const tabIndex = element.getAttribute('tabindex');
 
-        // Add check for specific class
+        // Add check for specific classes
         const hasAddressInputClass = element.classList.contains('address-input__container__input');
+        const hasElSelectDropdownItemClass = element.classList.contains('el-select-dropdown__item');
 
         // Basic role/attribute checks
         const hasInteractiveRole = hasAddressInputClass ||
+            hasElSelectDropdownItemClass ||
             interactiveElements.has(tagName) ||
             interactiveRoles.has(role) ||
             interactiveRoles.has(ariaRole) ||
