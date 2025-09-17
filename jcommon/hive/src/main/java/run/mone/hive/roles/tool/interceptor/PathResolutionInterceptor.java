@@ -7,6 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.utils.PathUtils;
 import run.mone.hive.workspace.WorkspaceResolver;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -203,10 +205,10 @@ public class PathResolutionInterceptor {
             return true;
         }
 
-        // Contains file extension
-        if (value.matches(".*\\.[a-zA-Z0-9]{1,10}$")) {
-            return true;
-        }
+//        // Contains file extension
+//        if (value.matches(".*\\.[a-zA-Z0-9]{1,10}$")) {
+//            return true;
+//        }
 
         // Common file/directory names
         if (value.matches("^[a-zA-Z0-9_.-]+$") && (
@@ -227,9 +229,9 @@ public class PathResolutionInterceptor {
                                                String toolName, String paramName) {
         try {
             // If already absolute and safe, return as-is
-            if (!".".equals(originalPath) && !"./".equals(originalPath) && PathUtils.fileExists(originalPath) &&
+            if (!".".equals(originalPath) && !"./".equals(originalPath) &&
                     PathUtils.isLocatedInWorkspace(workspacePath, originalPath)) {
-                return PathUtils.normalizePathSeparators(originalPath);
+                return PathUtils.normalizePathSeparators(workspacePath + File.separator + originalPath);
             }
 
             // Resolve relative path against workspace
