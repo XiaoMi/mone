@@ -136,7 +136,6 @@ public class MonerSystemPrompt {
     //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
         final List<Map<String, Object>> serverList = new ArrayList<>();
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
         if (null != sl) {
             serverList.addAll(sl);
