@@ -25,6 +25,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
+import run.mone.hive.roles.tool.ExecuteCommandTool;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
@@ -674,5 +675,13 @@ public class ReactorRole extends Role {
      */
     public String getWorkspacePath() {
         return this.workspacePath;
+    }
+
+    public void initConfig() {
+        if (null != this.roleConfig) {
+            if (this.roleConfig.containsKey("workspacePath")) {
+                setWorkspacePath(this.roleConfig.get("workspacePath"));
+            }
+        }
     }
 }

@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -18,11 +19,24 @@ import java.util.concurrent.TimeUnit;
  * @author goodjava@qq.com
  * @date 2025/1/11
  * CLI命令执行工具，支持安全检查和任务进度跟踪
+ * 
+ * 主要功能：
+ * - 支持自定义工作目录执行命令
+ * - 自动获取并嵌入完整的 zsh 环境变量（包括 .zshrc 配置）
+ * - 环境变量缓存机制，提高性能（5分钟缓存超时）
+ * - 安全检查，识别潜在危险命令
+ * - 跨平台支持（Windows 使用 cmd，Unix/Linux/macOS 使用 zsh）
+ * - 命令执行超时控制
  */
 @Slf4j
 public class ExecuteCommandTool implements ITool {
 
     public static final String name = "execute_command";
+    
+    // 缓存 zsh 环境变量，避免重复获取
+    private static volatile Map<String, String> cachedZshEnv = null;
+    private static volatile long lastEnvCacheTime = 0;
+    private static final long ENV_CACHE_TIMEOUT = 300_000; // 5分钟缓存超时
 
     @Override
     public boolean completed() {
@@ -49,7 +63,7 @@ public class ExecuteCommandTool implements ITool {
         return """
                 Request to execute a CLI command on the system. Use this when you need to perform system operations or run specific commands to accomplish any step in the user's task. 
                 You must tailor your command to the user's system and provide a clear explanation of what the command does. For command chaining, use the appropriate chaining syntax for the user's shell. 
-                Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run. Commands will be executed in the current working directory.
+                Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run. Commands will be executed in the configured working directory (defaults to current workspace path).
                 """;
     }
 
@@ -143,8 +157,11 @@ public class ExecuteCommandTool implements ITool {
                 }
             }
 
+            // 获取工作目录（从ReactorRole获取，如果没有则使用默认目录）
+            String workingDirectory = getWorkingDirectory(role);
+            
             // 执行命令
-            JsonObject commandResult = executeCommand(command, timeout);
+            JsonObject commandResult = executeCommand(command, timeout, workingDirectory);
             
             // 添加额外信息到结果中
             commandResult.addProperty("requires_approval", requiresApproval);
@@ -160,6 +177,165 @@ public class ExecuteCommandTool implements ITool {
             result.addProperty("error", "执行命令失败: " + e.getMessage());
             return result;
         }
+    }
+
+    /**
+     * 获取工作目录
+     * 
+     * @param role ReactorRole实例，用于获取配置的工作区路径
+     * @return 工作目录路径
+     */
+    private String getWorkingDirectory(ReactorRole role) {
+        try {
+            // 尝试从ReactorRole获取工作区路径
+            if (role != null) {
+                String workspacePath = role.getWorkspacePath();
+                if (StringUtils.isNotEmpty(workspacePath)) {
+                    File workspaceDir = new File(workspacePath);
+                    if (workspaceDir.exists() && workspaceDir.isDirectory()) {
+                        log.debug("使用ReactorRole配置的工作目录: {}", workspacePath);
+                        return workspacePath;
+                    } else {
+                        log.warn("ReactorRole配置的工作目录不存在或不是目录: {}", workspacePath);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("获取ReactorRole工作目录时出错，使用默认目录: {}", e.getMessage());
+        }
+        
+        // 回退到默认的当前工作目录
+        String defaultDir = System.getProperty("user.dir");
+        log.debug("使用默认工作目录: {}", defaultDir);
+        return defaultDir;
+    }
+
+    /**
+     * 获取 zsh 的完整环境变量（带缓存）
+     * 通过执行 'zsh -c env' 命令获取 zsh 的所有环境变量
+     * 
+     * @return 包含所有 zsh 环境变量的 Map
+     */
+    private Map<String, String> getZshEnvironment() {
+        long currentTime = System.currentTimeMillis();
+        
+        // 检查缓存是否有效
+        if (cachedZshEnv != null && (currentTime - lastEnvCacheTime) < ENV_CACHE_TIMEOUT) {
+            log.debug("使用缓存的 zsh 环境变量，包含 {} 个变量", cachedZshEnv.size());
+            return new HashMap<>(cachedZshEnv);
+        }
+        
+        Map<String, String> zshEnv = new HashMap<>();
+        Process process = null;
+        
+        try {
+            log.debug("开始获取 zsh 环境变量（缓存已过期或不存在）");
+            
+            // 检查系统是否支持 zsh
+            ProcessBuilder testZsh = new ProcessBuilder("zsh", "--version");
+            testZsh.redirectErrorStream(true);
+            Process testProcess = testZsh.start();
+            boolean zshAvailable = testProcess.waitFor(5, TimeUnit.SECONDS) && testProcess.exitValue() == 0;
+            
+            if (!zshAvailable) {
+                log.warn("zsh 不可用，将使用系统默认环境变量");
+                return System.getenv();
+            }
+            
+            // 使用 zsh 执行 env 命令获取完整环境变量
+            // 同时加载用户的 .zshrc 配置
+            ProcessBuilder processBuilder = new ProcessBuilder("zsh", "-l", "-c", "env");
+            processBuilder.redirectErrorStream(false);
+            
+            process = processBuilder.start();
+            
+            // 读取标准输出（环境变量）
+            List<String> envLines = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    envLines.add(line);
+                }
+            }
+            
+            // 读取错误输出（如果有的话）
+            List<String> errorLines = new ArrayList<>();
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                while ((line = errorReader.readLine()) != null) {
+                    errorLines.add(line);
+                }
+            }
+            
+            // 等待进程完成
+            boolean completed = process.waitFor(10, TimeUnit.SECONDS);
+            
+            if (!completed) {
+                process.destroyForcibly();
+                log.warn("获取 zsh 环境变量超时，使用系统默认环境变量");
+                return System.getenv();
+            }
+            
+            int exitCode = process.exitValue();
+            if (exitCode != 0) {
+                log.warn("获取 zsh 环境变量失败，退出代码: {}，错误信息: {}", exitCode, String.join("\n", errorLines));
+                return System.getenv();
+            }
+            
+            // 解析环境变量
+            for (String line : envLines) {
+                if (StringUtils.isNotBlank(line) && line.contains("=")) {
+                    int equalIndex = line.indexOf("=");
+                    String key = line.substring(0, equalIndex);
+                    String value = line.substring(equalIndex + 1);
+                    
+                    // 过滤掉一些可能有问题的环境变量
+                    if (StringUtils.isNotBlank(key) && !key.contains(" ") && !key.contains("\t")) {
+                        zshEnv.put(key, value);
+                    }
+                }
+            }
+            
+            log.info("成功获取到 {} 个 zsh 环境变量", zshEnv.size());
+            
+            // 确保一些重要的环境变量存在
+            if (!zshEnv.containsKey("SHELL")) {
+                zshEnv.put("SHELL", "/bin/zsh");
+            }
+            if (!zshEnv.containsKey("HOME")) {
+                zshEnv.put("HOME", System.getProperty("user.home"));
+            }
+            if (!zshEnv.containsKey("USER")) {
+                zshEnv.put("USER", System.getProperty("user.name"));
+            }
+            
+            // 更新缓存
+            cachedZshEnv = new HashMap<>(zshEnv);
+            lastEnvCacheTime = currentTime;
+            log.debug("已更新 zsh 环境变量缓存");
+            
+            return zshEnv;
+            
+        } catch (Exception e) {
+            log.error("获取 zsh 环境变量时发生异常", e);
+            // 发生异常时回退到系统环境变量
+            return System.getenv();
+        } finally {
+            // 确保进程被销毁
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
+        }
+    }
+
+    /**
+     * 清除 zsh 环境变量缓存
+     * 这将强制下次获取时重新从 zsh 读取环境变量
+     */
+    public static void clearZshEnvironmentCache() {
+        cachedZshEnv = null;
+        lastEnvCacheTime = 0;
+        log.debug("已清除 zsh 环境变量缓存");
     }
 
     /**
@@ -194,30 +370,56 @@ public class ExecuteCommandTool implements ITool {
      *
      * @param command 要执行的命令
      * @param timeout 超时时间（秒）
+     * @param workingDirectory 工作目录路径
      * @return 包含执行结果的JsonObject
      */
-    private JsonObject executeCommand(String command, int timeout) {
+    private JsonObject executeCommand(String command, int timeout, String workingDirectory) {
         JsonObject result = new JsonObject();
         Process process = null;
 
         try {
-            String currentDir = System.getProperty("user.dir");
-            log.info("执行命令: {}, 当前目录: {}, 超时: {}秒", command, currentDir, timeout);
+            log.info("执行命令: {}, 工作目录: {}, 超时: {}秒", command, workingDirectory, timeout);
 
             ProcessBuilder processBuilder = new ProcessBuilder();
+            
+            // 设置工作目录
+            File workDir = new File(workingDirectory);
+            if (workDir.exists() && workDir.isDirectory()) {
+                processBuilder.directory(workDir);
+                log.debug("设置ProcessBuilder工作目录为: {}", workingDirectory);
+            } else {
+                log.warn("指定的工作目录不存在或不是目录: {}, 使用默认目录", workingDirectory);
+                workingDirectory = System.getProperty("user.dir");
+            }
 
             // 根据操作系统设置命令
             if (System.getProperty("os.name").toLowerCase().contains("windows")) {
                 processBuilder.command("cmd.exe", "/c", command);
             } else {
-                processBuilder.command("sh", "-c", command);
+                // 在非 Windows 系统上优先使用 zsh
+                processBuilder.command("zsh", "-l", "-c", command);
             }
 
-            // 继承系统环境变量
+            // 获取并设置完整的 zsh 环境变量
             Map<String, String> processEnv = processBuilder.environment();
             
-            // 确保CWD环境变量已设置（当前工作目录）
-            processEnv.put("CWD", System.getProperty("user.dir"));
+            // 清空当前环境变量，使用 zsh 的完整环境
+            processEnv.clear();
+            
+            // 获取 zsh 环境变量
+            Map<String, String> zshEnv = getZshEnvironment();
+            processEnv.putAll(zshEnv);
+            
+            // 设置或覆盖关键的工作目录相关环境变量
+            processEnv.put("CWD", workingDirectory);
+            processEnv.put("PWD", workingDirectory); // Unix系统常用的当前目录环境变量
+            
+            // 确保 SHELL 环境变量指向 zsh
+            if (!System.getProperty("os.name").toLowerCase().contains("windows")) {
+                processEnv.put("SHELL", "/bin/zsh");
+            }
+            
+            log.debug("使用 {} 个环境变量执行命令", processEnv.size());
 
             // 合并标准输出和错误输出
             processBuilder.redirectErrorStream(true);
@@ -257,6 +459,7 @@ public class ExecuteCommandTool implements ITool {
             result.addProperty("exit_code", exitCode);
             result.addProperty("output", output.toString());
             result.addProperty("command", command);
+            result.addProperty("working_directory", workingDirectory);
 
             if (exitCode == 0) {
                 log.info("命令执行成功，退出代码: {}", exitCode);

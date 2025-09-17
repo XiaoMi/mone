@@ -39,7 +39,7 @@ public class PathUtils {
      * @return Absolute path string
      */
     public static String resolveWorkspacePath(String workspacePath, String relativePath, String context) {
-        if (StringUtils.isBlank(relativePath)) {
+        if (StringUtils.isBlank(relativePath) || ".".equals(relativePath) || "./".equals(relativePath)) {
             return workspacePath;
         }
         
