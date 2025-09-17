@@ -13,6 +13,7 @@ public class CustomConfig {
 
     private Map<String, String> customHeaders = new HashMap<>();
     private String model;
+    private int cacheTurn = 2; // for claude, claude cache要钱，避免无脑cache
 
     // Constructor
     public CustomConfig() {
@@ -52,6 +53,12 @@ public class CustomConfig {
     public void clearCustomHeaders() {
         this.customHeaders.clear();
     }
-    
 
+    public int getCacheTurn() {
+        return cacheTurn;
+    }
+
+    public void setCacheTurn(int cacheTurn) {
+        this.cacheTurn = cacheTurn;
+    }
 }
