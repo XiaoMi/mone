@@ -10,4 +10,6 @@ public class Constants {
     public static final String MEMORY = "memory";
 
     public static final String FROM = "__from__";
+
+    public static final String WORKSPACE_PATH = "workspacePath";
 } 

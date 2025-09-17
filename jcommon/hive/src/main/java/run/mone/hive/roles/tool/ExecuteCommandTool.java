@@ -39,11 +39,6 @@ public class ExecuteCommandTool implements ITool {
     private static final long ENV_CACHE_TIMEOUT = 300_000; // 5分钟缓存超时
 
     @Override
-    public boolean completed() {
-        return true;
-    }
-
-    @Override
     public boolean needExecute() {
         return true;
     }

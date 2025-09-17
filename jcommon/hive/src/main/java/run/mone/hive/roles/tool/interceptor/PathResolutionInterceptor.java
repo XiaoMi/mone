@@ -7,6 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.utils.PathUtils;
 import run.mone.hive.workspace.WorkspaceResolver;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -49,6 +51,13 @@ public class PathResolutionInterceptor {
             "output",        // Output file
             "filename",      // File name (might include path)
             "file"           // Generic file parameter
+    ));
+
+    // Parameter names that should NOT be resolved as paths for specific tools
+    private static final Set<String> EXCLUDED_PARAMETER_NAMES = new HashSet<>(Arrays.asList(
+            "command",
+            "execute_command"        // Command strings should not be treated as paths
+
     ));
 
     // Tools that definitely need path resolution
@@ -120,7 +129,7 @@ public class PathResolutionInterceptor {
     /**
      * Determine if a parameter should be resolved as a path
      */
-    private static boolean shouldResolveParameter(String toolName, String paramName, JsonElement paramValue) {
+    public static boolean shouldResolveParameter(String toolName, String paramName, JsonElement paramValue) {
         // Must be a string parameter
         if (paramValue == null || !paramValue.isJsonPrimitive() || !paramValue.getAsJsonPrimitive().isString()) {
             return false;
@@ -128,6 +137,12 @@ public class PathResolutionInterceptor {
 
         String value = paramValue.getAsString();
         if (StringUtils.isBlank(value)) {
+            return false;
+        }
+
+        // Check if this parameter is explicitly excluded from path resolution
+        if (EXCLUDED_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
+            log.debug("Parameter '{}' is excluded from path resolution", paramName);
             return false;
         }
 
@@ -156,6 +171,12 @@ public class PathResolutionInterceptor {
             return false;
         }
 
+        // Check if this parameter is explicitly excluded from path resolution
+        if (EXCLUDED_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
+            log.debug("Extra parameter '{}' is excluded from path resolution", paramName);
+            return false;
+        }
+
         // Check parameter name
         if (PATH_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
             return true;
@@ -179,20 +200,15 @@ public class PathResolutionInterceptor {
             return false;
         }
 
-        // Contains path separators
-        if (value.contains("/") || value.contains("\\")) {
-            return true;
-        }
-
         // Starts with current/parent directory markers
         if (value.startsWith("./") || value.startsWith("../") || value.equals(".") || value.equals("..")) {
             return true;
         }
 
-        // Contains file extension
-        if (value.matches(".*\\.[a-zA-Z0-9]{1,10}$")) {
-            return true;
-        }
+//        // Contains file extension
+//        if (value.matches(".*\\.[a-zA-Z0-9]{1,10}$")) {
+//            return true;
+//        }
 
         // Common file/directory names
         if (value.matches("^[a-zA-Z0-9_.-]+$") && (
@@ -213,9 +229,9 @@ public class PathResolutionInterceptor {
                                                String toolName, String paramName) {
         try {
             // If already absolute and safe, return as-is
-            if (!".".equals(originalPath) && !"./".equals(originalPath) && PathUtils.fileExists(originalPath) &&
+            if (!".".equals(originalPath) && !"./".equals(originalPath) &&
                     PathUtils.isLocatedInWorkspace(workspacePath, originalPath)) {
-                return PathUtils.normalizePathSeparators(originalPath);
+                return PathUtils.normalizePathSeparators(workspacePath + File.separator + originalPath);
             }
 
             // Resolve relative path against workspace
