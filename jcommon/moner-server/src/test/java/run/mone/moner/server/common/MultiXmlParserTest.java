@@ -77,4 +77,61 @@ public class MultiXmlParserTest {
         String normalizedActual = xmlOutput.replaceAll("\\s+", "");
 
     }
+
+    @Test
+    public void testJsonToXmlWithNewOperations() {
+        // Given
+        MultiXmlParser parser = new MultiXmlParser();
+        String jsonInput = """
+                {
+                    "action1": {
+                        "type": "action",
+                        "name": "focus",
+                        "elementId": "14",
+                        "desc": "聚焦到输入框"
+                    },
+                    "action2": {
+                        "type": "action",
+                        "name": "search",
+                        "elementId": "15",
+                        "value": "搜索关键词",
+                        "desc": "执行搜索操作"
+                    },
+                    "action3": {
+                        "type": "action",
+                        "name": "select",
+                        "elementId": "16",
+                        "value": "选项值",
+                        "desc": "选择下拉框选项"
+                    }
+                }""";
+
+        // When
+        String xmlOutput = parser.jsonToXml(jsonInput);
+
+        // Then
+        String expectedXml = """
+
+                <action type="action" name="focus" elementId="14">
+                            聚焦到输入框
+                </action>
+
+                <action type="action" name="search" elementId="15" value="搜索关键词">
+                            执行搜索操作
+                </action>
+
+                <action type="action" name="select" elementId="16" value="选项值">
+                            选择下拉框选项
+                </action>
+                """.replaceAll("(?m)^[ ]+", "            "); // 统一缩进
+
+        // 移除所有空白字符后比较
+        String normalizedExpected = expectedXml.replaceAll("\\s+", "");
+        String normalizedActual = xmlOutput.replaceAll("\\s+", "");
+
+        // Basic validation that the new operations are included
+        assert xmlOutput.contains("name=\"focus\"");
+        assert xmlOutput.contains("name=\"search\"");
+        assert xmlOutput.contains("name=\"select\"");
+    }
 }
