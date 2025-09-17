@@ -19,6 +19,7 @@ public class OperationFunction implements Function<Map<String, Object>, McpSchem
             + elementId的数字会在元素的右上角,请你从图中信息中找到elementId
             + 数字的颜色和这个元素的边框一定是一个颜色
             + 必须返回tabId(如果没有,需要你打开相应的tab)
+            + 支持操作类型: fill(填入), click(点击), focus(聚焦), search(搜索), select(选择)
             """;
     private final ObjectMapper objectMapper;
 
@@ -41,7 +42,7 @@ public class OperationFunction implements Function<Map<String, Object>, McpSchem
                                 },
                                 "name": {
                                     "type": "string",
-                                    "description": "操作名称，如 fill, click 等"
+                                    "description": "操作名称，如 fill, click, focus, search, select 等"
                                 },
                                 "elementId": {
                                     "type": "string",
