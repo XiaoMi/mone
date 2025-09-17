@@ -51,6 +51,13 @@ public class PathResolutionInterceptor {
             "file"           // Generic file parameter
     ));
 
+    // Parameter names that should NOT be resolved as paths for specific tools
+    private static final Set<String> EXCLUDED_PARAMETER_NAMES = new HashSet<>(Arrays.asList(
+            "command",
+            "execute_command"        // Command strings should not be treated as paths
+
+    ));
+
     // Tools that definitely need path resolution
     private static final Set<String> PATH_DEPENDENT_TOOLS = new HashSet<>(Arrays.asList(
             "read_file",
@@ -131,6 +138,12 @@ public class PathResolutionInterceptor {
             return false;
         }
 
+        // Check if this parameter is explicitly excluded from path resolution
+        if (EXCLUDED_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
+            log.debug("Parameter '{}' is excluded from path resolution", paramName);
+            return false;
+        }
+
         // Check if tool is known to be path-dependent
         if (PATH_DEPENDENT_TOOLS.contains(toolName)) {
             // For known tools, resolve common path parameter names
@@ -153,6 +166,12 @@ public class PathResolutionInterceptor {
      */
     private static boolean shouldResolveExtraParameter(String paramName, String paramValue) {
         if (StringUtils.isBlank(paramValue)) {
+            return false;
+        }
+
+        // Check if this parameter is explicitly excluded from path resolution
+        if (EXCLUDED_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
+            log.debug("Extra parameter '{}' is excluded from path resolution", paramName);
             return false;
         }
 
