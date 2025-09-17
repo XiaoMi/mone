@@ -228,6 +228,7 @@ public class RoleService {
                     role.setMcpHub(new McpHub());
                 }
                 role.getRoleConfig().putAll(configMap);
+                role.initConfig();
             }
         });
     }
