@@ -12,12 +12,13 @@ import run.mone.hive.common.Safe;
 import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
-import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.utils.CacheService;
+import run.mone.hive.utils.FileUtils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,8 +55,42 @@ public class MonerSystemPrompt {
         return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
     }
 
-    //自定义指令
+    /**
+     * 获取自定义指令
+     * 
+     * 首先尝试从工作目录下的.hive/agent.md文件读取自定义指令
+     * 如果文件不存在或读取失败，则从角色配置中获取
+     * 
+     * @param role 反应堆角色
+     * @param customInstructions 默认指令（如果文件不存在且配置中无指令时使用）
+     * @return 自定义指令内容
+     */
     public static String customInstructions(ReactorRole role, String customInstructions) {
+        String workspacePath = role.getWorkspacePath();
+        if (StringUtils.isBlank(workspacePath)) {
+            log.warn("工作空间路径为空，使用默认指令");
+            return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+        }
+        
+        // 构建.hive/agent.md文件路径
+        String filePath = workspacePath
+                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + ".hive" + File.separator + "agent.md";
+        
+        try {
+            // 尝试读取文件内容
+            String mdStr = FileUtils.readMarkdownFile(filePath);
+            if (StringUtils.isNotBlank(mdStr)) {
+                log.debug("成功从{}读取自定义指令", filePath);
+                return mdStr;
+            } else {
+                log.debug("文件{}存在但内容为空", filePath);
+            }
+        } catch (Exception e) {
+            log.debug("无法读取自定义指令文件: {}, 原因: {}", filePath, e.getMessage());
+        }
+        
+        // 从角色配置中获取自定义指令，如果不存在则使用默认指令
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
     }
 
@@ -101,6 +136,7 @@ public class MonerSystemPrompt {
     //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
         final List<Map<String, Object>> serverList = new ArrayList<>();
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
         if (null != sl) {
             serverList.addAll(sl);
