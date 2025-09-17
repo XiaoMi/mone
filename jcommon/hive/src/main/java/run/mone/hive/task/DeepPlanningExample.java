@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLMProvider;
 
 /**
  * Deep Planning功能的完整示例
@@ -15,7 +17,7 @@ public class DeepPlanningExample {
     private DeepPlanningProcessor planningProcessor;
     private FocusChainManager focusChainManager;
     private TaskCallbacks callbacks;
-    private LLM llm;
+    private LLMTaskProcessor llm;
     
     public static void main(String[] args) {
         DeepPlanningExample example = new DeepPlanningExample();
@@ -25,6 +27,9 @@ public class DeepPlanningExample {
     public void runExample() {
         System.out.println("=== Deep Planning Java版本示例 ===\n");
         
+        // 显示LLM配置说明
+        displayLLMConfigurationInfo();
+        
         // 初始化组件
         initializeComponents();
         
@@ -32,9 +37,21 @@ public class DeepPlanningExample {
         demonstrateDeepPlanningFlow();
     }
     
+    /**
+     * 显示LLM配置说明
+     */
+    private void displayLLMConfigurationInfo() {
+        System.out.println("🔧 LLM配置说明:");
+        System.out.println("本示例将尝试使用真实的LLM服务 (DeepSeek)");
+        System.out.println("如需配置API密钥，请设置以下环境变量或配置文件:");
+        System.out.println("- DEEPSEEK_API_KEY: DeepSeek API密钥");
+        System.out.println("- DEEPSEEK_API_URL: DeepSeek API地址 (可选)");
+        System.out.println("如果真实LLM不可用，将自动回退到模拟实现\n");
+    }
+    
     private void initializeComponents() {
-        // 创建模拟的LLM实现
-        llm = new MockLLM();
+        // 创建实际的LLM实现
+        llm = createRealLLM();
         
         // 创建回调实现
         callbacks = new TaskCallbacks() {
@@ -75,6 +92,13 @@ public class DeepPlanningExample {
         
         // 创建斜杠命令解析器
         commandParser = new SlashCommandParser();
+        
+        // 显示LLM配置信息
+        if (llm instanceof LLMTaskProcessorImpl) {
+            System.out.println("✅ 使用真实LLM服务 (DeepSeek)");
+        } else {
+            System.out.println("⚠️ 使用回退模拟LLM (真实LLM服务不可用)");
+        }
         
         System.out.println("✅ Deep Planning组件初始化完成\n");
     }
@@ -207,27 +231,173 @@ public class DeepPlanningExample {
     }
     
     /**
-     * 模拟的LLM实现
+     * 创建真实的LLM实现
      */
-    private static class MockLLM implements LLM {
-        @Override
-        public String sendMessage(String message) {
-            // 模拟LLM响应
-            if (message.contains("investigation") || message.contains("codebase")) {
-                return "Based on my analysis, this is a Java project with modular architecture. " +
-                       "I recommend implementing the authentication feature using standard Java security patterns.";
-            } else if (message.contains("questions") || message.contains("clarify")) {
-                return "I have identified the key technical decisions that need clarification for optimal implementation.";
-            } else if (message.contains("implementation plan")) {
-                return "I have created a comprehensive implementation plan with detailed specifications and step-by-step guidance.";
-            } else {
-                return "Mock LLM response for: " + message.substring(0, Math.min(50, message.length())) + "...";
+    private LLMTaskProcessor createRealLLM() {
+        try {
+            // 从环境变量或系统属性获取API配置
+            String apiKey = System.getenv("DEEPSEEK_API_KEY");
+            String apiUrl = System.getenv("DEEPSEEK_API_URL");
+            
+            if (apiKey == null) {
+                apiKey = System.getProperty("deepseek.api.key");
             }
+            if (apiUrl == null) {
+                apiUrl = System.getProperty("deepseek.api.url", "https://api.deepseek.com");
+            }
+            
+            // 创建LLM配置
+            LLMConfig.LLMConfigBuilder configBuilder = LLMConfig.builder()
+                    .model("deepseek-chat")  // 使用deepseek模型
+                    .llmProvider(LLMProvider.DEEPSEEK)
+                    .temperature(0.1)
+                    .maxTokens(4000)
+                    .debug(true);
+            
+            // 如果有API密钥，则设置
+            if (apiKey != null && !apiKey.trim().isEmpty()) {
+                configBuilder.token(apiKey);
+            }
+            
+            // 如果有自定义API地址，则设置
+            if (apiUrl != null && !apiUrl.trim().isEmpty()) {
+                configBuilder.url(apiUrl);
+            }
+            
+            LLMConfig config = configBuilder.build();
+            
+            // 创建真实的LLM任务处理器
+            LLMTaskProcessor processor = new LLMTaskProcessorImpl(config);
+            
+            // 测试LLM连接
+            String testResponse = processor.sendMessage("Hello, this is a connection test.");
+            if (testResponse != null && !testResponse.trim().isEmpty()) {
+                System.out.println("✅ LLM连接测试成功");
+                return processor;
+            } else {
+                throw new RuntimeException("LLM returned empty response");
+            }
+            
+        } catch (Exception e) {
+            System.err.println("⚠️ 创建真实LLM失败，回退到模拟实现: " + e.getMessage());
+            if (e.getMessage() != null && e.getMessage().contains("API key")) {
+                System.err.println("💡 提示: 请设置DEEPSEEK_API_KEY环境变量");
+            }
+            return createFallbackLLM();
         }
-        
-        @Override
-        public String sendMessage(String systemPrompt, String userMessage) {
-            return "Mock LLM response with system prompt";
-        }
+    }
+    
+    /**
+     * 创建回退的模拟LLM实现（当真实LLM创建失败时使用）
+     */
+    private LLMTaskProcessor createFallbackLLM() {
+        return new LLMTaskProcessor() {
+            @Override
+            public String sendMessage(String message) {
+                System.out.println("[FALLBACK_LLM] Processing message: " + message.substring(0, Math.min(100, message.length())) + "...");
+                
+                // 根据消息内容生成更智能的响应
+                if (message.contains("investigation") || message.contains("codebase") || message.contains("STEP 1")) {
+                    return generateInvestigationResponse();
+                } else if (message.contains("questions") || message.contains("clarify") || message.contains("STEP 2")) {
+                    return generateQuestionsResponse();
+                } else if (message.contains("implementation plan") || message.contains("STEP 3")) {
+                    return generateImplementationPlanResponse();
+                } else if (message.contains("task") || message.contains("STEP 4")) {
+                    return generateTaskCreationResponse();
+                } else {
+                    return "Based on the analysis of your request, I understand you want to implement user authentication with JWT tokens and role-based access control. This is a comprehensive feature that requires careful planning and implementation.";
+                }
+            }
+            
+            @Override
+            public String sendMessage(String systemPrompt, String userMessage) {
+                System.out.println("[FALLBACK_LLM] Processing with system prompt");
+                return sendMessage(userMessage);
+            }
+            
+            private String generateInvestigationResponse() {
+                return """
+                Based on my analysis of the codebase, I've identified the following:
+                
+                **Project Structure:**
+                - This is a Java project with Maven build system
+                - Uses Spring Boot framework for web development
+                - Already has modular architecture with clear separation of concerns
+                - Existing authentication infrastructure that can be extended
+                
+                **Key Findings:**
+                - Current security configuration is basic
+                - Database schema supports user management
+                - REST API endpoints are well-structured
+                - Logging and monitoring capabilities are in place
+                
+                **Recommendations:**
+                - Implement JWT-based authentication using Spring Security
+                - Add role-based access control (RBAC) with custom annotations
+                - Integrate with existing user management system
+                - Ensure backward compatibility with current authentication
+                """;
+            }
+            
+            private String generateQuestionsResponse() {
+                return """
+                I need clarification on a few key points:
+                
+                1. **Token Expiration**: What should be the JWT token expiration time? (e.g., 1 hour, 24 hours)
+                2. **Roles**: What specific roles do you need? (e.g., ADMIN, USER, MODERATOR)
+                3. **Refresh Tokens**: Do you want to implement refresh token functionality?
+                4. **Database**: Should we store JWT tokens in database or keep them stateless?
+                5. **Migration**: How should we handle existing user sessions during the upgrade?
+                """;
+            }
+            
+            private String generateImplementationPlanResponse() {
+                return """
+                # Implementation Plan
+                
+                ## Overview
+                Implement JWT-based authentication with role-based access control for the Java application.
+                
+                ## Files to Create/Modify
+                - JwtAuthenticationFilter.java
+                - JwtTokenProvider.java  
+                - UserRole.java (enum)
+                - SecurityConfig.java (update)
+                - AuthController.java (update)
+                
+                ## Implementation Steps
+                1. Add JWT dependencies to pom.xml
+                2. Create JWT token provider and filter
+                3. Implement role-based access control
+                4. Update security configuration
+                5. Add authentication endpoints
+                6. Create unit and integration tests
+                
+                ## Testing Strategy
+                - Unit tests for JWT token generation/validation
+                - Integration tests for authentication flows
+                - Security tests for role-based access
+                """;
+            }
+            
+            private String generateTaskCreationResponse() {
+                return """
+                Task created successfully for implementing JWT authentication with RBAC.
+                
+                **Task Progress:**
+                - [ ] Set up JWT dependencies and configuration
+                - [ ] Implement JWT token provider
+                - [ ] Create authentication filter
+                - [ ] Add role-based access control
+                - [ ] Update security configuration
+                - [ ] Implement authentication endpoints
+                - [ ] Add comprehensive testing
+                - [ ] Update documentation
+                
+                The implementation plan has been saved and the task is ready for execution.
+                """;
+            }
+        };
     }
 }

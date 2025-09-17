@@ -18,6 +18,10 @@ public interface ITool {
 
     String usage();
 
+    default boolean taskProgress() {
+        return true;
+    }
+
     default String example() {
         return "";
     }
