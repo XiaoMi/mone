@@ -127,7 +127,7 @@ public class PathResolutionInterceptor {
     /**
      * Determine if a parameter should be resolved as a path
      */
-    private static boolean shouldResolveParameter(String toolName, String paramName, JsonElement paramValue) {
+    public static boolean shouldResolveParameter(String toolName, String paramName, JsonElement paramValue) {
         // Must be a string parameter
         if (paramValue == null || !paramValue.isJsonPrimitive() || !paramValue.getAsJsonPrimitive().isString()) {
             return false;
@@ -196,11 +196,6 @@ public class PathResolutionInterceptor {
         if (value.startsWith("http://") || value.startsWith("https://") ||
                 value.startsWith("ftp://") || value.startsWith("mailto:")) {
             return false;
-        }
-
-        // Contains path separators
-        if (value.contains("/") || value.contains("\\")) {
-            return true;
         }
 
         // Starts with current/parent directory markers
