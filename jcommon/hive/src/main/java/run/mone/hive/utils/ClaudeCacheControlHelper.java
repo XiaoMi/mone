@@ -1,10 +1,12 @@
-package run.mone.hive.llm;
+package run.mone.hive.utils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.llm.CustomConfig;
+import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +37,8 @@ public class ClaudeCacheControlHelper {
             "anthropic/claude-3-opus:beta"
     );
 
-    public static boolean isClaudeCacheModel(LLMProvider provider, String model) {
-        if (provider != LLMProvider.OPENROUTER) {
+    public static boolean isClaudeCacheModel(run.mone.hive.llm.LLMProvider provider, String model) {
+        if (provider != run.mone.hive.llm.LLMProvider.OPENROUTER) {
             return false;
         }
         return CLAUDE_CACHE_MODELS.contains(model);

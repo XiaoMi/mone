@@ -1860,4 +1860,58 @@ class LLMTest {
         // we expect to see logs indicating cache_control was applied to the system prompt
         // and the last 2 user messages.
     }
+
+    @Test
+    public void testChatCompletionWithUsage() {
+        // This test requires OPENROUTER to be configured
+        config.setLlmProvider(LLMProvider.OPENROUTER);
+        config.setModel("anthropic/claude-3.5-sonnet:beta");
+        // Make sure OPENROUTER_AI_GATEWAY environment variable is set
+        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        llm = new LLM(config);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().role("user").content("Hello, what is the capital of France?").build());
+
+        LLM.LLMChatCompletionResult result = llm.chatCompletionWithUsage(llm.getToken(), messages, config.getModel(), "You are a helpful assistant.", config);
+
+        assertNotNull(result);
+        assertNotNull(result.getResult());
+        log.info("Result: {}", result.getResult());
+
+        LLM.LLMUsage usage = result.getUsage();
+        assertNotNull(usage, "Usage object should not be null for OpenRouter provider");
+
+        log.info("Usage details: {}", new com.google.gson.Gson().toJson(usage));
+
+        assertTrue(usage.getInputTokens() > 0, "Input tokens should be greater than 0");
+        assertTrue(usage.getOutputTokens() > 0, "Output tokens should be greater than 0");
+        assertNotNull(usage.getTotalCost(), "Total cost should not be null");
+    }
+
+    @Test
+    public void testChatCompletionWithUsageForDeepSeek() {
+        // This test requires DEEPSEEK to be configured
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setModel("deepseek-chat");
+        llm = new LLM(config);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().role("user").content("Hello, what is the capital of China?").build());
+
+        LLM.LLMChatCompletionResult result = llm.chatCompletionWithUsage(llm.getToken(), messages, config.getModel(), "You are a helpful assistant.", config);
+
+        assertNotNull(result);
+        assertNotNull(result.getResult());
+        log.info("Result: {}", result.getResult());
+
+        LLM.LLMUsage usage = result.getUsage();
+        assertNotNull(usage, "Usage object should not be null for DeepSeek provider");
+
+        log.info("Usage details: {}", new com.google.gson.Gson().toJson(usage));
+
+        assertTrue(usage.getInputTokens() > 0, "Input tokens should be greater than 0");
+        assertTrue(usage.getOutputTokens() > 0, "Output tokens should be greater than 0");
+        // Deepseek may or may not return cache tokens, so we don't assert them to be non-null
+    }
 }
