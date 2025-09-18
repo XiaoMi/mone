@@ -498,10 +498,10 @@ public class ReactorRole extends Role {
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
-            
+
             // 在工具执行前进行路径解析，将相对路径转换为绝对路径
             PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
-            
+
             ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(this, params);
             if (toolRes.has("toolMsgType")) {
@@ -511,9 +511,9 @@ public class ReactorRole extends Role {
                     sink.next(toolRes.toString());
                 }
             } else {
-                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
+                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
                 if (null != sink && tool.show()) {
-                    sink.next(res);
+                    sink.next(res + "\n" + tool.formatResult(toolRes));
                 }
             }
         }
@@ -660,6 +660,7 @@ public class ReactorRole extends Role {
 
     /**
      * 设置工作区根目录路径
+     *
      * @param workspacePath 工作区根目录的绝对路径
      */
     public void setWorkspacePath(String workspacePath) {
@@ -671,6 +672,7 @@ public class ReactorRole extends Role {
 
     /**
      * 获取当前工作区路径
+     *
      * @return 工作区根目录路径
      */
     public String getWorkspacePath() {
