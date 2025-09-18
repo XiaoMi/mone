@@ -404,7 +404,7 @@ public class Memory implements MemoryBase {
         List<String> facts = extractFacts(parsedMessages);
         
         if (facts.isEmpty()) {
-            log.debug("No facts extracted from input, skipping memory update");
+            log.info("No facts extracted from input, skipping memory update");
             return new ArrayList<>();
         }
         
@@ -539,7 +539,7 @@ public class Memory implements MemoryBase {
     }
     
     private String createMemory(String data, List<Double> existingEmbeddings, Map<String, Object> metadata) {
-        log.debug("Creating memory with data: {}", data);
+        log.info("Creating memory with data: {}", data);
         
         try {
             List<Double> embeddings = existingEmbeddings != null 
@@ -678,7 +678,7 @@ public class Memory implements MemoryBase {
                 }
             }
             
-            log.debug("Added {} relations to graph", relations.size());
+            log.info("Added {} relations to graph", relations.size());
             return relations;
             
         } catch (Exception e) {

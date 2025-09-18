@@ -79,13 +79,19 @@ public class OpenAiEmbedding implements EmbeddingBase {
             String requestJson = gson.toJson(requestBody);
             
             // 发送请求
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/embeddings"))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(requestJson))
-                .timeout(Duration.ofMinutes(1))
-                .build();
+                .timeout(Duration.ofMinutes(1));
+
+            // 添加自定义请求头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest request = requestBuilder.build();
                 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             
@@ -124,13 +130,19 @@ public class OpenAiEmbedding implements EmbeddingBase {
             String requestJson = gson.toJson(requestBody);
             
             // 发送请求
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/embeddings"))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(requestJson))
-                .timeout(Duration.ofMinutes(2))
-                .build();
+                .timeout(Duration.ofMinutes(2));
+
+            // 添加自定义请求头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest request = requestBuilder.build();
                 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             
@@ -244,11 +256,17 @@ public class OpenAiEmbedding implements EmbeddingBase {
      */
     public List<String> getAvailableModels() {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/models"))
                 .header("Authorization", "Bearer " + apiKey)
-                .GET()
-                .build();
+                .GET();
+
+            // 添加自定义请求头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest request = requestBuilder.build();
                 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import run.mone.hive.memory.longterm.config.*;
 import run.mone.hive.memory.longterm.core.Memory;
+import run.mone.hive.memory.longterm.vectorstore.impl.ChromaVectorStore;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -42,23 +43,31 @@ public class LocalMemoryIntegrationTest {
         MemoryConfig config = MemoryConfig.builder()
             .llm(LlmConfig.builder()
                 .provider(LlmConfig.Provider.OPENAI)
-                .model("gpt-4o-mini")
-                .apiKey("test-key")  // 测试时不会真正调用
+                .model("gpt-4o")
+                .baseUrl("")
+                .apiKey("")  // 测试时不会真正调用
+                .customHeaders(Map.of("X-Model-Provider-Id", "azure_openai"))
                 .build())
             .embedder(EmbedderConfig.builder()
                 .provider(EmbedderConfig.Provider.OPENAI)
                 .model("text-embedding-3-small")
-                .apiKey("test-key")  // 测试时不会真正调用
+                .baseUrl("")
+                .apiKey("")  // 测试时不会真正调用
+                .customHeaders(Map.of("X-Model-Provider-Id", "azure_openai"))
                 .build())
             .vectorStore(VectorStoreConfig.builder()
-                .provider(VectorStoreConfig.Provider.LOCAL)
+                .provider(VectorStoreConfig.Provider.CHROMA)
                 .collectionName("test_collection")
                 .path(tempDir.resolve("vector").toString())
                 .embeddingModelDims(1536)
+                .embeddingFunction(ChromaVectorStore.OPENAI_EMBEDDING_FUNCTION)
+                .apiKey("")
+                .baseUrl("")
                 .build())
             .graphStore(GraphStoreConfig.builder()
-                .provider(GraphStoreConfig.Provider.LOCAL)
-                .url(tempDir.resolve("graph").toString())
+                .provider(GraphStoreConfig.Provider.KUZU)
+                // .url(tempDir.resolve("graph").toString())
+                // .url(":memory:")
                 .enabled(true)
                 .build())
             .historyDbPath(tempDir.resolve("history.db").toString())

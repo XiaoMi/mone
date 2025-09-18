@@ -103,6 +103,16 @@ public class VectorStoreConfig {
      * 数据库名称 (对于支持数据库概念的存储)
      */
     private String database;
+
+    /**
+     * 嵌入函数名称
+     */
+    private String embeddingFunction;
+
+    /**
+     * 基础URL
+     */
+    private String baseUrl;
     
     /**
      * 从Map创建配置
@@ -148,7 +158,15 @@ public class VectorStoreConfig {
             Map<String, Object> config = (Map<String, Object>) configMap.get("config");
             builder.config(config);
         }
-        
+
+        if (configMap.containsKey("embeddingFunction")) {
+            builder.embeddingFunction((String) configMap.get("embeddingFunction"));
+        }
+
+        if (configMap.containsKey("baseUrl")) {
+            builder.baseUrl((String) configMap.get("baseUrl"));
+        }
+
         return builder.build();
     }
     
@@ -178,15 +196,29 @@ public class VectorStoreConfig {
     }
     
     /**
-     * 获取Chroma默认配置
+     * 获取Chroma默认配置（本地嵌入式）
      */
     public static VectorStoreConfig chromaDefault() {
         return VectorStoreConfig.builder()
                 .provider(Provider.CHROMA)
                 .host("localhost")
                 .port(8000)
+                .path("./data/chroma")
                 .collectionName("mem0")
                 .embeddingModelDims(1536)
+                .build();
+    }
+
+    /**
+     * 获取本地嵌入式Chroma配置（测试用）
+     */
+    public static VectorStoreConfig chromaEmbedded() {
+        return VectorStoreConfig.builder()
+                .provider(Provider.CHROMA)
+                .host("localhost")
+                .path("./data/chroma_embedded")
+                .collectionName("embedded_mem0")
+                .embeddingModelDims(384)
                 .build();
     }
 }
