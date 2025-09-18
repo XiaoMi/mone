@@ -35,11 +35,19 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<step>") ||
         mcpContent.includes("<file>") ||
         mcpContent.includes("<file_operation>") ||
-        mcpContent.includes("<execute>")
+        mcpContent.includes("<execute>") ||
+        mcpContent.includes("<execute_command>") ||
+        mcpContent.includes("<read_file>") ||
+        mcpContent.includes("<replace_in_file>") ||
+        mcpContent.includes("<search_files>") ||
+        mcpContent.includes("<write_to_file>") ||
+        mcpContent.includes("<list_files>")
       )
     ) {
       return false;
     }
+
+    console.log("mcpContent", mcpContent);
 
     let html = "";
     let accumulatedText = ""; // 添加文本累积变量
@@ -47,6 +55,7 @@ export function markdownItMcp(md: MarkdownIt) {
     let isDownloadFile = false;
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
+        console.log("onopentag", name, attributes);
         /*
          * This fires when a new tag is opened.
          *
@@ -149,6 +158,85 @@ export function markdownItMcp(md: MarkdownIt) {
                 <span>执行命令</span>
               </div>
               <div class="execute-content">`;
+        } else if (name === "read_file") {
+          html += `
+            <div class="read-file-block">
+              <div class="read-file-header">
+                <i class="fa-solid fa-file-text"></i>
+                <span>读取文件</span>
+              </div>
+              <div class="read-file-content">`;
+        } else if (name === "replace_in_file") {
+          html += `
+            <div class="replace-in-file-block">
+              <div class="replace-in-file-header">
+                <i class="fa-solid fa-edit"></i>
+                <span>文件替换</span>
+              </div>
+              <div class="replace-in-file-content">`;
+        } else if (name === "diff") {
+          html += `<div class="diff-section">
+            <div class="diff-header">
+              <i class="fa-solid fa-code-compare"></i>
+              <span>代码差异</span>
+            </div>
+            <div class="diff-content">
+              <pre><code>`;
+        } else if (name === "search_files") {
+          html += `
+            <div class="search-files-block">
+              <div class="search-files-header">
+                <i class="fa-solid fa-search"></i>
+                <span>文件搜索</span>
+              </div>
+              <div class="search-files-content">`;
+        } else if (name === "write_to_file") {
+          html += `
+            <div class="write-to-file-block">
+              <div class="write-to-file-header">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>文件写入</span>
+              </div>
+              <div class="write-to-file-content">`;
+        } else if (name === "regex") {
+          html += `<div class="regex-section">
+            <span class="regex-label">正则表达式：</span>
+            <span class="regex-value">`;
+        } else if (name === "file_pattern") {
+          html += `<div class="file-pattern-section">
+            <span class="file-pattern-label">文件模式：</span>
+            <span class="file-pattern-value">`;
+        } else if (name === "list_files") {
+          html += `
+            <div class="list-files-block">
+              <div class="list-files-header">
+                <i class="fa-solid fa-folder"></i>
+                <span>文件列表</span>
+              </div>
+              <div class="list-files-content">`;
+        } else if (name === "recursive") {
+          html += `<div class="recursive-section">
+            <span class="recursive-label">递归：</span>
+            <span class="recursive-value">`;
+        } else if (name === "execute_command") {
+          html += `
+            <div class="execute-command-block">
+              <div class="execute-command-header">
+                <i class="fa-solid fa-play-circle"></i>
+                <span>执行命令</span>
+              </div>
+              <div class="execute-command-content">`;
+        } else if (name === "requires_approval") {
+          html += `<div class="requires-approval-section">
+            <span class="approval-label">需要确认：</span>
+            <span class="approval-value">`;
+        } else if (name === "task_progress") {
+          html += `<div class="task-progress-section">
+            <div class="task-progress-header">
+              <i class="fa-solid fa-tasks"></i>
+              <span>任务进度</span>
+            </div>
+            <div class="task-progress-content">`;
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
           html += `<div class="${name}-section">`;
         } else if (name === "download_file") {
@@ -247,6 +335,30 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "execute") {
           html += `</div></div>`;
+        } else if (tagname === "read_file") {
+          html += `</div></div>`;
+        } else if (tagname === "replace_in_file") {
+          html += `</div></div>`;
+        } else if (tagname === "diff") {
+          html += `</code></pre></div></div>`;
+        } else if (tagname === "search_files") {
+          html += `</div></div>`;
+        } else if (tagname === "write_to_file") {
+          html += `</div></div>`;
+        } else if (tagname === "regex") {
+          html += `</span></div>`;
+        } else if (tagname === "file_pattern") {
+          html += `</span></div>`;
+        } else if (tagname === "list_files") {
+          html += `</div></div>`;
+        } else if (tagname === "recursive") {
+          html += `</span></div>`;
+        } else if (tagname === "execute_command") {
+          html += `</div></div>`;
+        } else if (tagname === "requires_approval") {
+          html += `</span></div>`;
+        } else if (tagname === "task_progress") {
+          html += `</div></div>`;
         } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
         } else if (tagname === "download_file") {
@@ -265,7 +377,9 @@ export function markdownItMcp(md: MarkdownIt) {
     parser.write(mcpContent);
     parser.end();
 
-    let token = state.push("html_block", "", 0);
+    console.log("Generated HTML:", html);
+
+    const token = state.push("html_block", "", 0);
     token.content = html;
     token.map = [startLine, endLine];
 
