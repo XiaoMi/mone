@@ -41,7 +41,8 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<replace_in_file>") ||
         mcpContent.includes("<search_files>") ||
         mcpContent.includes("<write_to_file>") ||
-        mcpContent.includes("<list_files>")
+        mcpContent.includes("<list_files>") ||
+        mcpContent.includes("<tool_result>")
       )
     ) {
       return false;
@@ -50,8 +51,6 @@ export function markdownItMcp(md: MarkdownIt) {
     console.log("mcpContent", mcpContent);
 
     let html = "";
-    let accumulatedText = ""; // 添加文本累积变量
-    let startCodeBlock = false;
     let isDownloadFile = false;
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
@@ -237,6 +236,15 @@ export function markdownItMcp(md: MarkdownIt) {
               <span>任务进度</span>
             </div>
             <div class="task-progress-content">`;
+        } else if (name === "tool_result") {
+          html += `
+            <div class="tool-result-block">
+              <div class="tool-result-header">
+                <i class="fa-solid fa-code"></i>
+                <span>工具结果</span>
+              </div>
+              <div class="tool-result-content">
+                <pre><code class="language-json">`;
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
           html += `<div class="${name}-section">`;
         } else if (name === "download_file") {
@@ -249,16 +257,12 @@ export function markdownItMcp(md: MarkdownIt) {
             <div class="file-url-content">
               <a class="file-url-link" href="javascript:;" data-name="${attributes.fileName}" data-url="${attributes.fileUrl}">${attributes.fileName}</a>`;
         } else {
-          if (startCodeBlock) {
-            accumulatedText += `<${name}>`
-          } else {
-            console.log("unhandled tag", name,attributes);
+          console.log("unhandled tag", name,attributes);
             html += md.utils.escapeHtml(
               `<${name} ${Object.entries(attributes)
                 .map(([key, value]) => `${key}="${value}"`)
                 .join(" ")}>`
-            );
-          }
+          );
         }
       },
       ontext(text) {
@@ -359,6 +363,8 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</span></div>`;
         } else if (tagname === "task_progress") {
           html += `</div></div>`;
+        } else if (tagname === "tool_result") {
+          html += `</code></pre></div></div>`;
         } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
         } else if (tagname === "download_file") {
