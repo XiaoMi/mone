@@ -450,7 +450,15 @@ public class LLM {
             }
         }
 
+        // Apply cache control for Claude models on OpenRouter
+        ClaudeCacheControlHelper.applyCacheControlToUserMessages(msgArray, model, this.llmProvider, customConfig);
+
         requestBody.add(getContentsName(), msgArray);
+        if (this.llmProvider == LLMProvider.OPENROUTER) {
+            JsonObject usage = new JsonObject();
+            usage.addProperty("include", true);
+            requestBody.add("usage", usage);
+        }
 
         Request.Builder requestBuilder = new Request.Builder();
 
@@ -797,6 +805,10 @@ public class LLM {
                 msgArray.add(createMessageObject(message.getRole(), message.getContent()));
             }
         }
+
+        // Apply cache control for Claude models on OpenRouter
+        ClaudeCacheControlHelper.applyCacheControlToUserMessages(msgArray, model, this.llmProvider, customConfig);
+
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
         // 设置关闭思考模型的思考能力
         if (!config.isReasoningOutPut()) {

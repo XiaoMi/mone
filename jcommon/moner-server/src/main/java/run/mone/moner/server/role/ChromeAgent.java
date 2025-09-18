@@ -55,7 +55,7 @@ public class ChromeAgent extends Role {
 
     private WebSocketSession session;
 
-    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer(), new Summarizer(), new BilibiliPublisher());
+    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer(), new Summarizer(), new BilibiliPublisher(), new Miliner());
 
     private List<Action> actionList = Lists.newArrayList(new OpenTabAction(""), new OperationAction(), new ScrollAction(),
             new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new CodeAction());
@@ -119,22 +119,44 @@ public class ChromeAgent extends Role {
     @SneakyThrows
     @Override
     protected int observe() {
+        // 检查线程是否被中断
+        if (Thread.currentThread().isInterrupted()) {
+            log.info("ChromeAgent ReAct loop interrupted");
+            return -1; // 退出ReAct循环
+        }
+        
         // checkout if the last action is completed
-        Message msg = this.rc.getNews().poll(3, TimeUnit.MINUTES);
-        log.info("====================== observe msg: ====================== \n {}", msg);
-        if (msg != null) {
-            List<String> images = null;
-            String code = "";
-            String tabs = "";
-            String text = "";
+        try {
+            Message msg = this.rc.getNews().poll(3, TimeUnit.MINUTES);
+            log.info("====================== observe msg: ====================== \n {}", msg);
+            if (msg != null) {
+                List<String> images = null;
+                String code = "";
+                String tabs = "";
+                String text = "";
 
-            if (msg.getType().equals("reply")) {
+                if (msg.getType().equals("reply")) {
                 // 如果页面没有变化，则等待1秒后继续观察
                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
+
+                if (obj.has("next")) {
+                    String next = obj.get("next").getAsString();
+                    if (next.equals("true")) {
+                        this.rc.getNews().put(Message.builder().role("user").content("执行调用成功,请执行下一步操作").build());
+                        return 1;
+                    }
+                }
+
                 if ((!obj.has("urlChanged") 
                     || !obj.get("urlChanged").getAsBoolean()) 
                     && (!obj.has("contentChanged") || !obj.get("contentChanged").getAsBoolean())) {
-                    TimeUnit.SECONDS.sleep(1);
+                    try {
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.info("ChromeAgent sleep interrupted");
+                        return -1; // 退出ReAct循环
+                    }
                     this.rc.getNews().put(Message.builder().role("user").content("Nothing changed since last action, try to take other action if possible").build());
                 } else if (obj.has("error")) {
                     this.rc.getNews().put(Message.builder().role("user").content("Action failed, with error: " + obj.get("error").getAsString() + "; Please try again.").build());
@@ -184,6 +206,11 @@ public class ChromeAgent extends Role {
                 consumer.accept(Const.actionTemplate.formatted("end", tools.get(tools.size() - 1).getTag()));
             }
             return attemptCompletion;
+        }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.info("ChromeAgent observe interrupted");
+            return -1; // 退出ReAct循环
         }
         return 1; // keep observing
     }

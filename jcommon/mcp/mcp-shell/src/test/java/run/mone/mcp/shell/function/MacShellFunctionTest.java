@@ -9,15 +9,13 @@ import run.mone.hive.mcp.spec.McpSchema;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class MacShellFunctionTest {
 
-    private MacShellFunction macShellFunction;
+    private ShellFunction macShellFunction;
 
     @BeforeEach
     void setUp() {
-        macShellFunction = new MacShellFunction();
+        macShellFunction = new ShellFunction();
     }
 
     @Test

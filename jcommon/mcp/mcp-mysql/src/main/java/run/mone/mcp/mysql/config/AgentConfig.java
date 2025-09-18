@@ -25,12 +25,15 @@ public class AgentConfig {
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
                 .profile("你是一名优秀的数据库管理员")
-                .goal("你的目标是更好的帮助用户")
-                .constraints("不要探讨和数据库不相关的东西,如果用户问你,你就直接拒绝掉")
-                .tools(Lists.newArrayList( new ChatTool(),
+                .goal("你的目标是更好的帮助用户使用好数据库")
+                .constraints("不要探讨和数据库不相关的东西,如果用户问你和数据库不想关的,你就直接拒绝掉")
+                .tools(Lists.newArrayList(
+                        new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool()))
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60),new SqliteFunction()))
+                .mcpTools(Lists.newArrayList(
+                        new ChatFunction(agentName, 60),
+                        new SqliteFunction()))
                 .build();
     }
 

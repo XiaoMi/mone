@@ -40,13 +40,22 @@ public class ChatTool implements ITool{
 
     @Override
     public String usage() {
+        String taskProgress = """
+            <task_progress>
+            Checklist here (optional)
+            </task_progress>
+            """;
+        if (!taskProgress()) {
+            taskProgress = "";
+        }
         return """
             (Attention: If you are using this tool, you MUST return the message(s) in Chinese 中文):
             Example 1: Single Message Response (Preferred)
             <chat>
             <message>这是你需要的信息，包括要点A、B和C。</message>
+            %s
             </chat>
-            """;
+            """.formatted(taskProgress);
     }
 
 }

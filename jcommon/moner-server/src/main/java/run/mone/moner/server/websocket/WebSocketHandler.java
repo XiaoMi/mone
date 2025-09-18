@@ -1,5 +1,6 @@
 package run.mone.moner.server.websocket;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
@@ -45,6 +46,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private LLMService llmService;
 
     private static final Map<String, ChromeAgent> sessionIdShopper = new ConcurrentHashMap<>();
+    
+    // 存储每个session对应的ReAct循环线程
+    private static final Map<String, Thread> sessionReactThreads = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -62,7 +66,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        ChromeAgent chromeAthena = sessionIdShopper.get(session.getId());
+        ChromeAgent chromeAgent = sessionIdShopper.get(session.getId());
 
         JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
         String from = JsonUtils.getValueOrDefault(req, "from", "chrome");
@@ -75,8 +79,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             if (data.equals("clear")) {
                 log.info("clear");
-                chromeAthena.getRc().getNews().clear();
-                chromeAthena.getRc().getMemory().clear();
+                chromeAgent.getRc().getNews().clear();
+                chromeAgent.getRc().getMemory().clear();
+                breakCurrentReactLoop(session);
                 return;
             }
 
@@ -87,7 +92,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
 
             if (data.startsWith("!!")) {
-                chromeAthena.getRc().news.put(Message.builder().content(data).build());
+                chromeAgent.getRc().news.put(Message.builder().content(data).build());
                 return;
             }
 
@@ -98,7 +103,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //chrome直接返回的(目前只有购物)
             if (cmd.equals("shopping")) {
-                chromeAthena.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
+                chromeAgent.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
                 return;
             }
 
@@ -107,16 +112,43 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // action不成功，需要交给Role处理
                 if (!obj.has("success") || !obj.get("success").getAsBoolean()) {
                     log.info("action:{} failed", obj.get("actionType"));
-                    chromeAthena.getRc().news.put(Message.builder().type("reply").role("user").content(data).build());
+                    chromeAgent.getRc().news.put(Message.builder().type("reply").role("user").content(data).build());
                 } else {
                     log.info("action:{} success", obj.get("actionType"));
+
+                    if (obj.has("attributes")) {
+                        JsonElement je = obj.get("attributes");
+                        if (je.isJsonObject() && je.getAsJsonObject().has("next")) {
+                            String next = je.getAsJsonObject().get("next").getAsString();
+                            if (next.equals("true")) {
+                                JsonObject jo = new JsonObject();
+                                jo.addProperty("next","true");
+                                chromeAgent.getRc().news.put(Message.builder().type("reply").role("user").content(jo.toString()).build());
+                            }
+                        }
+                    }
+
                 }
                 return;
             }
 
 
-            chromeAthena.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
-            Thread.ofVirtual().factory().newThread(() -> chromeAthena.run()).start();
+            chromeAgent.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
+            
+            // 先中断已存在的ReAct循环
+            breakCurrentReactLoop(session);
+            
+            // 创建新的虚拟线程并记录
+            Thread reactThread = Thread.ofVirtual().factory().newThread(() -> {
+                try {
+                    chromeAgent.run();
+                } finally {
+                    // 线程结束时清理记录
+                    sessionReactThreads.remove(session.getId());
+                }
+            });
+            sessionReactThreads.put(session.getId(), reactThread);
+            reactThread.start();
             return;
         }
 
@@ -131,6 +163,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessions.remove(session);
         sessionIdShopper.remove(session.getId());
+        // 连接关闭时中断对应的ReAct循环
+        breakCurrentReactLoop(session);
     }
 
     public void sendMessageToAll(String message) throws IOException {
@@ -157,9 +191,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
         Pair<LLM, McpModel> llmConf = llmService.getLLM(FromType.CHROME.getValue());
 
         llm = llmConf.getLeft();
-        ChromeAgent chromeAthena = new ChromeAgent(session);
-        chromeAthena.setLlm(llm);
-        chromeAthena.setActions(
+        ChromeAgent chromeAgent = new ChromeAgent(session);
+        chromeAgent.setLlm(llm);
+        chromeAgent.setActions(
                 //打开页面
                 new OpenTabAction("在tab中打开某个网址"),
                 //点击排名第一的商品
@@ -174,7 +208,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //刷新页面
                 new ClickAfterRefresh()
         );
-        chromeAthena.setConsumer(msg -> {
+        chromeAgent.setConsumer(msg -> {
             try {
                 JsonObject obj = new JsonObject();
                 obj.addProperty("data", msg);
@@ -188,6 +222,42 @@ public class WebSocketHandler extends TextWebSocketHandler {
         mcpOperationService.initMcpHub(FromType.CHROME.getValue());
         mcpOperationService.listenToTabSave(FromType.CHROME.getValue());
 
-        sessionIdShopper.put(session.getId(), chromeAthena);
+        sessionIdShopper.put(session.getId(), chromeAgent);
+    }
+    
+    /**
+     * 中断当前会话对应的ReAct循环
+     * @param session WebSocket会话
+     */
+    private void breakCurrentReactLoop(WebSocketSession session) {
+        if (session == null) {
+            log.warn("Session is null, cannot break ReAct loop");
+            return;
+        }
+        
+        Thread reactThread = sessionReactThreads.get(session.getId());
+        if (reactThread != null && reactThread.isAlive()) {
+            log.info("Interrupting ReAct loop for session: {}", session.getId());
+            reactThread.interrupt();
+            sessionReactThreads.remove(session.getId());
+        } else {
+            log.debug("No active ReAct loop found for session: {}", session.getId());
+        }
+    }
+    
+    /**
+     * 中断当前会话对应的ReAct循环 (兼容性方法)
+     */
+    @Deprecated
+    private void breakCurrentReactLoop() {
+        log.warn("breakCurrentReactLoop() called without session parameter - this method is deprecated");
+        // 为了向后兼容，可以中断所有活跃的ReAct循环
+        sessionReactThreads.values().forEach(thread -> {
+            if (thread.isAlive()) {
+                log.info("Interrupting ReAct loop for thread: {}", thread.getName());
+                thread.interrupt();
+            }
+        });
+        sessionReactThreads.clear();
     }
 }

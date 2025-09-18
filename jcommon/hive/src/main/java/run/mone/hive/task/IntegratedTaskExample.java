@@ -24,7 +24,7 @@ public class IntegratedTaskExample {
         TaskCallbacks callbacks = createCallbacks();
         
         // 创建LLM模拟
-        LLM llm = createMockLLM();
+        LLMTaskProcessor llm = createMockLLM();
         
         // 创建Focus Chain管理器
         FocusChainManager focusChainManager = new FocusChainManager(
@@ -230,8 +230,8 @@ public class IntegratedTaskExample {
     /**
      * 创建模拟LLM
      */
-    private LLM createMockLLM() {
-        return new LLM() {
+    private LLMTaskProcessor createMockLLM() {
+        return new LLMTaskProcessor() {
             @Override
             public String sendMessage(String message) {
                 // 模拟LLM响应，包含工具调用
