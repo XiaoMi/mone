@@ -18,6 +18,8 @@ public class Const {
 
     public static final String USER_ID = "__user_id__";
 
+    public static final String USER_INTERNAL_NAME = "__user_internal_name__";
+
     public static final String AGENT_ID = "__agent_id__";
 
     public static final String SEND_FROM = "__send_from__";
