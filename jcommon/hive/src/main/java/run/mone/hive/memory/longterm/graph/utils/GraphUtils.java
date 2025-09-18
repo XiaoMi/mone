@@ -42,6 +42,19 @@ public class GraphUtils {
             You are a smart assistant who understands entities and their types in a given text.
             If user message contains self reference such as 'I', 'me', 'my' etc. then use USER_ID as the source entity.
             Extract all the entities from the text. ***DO NOT*** answer the question itself if the given text is a question.
+
+            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            {
+                "entities": [
+                    {
+                        "entity": "entity_name",
+                        "entity_type": "entity_type"
+                    }
+                ]
+            }
+
+            entity_name: the name of the entity
+            entity_type: the type of the entity
             """;
 
     /**

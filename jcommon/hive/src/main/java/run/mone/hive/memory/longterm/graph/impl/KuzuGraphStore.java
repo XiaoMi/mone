@@ -710,7 +710,7 @@ public class KuzuGraphStore implements GraphStoreBase {
             Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
 
             // Parse response
-            if (response != null && response.get("tool_calls") != null) {
+            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
 
@@ -737,6 +737,34 @@ public class KuzuGraphStore implements GraphStoreBase {
                         }
                     }
                 }
+            } else {
+                // 尝试解析JSON格式的响应
+                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
+                if (!content.isEmpty()) {
+                    try {
+                        
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
+                        if (jsonResponse != null && jsonResponse.get("entities") != null) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> entities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                            for (Map<String, Object> entity : entities) {
+                                String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
+                                String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
+                                if (!entityName.isEmpty()) {
+                                    entityTypeMap.put(
+                                        GraphUtils.normalizeEntityName(entityName),
+                                        GraphUtils.normalizeEntityName(entityType)
+                                    );
+                                }
+                            }
+                        }
+                    } catch (Exception jsonEx) {
+                        log.error("Failed to parse JSON response from LLM: {}", jsonEx.getMessage());
+                        // 如果JSON解析失败，可以在这里添加额外的处理逻辑
+                    }
+                }
+
             }
         } catch (Exception e) {
             log.error("Failed to extract entities using LLM: {}", e.getMessage());
@@ -750,7 +778,7 @@ public class KuzuGraphStore implements GraphStoreBase {
             }
         }
 
-        log.debug("Entity type map: {}", entityTypeMap);
+        log.info("Entity type map: {}", entityTypeMap);
         return entityTypeMap;
     }
 
@@ -798,7 +826,7 @@ public class KuzuGraphStore implements GraphStoreBase {
             Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
 
             // Parse response
-            if (response != null && response.get("tool_calls") != null) {
+            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
 
@@ -828,6 +856,34 @@ public class KuzuGraphStore implements GraphStoreBase {
                             }
                         }
                     }
+                }
+            } else {
+                // when tool calls is empty, use json extraction
+                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
+                if (!content.isEmpty()) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
+                        if (jsonResponse != null && jsonResponse.get("entities") != null) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                            for (Map<String, Object> entity : entities) {
+                                String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
+                                String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
+                                if (!entityName.isEmpty()) {
+                                    entityTypeMap.put(
+                                        GraphUtils.normalizeEntityName(entityName),
+                                        GraphUtils.normalizeEntityName(entityType)
+                                    );
+                                }
+                            }
+                        }   
+                    } catch (Exception jsonEx) {
+                        log.error("Failed to parse JSON response from LLM: {}", jsonEx.getMessage());
+                        // 如果JSON解析失败，可以在这里添加额外的处理逻辑
+                    }
+                } else {
+                    log.warn("Empty content from LLM response!");
                 }
             }
         } catch (Exception e) {
@@ -941,7 +997,7 @@ public class KuzuGraphStore implements GraphStoreBase {
             Map<String, Object> response = llm.generateResponseWithTools(llmMessages, tools);
 
             // Parse response
-            if (response != null && response.get("tool_calls") != null) {
+            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
 
