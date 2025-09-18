@@ -18,6 +18,10 @@ public interface ITool {
 
     String usage();
 
+    default boolean taskProgress() {
+        return true;
+    }
+
     default String example() {
         return "";
     }
@@ -35,6 +39,10 @@ public interface ITool {
     //是否回显
     default boolean show() {
         return false;
+    }
+
+    default String formatResult(JsonObject res) {
+        return "<tool_result>"+res.toString()+"</tool_result>";
     }
 
     default JsonObject execute(ReactorRole role, JsonObject req) {

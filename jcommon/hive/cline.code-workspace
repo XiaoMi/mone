@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../../../cline"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off"
+	}
+}

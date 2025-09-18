@@ -132,7 +132,7 @@ public class RemindIntervalExample {
      * 创建Focus Chain管理器
      */
     private FocusChainManager createFocusChainManager(TaskState taskState, FocusChainSettings settings) {
-        LLM mockLlm = new LLM() {
+        LLMTaskProcessor mockLlm = new LLMTaskProcessor() {
             @Override
             public String sendMessage(String message) {
                 return "Mock LLM response";

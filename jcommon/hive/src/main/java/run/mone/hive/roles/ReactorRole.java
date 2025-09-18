@@ -25,12 +25,15 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
+import run.mone.hive.roles.tool.ExecuteCommandTool;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
+import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
+import run.mone.hive.task.*;
 import run.mone.hive.utils.NetUtils;
 
 import java.util.*;
@@ -96,6 +99,11 @@ public class ReactorRole extends Role {
     private AtomicInteger maxAssistantNum = new AtomicInteger();
 
     private McpHub mcpHub;
+
+    private FocusChainManager focusChainManager;
+
+    //工作区根目录路径，用于路径解析
+    private String workspacePath = System.getProperty("user.dir");
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -188,6 +196,13 @@ public class ReactorRole extends Role {
                 log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
             });
         }, 0, 10, TimeUnit.SECONDS);
+
+        TaskState taskState = new TaskState();
+        FocusChainSettings focusChainSettings = new FocusChainSettings();
+        focusChainSettings.setEnabled(true);
+        LLMTaskProcessor llmTaskProcessor = new LLMTaskProcessorImpl(this.llm);
+        focusChainManager = new FocusChainManager(UUID.randomUUID().toString(), taskState, Mode.ACT, "/tmp", focusChainSettings, llmTaskProcessor);
+
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
@@ -263,7 +278,7 @@ public class ReactorRole extends Role {
             }
 
 
-            int result =  super.observe();
+            int result = super.observe();
             Message msg = this.rc.news.take();
             ac.setMsg(msg);
             lastReceiveMsgTime = new Date();
@@ -388,7 +403,7 @@ public class ReactorRole extends Role {
             try {
                 return super.act(context);
             } catch (Throwable ex) {
-                log.error(ex.getMessage(),ex);
+                log.error(ex.getMessage(), ex);
                 this.fluxSink.next(ex.getMessage());
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
@@ -401,12 +416,22 @@ public class ReactorRole extends Role {
 
             LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt, msg);
 
+            //添加任务进度
+            String focusChainChecklist = "";
+            if (focusChainManager.shouldIncludeFocusChainInstructions()) {
+                focusChainChecklist = focusChainManager.getTaskState().getCurrentFocusChainChecklist();
+                if (StringUtils.isNotEmpty(focusChainChecklist)) {
+                    compoundMsg.setContent(compoundMsg.getContent() + "\ncheck list:\n" + focusChainChecklist + "\n");
+                }
+            }
+
             AtomicBoolean hasError = new AtomicBoolean(false);
 
             //获取系统提示词
             String systemPrompt = buildSystemPrompt();
 
             //调用大模型(选用合适的工具)
+            focusChainManager.getTaskState().setApiRequestCount(focusChainManager.getTaskState().getApiRequestCount() + 1);
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
             log.info("call llm res:\n{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
@@ -418,6 +443,13 @@ public class ReactorRole extends Role {
 
             //直接使用最后一个工具(每次只会返回一个)
             ToolDataInfo it = tools.get(tools.size() - 1);
+
+            //带回来的任务进度
+            if (it.getKeyValuePairs().containsKey("task_progress")) {
+                String taskProgress = it.getKeyValuePairs().get("task_progress");
+                focusChainManager.updateFCListFromToolResponse(taskProgress);
+            }
+
 
             String name = it.getTag();
 
@@ -466,6 +498,10 @@ public class ReactorRole extends Role {
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
+
+            // 在工具执行前进行路径解析，将相对路径转换为绝对路径
+            PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
+
             ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(this, params);
             if (toolRes.has("toolMsgType")) {
@@ -475,9 +511,9 @@ public class ReactorRole extends Role {
                     sink.next(toolRes.toString());
                 }
             } else {
-                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
+                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
                 if (null != sink && tool.show()) {
-                    sink.next(res);
+                    sink.next(res + "\n" + tool.formatResult(toolRes));
                 }
             }
         }
@@ -530,7 +566,7 @@ public class ReactorRole extends Role {
                     \n
                     """.formatted(this.profile, this.goal, this.constraints, this.outputFormat);
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow);
+        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
         log.debug("system prompt:{}", prompt);
         return prompt;
     }
@@ -589,7 +625,7 @@ public class ReactorRole extends Role {
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
             //是否访问知识库
-            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(),msg);
+            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(), msg);
             if (classify.equals("是")) {
                 sink.next("从知识库获取信息\n");
                 String ragUrl = System.getenv("RAG_URL");
@@ -620,5 +656,34 @@ public class ReactorRole extends Role {
 
     public void setLlm(LLM llm) {
         this.llm = llm;
+    }
+
+    /**
+     * 设置工作区根目录路径
+     *
+     * @param workspacePath 工作区根目录的绝对路径
+     */
+    public void setWorkspacePath(String workspacePath) {
+        if (StringUtils.isNotEmpty(workspacePath)) {
+            this.workspacePath = workspacePath;
+            log.info("ReactorRole '{}' workspace path set to: {}", this.name, workspacePath);
+        }
+    }
+
+    /**
+     * 获取当前工作区路径
+     *
+     * @return 工作区根目录路径
+     */
+    public String getWorkspacePath() {
+        return this.workspacePath;
+    }
+
+    public void initConfig() {
+        if (null != this.roleConfig) {
+            if (this.roleConfig.containsKey("workspacePath")) {
+                setWorkspacePath(this.roleConfig.get("workspacePath"));
+            }
+        }
     }
 }

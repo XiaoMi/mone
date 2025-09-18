@@ -22,8 +22,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class ExecuteTool implements ITool {
 
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ExecuteTool.class);
-
     public static final String name = "execute";
 
     @Override

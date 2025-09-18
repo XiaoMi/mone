@@ -13,12 +13,12 @@ import java.util.List;
  */
 public class DeepPlanningProcessor {
     
-    private final LLM llm;
+    private final LLMTaskProcessor llm;
     private final TaskCallbacks callbacks;
     private final TaskCreator taskCreator;
     private final FocusChainManager focusChainManager;
     
-    public DeepPlanningProcessor(LLM llm, TaskCallbacks callbacks, FocusChainManager focusChainManager) {
+    public DeepPlanningProcessor(LLMTaskProcessor llm, TaskCallbacks callbacks, FocusChainManager focusChainManager) {
         this.llm = llm;
         this.callbacks = callbacks;
         this.taskCreator = new TaskCreator(llm, callbacks);
@@ -69,36 +69,26 @@ public class DeepPlanningProcessor {
     private String performSilentInvestigation(String workingDirectory) {
         callbacks.say("DEEP_PLANNING", "🔎 Analyzing codebase structure...");
         
-        // 这里应该调用LLM执行调研命令
-        // 为了演示，我们模拟一些调研结果
-        StringBuilder investigation = new StringBuilder();
-        investigation.append("=== CODEBASE INVESTIGATION RESULTS ===\n\n");
+        // 构建调研提示词
+        String investigationPrompt = String.format(
+            "Please perform a comprehensive codebase investigation for the working directory: %s\n\n" +
+            "Analyze the following aspects:\n" +
+            "1. Project Structure Analysis - identify language, build system, architecture patterns\n" +
+            "2. Dependencies Analysis - list key dependencies and frameworks used\n" +
+            "3. Technical Debt Identification - find TODO/FIXME comments and potential issues\n" +
+            "4. Code Quality Assessment - identify patterns, conventions, and potential improvements\n" +
+            "5. Integration Points - identify external services, APIs, or system boundaries\n\n" +
+            "Format your response as a structured investigation report with clear sections and bullet points.\n" +
+            "Focus on information that would be relevant for implementing new features or modifications.",
+            workingDirectory
+        );
         
-        // 模拟项目结构分析
-        investigation.append("## Project Structure Analysis\n");
-        investigation.append("- Language: Java\n");
-        investigation.append("- Build System: Maven/Gradle\n");
-        investigation.append("- Architecture: Layered architecture with focus-chain task management\n\n");
+        // 调用LLM执行深度分析
+        String investigationResults = llm.sendMessage(investigationPrompt);
         
-        // 模拟依赖分析
-        investigation.append("## Dependencies Analysis\n");
-        investigation.append("- Core Java libraries\n");
-        investigation.append("- File I/O operations\n");
-        investigation.append("- Concurrent processing support\n\n");
+        callbacks.say("DEEP_PLANNING", "✅ Codebase investigation completed");
         
-        // 模拟技术债务识别
-        investigation.append("## Technical Debt Identified\n");
-        investigation.append("- TODO: Add error handling in file operations\n");
-        investigation.append("- FIXME: Improve command parsing performance\n\n");
-        
-        String prompt = "Based on the user's request and the following investigation results, " +
-                       "what specific questions should we ask to clarify the implementation approach?\n\n" +
-                       investigation.toString();
-        
-        // 实际实现中，这里会调用LLM进行深度分析
-        // String llmResponse = llm.sendMessage(prompt);
-        
-        return investigation.toString();
+        return "=== CODEBASE INVESTIGATION RESULTS ===\n\n" + investigationResults;
     }
     
     /**
@@ -112,16 +102,32 @@ public class DeepPlanningProcessor {
             "Based on the user request: '%s'\n\n" +
             "And the investigation results:\n%s\n\n" +
             "Generate 2-3 brief, targeted questions that will influence the implementation plan. " +
-            "Focus on technical decisions, architecture choices, or requirement clarifications.",
+            "Focus on technical decisions, architecture choices, or requirement clarifications. " +
+            "Format your response as a numbered list of questions only, without any additional text.",
             userRequest, investigationResults
         );
         
-        // 模拟生成的问题
-        List<String> questions = List.of(
-            "Should the implementation use synchronous or asynchronous processing?",
-            "What error handling strategy do you prefer for file operations?",
-            "Do you need backward compatibility with existing configurations?"
-        );
+        // 调用LLM生成问题
+        String llmQuestions = llm.sendMessage(questionPrompt);
+        
+        // 解析LLM返回的问题
+        List<String> questions = new ArrayList<>();
+        String[] lines = llmQuestions.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (!line.isEmpty() && (line.matches("^\\d+\\..*") || line.startsWith("- "))) {
+                // 移除编号或bullet point
+                String question = line.replaceFirst("^\\d+\\.\\s*", "").replaceFirst("^-\\s*", "");
+                if (!question.isEmpty()) {
+                    questions.add(question);
+                }
+            }
+        }
+        
+        // 如果解析失败，使用整个回复作为单个问题
+        if (questions.isEmpty()) {
+            questions.add(llmQuestions.trim());
+        }
         
         StringBuilder clarification = new StringBuilder();
         clarification.append("=== CLARIFICATION QUESTIONS AND ANSWERS ===\n\n");
@@ -130,9 +136,17 @@ public class DeepPlanningProcessor {
             String question = questions.get(i);
             callbacks.say("QUESTION", String.format("Q%d: %s", i + 1, question));
             
-            // 在实际实现中，这里应该等待用户回答
-            // 为了演示，我们提供默认答案
-            String answer = "Use default recommended approach";
+            // 生成智能默认答案的提示
+            String answerPrompt = String.format(
+                "For the following question about implementing '%s':\n\n" +
+                "Question: %s\n\n" +
+                "Based on the investigation results and best practices, provide a recommended answer. " +
+                "Keep the answer concise and practical.",
+                userRequest, question
+            );
+            
+            // 调用LLM生成答案
+            String answer = llm.sendMessage(answerPrompt);
             callbacks.say("ANSWER", String.format("A%d: %s", i + 1, answer));
             
             clarification.append(String.format("Q%d: %s\n", i + 1, question));
@@ -149,71 +163,38 @@ public class DeepPlanningProcessor {
                                           String clarification, String workingDirectory) throws IOException {
         callbacks.say("DEEP_PLANNING", "📋 Generating implementation plan document...");
         
-        // 生成实施计划内容
+        // 构建实施计划生成提示
+        String planPrompt = String.format(
+            "Create a comprehensive implementation plan for the following request: '%s'\n\n" +
+            "Based on the codebase investigation:\n%s\n\n" +
+            "And the clarification questions and answers:\n%s\n\n" +
+            "Generate a detailed implementation plan with the following sections:\n" +
+            "[Overview] - Brief description of what will be implemented and why\n" +
+            "[Types] - New data structures, interfaces, enums that need to be defined\n" +
+            "[Files] - Specific files to be created or modified with their purposes\n" +
+            "[Functions] - New functions/methods to be added or existing ones to be modified\n" +
+            "[Classes] - New classes to be created and their responsibilities\n" +
+            "[Dependencies] - Any new dependencies or libraries needed\n" +
+            "[Testing] - Testing strategy including unit, integration, and performance tests\n" +
+            "[Implementation Order] - Step-by-step sequence for implementation\n\n" +
+            "Make the plan specific to the actual codebase structure and requirements. " +
+            "Include realistic file paths, class names, and method signatures where possible.",
+            userRequest, investigation, clarification
+        );
+        
+        // 调用LLM生成实施计划
+        String llmPlan = llm.sendMessage(planPrompt);
+        
+        // 构建完整的计划文档
         StringBuilder planContent = new StringBuilder();
         planContent.append("# Implementation Plan\n\n");
-        
-        // Overview section
-        planContent.append("[Overview]\n");
-        planContent.append("Implement ").append(userRequest).append(".\n\n");
-        planContent.append("This implementation will enhance the existing system by adding the requested functionality ");
-        planContent.append("while maintaining compatibility with current architecture patterns.\n\n");
-        
-        // Types section
-        planContent.append("[Types]\n");
-        planContent.append("Define new data structures and interfaces for the implementation.\n\n");
-        planContent.append("- New interfaces for the requested functionality\n");
-        planContent.append("- Data transfer objects for parameter passing\n");
-        planContent.append("- Enum types for configuration options\n\n");
-        
-        // Files section
-        planContent.append("[Files]\n");
-        planContent.append("File modifications required for the implementation.\n\n");
-        planContent.append("New files to be created:\n");
-        planContent.append("- src/main/java/com/example/NewFeature.java\n");
-        planContent.append("- src/main/java/com/example/NewFeatureConfig.java\n\n");
-        planContent.append("Existing files to be modified:\n");
-        planContent.append("- src/main/java/com/example/MainClass.java (add integration)\n\n");
-        
-        // Functions section
-        planContent.append("[Functions]\n");
-        planContent.append("Function modifications and additions.\n\n");
-        planContent.append("New functions:\n");
-        planContent.append("- executeNewFeature(parameters) in NewFeature.java\n");
-        planContent.append("- validateConfiguration(config) in NewFeatureConfig.java\n\n");
-        
-        // Classes section
-        planContent.append("[Classes]\n");
-        planContent.append("Class structure changes.\n\n");
-        planContent.append("New classes:\n");
-        planContent.append("- NewFeature: Main implementation class\n");
-        planContent.append("- NewFeatureConfig: Configuration management\n\n");
-        
-        // Dependencies section
-        planContent.append("[Dependencies]\n");
-        planContent.append("No new external dependencies required.\n\n");
-        planContent.append("Will use existing Java standard library components.\n\n");
-        
-        // Testing section
-        planContent.append("[Testing]\n");
-        planContent.append("Comprehensive testing strategy.\n\n");
-        planContent.append("- Unit tests for all new classes and methods\n");
-        planContent.append("- Integration tests for system interaction\n");
-        planContent.append("- Performance tests for critical paths\n\n");
-        
-        // Implementation Order section
-        planContent.append("[Implementation Order]\n");
-        planContent.append("Step-by-step implementation sequence.\n\n");
-        planContent.append("1. Create base interfaces and data structures\n");
-        planContent.append("2. Implement core functionality classes\n");
-        planContent.append("3. Add configuration management\n");
-        planContent.append("4. Integrate with existing system\n");
-        planContent.append("5. Add comprehensive testing\n");
-        planContent.append("6. Update documentation\n");
+        planContent.append(llmPlan);
         
         // 保存计划文件
         Path planPath = Paths.get(workingDirectory, "implementation_plan.md");
         Files.write(planPath, planContent.toString().getBytes("UTF-8"));
+        
+        callbacks.say("DEEP_PLANNING", "✅ Implementation plan generated and saved");
         
         return planPath.toString();
     }
@@ -224,22 +205,68 @@ public class DeepPlanningProcessor {
     private String createImplementationTask(String userRequest, String planFilePath) {
         callbacks.say("DEEP_PLANNING", "🎯 Creating trackable implementation task...");
         
-        // 生成任务进度列表
-        List<String> taskProgress = List.of(
-            "Create base interfaces and data structures",
-            "Implement core functionality classes", 
-            "Add configuration management",
-            "Integrate with existing system",
-            "Add comprehensive testing",
-            "Update documentation"
+        // 读取生成的实施计划文件内容
+        String planContent = "";
+        try {
+            planContent = Files.readString(Paths.get(planFilePath));
+        } catch (IOException e) {
+            callbacks.say("WARNING", "Could not read implementation plan file: " + e.getMessage());
+        }
+        
+        // 构建任务进度生成提示
+        String taskProgressPrompt = String.format(
+            "Based on the implementation plan for '%s', extract and create a task progress checklist.\n\n" +
+            "Implementation Plan:\n%s\n\n" +
+            "Generate a list of 5-8 specific, actionable task items that represent the key implementation steps. " +
+            "Each item should be:\n" +
+            "- Specific and measurable\n" +
+            "- In logical implementation order\n" +
+            "- Focused on deliverable outcomes\n\n" +
+            "Format as a simple list, one item per line, without checkboxes or bullets.",
+            userRequest, planContent
         );
         
-        // 创建任务上下文
-        String taskContext = String.format(
-            "Implement %s according to the detailed implementation plan. " +
-            "This task was generated through Deep Planning process and includes comprehensive analysis and planning.",
+        // 调用LLM生成任务进度列表
+        String llmTaskProgress = llm.sendMessage(taskProgressPrompt);
+        
+        // 解析LLM返回的任务进度项
+        List<String> taskProgress = new ArrayList<>();
+        String[] lines = llmTaskProgress.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (!line.isEmpty()) {
+                // 清理可能的编号、bullet points等
+                String cleanLine = line.replaceFirst("^\\d+\\.\\s*", "")
+                                     .replaceFirst("^-\\s*", "")
+                                     .replaceFirst("^\\*\\s*", "");
+                if (!cleanLine.isEmpty()) {
+                    taskProgress.add(cleanLine);
+                }
+            }
+        }
+        
+        // 如果解析失败，提供默认任务进度
+        if (taskProgress.isEmpty()) {
+            taskProgress = List.of(
+                "Analyze requirements and design approach",
+                "Implement core functionality",
+                "Add error handling and validation",
+                "Create comprehensive tests",
+                "Integration and system testing",
+                "Documentation and cleanup"
+            );
+        }
+        
+        // 生成增强的任务上下文
+        String contextPrompt = String.format(
+            "Create a concise task description for implementing '%s'. " +
+            "The description should be 1-2 sentences that clearly explain what needs to be accomplished. " +
+            "Mention that this task was generated through Deep Planning process.",
             userRequest
         );
+        
+        String llmContext = llm.sendMessage(contextPrompt);
+        String taskContext = llmContext.trim();
         
         // 创建任务
         TaskCreator.PlanningResult planningResult = new TaskCreator.PlanningResult(
