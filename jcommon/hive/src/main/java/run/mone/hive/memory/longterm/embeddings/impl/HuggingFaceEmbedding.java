@@ -57,13 +57,19 @@ public class HuggingFaceEmbedding implements EmbeddingBase {
             String apiUrl = HF_API_URL + config.getModel();
             
             // 发送HTTP请求
-            HttpRequest httpRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + getApiKey())
                 .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(request)))
-                .timeout(Duration.ofMinutes(2))
-                .build();
+                .timeout(Duration.ofMinutes(2));
+
+            // 添加自定义请求头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest httpRequest = requestBuilder.build();
             
             HttpResponse<String> response = httpClient.send(httpRequest, 
                 HttpResponse.BodyHandlers.ofString());

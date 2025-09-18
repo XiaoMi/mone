@@ -106,6 +106,12 @@ public class LlmConfig {
     private String visionDetails = "low";
     
     /**
+     * 自定义HTTP头
+     */
+    @Builder.Default
+    private Map<String, String> customHeaders = new HashMap<>();
+
+    /**
      * 额外配置
      */
     @Builder.Default
@@ -162,7 +168,13 @@ public class LlmConfig {
         if (configMap.containsKey("visionDetails")) {
             builder.visionDetails((String) configMap.get("visionDetails"));
         }
-        
+
+        if (configMap.containsKey("customHeaders")) {
+            @SuppressWarnings("unchecked")
+            Map<String, String> customHeaders = (Map<String, String>) configMap.get("customHeaders");
+            builder.customHeaders(customHeaders);
+        }
+
         if (configMap.containsKey("config")) {
             @SuppressWarnings("unchecked")
             Map<String, Object> config = (Map<String, Object>) configMap.get("config");

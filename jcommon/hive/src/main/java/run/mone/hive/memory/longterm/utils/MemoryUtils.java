@@ -38,7 +38,7 @@ public class MemoryUtils {
                 JsonArray factsArray = jsonObject.getAsJsonArray("facts");
                 
                 for (int i = 0; i < factsArray.size(); i++) {
-                    String fact = factsArray.get(i).getAsString();
+                    String fact = factsArray.get(i).toString();
                     if (fact != null && !fact.trim().isEmpty()) {
                         facts.add(fact.trim());
                     }

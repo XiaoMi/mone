@@ -61,12 +61,18 @@ public class OllamaLLM implements LLMBase {
             String apiUrl = config.getBaseUrl() + "/api/chat";
             
             // 发送HTTP请求
-            HttpRequest httpRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(request)))
-                .timeout(Duration.ofMinutes(5)) // Ollama可能比较慢
-                .build();
+                .timeout(Duration.ofMinutes(5)); // Ollama可能比较慢
+
+            // 添加自定义头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest httpRequest = requestBuilder.build();
             
             HttpResponse<String> response = httpClient.send(httpRequest, 
                 HttpResponse.BodyHandlers.ofString());
@@ -168,11 +174,17 @@ public class OllamaLLM implements LLMBase {
         try {
             String apiUrl = config.getBaseUrl() + "/api/tags";
             
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .GET()
-                .timeout(Duration.ofSeconds(30))
-                .build();
+                .timeout(Duration.ofSeconds(30));
+
+            // 添加自定义头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest request = requestBuilder.build();
             
             HttpResponse<String> response = httpClient.send(request, 
                 HttpResponse.BodyHandlers.ofString());
