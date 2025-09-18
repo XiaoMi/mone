@@ -52,9 +52,19 @@ export function markdownItMcp(md: MarkdownIt) {
 
     let html = "";
     let isDownloadFile = false;
+    const tagStack: string[] = []; // 标签栈，用于跟踪当前正在处理的标签
+
+    // // 辅助函数：获取当前标签栈顶的标签
+    // const getCurrentTag = () => tagStack[tagStack.length - 1];
+    // // 辅助函数：获取父级标签
+    // const getParentTag = () => tagStack[tagStack.length - 2];
+    // // 辅助函数：检查是否在指定标签内
+    // const isInsideTag = (tagName: string) => tagStack.includes(tagName);
+
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
         console.log("onopentag", name, attributes);
+        tagStack.push(name); // 将标签推入栈中
         /*
          * This fires when a new tag is opened.
          *
@@ -266,39 +276,45 @@ export function markdownItMcp(md: MarkdownIt) {
         }
       },
       ontext(text) {
+        // const tagName = getCurrentTag();
+        // if (tagName === "task_progress") {
+        //   html += md.render(text);
+        //   return;
+        // }
         if (isDownloadFile) {
           return;
         }
         text = text.replace(/```(\w*)\n/g, '').replace(/\n```/g, '');
+        html += md.utils.escapeHtml(text);
         // 匹配所有 voice 类型 JSON
-        const regex = /({[^{}]*"result"\s*:\s*"([^"]+)"[^{}]*"toolMsgType"\s*:\s*"voice"[^{}]*})/g;
-        let lastIndex = 0;
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-          // 输出前面的普通文本
-          if (match.index > lastIndex) {
-            const normalText = text.slice(lastIndex, match.index);
-            html += md.utils.escapeHtml(normalText);
-          }
-          // 尝试解析 JSON
-          try {
-            const obj = JSON.parse(match[1]);
-            if (obj && obj.result && obj.toolMsgType === "voice") {
-              html += `<audio controls src="data:audio/wav;base64,${obj.result}"></audio>`;
-            } else {
-              html += md.utils.escapeHtml(match[0]);
-            }
-          } catch (e) {
-            html += md.utils.escapeHtml(match[0]);
-          }
-          lastIndex = regex.lastIndex;
-        }
+        // const regex = /({[^{}]*"result"\s*:\s*"([^"]+)"[^{}]*"toolMsgType"\s*:\s*"voice"[^{}]*})/g;
+        // let lastIndex = 0;
+        // let match;
+        // while ((match = regex.exec(text)) !== null) {
+        //   // 输出前面的普通文本
+        //   if (match.index > lastIndex) {
+        //     const normalText = text.slice(lastIndex, match.index);
+        //     html += md.utils.escapeHtml(normalText);
+        //   }
+        //   // 尝试解析 JSON
+        //   try {
+        //     const obj = JSON.parse(match[1]);
+        //     if (obj && obj.result && obj.toolMsgType === "voice") {
+        //       html += `<audio controls src="data:audio/wav;base64,${obj.result}"></audio>`;
+        //     } else {
+        //       html += md.utils.escapeHtml(match[0]);
+        //     }
+        //   } catch (e) {
+        //     html += md.utils.escapeHtml(match[0]);
+        //   }
+        //   lastIndex = regex.lastIndex;
+        // }
         // 剩余部分
-        if (lastIndex < text.length) {
-          html += md.utils.escapeHtml(text.slice(lastIndex));
-        }
+        // if (lastIndex < text.length) {
+        //  html += md.utils.escapeHtml(text.slice(lastIndex));
+        // }
       },
-      onclosetag(tagname, isImplied) {
+      onclosetag(tagname) {
         /*
          * Fires when a tag is closed.
          *
@@ -306,6 +322,9 @@ export function markdownItMcp(md: MarkdownIt) {
          * equivalent opening tag before. Closing tags without corresponding
          * opening tags will be ignored.
          */
+        const poppedTag = tagStack.pop(); // 从栈中弹出标签
+        console.log("onclosetag", tagname, "popped:", poppedTag, "stack:", tagStack);
+
         if (tagname === "thinking") {
           html += `</div></div>`;
         } else if (tagname === "chat") {
