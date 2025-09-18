@@ -32,6 +32,21 @@ public class GraphUtils {
             - Use the exact entity names provided in the entity list
             - Normalize entity names (lowercase, underscore-separated)
             - Map self-references to USER_ID
+
+            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            {
+                "entities": [
+                    {
+                        "source": "The source entity of the relationship.",
+                        "relationship": "The relationship between the source and destination entities.",
+                        "destination": "The destination entity of the relationship."
+                    }
+                ]
+            }
+
+            source: the source entity of the relationship
+            relationship: the relationship between the source and destination entities
+            destination: the destination entity of the relationship
             """;
 
     /**

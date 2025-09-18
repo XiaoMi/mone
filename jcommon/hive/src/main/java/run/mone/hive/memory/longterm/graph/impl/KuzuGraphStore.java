@@ -868,13 +868,14 @@ public class KuzuGraphStore implements GraphStoreBase {
                             @SuppressWarnings("unchecked")
                             List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
                             for (Map<String, Object> entity : entities) {
-                                String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
-                                String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
-                                if (!entityName.isEmpty()) {
-                                    entityTypeMap.put(
-                                        GraphUtils.normalizeEntityName(entityName),
-                                        GraphUtils.normalizeEntityName(entityType)
-                                    );
+                                Map<String, Object> normalizedRel = new HashMap<>();
+                                String source = entity.get("source") != null ? entity.get("source").toString() : "";
+                                String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
+                                String destination = entity.get("destination") != null ? entity.get("destination").toString() : "general";
+                                if (!source.isEmpty() && !relationship.isEmpty() && !destination.isEmpty()) {
+                                    normalizedRel.put("source", GraphUtils.normalizeEntityName(source));
+                                    normalizedRel.put("relationship", GraphUtils.normalizeEntityName(relationship));
+                                    normalizedRel.put("destination", GraphUtils.normalizeEntityName(destination));
                                 }
                             }
                         }   
