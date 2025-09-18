@@ -531,7 +531,7 @@ public class LLM {
                     .get("content").getAsString();
 
             LLMUsage usage = null;
-            if (jsonResponse.has("usage")) {
+            if (jsonResponse.has("usage") && jsonResponse.get("usage").isJsonObject()) {
                 JsonObject usageJson = jsonResponse.getAsJsonObject("usage");
                 LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
 
@@ -741,7 +741,22 @@ public class LLM {
                 line -> {
                 },
                 systemPrompt,
-                null
+                null,
+                u -> {}
+        );
+    }
+
+    public void chatWithUsage(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandler, String systemPrompt, CustomConfig customConfig, Consumer<LLMUsage> usageConsumer) {
+        chatCompletionStream(getToken(),
+                customConfig,
+                messages,
+                getModel(),
+                messageHandler,
+                line -> {
+                },
+                systemPrompt,
+                null,
+                usageConsumer
         );
     }
 
@@ -793,10 +808,14 @@ public class LLM {
     }
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
-        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model, messageHandler, lineConsumer, systemPrompt, sink);
+        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model, messageHandler, lineConsumer, systemPrompt, sink, u -> {});
     }
 
     public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
+        chatCompletionStream(apiKey, customConfig, messages, model, messageHandler, lineConsumer, systemPrompt, sink, u -> {});
+    }
+
+    public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink, Consumer<LLMUsage> usageConsumer) {
         JsonObject requestBody = new JsonObject();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
@@ -874,6 +893,14 @@ public class LLM {
         ClaudeCacheControlHelper.applyCacheControlToUserMessages(msgArray, model, this.llmProvider, customConfig);
 
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
+
+        // openai 系列的应该都可以
+        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK) {
+            JsonObject usage = new JsonObject();
+            usage.addProperty("include_usage", true);
+            requestBody.add("stream_options", usage);
+        }
+
         // 设置关闭思考模型的思考能力
         if (!config.isReasoningOutPut()) {
             // 各个模型关闭思考能力的数据结构
@@ -1029,6 +1056,59 @@ public class LLM {
                                     break;
                                 }
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+
+                                if (jsonResponse.has("usage") && jsonResponse.get("usage").isJsonObject()) {
+                                    JsonObject usageJson = jsonResponse.getAsJsonObject("usage");
+                                    LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+
+                                    // Common fields
+                                    int inputTokens = usageJson.has("prompt_tokens") ? usageJson.get("prompt_tokens").getAsInt() : 0;
+                                    int outputTokens = usageJson.has("completion_tokens") ? usageJson.get("completion_tokens").getAsInt() : 0;
+                                    usageBuilder.inputTokens(inputTokens).outputTokens(outputTokens);
+
+                                    // Provider-specific fields
+                                    if (llmProvider == LLMProvider.OPENROUTER) {
+                                        Double totalCost = usageJson.has("cost") ? usageJson.get("cost").getAsDouble() : null;
+                                        usageBuilder.totalCost(totalCost);
+
+                                        Integer cacheReadTokens = null;
+                                        if (usageJson.has("prompt_tokens_details")) {
+                                            JsonElement promptTokensDetailsEl = usageJson.get("prompt_tokens_details");
+                                            if (promptTokensDetailsEl.isJsonObject()) {
+                                                JsonObject promptTokensDetails = promptTokensDetailsEl.getAsJsonObject();
+                                                if (promptTokensDetails.has("cached_tokens")) {
+                                                    cacheReadTokens = promptTokensDetails.get("cached_tokens").getAsInt();
+                                                }
+                                            }
+                                        }
+                                        usageBuilder.cacheReadTokens(cacheReadTokens);
+
+                                        Integer thoughtsTokenCount = null;
+                                        if (usageJson.has("completion_tokens_details")) {
+                                            JsonElement completionTokensDetailsEl = usageJson.get("completion_tokens_details");
+                                            if (completionTokensDetailsEl.isJsonObject()) {
+                                                JsonObject completionTokensDetails = completionTokensDetailsEl.getAsJsonObject();
+                                                if (completionTokensDetails.has("reasoning_tokens")) {
+                                                    thoughtsTokenCount = completionTokensDetails.get("reasoning_tokens").getAsInt();
+                                                }
+                                            }
+                                        }
+                                        usageBuilder.thoughtsTokenCount(thoughtsTokenCount);
+                                        usageBuilder.cacheWriteTokens(null); // Not provided by OpenRouter
+                                    } else if (llmProvider == LLMProvider.DEEPSEEK) {
+                                        Integer cacheReadTokens = usageJson.has("prompt_cache_hit_tokens") ? usageJson.get("prompt_cache_hit_tokens").getAsInt() : null;
+                                        Integer cacheWriteTokens = usageJson.has("prompt_cache_miss_tokens") ? usageJson.get("prompt_cache_miss_tokens").getAsInt() : null;
+                                        usageBuilder.cacheReadTokens(cacheReadTokens);
+                                        usageBuilder.cacheWriteTokens(cacheWriteTokens);
+                                        usageBuilder.totalCost(null);
+                                        usageBuilder.thoughtsTokenCount(null);
+                                    }
+                                    LLMUsage usage = usageBuilder.build();
+                                    if (null != usageConsumer) {
+                                        usageConsumer.accept(usage);
+                                    }
+                                }
+
                                 String content = "";
                                 try {
                                     JsonArray choicesJson = jsonResponse.getAsJsonArray("choices");

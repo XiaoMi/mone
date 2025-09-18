@@ -461,6 +461,15 @@ class LLMTest {
 
     @Test
     void testChatCompletionStream() throws InterruptedException {
+//        config.setLlmProvider(LLMProvider.OPENROUTER);
+//        config.setModel("anthropic/claude-sonnet-4");
+//        // Make sure OPENROUTER_AI_GATEWAY environment variable is set
+//        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setModel("deepseek-chat");
+
+        llm = new LLM(config);
         String apiKey = System.getenv(config.getLlmProvider().getEnvName());
         List<AiMessage> messages = new ArrayList<>();
 
@@ -1832,7 +1841,7 @@ class LLMTest {
         config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
         config.setModel("anthropic/claude-sonnet-4");
 //        config.setModel("openai/gpt-5");
-        config.setUrl("https://gateway.ai.cloudflare.com/v1/a26a2ae889e7c5180238c048b688c0c6/aistudio/openrouter/v1/chat/completions");
+        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();
@@ -1865,7 +1874,7 @@ class LLMTest {
     public void testChatCompletionWithUsage() {
         // This test requires OPENROUTER to be configured
         config.setLlmProvider(LLMProvider.OPENROUTER);
-        config.setModel("anthropic/claude-3.5-sonnet:beta");
+        config.setModel("anthropic/claude-sonnet-4");
         // Make sure OPENROUTER_AI_GATEWAY environment variable is set
         config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
         llm = new LLM(config);
@@ -1913,5 +1922,41 @@ class LLMTest {
         assertTrue(usage.getInputTokens() > 0, "Input tokens should be greater than 0");
         assertTrue(usage.getOutputTokens() > 0, "Output tokens should be greater than 0");
         // Deepseek may or may not return cache tokens, so we don't assert them to be non-null
+    }
+
+    @Test
+    public void testChatCompletionStreamWithUsageForDeepSeek() throws InterruptedException {
+        // This test requires DEEPSEEK to be configured
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setModel("deepseek-chat");
+
+//        config.setLlmProvider(LLMProvider.OPENROUTER);
+//        config.setModel("anthropic/claude-sonnet-4");
+//        // Make sure OPENROUTER_AI_GATEWAY environment variable is set
+//        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+
+        llm = new LLM(config);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().role("user").content("Hello, what is the capital of China?").build());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        final LLM.LLMUsage[] usageResult = {null};
+
+        llm.chatWithUsage(messages, (content, jsonResponse) -> {
+            if (content.equals("[DONE]")) {
+                latch.countDown();
+            }
+            log.info("Received content: {}", content);
+        }, "You are a helpful assistant.", CustomConfig.DUMMY, usage -> {
+            log.info("Received usage: {}", new com.google.gson.Gson().toJson(usage));
+            usageResult[0] = usage;
+        });
+
+        assertTrue(latch.await(60, TimeUnit.SECONDS), "Stream did not complete in time");
+
+        assertNotNull(usageResult[0], "Usage object should have been received");
+        assertTrue(usageResult[0].getInputTokens() > 0, "Input tokens should be greater than 0");
+        assertTrue(usageResult[0].getOutputTokens() > 0, "Output tokens should be greater than 0");
     }
 }
