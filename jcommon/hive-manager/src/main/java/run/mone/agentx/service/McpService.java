@@ -8,6 +8,7 @@ import reactor.core.publisher.FluxSink;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.InvokeHistory;
+import run.mone.agentx.entity.User;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
 import run.mone.agentx.utils.AgentKeyUtils;
 import run.mone.hive.common.McpResult;
@@ -22,6 +23,8 @@ import run.mone.hive.utils.SafeRun;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static run.mone.hive.configs.Const.USER_INTERNAL_NAME;
+
 @Slf4j
 @Data
 @Service
@@ -31,6 +34,9 @@ public class McpService {
 
     @Autowired
     private AgentService agentService;
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private InvokeHistoryService invokeHistoryService;
@@ -53,10 +59,9 @@ public class McpService {
         log.info("user:{} call mcp tool", userName);
         //记录调用
         recordInvoke(userName, agentId, requestBody);
-
+        User user = userService.findByUsername(userName).block();
+        toolDataInfo.getKeyValuePairs().put(USER_INTERNAL_NAME, user.getInternalAccount());
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
-        //这个需要那个用户就传他的id (需要从前端拿过来)
-        String clientId = AgentKeyUtils.getAgentKey(agentDto.getAgent());
 
         //对面的ip和port 服务端的
         String key = AgentKeyUtils.key(agentDto, instance);
