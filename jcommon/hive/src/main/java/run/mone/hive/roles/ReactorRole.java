@@ -513,7 +513,7 @@ public class ReactorRole extends Role {
             } else {
                 res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
                 if (null != sink && tool.show()) {
-                    sink.next(res + "\n" + tool.formatResult(toolRes));
+                    sink.next(tool.formatResult(toolRes));
                 }
             }
         }
