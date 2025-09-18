@@ -22,6 +22,9 @@ import MarkdownIt from "markdown-it";
 import util from "@/libs/util";
 import { copyToClip } from "@/libs/copy";
 import arrowUrl from "../assets/imgs/arrow1.png";
+import { h, render } from "vue";
+import { JsonViewer } from "vue3-json-viewer";
+import "vue3-json-viewer/dist/vue3-json-viewer.css";
 
 import "../assets/scss/github-markdown.scss";
 import "../assets/scss/github-markdown-light.scss";
@@ -95,6 +98,7 @@ export default {
   data() {
     return {
       collapseTimer: 0,
+      jsonViewerApps: [] as any[],
     };
   },
   computed: {
@@ -131,6 +135,7 @@ export default {
     this.collapseFn();
     this.addBoltToggleEvents();
     this.addFileUrlLinkEvents();
+    this.initJsonViewers();
   },
   updated() {
     this.addApply();
@@ -141,10 +146,12 @@ export default {
     this.bindCollapse();
     this.addBoltToggleEvents();
     this.addFileUrlLinkEvents();
+    this.initJsonViewers();
   },
   unmounted() {
     this.removeEvents();
     this.removeColapseEvents();
+    this.destroyJsonViewers();
     clearTimeout(this.collapseTimer);
   },
   methods: {
@@ -447,6 +454,74 @@ export default {
         });
       }
     },
+    initJsonViewers() {
+      // 先清理之前的实例
+      this.destroyJsonViewers();
+
+      const textRef = this.$refs.textRef as HTMLDivElement;
+      if (textRef) {
+        const placeholders = textRef.querySelectorAll('.vue3-json-viewer-placeholder');
+        placeholders.forEach((placeholder: any) => {
+          const jsonData = placeholder.getAttribute('data-json');
+          if (jsonData) {
+            try {
+              // 解码 HTML 实体
+              const decodedJson = jsonData.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+              console.log('原始 JSON 数据:', jsonData);
+              console.log('解码后的 JSON 数据:', decodedJson);
+              const parsedData = JSON.parse(decodedJson);
+              console.log('解析后的数据:', parsedData);
+
+              // 创建一个新的 div 来容纳 JsonViewer
+              const container = document.createElement('div');
+              container.className = 'json-viewer-container';
+
+              try {
+                // 使用 Vue 3 的 render 函数直接渲染组件
+                const vnode = h(JsonViewer, {
+                  value: parsedData,
+                  copyable: true,
+                  boxed: true,
+                  sort: true,
+                  theme: "light"
+                });
+
+                render(vnode, container);
+                console.log('JsonViewer 渲染成功', container.innerHTML);
+
+                // 替换占位符
+                placeholder.parentNode?.replaceChild(container, placeholder);
+
+                // 保存容器引用以便后续清理
+                this.jsonViewerApps.push({ container, vnode });
+              } catch (renderError) {
+                console.error('JsonViewer 渲染失败:', renderError);
+                // 如果渲染失败，显示原始 JSON
+                container.innerHTML = `<pre><code class="language-json">${JSON.stringify(parsedData, null, 2)}</code></pre>`;
+                placeholder.parentNode?.replaceChild(container, placeholder);
+              }
+            } catch (e) {
+              console.warn('Failed to parse JSON for vue3-json-viewer:', e);
+              // 如果解析失败，显示原始文本
+              placeholder.innerHTML = `<pre><code class="language-json">${jsonData}</code></pre>`;
+            }
+          }
+        });
+      }
+    },
+    destroyJsonViewers() {
+      // 清理所有 JsonViewer 实例
+      this.jsonViewerApps.forEach(item => {
+        try {
+          if (item.container) {
+            render(null, item.container);
+          }
+        } catch (e) {
+          console.warn('Failed to unmount json viewer:', e);
+        }
+      });
+      this.jsonViewerApps = [];
+    },
   },
 };
 </script>
@@ -520,5 +595,46 @@ export default {
 
 a.chatLink {
   color: inherit !important;
+}
+
+:deep(.json-viewer-container) {
+  .jv-container {
+    background: transparent !important;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+
+    .jv-code {
+      .jv-toggle {
+        color: #2196f3;
+
+        &:hover {
+          color: #1976d2;
+        }
+      }
+
+      .jv-key {
+        color: #1976d2;
+        font-weight: 500;
+      }
+
+      .jv-string {
+        color: #4caf50;
+      }
+
+      .jv-number {
+        color: #ff9800;
+      }
+
+      .jv-boolean {
+        color: #9c27b0;
+      }
+
+      .jv-null {
+        color: #f44336;
+      }
+    }
+  }
 }
 </style>
