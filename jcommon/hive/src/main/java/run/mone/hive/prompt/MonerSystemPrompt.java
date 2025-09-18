@@ -93,8 +93,6 @@ public class MonerSystemPrompt {
             if (StringUtils.isNotBlank(mdStr)) {
                 log.debug("成功从{}读取自定义指令", filePath);
                 return mdStr;
-            } else {
-                log.debug("文件{}存在但内容为空", filePath);
             }
         } catch (Exception e) {
             log.debug("无法读取自定义指令文件: {}, 原因: {}", filePath, e.getMessage());

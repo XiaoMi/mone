@@ -74,17 +74,22 @@ public class ExecuteCommandTool implements ITool {
 
     @Override
     public String usage() {
+        String taskProgress = """
+            <task_progress>
+            Checklist here (optional)
+            </task_progress>
+            """;
+        if (!taskProgress()) {
+            taskProgress = "";
+        }
         return """
-                <execute_command>
-                <command>ls -la</command>
-                <requires_approval>false</requires_approval>
-                <timeout>30</timeout>
-                <task_progress>
-                - [x] List directory contents
-                - [ ] Process files
-                </task_progress>
-                </execute_command>
-                """;
+            <execute_command>
+            <command>ls -la</command>
+            <requires_approval>false</requires_approval>
+            <timeout>30</timeout>
+            %s
+            </execute_command>
+            """.formatted(taskProgress);
     }
 
     @Override
