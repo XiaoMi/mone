@@ -18,12 +18,24 @@ type SupportedTag =
   | 'arguments'
   | 'file'
   | 'operation'
+  | 'list_files'
+  | 'recursive'
+  | 'task_progress'
   | 'path'
   | 'content'
   | 'r'
   | 'file_operation'
   | 'result'
   | 'execute'
+  | 'execute_command'
+  | 'requires_approval'
+  | 'read_file'
+  | 'replace_in_file'
+  | 'diff'
+  | 'search_files'
+  | 'write_to_file'
+  | 'regex'
+  | 'file_pattern'
   | 'working_directory'
   | 'timeout';
 
@@ -77,12 +89,24 @@ export class SimpleHtmlParser {
       'arguments',
       'file',
       'operation',
+      'list_files',
+      'recursive',
+      'task_progress',
       'path',
       'content',
       'r',
       'file_operation',
       'result',
       'execute',
+      'execute_command',
+      'requires_approval',
+      'read_file',
+      'replace_in_file',
+      'diff',
+      'search_files',
+      'write_to_file',
+      'regex',
+      'file_pattern',
       'working_directory',
       'timeout'
     ]);

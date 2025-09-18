@@ -207,6 +207,57 @@
 
   .completion-command {
     border-top: 1px solid #3d3d3d;
+    margin-top: 8px;
+
+    .command-header {
+      background: #909399;
+      padding: 12px 15px;
+      border-radius: 6px 6px 0 0;
+
+      i {
+        color: #00b3ff;
+        font-size: 14px;
+        margin-right: 8px;
+      }
+
+      span {
+        color: #e1e1e1;
+        font-weight: 500;
+        font-size: 0.9em;
+      }
+    }
+
+    .command-content {
+      background: #2d2d2d;
+      padding: 12px 15px;
+      border-radius: 0 0 6px 6px;
+      margin: 0;
+
+      pre {
+        margin: 0;
+        padding: 8px;
+        background: #1e1e1e;
+        border-radius: 4px;
+        overflow-x: auto;
+
+        code {
+          color: #00b3ff;
+          font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+          font-size: 0.9em;
+          padding: 0;
+          background: transparent;
+        }
+      }
+
+      code {
+        color: #00b3ff;
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
   }
 }
 
@@ -431,6 +482,55 @@
   counter-reset: step;
 }
 
+.completion-command {
+  display: flex;
+  flex-direction: column;
+
+  .command-header {
+    display: flex;
+    align-items: center;
+
+    i {
+      margin-right: 8px;
+    }
+  }
+
+  .command-content {
+    display: flex;
+    flex-direction: column;
+    pre {
+      padding: 0;
+    }
+  }
+}
+
+// 任务进度头部样式
+.task-progress-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-progress-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 0px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3d3d3d;
+  border-radius: 6px 6px 0 0;
+
+  i {
+    font-size: 16px;
+    color: #00b3ff;
+    margin-right: 12px;
+  }
+
+  span {
+    color: #e1e1e1;
+    font-weight: 500;
+    font-size: 0.95em;
+  }
+}
+
 // 文件操作块样式
 .file-block, .file-operation-block {
   margin: 10px 0;
@@ -579,5 +679,695 @@
     line-height: 1.6;
     align-items: center;
     justify-content: flex-start;
+  }
+}
+
+// 执行命令块样式
+.execute-command-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .execute-command-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #67c23a;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .execute-command-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .command-section, .completion-command, .requires-approval-section, .task-progress-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #67c23a;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #67c23a;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: capitalize;
+      }
+
+      &.completion-command::before {
+        content: "Command";
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+
+      pre {
+        margin: 0.5rem 0;
+        padding: 1rem;
+        background: #1e1e1e;
+        border-radius: 6px;
+        overflow-x: auto;
+
+        code {
+          padding: 0;
+          background: transparent;
+          color: #e1e1e1;
+        }
+      }
+    }
+
+    .requires-approval-section {
+      border-left-color: #ffc107;
+
+      &::before {
+        color: #ffc107;
+      }
+
+      .approval-label {
+        color: #ffc107;
+        font-weight: 500;
+        margin-right: 8px;
+      }
+
+      .approval-value {
+        color: #e1e1e1;
+      }
+    }
+
+    .task-progress-section {
+      border-left-color: #00b3ff;
+
+      &::before {
+        color: #00b3ff;
+      }
+
+      ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+
+        li {
+          line-height: 1.6;
+          margin: 0.3rem 0;
+          color: #e1e1e1;
+
+          &:before {
+            content: '□';
+            margin-right: 8px;
+            color: #888;
+          }
+
+          &.completed:before {
+            content: '☑';
+            color: #67c23a;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 读取文件块样式
+.read-file-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .read-file-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #4a90e2;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .read-file-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .path-section, .task-progress-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #4a90e2;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #4a90e2;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: capitalize;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
+
+    .task-progress-section {
+      ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+
+        li {
+          line-height: 1.6;
+          margin: 0.3rem 0;
+          color: #e1e1e1;
+
+          &:before {
+            content: '□';
+            margin-right: 8px;
+            color: #888;
+          }
+
+          &.completed:before {
+            content: '☑';
+            color: #67c23a;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 文件替换块样式
+.replace-in-file-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .replace-in-file-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #e74c3c;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .replace-in-file-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .path-section, .diff-section, .task-progress-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #e74c3c;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #e74c3c;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: capitalize;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
+
+    .diff-section {
+      .diff-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+
+        i {
+          font-size: 14px;
+          color: #e74c3c;
+          margin-right: 8px;
+        }
+
+        span {
+          color: #e74c3c;
+          font-weight: 500;
+          font-size: 0.9em;
+        }
+      }
+
+      .diff-content {
+        pre {
+          margin: 0;
+          padding: 1rem;
+          background: #1e1e1e;
+          border-radius: 6px;
+          overflow-x: auto;
+
+          code {
+            padding: 0;
+            background: transparent;
+            color: #e1e1e1;
+            white-space: pre-wrap;
+          }
+        }
+      }
+    }
+
+    .task-progress-section {
+      border-left-color: #00b3ff;
+
+      &::before {
+        color: #00b3ff;
+      }
+
+      ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+
+        li {
+          line-height: 1.6;
+          margin: 0.3rem 0;
+          color: #e1e1e1;
+
+          &:before {
+            content: '□';
+            margin-right: 8px;
+            color: #888;
+          }
+
+          &.completed:before {
+            content: '☑';
+            color: #67c23a;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 文件搜索块样式
+.search-files-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .search-files-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #8e44ad;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .search-files-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .path-section, .regex-section, .file-pattern-section, .task-progress-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #8e44ad;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #8e44ad;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: capitalize;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
+
+    .regex-section {
+      .regex-label {
+        color: #8e44ad;
+        font-weight: 500;
+        margin-right: 8px;
+      }
+
+      .regex-value {
+        color: #e1e1e1;
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
+
+    .file-pattern-section {
+      .file-pattern-label {
+        color: #8e44ad;
+        font-weight: 500;
+        margin-right: 8px;
+      }
+
+      .file-pattern-value {
+        color: #e1e1e1;
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
+
+    .task-progress-section {
+      border-left-color: #00b3ff;
+
+      &::before {
+        color: #00b3ff;
+      }
+
+      ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+
+        li {
+          line-height: 1.6;
+          margin: 0.3rem 0;
+          color: #e1e1e1;
+
+          &:before {
+            content: '□';
+            margin-right: 8px;
+            color: #888;
+          }
+
+          &.completed:before {
+            content: '☑';
+            color: #67c23a;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 文件写入块样式
+.write-to-file-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .write-to-file-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #2ecc71;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .write-to-file-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .path-section, .content-section, .task-progress-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #2ecc71;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #2ecc71;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: capitalize;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+
+      pre {
+        margin: 0.5rem 0;
+        padding: 1rem;
+        background: #1e1e1e;
+        border-radius: 6px;
+        overflow-x: auto;
+
+        code {
+          padding: 0;
+          background: transparent;
+          color: #e1e1e1;
+          white-space: pre-wrap;
+        }
+      }
+    }
+
+    .task-progress-section {
+      border-left-color: #00b3ff;
+
+      &::before {
+        color: #00b3ff;
+      }
+
+      ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+
+        li {
+          line-height: 1.6;
+          margin: 0.3rem 0;
+          color: #e1e1e1;
+
+          &:before {
+            content: '□';
+            margin-right: 8px;
+            color: #888;
+          }
+
+          &.completed:before {
+            content: '☑';
+            color: #67c23a;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 文件列表块样式
+.list-files-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .list-files-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #ff9500;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .list-files-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .path-section, .recursive-section, .task-progress-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #ff9500;
+
+      &::before {
+        content: attr(class);
+        display: block;
+        color: #ff9500;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: capitalize;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+      }
+    }
+
+    .recursive-section {
+      .recursive-label {
+        color: #ff9500;
+        font-weight: 500;
+        margin-right: 8px;
+      }
+
+      .recursive-value {
+        color: #e1e1e1;
+      }
+    }
+
+    .task-progress-section {
+      border-left-color: #00b3ff;
+
+      &::before {
+        color: #00b3ff;
+      }
+
+      ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+
+        li {
+          line-height: 1.6;
+          margin: 0.3rem 0;
+          color: #e1e1e1;
+
+          &:before {
+            content: '□';
+            margin-right: 8px;
+            color: #888;
+          }
+
+          &.completed:before {
+            content: '☑';
+            color: #67c23a;
+          }
+        }
+      }
+    }
   }
 }
