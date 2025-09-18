@@ -62,12 +62,18 @@ public class OllamaEmbedding implements EmbeddingBase {
             String apiUrl = config.getBaseUrl() + "/api/embeddings";
             
             // 发送HTTP请求
-            HttpRequest httpRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(request)))
-                .timeout(Duration.ofMinutes(3))
-                .build();
+                .timeout(Duration.ofMinutes(3));
+
+            // 添加自定义请求头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest httpRequest = requestBuilder.build();
             
             HttpResponse<String> response = httpClient.send(httpRequest, 
                 HttpResponse.BodyHandlers.ofString());

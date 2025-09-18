@@ -148,14 +148,20 @@ public class OpenAiLLM implements LLMBase {
     
     private String sendRequest(Map<String, Object> requestBody) throws Exception {
         String requestJson = gson.toJson(requestBody);
-        
-        HttpRequest request = HttpRequest.newBuilder()
+
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create(baseUrl + "/chat/completions"))
             .header("Content-Type", "application/json")
             .header("Authorization", "Bearer " + apiKey)
             .POST(HttpRequest.BodyPublishers.ofString(requestJson))
-            .timeout(Duration.ofMinutes(2))
-            .build();
+            .timeout(Duration.ofMinutes(2));
+
+        // 添加自定义头
+        if (config.getCustomHeaders() != null) {
+            config.getCustomHeaders().forEach(requestBuilder::header);
+        }
+
+        HttpRequest request = requestBuilder.build();
             
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         
@@ -189,7 +195,7 @@ public class OpenAiLLM implements LLMBase {
             JsonObject message = firstChoice.getAsJsonObject("message");
             
             // 检查是否有工具调用
-            if (message.has("tool_calls")) {
+            if (message.has("tool_calls") && message.get("tool_calls").getAsJsonArray().size() > 0) {
                 JsonArray toolCalls = message.getAsJsonArray("tool_calls");
                 // 返回工具调用信息
                 return gson.toJson(Map.of("tool_calls", toolCalls));
@@ -227,11 +233,17 @@ public class OpenAiLLM implements LLMBase {
      */
     public List<String> getAvailableModels() {
         try {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/models"))
                 .header("Authorization", "Bearer " + apiKey)
-                .GET()
-                .build();
+                .GET();
+
+            // 添加自定义头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest request = requestBuilder.build();
                 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             

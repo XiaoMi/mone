@@ -84,6 +84,12 @@ public class EmbedderConfig {
      */
     @Builder.Default
     private Map<String, Object> config = new HashMap<>();
+
+    /**
+     * 自定义请求头
+     */
+    @Builder.Default
+    private Map<String, String> customHeaders = new HashMap<>();
     
     /**
      * 从Map创建配置
@@ -120,7 +126,13 @@ public class EmbedderConfig {
             Map<String, Object> config = (Map<String, Object>) configMap.get("config");
             builder.config(config);
         }
-        
+
+        if (configMap.containsKey("customHeaders")) {
+            @SuppressWarnings("unchecked")
+            Map<String, String> customHeaders = (Map<String, String>) configMap.get("customHeaders");
+            builder.customHeaders(customHeaders);
+        }
+
         return builder.build();
     }
     
