@@ -546,7 +546,7 @@ public class ReactorRole extends Role {
     private LLM getLlm(String llmProvider) {
         LLM curLLM = null;
         if (StringUtils.isNotEmpty(llmProvider)) {
-            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider)).build());
+            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT))).build());
         } else {
             curLLM = llm;
         }
