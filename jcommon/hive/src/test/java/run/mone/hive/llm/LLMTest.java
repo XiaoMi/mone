@@ -1352,4 +1352,512 @@ class LLMTest {
         System.out.println("是否可靠: " + isReliable);
         System.out.println("摘要: " + summary);
     }
+
+    @Test
+    public void testClaudeCacheControl() {
+        // 只有长度足够的文本块才会触发cache
+        String code = "import type { Anthropic } from \"@anthropic-ai/sdk\"\n" +
+                "// Restore GenerateContentConfig import and add GenerateContentResponseUsageMetadata\n" +
+                "import { ApiError, type GenerateContentConfig, type GenerateContentResponseUsageMetadata, GoogleGenAI, Part } from \"@google/genai\"\n" +
+                "import { GeminiModelId, geminiDefaultModelId, geminiModels, ModelInfo } from \"@shared/api\"\n" +
+                "import { telemetryService } from \"@/services/telemetry\"\n" +
+                "import { ApiHandler, CommonApiHandlerOptions } from \"../\"\n" +
+                "import { RetriableError, withRetry } from \"../retry\"\n" +
+                "import { convertAnthropicMessageToGemini } from \"../transform/gemini-format\"\n" +
+                "import { ApiStream } from \"../transform/stream\"\n" +
+                "\n" +
+                "// Define a default TTL for the cache (e.g., 15 minutes in seconds)\n" +
+                "const _DEFAULT_CACHE_TTL_SECONDS = 900\n" +
+                "\n" +
+                "const rateLimitPatterns = [/got status: 429/i, /429 Too Many Requests/i, /rate limit exceeded/i, /too many requests/i]\n" +
+                "\n" +
+                "interface GeminiHandlerOptions extends CommonApiHandlerOptions {\n" +
+                "\tisVertex?: boolean\n" +
+                "\tvertexProjectId?: string\n" +
+                "\tvertexRegion?: string\n" +
+                "\tgeminiApiKey?: string\n" +
+                "\tgeminiBaseUrl?: string\n" +
+                "\tthinkingBudgetTokens?: number\n" +
+                "\tapiModelId?: string\n" +
+                "\tulid?: string\n" +
+                "}\n" +
+                "\n" +
+                "/**\n" +
+                " * Handler for Google's Gemini API with optimized caching strategy and accurate cost accounting.\n" +
+                " *\n" +
+                " * Key features:\n" +
+                " * - One cache per task: Creates a single cache per task and reuses it for subsequent turns\n" +
+                " * - Stable cache keys: Uses ulid as a stable identifier for caches\n" +
+                " * - Efficient cache updates: Only updates caches when there's new content to add\n" +
+                " * - Split cost accounting: Separates immediate costs from ongoing cache storage costs\n" +
+                " *\n" +
+                " * Cost accounting approach:\n" +
+                " * - Immediate costs (per message): Input tokens, output tokens, and cache read costs\n" +
+                " * - Ongoing costs (per task): Cache storage costs for the TTL period\n" +
+                " *\n" +
+                " * Gemini's caching system is unique in that it charges for holding tokens in cache by the hour.\n" +
+                " * This implementation optimizes for both performance and cost by:\n" +
+                " * 1. Minimizing redundant cache creations\n" +
+                " * 2. Properly accounting for cache costs in the billing calculations\n" +
+                " * 3. Using a stable cache key to ensure cache reuse across turns\n" +
+                " * 4. Separating immediate costs from ongoing costs to avoid double-counting\n" +
+                " */\n" +
+                "export class GeminiHandler implements ApiHandler {\n" +
+                "\tprivate options: GeminiHandlerOptions\n" +
+                "\tprivate client: GoogleGenAI | undefined\n" +
+                "\n" +
+                "\tconstructor(options: GeminiHandlerOptions) {\n" +
+                "\t\t// Store the options\n" +
+                "\t\tthis.options = options\n" +
+                "\t}\n" +
+                "\n" +
+                "\tprivate ensureClient(): GoogleGenAI {\n" +
+                "\t\tif (!this.client) {\n" +
+                "\t\t\tconst options = this.options as GeminiHandlerOptions\n" +
+                "\n" +
+                "\t\t\tif (options.isVertex) {\n" +
+                "\t\t\t\t// Initialize with Vertex AI configuration\n" +
+                "\t\t\t\tconst project = this.options.vertexProjectId ?? \"not-provided\"\n" +
+                "\t\t\t\tconst location = this.options.vertexRegion ?? \"not-provided\"\n" +
+                "\n" +
+                "\t\t\t\ttry {\n" +
+                "\t\t\t\t\tthis.client = new GoogleGenAI({\n" +
+                "\t\t\t\t\t\tvertexai: true,\n" +
+                "\t\t\t\t\t\tproject,\n" +
+                "\t\t\t\t\t\tlocation,\n" +
+                "\t\t\t\t\t})\n" +
+                "\t\t\t\t} catch (error) {\n" +
+                "\t\t\t\t\tthrow new Error(`Error creating Gemini Vertex AI client: ${error.message}`)\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t} else {\n" +
+                "\t\t\t\t// Initialize with standard API key\n" +
+                "\t\t\t\tif (!options.geminiApiKey) {\n" +
+                "\t\t\t\t\tthrow new Error(\"API key is required for Google Gemini when not using Vertex AI\")\n" +
+                "\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\ttry {\n" +
+                "\t\t\t\t\tthis.client = new GoogleGenAI({ apiKey: options.geminiApiKey })\n" +
+                "\t\t\t\t} catch (error) {\n" +
+                "\t\t\t\t\tthrow new Error(`Error creating Gemini client: ${error.message}`)\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t}\n" +
+                "\t\t}\n" +
+                "\t\treturn this.client\n" +
+                "\t}\n" +
+                "\n" +
+                "\t/**\n" +
+                "\t * Creates a message using the Gemini API with implicit caching.\n" +
+                "\t *\n" +
+                "\t * Cost accounting:\n" +
+                "\t * - Immediate costs (returned in the usage object): Input tokens, output tokens, cache read costs\n" +
+                "\t *\n" +
+                "\t * @param systemPrompt The system prompt to use for the message\n" +
+                "\t * @param messages The conversation history to include in the message\n" +
+                "\t * @returns An async generator that yields chunks of the response with accurate immediate costs\n" +
+                "\t */\n" +
+                "\t@withRetry({\n" +
+                "\t\tmaxRetries: 4,\n" +
+                "\t\tbaseDelay: 2000,\n" +
+                "\t\tmaxDelay: 15000,\n" +
+                "\t})\n" +
+                "\tasync *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {\n" +
+                "\t\tconst client = this.ensureClient()\n" +
+                "\t\tconst { id: modelId, info } = this.getModel()\n" +
+                "\t\tconst contents = messages.map(convertAnthropicMessageToGemini)\n" +
+                "\n" +
+                "\t\t// Configure thinking budget if supported\n" +
+                "\t\tconst thinkingBudget = this.options.thinkingBudgetTokens ?? 0\n" +
+                "\t\tconst _maxBudget = info.thinkingConfig?.maxBudget ?? 0\n" +
+                "\n" +
+                "\t\t// Set up base generation config\n" +
+                "\t\tconst requestConfig: GenerateContentConfig = {\n" +
+                "\t\t\t// Add base URL if configured\n" +
+                "\t\t\thttpOptions: this.options.geminiBaseUrl ? { baseUrl: this.options.geminiBaseUrl } : undefined,\n" +
+                "\t\t\t...{ systemInstruction: systemPrompt },\n" +
+                "\t\t\t// Set temperature (default to 0)\n" +
+                "\t\t\ttemperature: 0,\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\t// Add thinking config if the model supports it\n" +
+                "\t\tif (thinkingBudget > 0) {\n" +
+                "\t\t\trequestConfig.thinkingConfig = {\n" +
+                "\t\t\t\tthinkingBudget: thinkingBudget,\n" +
+                "\t\t\t\tincludeThoughts: true,\n" +
+                "\t\t\t}\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\t// Generate content using the configured parameters\n" +
+                "\t\tconst sdkCallStartTime = Date.now()\n" +
+                "\t\tlet sdkFirstChunkTime: number | undefined\n" +
+                "\t\tlet ttftSdkMs: number | undefined\n" +
+                "\t\tlet apiSuccess = false\n" +
+                "\t\tlet apiError: string | undefined\n" +
+                "\t\tlet promptTokens = 0\n" +
+                "\t\tlet outputTokens = 0\n" +
+                "\t\tlet cacheReadTokens = 0\n" +
+                "\t\tlet thoughtsTokenCount = 0 // Initialize thought token counts\n" +
+                "\t\tlet lastUsageMetadata: GenerateContentResponseUsageMetadata | undefined\n" +
+                "\n" +
+                "\t\ttry {\n" +
+                "\t\t\tconst result = await client.models.generateContentStream({\n" +
+                "\t\t\t\tmodel: modelId,\n" +
+                "\t\t\t\tcontents: contents,\n" +
+                "\t\t\t\tconfig: {\n" +
+                "\t\t\t\t\t...requestConfig,\n" +
+                "\t\t\t\t},\n" +
+                "\t\t\t})\n" +
+                "\n" +
+                "\t\t\tlet isFirstSdkChunk = true\n" +
+                "\t\t\tfor await (const chunk of result) {\n" +
+                "\t\t\t\tif (isFirstSdkChunk) {\n" +
+                "\t\t\t\t\tsdkFirstChunkTime = Date.now()\n" +
+                "\t\t\t\t\tttftSdkMs = sdkFirstChunkTime - sdkCallStartTime\n" +
+                "\t\t\t\t\tisFirstSdkChunk = false\n" +
+                "\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\t// Handle thinking content from Gemini's response\n" +
+                "\t\t\t\tconst candidateForThoughts = chunk?.candidates?.[0]\n" +
+                "\t\t\t\tconst partsForThoughts = candidateForThoughts?.content?.parts\n" +
+                "\t\t\t\tlet thoughts = \"\" // Initialize as empty string\n" +
+                "\n" +
+                "\t\t\t\tif (partsForThoughts) {\n" +
+                "\t\t\t\t\t// This ensures partsForThoughts is a Part[] array\n" +
+                "\t\t\t\t\tfor (const part of partsForThoughts) {\n" +
+                "\t\t\t\t\t\tconst { thought, text } = part as Part\n" +
+                "\t\t\t\t\t\tif (thought && text) {\n" +
+                "\t\t\t\t\t\t\t// Ensure part.text exists\n" +
+                "\t\t\t\t\t\t\t// Handle the thought part\n" +
+                "\t\t\t\t\t\t\tthoughts += text + \"\\n\" // Append thought and a newline\n" +
+                "\t\t\t\t\t\t}\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\tif (thoughts.trim() !== \"\") {\n" +
+                "\t\t\t\t\tyield {\n" +
+                "\t\t\t\t\t\ttype: \"reasoning\",\n" +
+                "\t\t\t\t\t\treasoning: thoughts.trim(),\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t\tthoughts = \"\" // Reset thoughts after yielding\n" +
+                "\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\tif (chunk.text) {\n" +
+                "\t\t\t\t\tyield {\n" +
+                "\t\t\t\t\t\ttype: \"text\",\n" +
+                "\t\t\t\t\t\ttext: chunk.text,\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\tif (chunk.usageMetadata) {\n" +
+                "\t\t\t\t\tlastUsageMetadata = chunk.usageMetadata\n" +
+                "\t\t\t\t\tpromptTokens = lastUsageMetadata.promptTokenCount ?? promptTokens\n" +
+                "\t\t\t\t\toutputTokens = lastUsageMetadata.candidatesTokenCount ?? outputTokens\n" +
+                "\t\t\t\t\tthoughtsTokenCount = lastUsageMetadata.thoughtsTokenCount ?? thoughtsTokenCount\n" +
+                "\t\t\t\t\tcacheReadTokens = lastUsageMetadata.cachedContentTokenCount ?? cacheReadTokens\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t}\n" +
+                "\t\t\tapiSuccess = true\n" +
+                "\n" +
+                "\t\t\tif (lastUsageMetadata) {\n" +
+                "\t\t\t\tconst totalCost = this.calculateCost({\n" +
+                "\t\t\t\t\tinfo,\n" +
+                "\t\t\t\t\tinputTokens: promptTokens,\n" +
+                "\t\t\t\t\toutputTokens,\n" +
+                "\t\t\t\t\tthoughtsTokenCount,\n" +
+                "\t\t\t\t\tcacheReadTokens,\n" +
+                "\t\t\t\t})\n" +
+                "\t\t\t\tyield {\n" +
+                "\t\t\t\t\ttype: \"usage\",\n" +
+                "\t\t\t\t\tinputTokens: promptTokens - cacheReadTokens,\n" +
+                "\t\t\t\t\toutputTokens,\n" +
+                "\t\t\t\t\tthoughtsTokenCount,\n" +
+                "\t\t\t\t\tcacheReadTokens,\n" +
+                "\t\t\t\t\tcacheWriteTokens: 0,\n" +
+                "\t\t\t\t\ttotalCost,\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t}\n" +
+                "\t\t} catch (error) {\n" +
+                "\t\t\tapiSuccess = false\n" +
+                "\t\t\t// Let the error propagate to be handled by withRetry or Task.ts\n" +
+                "\t\t\t// Telemetry will be sent in the finally block.\n" +
+                "\t\t\tif (error instanceof Error) {\n" +
+                "\t\t\t\tapiError = error.message\n" +
+                "\n" +
+                "\t\t\t\tif (error instanceof ApiError) {\n" +
+                "\t\t\t\t\tif (error.status === 429) {\n" +
+                "\t\t\t\t\t\t// The API includes more details in the message\n" +
+                "\t\t\t\t\t\t// https://github.com/googleapis/js-genai/blob/v1.11.0/src/_api_client.ts#L758\n" +
+                "\t\t\t\t\t\tconst response = this.attemptParse(error.message)\n" +
+                "\n" +
+                "\t\t\t\t\t\tif (response && response.error) {\n" +
+                "\t\t\t\t\t\t\tconst responseBody = this.attemptParse(response.error.message)\n" +
+                "\n" +
+                "\t\t\t\t\t\t\tif (responseBody.error) {\n" +
+                "\t\t\t\t\t\t\t\tconst detail = responseBody.error.details?.find(\n" +
+                "\t\t\t\t\t\t\t\t\t(d: any) => d[\"@type\"] === \"type.googleapis.com/google.rpc.RetryInfo\",\n" +
+                "\t\t\t\t\t\t\t\t)\n" +
+                "\n" +
+                "\t\t\t\t\t\t\t\tconst detailedError = new RetriableError(\n" +
+                "\t\t\t\t\t\t\t\t\tapiError,\n" +
+                "\t\t\t\t\t\t\t\t\tthis.parseRetryDelay(detail?.retryDelay) || undefined,\n" +
+                "\t\t\t\t\t\t\t\t\t{\n" +
+                "\t\t\t\t\t\t\t\t\t\tcause: error,\n" +
+                "\t\t\t\t\t\t\t\t\t},\n" +
+                "\t\t\t\t\t\t\t\t)\n" +
+                "\t\t\t\t\t\t\t\tthrow detailedError\n" +
+                "\t\t\t\t\t\t\t}\n" +
+                "\t\t\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\t\t\tthrow new RetriableError(apiError, undefined, { cause: error })\n" +
+                "\t\t\t\t\t}\n" +
+                "\n" +
+                "\t\t\t\t\t// Fallback in case Gemini throws a rate limit error without a 429 status code\n" +
+                "\t\t\t\t\t// https://github.com/cline/cline/pull/5205#discussion_r2311761559\n" +
+                "\t\t\t\t\tconst isRateLimit = rateLimitPatterns.some((pattern) => pattern.test(error.message))\n" +
+                "\t\t\t\t\tif (isRateLimit) {\n" +
+                "\t\t\t\t\t\tthrow new RetriableError(apiError, undefined, { cause: error })\n" +
+                "\t\t\t\t\t}\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t} else {\n" +
+                "\t\t\t\tapiError = String(error)\n" +
+                "\t\t\t}\n" +
+                "\n" +
+                "\t\t\tthrow error\n" +
+                "\t\t} finally {\n" +
+                "\t\t\tconst sdkCallEndTime = Date.now()\n" +
+                "\t\t\tconst totalDurationSdkMs = sdkCallEndTime - sdkCallStartTime\n" +
+                "\t\t\tconst cacheHit = cacheReadTokens > 0\n" +
+                "\t\t\tconst cacheHitPercentage = promptTokens > 0 ? (cacheReadTokens / promptTokens) * 100 : undefined\n" +
+                "\t\t\tconst throughputTokensPerSecSdk =\n" +
+                "\t\t\t\ttotalDurationSdkMs > 0 && outputTokens > 0 ? outputTokens / (totalDurationSdkMs / 1000) : undefined\n" +
+                "\n" +
+                "\t\t\tif (this.options.ulid) {\n" +
+                "\t\t\t\ttelemetryService.captureGeminiApiPerformance(this.options.ulid, modelId, {\n" +
+                "\t\t\t\t\tttftSec: ttftSdkMs !== undefined ? ttftSdkMs / 1000 : undefined,\n" +
+                "\t\t\t\t\ttotalDurationSec: totalDurationSdkMs / 1000,\n" +
+                "\t\t\t\t\tpromptTokens,\n" +
+                "\t\t\t\t\toutputTokens,\n" +
+                "\t\t\t\t\tcacheReadTokens,\n" +
+                "\t\t\t\t\tcacheHit,\n" +
+                "\t\t\t\t\tcacheHitPercentage,\n" +
+                "\t\t\t\t\tapiSuccess,\n" +
+                "\t\t\t\t\tapiError,\n" +
+                "\t\t\t\t\tthroughputTokensPerSec: throughputTokensPerSecSdk,\n" +
+                "\t\t\t\t})\n" +
+                "\t\t\t} else {\n" +
+                "\t\t\t\tconsole.warn(\"GeminiHandler: ulid not available for telemetry in createMessage.\")\n" +
+                "\t\t\t}\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "\n" +
+                "\t/**\n" +
+                "\t * Calculate the immediate dollar cost of the API call based on token usage and model pricing.\n" +
+                "\t *\n" +
+                "\t * This method accounts for the immediate costs of the API call:\n" +
+                "\t * - Input token costs (for uncached tokens)\n" +
+                "\t * - Output token costs\n" +
+                "\t * - Cache read costs\n" +
+                "\t * - Gemini implicit caching has no write costs\n" +
+                "\t *\n" +
+                "\t */\n" +
+                "\tpublic calculateCost({\n" +
+                "\t\tinfo,\n" +
+                "\t\tinputTokens,\n" +
+                "\t\toutputTokens,\n" +
+                "\t\tthoughtsTokenCount = 0,\n" +
+                "\t\tcacheReadTokens = 0,\n" +
+                "\t}: {\n" +
+                "\t\tinfo: ModelInfo\n" +
+                "\t\tinputTokens: number\n" +
+                "\t\toutputTokens: number\n" +
+                "\t\tthoughtsTokenCount: number\n" +
+                "\t\tcacheReadTokens?: number\n" +
+                "\t}) {\n" +
+                "\t\t// Exit early if any required pricing information is missing\n" +
+                "\t\tif (!info.inputPrice || !info.outputPrice) {\n" +
+                "\t\t\treturn undefined\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\tlet inputPrice = info.inputPrice\n" +
+                "\t\tlet outputPrice = info.outputPrice\n" +
+                "\t\t// Right now, we only show the immediate costs of caching and not the ongoing costs of storing the cache\n" +
+                "\t\tlet cacheReadsPrice = info.cacheReadsPrice ?? 0\n" +
+                "\n" +
+                "\t\t// If there's tiered pricing then adjust prices based on the input tokens used\n" +
+                "\t\tif (info.tiers) {\n" +
+                "\t\t\tconst tier = info.tiers.find((tier) => inputTokens <= tier.contextWindow)\n" +
+                "\t\t\tif (tier) {\n" +
+                "\t\t\t\tinputPrice = tier.inputPrice ?? inputPrice\n" +
+                "\t\t\t\toutputPrice = tier.outputPrice ?? outputPrice\n" +
+                "\t\t\t\tcacheReadsPrice = tier.cacheReadsPrice ?? cacheReadsPrice\n" +
+                "\t\t\t}\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\t// Subtract the cached input tokens from the total input tokens\n" +
+                "\t\tconst uncachedInputTokens = inputTokens - (cacheReadTokens ?? 0)\n" +
+                "\n" +
+                "\t\t// Calculate immediate costs only\n" +
+                "\n" +
+                "\t\t// 1. Input token costs (for uncached tokens)\n" +
+                "\t\tconst inputTokensCost = inputPrice * (uncachedInputTokens / 1_000_000)\n" +
+                "\n" +
+                "\t\t// 2. Output token costs\n" +
+                "\t\tconst responseTokensCost = outputPrice * ((outputTokens + thoughtsTokenCount) / 1_000_000)\n" +
+                "\n" +
+                "\t\t// 3. Cache read costs (immediate)\n" +
+                "\t\tconst cacheReadCost = (cacheReadTokens ?? 0) > 0 ? cacheReadsPrice * ((cacheReadTokens ?? 0) / 1_000_000) : 0\n" +
+                "\n" +
+                "\t\t// Calculate total immediate cost (excluding cache write/storage costs)\n" +
+                "\t\tconst totalCost = inputTokensCost + responseTokensCost + cacheReadCost\n" +
+                "\n" +
+                "\t\t// Create the trace object for debugging\n" +
+                "\t\tconst trace: Record<string, { price: number; tokens: number; cost: number }> = {\n" +
+                "\t\t\tinput: { price: inputPrice, tokens: uncachedInputTokens, cost: inputTokensCost },\n" +
+                "\t\t\toutput: { price: outputPrice, tokens: outputTokens, cost: responseTokensCost },\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\t// Only include cache read costs in the trace (cache write costs are tracked separately)\n" +
+                "\t\tif ((cacheReadTokens ?? 0) > 0) {\n" +
+                "\t\t\ttrace.cacheRead = { price: cacheReadsPrice, tokens: cacheReadTokens ?? 0, cost: cacheReadCost }\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\t// console.log(`[GeminiHandler] calculateCost -> ${totalCost}`, trace)\n" +
+                "\t\treturn totalCost\n" +
+                "\t}\n" +
+                "\n" +
+                "\t/**\n" +
+                "\t * Get the model ID and info for the current configuration\n" +
+                "\t */\n" +
+                "\tgetModel(): { id: GeminiModelId; info: ModelInfo } {\n" +
+                "\t\tconst modelId = this.options.apiModelId\n" +
+                "\t\tif (modelId && modelId in geminiModels) {\n" +
+                "\t\t\tconst id = modelId as GeminiModelId\n" +
+                "\t\t\treturn { id, info: geminiModels[id] }\n" +
+                "\t\t}\n" +
+                "\t\treturn {\n" +
+                "\t\t\tid: geminiDefaultModelId,\n" +
+                "\t\t\tinfo: geminiModels[geminiDefaultModelId],\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "\n" +
+                "\t/**\n" +
+                "\t * Count tokens in content using the Gemini API\n" +
+                "\t */\n" +
+                "\tasync countTokens(content: Array<any>): Promise<number> {\n" +
+                "\t\ttry {\n" +
+                "\t\t\tconst client = this.ensureClient()\n" +
+                "\t\t\tconst { id: model } = this.getModel()\n" +
+                "\n" +
+                "\t\t\t// Convert content to Gemini format\n" +
+                "\t\t\tconst geminiContent = content.map((block) => {\n" +
+                "\t\t\t\tif (typeof block === \"string\") {\n" +
+                "\t\t\t\t\treturn { text: block }\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t\treturn { text: JSON.stringify(block) }\n" +
+                "\t\t\t})\n" +
+                "\n" +
+                "\t\t\t// Use Gemini's token counting API\n" +
+                "\t\t\tconst response = await client.models.countTokens({\n" +
+                "\t\t\t\tmodel,\n" +
+                "\t\t\t\tcontents: [{ parts: geminiContent }],\n" +
+                "\t\t\t})\n" +
+                "\n" +
+                "\t\t\tif (response.totalTokens === undefined) {\n" +
+                "\t\t\t\tconsole.warn(\"Gemini token counting returned undefined, using fallback\")\n" +
+                "\t\t\t\treturn this.estimateTokens(content)\n" +
+                "\t\t\t}\n" +
+                "\n" +
+                "\t\t\treturn response.totalTokens\n" +
+                "\t\t} catch (error) {\n" +
+                "\t\t\tconsole.warn(\"Gemini token counting failed, using fallback\", error)\n" +
+                "\t\t\treturn this.estimateTokens(content)\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "\n" +
+                "\t/**\n" +
+                "\t * Fallback token estimation method\n" +
+                "\t */\n" +
+                "\tprivate estimateTokens(content: Array<any>): number {\n" +
+                "\t\t// Simple estimation: ~4 characters per token\n" +
+                "\t\tconst totalChars = content.reduce((total, block) => {\n" +
+                "\t\t\tif (typeof block === \"string\") {\n" +
+                "\t\t\t\treturn total + block.length\n" +
+                "\t\t\t} else if (block && typeof block === \"object\") {\n" +
+                "\t\t\t\t// Safely stringify the object\n" +
+                "\t\t\t\ttry {\n" +
+                "\t\t\t\t\tconst jsonStr = JSON.stringify(block)\n" +
+                "\t\t\t\t\treturn total + jsonStr.length\n" +
+                "\t\t\t\t} catch (e) {\n" +
+                "\t\t\t\t\tconsole.warn(\"Failed to stringify block for token estimation\", e)\n" +
+                "\t\t\t\t\treturn total\n" +
+                "\t\t\t\t}\n" +
+                "\t\t\t}\n" +
+                "\t\t\treturn total\n" +
+                "\t\t}, 0)\n" +
+                "\n" +
+                "\t\treturn Math.ceil(totalChars / 4)\n" +
+                "\t}\n" +
+                "\n" +
+                "\tprivate parseRetryDelay(retryAfter?: string): number {\n" +
+                "\t\tif (!retryAfter) {\n" +
+                "\t\t\treturn 0\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\tconst unit = retryAfter.at(-1)\n" +
+                "\t\tconst value = parseInt(retryAfter, 10)\n" +
+                "\n" +
+                "\t\tif (Number.isNaN(value)) {\n" +
+                "\t\t\treturn 0\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\tif (unit === \"s\") {\n" +
+                "\t\t\treturn value\n" +
+                "\t\t} else if (unit === \"m\") {\n" +
+                "\t\t\treturn value * 60 // Convert minutes to seconds\n" +
+                "\t\t} else if (unit === \"h\") {\n" +
+                "\t\t\treturn value * 60 * 60 // Convert hours to seconds\n" +
+                "\t\t}\n" +
+                "\n" +
+                "\t\treturn value\n" +
+                "\t}\n" +
+                "\n" +
+                "\tprivate attemptParse(str: string) {\n" +
+                "\t\ttry {\n" +
+                "\t\t\treturn JSON.parse(str)\n" +
+                "\t\t} catch (_) {\n" +
+                "\t\t\treturn null\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "}\n";
+//        config.setDebug(true); // Use debug mode to avoid actual API call
+        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
+        config.setModel("anthropic/claude-sonnet-4");
+//        config.setModel("openai/gpt-5");
+        config.setUrl("https://gateway.ai.cloudflare.com/v1/a26a2ae889e7c5180238c048b688c0c6/aistudio/openrouter/v1/chat/completions");
+        llm = new LLM(config);
+
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().role("user").content("hello").build());
+        messages.add(AiMessage.builder().role("assistant").content("hi").build());
+        messages.add(AiMessage.builder().role("user").content("how are you").build());
+        messages.add(AiMessage.builder().role("assistant").content("i'm fine thank you. and you?").build());
+        messages.add(AiMessage.builder().role("user").content("I'm ok, what does these code do?: " + code).build());
+
+        CustomConfig customConfig = new CustomConfig();
+        customConfig.setCacheTurn(2);
+
+        // This is a bit tricky to test without refactoring LLM to allow mocking the http client.
+        // For now, we'll rely on the debug logs we added to verify the behavior.
+        // A proper test would capture the request body and assert its contents.
+        System.out.println("Testing Claude cache control. Check debug logs for 'Applied cache_control' messages.");
+        String res = llm.chatCompletion(llm.getToken(), customConfig, messages, config.getModel(), "system prompt", config);
+        System.out.println(res);
+
+        messages.add(AiMessage.builder().role("assistant").content(res).build());
+        messages.add(AiMessage.builder().role("user").content("any problems with these code?").build());
+        res = llm.chatCompletion(llm.getToken(), customConfig, messages, config.getModel(), "system prompt", config);
+        System.out.println(res);
+        // We can't easily assert the log output here, but when running the test,
+        // we expect to see logs indicating cache_control was applied to the system prompt
+        // and the last 2 user messages.
+    }
 }

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.Nullable;
 import run.mone.hive.bo.InternalServer;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Constants;
@@ -73,10 +74,19 @@ public class MonerSystemPrompt {
         }
         
         // 构建.hive/agent.md文件路径
+        String mdStr = getAgentMd(workspacePath);
+        if (mdStr != null) return mdStr;
+
+        // 从角色配置中获取自定义指令，如果不存在则使用默认指令
+        return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+    }
+
+    @Nullable
+    private static String getAgentMd(String workspacePath) {
         String filePath = workspacePath
                 +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
                 + ".hive" + File.separator + "agent.md";
-        
+
         try {
             // 尝试读取文件内容
             String mdStr = FileUtils.readMarkdownFile(filePath);
@@ -89,9 +99,7 @@ public class MonerSystemPrompt {
         } catch (Exception e) {
             log.debug("无法读取自定义指令文件: {}, 原因: {}", filePath, e.getMessage());
         }
-        
-        // 从角色配置中获取自定义指令，如果不存在则使用默认指令
-        return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+        return null;
     }
 
     // 为了向后兼容，提供不带enableTaskProgress参数的重载方法
