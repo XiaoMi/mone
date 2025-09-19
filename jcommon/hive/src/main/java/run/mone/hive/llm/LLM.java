@@ -24,6 +24,7 @@ import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 import run.mone.hive.utils.ClaudeCacheControlHelper;
+import run.mone.hive.utils.ModelInfoUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -577,6 +578,12 @@ public class LLM {
                     usageBuilder.totalCost(null);
                     usageBuilder.thoughtsTokenCount(null);
                 }
+
+                Integer tokenLimit = ModelInfoUtils.getModelInfo(llmProvider, model)
+                        .map(ModelInfoUtils.ModelInfo::getTokenLimit)
+                        .orElse(null);
+                usageBuilder.tokenLimit(tokenLimit);
+
                 usage = usageBuilder.build();
             }
 
@@ -1103,6 +1110,12 @@ public class LLM {
                                         usageBuilder.totalCost(null);
                                         usageBuilder.thoughtsTokenCount(null);
                                     }
+
+                                    Integer tokenLimit = ModelInfoUtils.getModelInfo(llmProvider, model)
+                                            .map(ModelInfoUtils.ModelInfo::getTokenLimit)
+                                            .orElse(null);
+                                    usageBuilder.tokenLimit(tokenLimit);
+
                                     LLMUsage usage = usageBuilder.build();
                                     if (null != usageConsumer) {
                                         usageConsumer.accept(usage);
@@ -1819,6 +1832,7 @@ public class LLM {
         private Integer cacheReadTokens;
         private Integer thoughtsTokenCount;
         private Double totalCost;
+        private Integer tokenLimit;
     }
 
     /**
