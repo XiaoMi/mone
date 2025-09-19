@@ -36,6 +36,8 @@ import run.mone.hive.bo.RegInfoDto;
 import run.mone.hive.common.ToolDataInfo;
 import run.mone.agentx.service.UserService;
 
+import static run.mone.hive.configs.Const.USER_INTERNAL_NAME;
+
 @RestController
 @RequestMapping("/api/v1/agents")
 @RequiredArgsConstructor
@@ -190,7 +192,21 @@ public class AgentController {
             return Mono.just(ApiResponse.error(400, "Missing required parameters: agentId and userId"));
         }
 
-        return agentConfigService.getUserConfigsAsMap(agentId, userId)
+        // 首先获取配置
+        Mono<Map<String, String>> configMapMono = agentConfigService.getUserConfigsAsMap(agentId, userId);
+        
+        // 获取用户信息
+        Mono<User> userMono = userService.findById(userId);
+        
+        // 合并两个Mono的结果
+        return Mono.zip(configMapMono, userMono)
+                .map(tuple -> {
+                    Map<String, String> configMap = tuple.getT1();
+                    // 将用户名和内部账号添加到配置映射中
+                    User user = tuple.getT2();
+                    configMap.put(USER_INTERNAL_NAME, user.getInternalAccount());
+                    return configMap;
+                })
                 .map(ApiResponse::success)
                 .defaultIfEmpty(ApiResponse.success(Map.of()));
     }
