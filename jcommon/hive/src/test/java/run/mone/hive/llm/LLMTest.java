@@ -1927,13 +1927,13 @@ class LLMTest {
     @Test
     public void testChatCompletionStreamWithUsageForDeepSeek() throws InterruptedException {
         // This test requires DEEPSEEK to be configured
-        config.setLlmProvider(LLMProvider.DEEPSEEK);
-        config.setModel("deepseek-chat");
+//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+//        config.setModel("deepseek-chat");
 
-//        config.setLlmProvider(LLMProvider.OPENROUTER);
-//        config.setModel("anthropic/claude-sonnet-4");
-//        // Make sure OPENROUTER_AI_GATEWAY environment variable is set
-//        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        config.setLlmProvider(LLMProvider.OPENROUTER);
+        config.setModel("anthropic/claude-sonnet-4");
+        // Make sure OPENROUTER_AI_GATEWAY environment variable is set
+        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
 
         llm = new LLM(config);
 
