@@ -37,7 +37,8 @@ type SupportedTag =
   | 'regex'
   | 'file_pattern'
   | 'working_directory'
-  | 'timeout';
+  | 'timeout'
+  | 'tool_result';
 
 interface Position {
   line: number;    // 行号
@@ -108,7 +109,8 @@ export class SimpleHtmlParser {
       'regex',
       'file_pattern',
       'working_directory',
-      'timeout'
+      'timeout',
+      'tool_result'
     ]);
   }
 

@@ -513,7 +513,7 @@ public class ReactorRole extends Role {
             } else {
                 res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
                 if (null != sink && tool.show()) {
-                    sink.next(res + "\n" + tool.formatResult(toolRes));
+                    sink.next(tool.formatResult(toolRes));
                 }
             }
         }
@@ -546,7 +546,7 @@ public class ReactorRole extends Role {
     private LLM getLlm(String llmProvider) {
         LLM curLLM = null;
         if (StringUtils.isNotEmpty(llmProvider)) {
-            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider)).build());
+            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT))).build());
         } else {
             curLLM = llm;
         }

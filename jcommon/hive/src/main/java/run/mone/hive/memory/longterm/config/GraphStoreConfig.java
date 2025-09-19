@@ -84,6 +84,21 @@ public class GraphStoreConfig {
      */
     @Builder.Default
     private Map<String, Object> config = new HashMap<>();
+
+    /**
+     * LLM配置
+     */
+    private LlmConfig llm;
+
+    /**
+     * 自定义提示词
+     */
+    private String customPrompt;
+
+    /**
+     * @param configMap
+     * @return
+     */
     
     /**
      * 从Map创建配置
@@ -176,13 +191,24 @@ public class GraphStoreConfig {
     }
     
     /**
-     * 创建默认的Kuzu配置  
+     * 创建默认的Kuzu配置（本地嵌入式）
      */
     public static GraphStoreConfig kuzuDefault() {
         return GraphStoreConfig.builder()
             .provider(Provider.KUZU)
-            .url(":memory:")
-            .enabled(false)
+            .url("./data/kuzu")
+            .enabled(true)
+            .build();
+    }
+
+    /**
+     * 创建本地嵌入式Kuzu配置（测试用）
+     */
+    public static GraphStoreConfig kuzuEmbedded() {
+        return GraphStoreConfig.builder()
+            .provider(Provider.KUZU)
+            .url("./data/kuzu_embedded")
+            .enabled(true)
             .build();
     }
 }

@@ -42,13 +42,26 @@ public class GraphStoreFactory {
     }
     
     /**
-     * 创建默认的Neo4j图数据库实例
-     * 
-     * @return Neo4j图数据库实例
+     * 创建默认的图数据库实例（优先本地嵌入式）
+     *
+     * @return 本地图数据库实例
      */
     public static GraphStoreBase createDefault() {
-        GraphStoreConfig config = GraphStoreConfig.neo4jDefault();
+        GraphStoreConfig config = GraphStoreConfig.kuzuDefault();
         return create(config);
+    }
+
+    /**
+     * 为测试创建本地图数据库实例
+     *
+     * @return 本地Kuzu图数据库实例
+     */
+    public static GraphStoreBase createLocalForTesting() {
+        return create(GraphStoreConfig.builder()
+                .provider(GraphStoreConfig.Provider.KUZU)
+                .enabled(true)
+                .url("./data/test/kuzu")
+                .build());
     }
     
     /**

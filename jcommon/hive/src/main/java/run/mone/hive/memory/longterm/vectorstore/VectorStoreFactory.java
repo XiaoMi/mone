@@ -23,36 +23,51 @@ public class VectorStoreFactory {
         switch (config.getProvider()) {
             case LOCAL:
                 return new LocalVectorStore(config);
+            case CHROMA:
+                return new ChromaVectorStore(config);
             case QDRANT:
                 return new QdrantVectorStore(config);
-            case CHROMA:
-                throw new UnsupportedOperationException("Chroma not implemented yet");
             case WEAVIATE:
-                throw new UnsupportedOperationException("Weaviate not implemented yet");
+                return new WeaviateVectorStore(config);
             case PINECONE:
-                throw new UnsupportedOperationException("Pinecone not implemented yet");
+                return new PineconeVectorStore(config);
             case FAISS:
-                throw new UnsupportedOperationException("FAISS not implemented yet");
+                return new FaissVectorStore(config);
             case ELASTICSEARCH:
-                throw new UnsupportedOperationException("Elasticsearch not implemented yet");
+                return new ElasticsearchVectorStore(config);
             case REDIS:
-                throw new UnsupportedOperationException("Redis not implemented yet");
+                return new RedisVectorStore(config);
             case PGVECTOR:
-                throw new UnsupportedOperationException("PgVector not implemented yet");
+                return new PgVectorStore(config);
             case MILVUS:
-                throw new UnsupportedOperationException("Milvus not implemented yet");
+                return new MilvusVectorStore(config);
             default:
                 throw new IllegalArgumentException("Unsupported vector store provider: " + config.getProvider());
         }
     }
     
     /**
-     * 创建默认的Qdrant向量存储实例
-     * 
-     * @return Qdrant向量存储实例
+     * 创建默认的向量存储实例（优先本地嵌入式）
+     *
+     * @return 本地向量存储实例
      */
     public static VectorStoreBase createDefault() {
-        return create(VectorStoreConfig.qdrantDefault());
+        return create(VectorStoreConfig.chromaDefault());
+    }
+
+    /**
+     * 为测试创建本地向量存储实例
+     *
+     * @return 本地Chroma向量存储实例
+     */
+    public static VectorStoreBase createLocalForTesting() {
+        return create(VectorStoreConfig.builder()
+                .provider(VectorStoreConfig.Provider.CHROMA)
+                .collectionName("test_collection")
+                .host("localhost")
+                .path("./data/test/chroma")
+                .embeddingModelDims(384)
+                .build());
     }
     
     /**
