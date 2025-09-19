@@ -32,6 +32,21 @@ public class GraphUtils {
             - Use the exact entity names provided in the entity list
             - Normalize entity names (lowercase, underscore-separated)
             - Map self-references to USER_ID
+
+            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            {
+                "entities": [
+                    {
+                        "source": "The source entity of the relationship.",
+                        "relationship": "The relationship between the source and destination entities.",
+                        "destination": "The destination entity of the relationship."
+                    }
+                ]
+            }
+
+            source: the source entity of the relationship
+            relationship: the relationship between the source and destination entities
+            destination: the destination entity of the relationship
             """;
 
     /**
@@ -42,6 +57,19 @@ public class GraphUtils {
             You are a smart assistant who understands entities and their types in a given text.
             If user message contains self reference such as 'I', 'me', 'my' etc. then use USER_ID as the source entity.
             Extract all the entities from the text. ***DO NOT*** answer the question itself if the given text is a question.
+
+            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            {
+                "entities": [
+                    {
+                        "entity": "entity_name",
+                        "entity_type": "entity_type"
+                    }
+                ]
+            }
+
+            entity_name: the name of the entity
+            entity_type: the type of the entity
             """;
 
     /**

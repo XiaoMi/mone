@@ -52,6 +52,10 @@ public class UserService {
     public Flux<User> findAllUsers() {
         return userRepository.findAll();
     }
+    
+    public Mono<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
 
     public Mono<String> createToken(User user) {
         return findByUsername(user.getUsername())
