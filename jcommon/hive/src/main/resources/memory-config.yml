@@ -1,0 +1,58 @@
+memory:
+  # LLM Configuration
+  llm:
+    provider: openai
+    model: gpt-4o
+    baseUrl: http://baseUrlForTest
+    apiKey: sk-apiKeyForTest
+    temperature: 0.1
+    maxTokens: 4000
+    topP: 1.0
+    enableVision: false
+    visionDetails: low
+    customHeaders:
+      X-Model-Provider-Id: azure_openai
+
+  # Embedder Configuration
+  embedder:
+    provider: openai
+    model: text-embedding-3-small
+    baseUrl: http://baseUrlForTest
+    apiKey: sk-apiKeyForTest
+    embeddingDims: 1536
+    customHeaders:
+      X-Model-Provider-Id: azure_openai
+
+  # Vector Store Configuration
+  vectorStore:
+    provider: chroma
+    collectionName: test_collection
+    path: ./temp/vector
+    embeddingModelDims: 1536
+    embeddingFunction: openai
+    apiKey: sk-apiKeyForTest
+    baseUrl: http://baseUrlForTest
+
+  # Graph Store Configuration
+  graphStore:
+    provider: kuzu
+    enabled: true
+    # url will be set programmatically to temp directory
+    llm:
+      provider: openai
+      model: gpt-4o
+      baseUrl: http://baseUrlForTest
+      apiKey: sk-apiKeyForTest
+      temperature: 0.1
+      maxTokens: 4000
+      topP: 1.0
+      enableVision: false
+      visionDetails: low
+      customHeaders:
+        X-Model-Provider-Id: azure_openai
+
+  # History Database Path
+  historyDbPath: ./temp/history.db
+
+  # API Version
+  version: v1.1
