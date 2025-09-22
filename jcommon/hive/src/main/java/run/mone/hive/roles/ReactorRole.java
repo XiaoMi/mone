@@ -16,6 +16,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.llm.LLMProvider;
@@ -25,18 +26,15 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
-import run.mone.hive.roles.tool.ExecuteCommandTool;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
-import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
+import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 import run.mone.hive.task.*;
 import run.mone.hive.utils.NetUtils;
-import run.mone.hive.context.ConversationContextManager;
-import run.mone.hive.context.ContextManager;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -101,6 +99,9 @@ public class ReactorRole extends Role {
     private AtomicInteger maxAssistantNum = new AtomicInteger();
 
     private int MAX_ASSISTANT_NUM = Integer.MAX_VALUE;
+
+    // 中断标志 - 用于强制停止Role的执行
+    private AtomicBoolean interrupted = new AtomicBoolean(false);
 
     private McpHub mcpHub;
 
@@ -273,6 +274,7 @@ public class ReactorRole extends Role {
     @Override
     protected int observe() {
         log.info("{} run observe", this.name);
+        
         this.state.set(RoleState.observe);
 
         if (this.roleMeta.getObserveFunc() != null) {
@@ -294,7 +296,6 @@ public class ReactorRole extends Role {
                 fluxSink.complete();
             }
 
-
             int result = super.observe();
             Message msg = this.rc.news.take();
             ac.setMsg(msg);
@@ -308,6 +309,12 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.take();
         lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
+        
+        // 在收到消息后再次检查中断状态
+        if (this.interrupted.get()) {
+            log.info("Role '{}' 在处理消息前被中断", this.name);
+            return 2;
+        }
 
         //机器人回答太多轮了
         if (this.maxAssistantNum.get() > MAX_ASSISTANT_NUM) {
@@ -398,6 +405,13 @@ public class ReactorRole extends Role {
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
         log.info("{} run act", this.name);
+        
+        // 检查中断状态
+        if (this.interrupted.get()) {
+            log.info("Role '{}' 在act阶段被中断", this.name);
+            return CompletableFuture.completedFuture(Message.builder().build());
+        }
+        
         this.state.set(RoleState.act);
 
         Message msg = this.ac.getMsg();
@@ -456,6 +470,14 @@ public class ReactorRole extends Role {
             //获取系统提示词
             String systemPrompt = buildSystemPrompt();
 
+            // 在调用LLM前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在调用LLM前被中断", this.name);
+                sink.next("⚠️ 执行已被中断\n");
+                sink.complete();
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
+
             //调用大模型(选用合适的工具)
             focusChainManager.getTaskState().setApiRequestCount(focusChainManager.getTaskState().getApiRequestCount() + 1);
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
@@ -482,6 +504,14 @@ public class ReactorRole extends Role {
             log.info("use tool:{}", name);
 
             this.ac.setLastTool(name);
+
+            // 在执行工具前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在执行工具前被中断", this.name);
+                sink.next("⚠️ 执行已被中断\n");
+                sink.complete();
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
 
             if (this.toolMap.containsKey(name)) {//执行内部tool
                 callTool(name, it, toolRes, sink, buildToolExtraParam(msg));
@@ -557,17 +587,71 @@ public class ReactorRole extends Role {
         StringBuilder sb = new StringBuilder();
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
-        curLLM.compoundMsgCall(compoundMsg, systemPrompt)
-                .doOnNext(it -> {
-                    sb.append(it);
-                    Optional.ofNullable(sink).ifPresent(s -> s.next(it));
-                })
-                .doOnError(error -> {
-                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
-                    sb.append(error.getMessage());
-                    log.error(error.getMessage(), error);
+        
+        // 添加重试机制，同时支持中断功能
+        int maxRetries = 3;
+        int retryCount = 0;
+        boolean success = false;
+        
+        while (!success && retryCount < maxRetries) {
+            // 在重试前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
+                hasError.set(true);
+                Optional.ofNullable(sink).ifPresent(s -> {
+                    s.next("⚠️ 执行已被中断\n");
+                    s.complete();
+                });
+                break;
+            }
+            
+            try {
+                if (retryCount > 0) {
+                    log.info("LLM调用重试第{}次", retryCount);
+                    int tmpRetries = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
+                }
+                
+                sb.setLength(0); // 清空之前的结果
+                
+                curLLM.compoundMsgCall(compoundMsg, systemPrompt)
+                        .doOnNext(it -> {
+                            // 在每次接收流式响应时检查中断状态
+                            if (this.interrupted.get()) {
+                                log.info("Role '{}' 在LLM流式响应中被中断", this.name);
+                                hasError.set(true);
+                                Optional.ofNullable(sink).ifPresent(s -> {
+                                    s.next("⚠️ 执行已被中断\n");
+                                    s.complete();
+                                });
+                                return; // 停止处理后续响应
+                            }
+                            sb.append(it);
+                            Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                        })
+                        .doOnError(error -> {
+                            throw new RuntimeException(error);
+                        })
+                        .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
+                        .blockLast();
+                
+                success = true; // 如果执行到这里没有异常，说明成功了
+            } catch (Exception error) {
+                retryCount++;
+                log.error("LLM调用失败(第{}次): {}", retryCount, error.getMessage(), error);
+                
+                if (retryCount >= maxRetries) {
+                    // 所有重试都失败了
+                    final int finalRetryCount = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> {
+                        s.next("LLM调用失败，已重试" + finalRetryCount + "次，无法完成请求。\n");
+                        s.error(error);
+                    });
+                    sb.append("LLM调用失败: ").append(error.getMessage());
                     hasError.set(true);
-                }).blockLast();
+                }
+            }
+        }
         return sb.toString();
     }
 
@@ -705,6 +789,54 @@ public class ReactorRole extends Role {
      */
     public String getWorkspacePath() {
         return this.workspacePath;
+    }
+
+    /**
+     * 强制中断Role的执行
+     * 设置中断标志，使Role在下次检查时停止执行
+     */
+    public void interrupt() {
+        log.info("Role '{}' 收到中断信号", this.name);
+        this.interrupted.set(true);
+        // 如果有正在进行的流式输出，也要中断
+        if (this.fluxSink != null) {
+            try {
+                this.fluxSink.next("⚠️ 执行已被中断\n");
+                this.fluxSink.complete();
+            } catch (Exception e) {
+                log.debug("中断时关闭FluxSink出现异常: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 重置中断标志
+     * 允许Role重新开始执行
+     */
+    public void resetInterrupt() {
+        log.info("Role '{}' 重置中断标志", this.name);
+        this.interrupted.set(false);
+        this.state.set(RoleState.observe);
+    }
+
+    /**
+     * 检查是否被中断
+     *
+     * @return true如果被中断，false否则
+     */
+    public boolean isInterrupted() {
+        return this.interrupted.get();
+    }
+
+    /**
+     * 检查中断状态，如果被中断则抛出异常
+     * 用于在关键执行点进行中断检查
+     */
+    private void checkInterrupted() {
+        if (this.interrupted.get()) {
+            log.info("Role '{}' 执行被中断", this.name);
+            throw new RuntimeException("Role execution interrupted");
+        }
     }
 
     public void initConfig() {
