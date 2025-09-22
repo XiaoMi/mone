@@ -4,4 +4,7 @@
 
 ## 📋 测试文件说明
 
-运行LocalMemoryIntegrationTest.java 验证向量和图存储功能
+- 可以使用[src/main/resources/memory-config.yml](../../../main/resources/memory-config.yml)来一键配置所需组件
+- 本地运行Chroma: `docker run -d --name chroma-test -p 8000:8000 chromadb/chroma:0.6.4.dev226`
+- kuzu默认随进程启动(InMemory模式，不会持久化到文件)
+- 运行[LocalMemoryIntegrationTest.java](LocalMemoryIntegrationTest.java) 验证向量和图存储功能

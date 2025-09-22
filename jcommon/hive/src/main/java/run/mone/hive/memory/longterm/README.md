@@ -357,11 +357,12 @@ try {
 
 ## 🔄 完整示例
 
-查看 `src/test/java/run/mone/hive/memory/longterm/examples/MemoryExample.java` 文件获取完整的使用示例，包括：
+查看 [`src/test/java/run/mone/hive/memory/longterm/examples/MemoryExample.java`](../../test/java/run/mone/hive/memory/longterm/examples/MemoryExample.java) 文件获取完整的使用示例，包括：
 - 基础使用示例
 - 自定义配置示例
 - 异步操作示例
 - 记忆管理示例
+- 参考: [src/test/java/run/mone/hive/memory/longterm/README.md](../../test/java/run/mone/hive/memory/longterm/README.md)
 
 ## 🚧 开发状态
 
