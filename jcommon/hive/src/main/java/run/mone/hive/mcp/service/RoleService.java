@@ -250,11 +250,15 @@ public class RoleService {
         return Flux.create(sink -> {
             message.setSink(sink);
             ReactorRole rr = roleMap.get(from);
+            if (null == rr) {
+                sink.next("没有找到Agent\n");
+                sink.complete();
+            }
             if (!rr.getState().get().equals(RoleState.observe)) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                roleMap.get(from).putMessage(message);
+                rr.putMessage(message);
             }
         });
     }
