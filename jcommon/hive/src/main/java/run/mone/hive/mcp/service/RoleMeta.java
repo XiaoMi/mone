@@ -75,6 +75,14 @@ public class RoleMeta {
     @Builder.Default
     private Rag rag = new Rag();
 
+    //自动开启知识库查询
+    @Builder.Default
+    private KnowledgeBaseQuery knowledgeBaseQuery = new KnowledgeBaseQuery();
+
+    //自动开启记忆搜索
+    @Builder.Default
+    private MemoryQuery memoryQuery = new MemoryQuery();
+
     //自动打断检测
     @Builder.Default
     private InterruptQuery interruptQuery = new InterruptQuery();
