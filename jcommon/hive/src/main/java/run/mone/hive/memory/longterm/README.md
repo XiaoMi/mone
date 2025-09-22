@@ -32,7 +32,7 @@
 
 ### 🗄️ **多向量存储后端**
 - **Qdrant** 🚧 架构已实现，待完善
-- **Chroma** 🚧 接口已定义
+- **Chroma** ✅ 已实现
 - **Weaviate** 🚧 接口已定义
 - **Pinecone** 🚧 接口已定义
 - **FAISS** 🚧 接口已定义
@@ -42,9 +42,9 @@
 - **Milvus** 🚧 接口已定义
 
 ### 🕸️ **图数据库支持**
-- **Neo4j** ✅ 已实现 - 支持实体关系建模和向量相似度搜索
-- **Memgraph** ✅ 已实现 - 优化的向量索引和高性能图查询
-- **Kuzu** 🚧 接口已定义
+- **Neo4j** 🚧 接口已定义
+- **Memgraph** 🚧 接口已定义
+- **Kuzu** ✅ 已实现
 - **Neptune** 🚧 接口已定义
 
 ## 🏗️ 架构设计
@@ -134,7 +134,7 @@ MemoryConfig config = MemoryConfig.builder()
         .model("text-embedding-3-small")
         .build())
     .vectorStore(VectorStoreConfig.builder()
-        .provider(VectorStoreConfig.Provider.QDRANT)
+        .provider(VectorStoreConfig.Provider.CHROMA)
         .host("localhost")
         .port(6333)
         .build())
@@ -167,32 +167,47 @@ memory.add(conversation, null, agentId, null,
 ### 5. 图存储支持
 
 ```java
-// 创建带图存储的配置
+// 创建自定义模型配置
+LlmConfig llmConfig = LlmConfig.builder()
+                .provider(LlmConfig.Provider.OPENAI)
+                .model("gpt-4o")  // 可以指定不同模型
+                .baseUrl("模型地址")
+                .apiKey("模型key")
+                .customHeaders(Map.of("自定义header", "header值"))
+                .build();
+        
+// 创建存储配置
 MemoryConfig config = MemoryConfig.builder()
-    .llm(LlmConfig.builder()
-        .provider(LlmConfig.Provider.OPENAI)
-        .model("gpt-4o-mini")
-        .apiKey("your-api-key")
-        .build())
+    .llm(llmConfig)
     .embedder(EmbedderConfig.builder()
         .provider(EmbedderConfig.Provider.OPENAI)
-        .model("text-embedding-3-small")
+        .model("text-embedding-3-small") // 可以指定不同模型
+        .baseUrl("模型地址")
+        .apiKey("模型key")
+        .customHeaders(Map.of("自定义header", "header值"))
         .build())
     .vectorStore(VectorStoreConfig.builder()
-        .provider(VectorStoreConfig.Provider.QDRANT)
-        .host("localhost")
-        .port(6333)
+        .provider(VectorStoreConfig.Provider.CHROMA)
+        .collectionName("test_collection")
+        .path(tempDir.resolve("vector").toString())
+        .embeddingModelDims(1536)
+        .embeddingFunction(ChromaVectorStore.OPENAI_EMBEDDING_FUNCTION)
+        .apiKey("embedding模型key")
+        .baseUrl("embedding模型地址")
         .build())
     .graphStore(GraphStoreConfig.builder()
-        .provider(GraphStoreConfig.Provider.NEO4J)
-        .url("bolt://localhost:7687")
-        .username("neo4j")
-        .password("password")
+        .provider(GraphStoreConfig.Provider.KUZU)
+        // 可以本地持久化存储或者内存模式运行
+        // .url(tempDir.resolve("graph").toString()) // 指定存储路径
+        // .url(":memory:") // 内存模式
+        .llm(llmConfig)
         .enabled(true)
         .build())
-    .build();
+    .historyDbPath(tempDir.resolve("history.db").toString())
+    .build(); 
 
-Memory memory = new Memory(config);
+memory = new Memory(config);
+log.info("本地存储Memory实例创建成功");
 
 // 添加包含实体关系的记忆
 memory.add("张三是北京大学的教授，他住在海淀区。李四是他的学生。", 
@@ -354,8 +369,8 @@ try {
   - 核心架构和配置管理
   - LLM提供商: OpenAI、Claude、Gemini、Ollama
   - 嵌入模型: OpenAI、HuggingFace、Ollama
-  - 图数据库支持: Neo4j、Memgraph架构
-  - 向量存储架构: Qdrant等接口
+  - 图数据库支持: Kuzu架构
+  - 向量存储架构: Chroma架构
   - 异步操作和记忆管理
   - 完整示例和文档
 - 🚧 **进行中**: 其他向量存储后端、其他图数据库实现
