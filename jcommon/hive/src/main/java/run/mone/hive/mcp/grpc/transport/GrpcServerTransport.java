@@ -215,19 +215,23 @@ public class GrpcServerTransport implements ServerMcpTransport {
     }
 
 
+    private boolean serverPing = false;
+
     /**
      * MCP 服务的 gRPC 实现
      */
     private class McpServiceImpl extends McpServiceGrpc.McpServiceImplBase {
 
         public McpServiceImpl() {
-            Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-                Safe.run(() -> {
-                    userConnections.forEach((k, v) -> {
-                        v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
+            if (serverPing) {
+                Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+                    Safe.run(() -> {
+                        userConnections.forEach((k, v) -> {
+                            v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
+                        });
                     });
-                });
-            }, 5, 5, TimeUnit.SECONDS);
+                }, 5, 5, TimeUnit.SECONDS);
+            }
         }
 
 
