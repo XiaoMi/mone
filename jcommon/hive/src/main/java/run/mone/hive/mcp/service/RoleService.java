@@ -215,7 +215,7 @@ public class RoleService {
     }
 
     private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role) {
-        Safe.run(()->{
+        Safe.run(() -> {
             if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
                 //每个用户的配置是不同的
                 Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
@@ -256,6 +256,14 @@ public class RoleService {
                 return;
             }
 
+            RoleMeta roleMeta = rr.getRoleMeta();
+            if (null != roleMeta && null != roleMeta.getInterruptQuery()) {
+                boolean intent = new IntentClassificationService().shouldInterruptExecution(roleMeta.getInterruptQuery(), message);
+                if (intent) {
+                    message.setContent("/cancel");
+                }
+            }
+
             // 检查是否是中断命令
             String content = message.getContent();
             if (isInterruptCommand(content)) {
@@ -270,7 +278,7 @@ public class RoleService {
                 sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
             }
 
-            if (! (rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
+            if (!(rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
@@ -287,13 +295,13 @@ public class RoleService {
             return false;
         }
         String trimmed = content.trim().toLowerCase();
-        return trimmed.equals("/exit") || 
-               trimmed.equals("/stop") || 
-               trimmed.equals("/interrupt") ||
-               trimmed.equals("/cancel") ||
-               trimmed.contains("停止") ||
-               trimmed.contains("中断") ||
-               trimmed.contains("取消");
+        return trimmed.equals("/exit") ||
+                trimmed.equals("/stop") ||
+                trimmed.equals("/interrupt") ||
+                trimmed.equals("/cancel") ||
+                trimmed.contains("停止") ||
+                trimmed.contains("中断") ||
+                trimmed.contains("取消");
     }
 
     /**
