@@ -292,6 +292,59 @@ public class LLM {
         }
     }
 
+    // 新知识库查询接口
+    /*
+     * query 查询内容
+     * knowledgeBaseId 知识库ID
+     * */
+    public String queryNewKnowledgeBase(String query, String knowledgeBaseId, String apiKey) {
+        try {
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .connectTimeout(150, TimeUnit.SECONDS)
+                    .writeTimeout(150, TimeUnit.SECONDS)
+                    .readTimeout(150, TimeUnit.SECONDS)
+                    .build();
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("query", query);
+            requestBody.addProperty("knowledge_base_id", knowledgeBaseId);
+            requestBody.addProperty("simple", true);
+
+            String url = this.config.getUrl();
+
+            Request.Builder requestBuilder = new Request.Builder()
+                    .url(url)
+                    .post(RequestBody.create(requestBody.toString(), JSON))
+                    .addHeader("Content-Type", "application/json");
+
+            if (StringUtils.isNotEmpty(apiKey)) {
+                requestBuilder.addHeader("X-API-Key", apiKey);
+            }
+
+            Request request = requestBuilder.build();
+
+            String rb = requestBody.toString();
+            log.info("call new knowledge base query api:{}\nrequest:{}\n", url, rb);
+            Stopwatch sw = Stopwatch.createStarted();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+                String responseBody = response.body().string();
+                log.info("new knowledge base query response:{}", responseBody);
+                return responseBody;
+            } finally {
+                log.info("call new knowledge base query api use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            }
+        } catch (Exception e) {
+            log.error("调用新知识库查询接口失败, query:{}, knowledgeBaseId:{}, error:{}",
+                    query, knowledgeBaseId, e.getMessage(), e);
+            throw new RuntimeException("新知识库查询接口调用失败: " + e.getMessage(), e);
+        }
+    }
+
     public String chat(List<AiMessage> msgList) {
         return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
     }

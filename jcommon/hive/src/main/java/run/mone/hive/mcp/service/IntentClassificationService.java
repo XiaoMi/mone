@@ -83,6 +83,22 @@ public class IntentClassificationService {
     }
 
     /**
+     * 知识库查询意图分类
+     * @param knowledgeBaseQuery 知识库查询配置
+     * @param msg 用户消息
+     * @return 分类结果
+     */
+    public String getKnowledgeBaseQueryClassification(KnowledgeBaseQuery knowledgeBaseQuery, Message msg) {
+        // TODO 简单的关键词匹配逻辑
+        String content = msg.getContent().toLowerCase();
+        if (content.contains("什么是") || content.contains("介绍") || content.contains("解释")
+                || content.contains("定义") || content.contains("概念") || content.contains("功能")) {
+            return "是";
+        }
+        return "否";
+    }
+
+    /**
      * 打断意图分类
      * @param interruptQuery 打断查询配置
      * @param msg 用户消息
@@ -133,6 +149,26 @@ public class IntentClassificationService {
             return "是".equals(classify);
         } catch (Exception e) {
             log.error("RAG查询意图判断失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 检查是否需要知识库查询
+     * @param knowledgeBaseQuery 知识库查询配置
+     * @param msg 用户消息
+     * @return true如果需要知识库查询
+     */
+    public boolean shouldPerformKnowledgeBaseQuery(KnowledgeBaseQuery knowledgeBaseQuery, Message msg) {
+        if (!knowledgeBaseQuery.isAutoQuery()) {
+            return false;
+        }
+        
+        try {
+            String classify = getKnowledgeBaseQueryClassification(knowledgeBaseQuery, msg);
+            return "是".equals(classify);
+        } catch (Exception e) {
+            log.error("知识库查询意图判断失败: {}", e.getMessage(), e);
             return false;
         }
     }
