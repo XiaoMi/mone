@@ -3,8 +3,8 @@ memory:
   llm:
     provider: openai
     model: gpt-4o
-    baseUrl: http://model.mify.ai.srv/v1
-    apiKey: sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R
+    baseUrl: http://baseUrlForTest
+    apiKey: sk-apiKeyForTest
     temperature: 0.1
     maxTokens: 4000
     topP: 1.0
@@ -17,8 +17,8 @@ memory:
   embedder:
     provider: openai
     model: text-embedding-3-small
-    baseUrl: http://model.mify.ai.srv/v1
-    apiKey: sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R
+    baseUrl: http://baseUrlForTest
+    apiKey: sk-apiKeyForTest
     embeddingDims: 1536
     customHeaders:
       X-Model-Provider-Id: azure_openai
@@ -30,8 +30,8 @@ memory:
     path: ./temp/vector
     embeddingModelDims: 1536
     embeddingFunction: openai
-    apiKey: sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R
-    baseUrl: http://model.mify.ai.srv/v1/embeddings
+    apiKey: sk-apiKeyForTest
+    baseUrl: http://baseUrlForTest
 
   # Graph Store Configuration
   graphStore:
@@ -41,8 +41,8 @@ memory:
     llm:
       provider: openai
       model: gpt-4o
-      baseUrl: http://model.mify.ai.srv/v1
-      apiKey: sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R
+      baseUrl: http://baseUrlForTest
+      apiKey: sk-apiKeyForTest
       temperature: 0.1
       maxTokens: 4000
       topP: 1.0
