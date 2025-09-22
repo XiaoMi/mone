@@ -57,12 +57,18 @@ public class GeminiLLM implements LLMBase {
             String apiUrl = String.format(GEMINI_API_URL, config.getModel()) + "?key=" + getApiKey();
             
             // 发送HTTP请求
-            HttpRequest httpRequest = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(request)))
-                .timeout(Duration.ofMinutes(2))
-                .build();
+                .timeout(Duration.ofMinutes(2));
+
+            // 添加自定义头
+            if (config.getCustomHeaders() != null) {
+                config.getCustomHeaders().forEach(requestBuilder::header);
+            }
+
+            HttpRequest httpRequest = requestBuilder.build();
             
             HttpResponse<String> response = httpClient.send(httpRequest, 
                 HttpResponse.BodyHandlers.ofString());

@@ -22,6 +22,11 @@ public class TaskState {
     private int consecutiveMistakeCount = 0;
     private boolean didRejectTool = false;
     
+    // 上下文压缩状态
+    private boolean currentlySummarizing = false;
+    private Integer lastAutoCompactTriggerIndex = null;
+    private boolean didCompleteContextCompression = false;
+    
     public TaskState() {
     }
     
@@ -117,5 +122,30 @@ public class TaskState {
     
     public void setDidRejectTool(boolean didRejectTool) {
         this.didRejectTool = didRejectTool;
+    }
+    
+    // 上下文压缩相关的getter和setter
+    public boolean isCurrentlySummarizing() {
+        return currentlySummarizing;
+    }
+    
+    public void setCurrentlySummarizing(boolean currentlySummarizing) {
+        this.currentlySummarizing = currentlySummarizing;
+    }
+    
+    public Integer getLastAutoCompactTriggerIndex() {
+        return lastAutoCompactTriggerIndex;
+    }
+    
+    public void setLastAutoCompactTriggerIndex(Integer lastAutoCompactTriggerIndex) {
+        this.lastAutoCompactTriggerIndex = lastAutoCompactTriggerIndex;
+    }
+    
+    public boolean isDidCompleteContextCompression() {
+        return didCompleteContextCompression;
+    }
+    
+    public void setDidCompleteContextCompression(boolean didCompleteContextCompression) {
+        this.didCompleteContextCompression = didCompleteContextCompression;
     }
 }

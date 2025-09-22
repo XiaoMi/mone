@@ -26,13 +26,13 @@
 - 🚧 **其他提供商** - Azure OpenAI、Google Vertex AI、AWS Bedrock (架构已准备)
 
 ### 🗄️ 向量存储支持
-- ✅ **Qdrant** - 架构实现，API定义完整
-- 🚧 **其他存储** - Chroma、Weaviate、Pinecone、FAISS、Elasticsearch、Redis、PgVector、Milvus (架构已准备)
+- ✅ **Chroma** - 架构实现，API定义完整
+- 🚧 **其他存储** - Qdrant、Weaviate、Pinecone、FAISS、Elasticsearch、Redis、PgVector、Milvus (架构已准备)
 
 ### 🕸️ 图数据库支持
-- ✅ **Neo4j** - 完整实现，支持实体关系建模和向量相似度搜索
+- ✅ **Kuzu** - 完整实现，支持实体关系建模和向量相似度搜索
 - ✅ **Memgraph** - 完整实现，优化的向量索引和高性能图查询
-- 🚧 **其他图数据库** - Kuzu、Neptune (架构已准备)
+- 🚧 **其他图数据库** - Memgraph、Neo4j、Neptune (架构已准备)
 
 ### 🔧 工具和实用程序
 - ✅ **历史管理** - SQLite数据库记录所有记忆变更
@@ -47,10 +47,10 @@
 - ✅ **完整文档** - README.md 包含详细的使用说明和API参考
 
 ### 🧪 测试框架
-- ✅ **简单配置测试** - SimpleConfigTest.java (可运行)
+- ✅ **简单配置测试** - SimpleConfigTest.java
 - ✅ **快速启动测试** - LongTermMemoryQuickStartTest.java
 - ✅ **配置测试** - MemoryConfigTest.java
-- ✅ **集成测试** - MemoryIntegrationTest.java
+- ✅ **集成测试** - LocalMemoryIntegrationTest.java (可运行)
 
 ## 🏗️ 架构设计亮点
 

@@ -25,13 +25,17 @@ public class MonerMcpClient {
             String serviceName = toolDataInfo.getKeyValuePairs().get("server_name");
             String toolName = toolDataInfo.getKeyValuePairs().get("tool_name");
             String arguments = toolDataInfo.getKeyValuePairs().get("arguments");
-            Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
+            String internalName = toolDataInfo.getKeyValuePairs().getOrDefault(Const.USER_INTERNAL_NAME, "");
+            if (StringUtils.isEmpty(internalName) && role != null) {
+                internalName = role.getRoleConfig().getOrDefault(Const.USER_INTERNAL_NAME, "");
+            }
 
+            Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
             if (StringUtils.isNotEmpty(toolDataInfo.getFrom())) {
                 toolArguments.put(Constants.FROM, toolDataInfo.getFrom());
             }
-
             toolArguments.put(Const.USER_ID, toolDataInfo.getUserId());
+            toolArguments.put(Const.USER_INTERNAL_NAME, internalName);
             toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
             if (null != toolDataInfo.getRole()) {
                 toolArguments.put(Const.ROLE, toolDataInfo.getRole());

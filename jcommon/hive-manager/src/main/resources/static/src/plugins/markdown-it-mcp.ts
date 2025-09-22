@@ -54,8 +54,8 @@ export function markdownItMcp(md: MarkdownIt) {
     let isDownloadFile = false;
     const tagStack: string[] = []; // 标签栈，用于跟踪当前正在处理的标签
 
-    // // 辅助函数：获取当前标签栈顶的标签
-    // const getCurrentTag = () => tagStack[tagStack.length - 1];
+    // 辅助函数：获取当前标签栈顶的标签
+    const getCurrentTag = () => tagStack[tagStack.length - 1];
     // // 辅助函数：获取父级标签
     // const getParentTag = () => tagStack[tagStack.length - 2];
     // // 辅助函数：检查是否在指定标签内
@@ -253,8 +253,7 @@ export function markdownItMcp(md: MarkdownIt) {
                 <i class="fa-solid fa-code"></i>
                 <span>工具结果</span>
               </div>
-              <div class="tool-result-content">
-                <pre><code class="language-json">`;
+              <div class="tool-result-content">`;
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
           html += `<div class="${name}-section">`;
         } else if (name === "download_file") {
@@ -276,11 +275,20 @@ export function markdownItMcp(md: MarkdownIt) {
         }
       },
       ontext(text) {
-        // const tagName = getCurrentTag();
-        // if (tagName === "task_progress") {
-        //   html += md.render(text);
-        //   return;
-        // }
+        const tagName = getCurrentTag();
+        if (tagName === "tool_result") {
+          try {
+            // 验证是否为有效的 JSON
+            JSON.parse(text);
+            // 生成一个特殊的标记，包含原始 JSON 数据
+            html += `<div class="vue3-json-viewer-placeholder" data-json="${md.utils.escapeHtml(text).replace(/"/g, '&quot;')}"></div>`;
+          } catch (e) {
+            // 不是合法 JSON，作为普通文本处理
+            console.warn("tool_result 解析 JSON 失败，作为普通文本处理", e);
+            html += `<pre><code class="language-json">${md.utils.escapeHtml(text)}</code></pre>`;
+          }
+          return;
+        }
         if (isDownloadFile) {
           return;
         }
@@ -383,7 +391,7 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "task_progress") {
           html += `</div></div>`;
         } else if (tagname === "tool_result") {
-          html += `</code></pre></div></div>`;
+          html += `</div></div>`;
         } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
         } else if (tagname === "download_file") {
