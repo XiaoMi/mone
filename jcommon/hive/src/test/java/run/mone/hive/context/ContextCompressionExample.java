@@ -168,8 +168,8 @@ public class ContextCompressionExample {
     private LLM createTestLLM() {
         // 注意：这里需要根据实际环境配置LLM
         LLMConfig config = new LLMConfig();
-        config.setLlmProvider(LLMProvider.OPENAI); // 或其他提供商
-        config.setApiKey("your-api-key-here"); // 需要实际的API密钥
+        // config.setLlmProvider(LLMProvider.OPENAI); // 或其他提供商
+        // config.setApiKey("your-api-key-here"); // 需要实际的API密钥
         config.setModel("gpt-3.5-turbo"); // 或其他模型
         
         return new LLM(config);

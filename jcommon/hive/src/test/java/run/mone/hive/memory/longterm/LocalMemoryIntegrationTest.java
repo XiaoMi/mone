@@ -39,42 +39,8 @@ public class LocalMemoryIntegrationTest {
     static void setup() {
         log.info("=== 开始本地存储集成测试 - 使用临时目录: {} ===", tempDir);
 
-        LlmConfig llmConfig = LlmConfig.builder()
-                .provider(LlmConfig.Provider.OPENAI)
-                .model("gpt-4o")
-                .baseUrl("")
-                .apiKey("")  // 测试时不会真正调用
-                .customHeaders(Map.of("X-Model-Provider-Id", "azure_openai"))
-                .build();
-        
-        // 创建本地存储配置
-        MemoryConfig config = MemoryConfig.builder()
-            .llm(llmConfig)
-            .embedder(EmbedderConfig.builder()
-                .provider(EmbedderConfig.Provider.OPENAI)
-                .model("text-embedding-3-small")
-                .baseUrl("")
-                .apiKey("")  // 测试时不会真正调用
-                .customHeaders(Map.of("X-Model-Provider-Id", "azure_openai"))
-                .build())
-            .vectorStore(VectorStoreConfig.builder()
-                .provider(VectorStoreConfig.Provider.CHROMA)
-                .collectionName("test_collection")
-                .path(tempDir.resolve("vector").toString())
-                .embeddingModelDims(1536)
-                .embeddingFunction(ChromaVectorStore.OPENAI_EMBEDDING_FUNCTION)
-                .apiKey("")
-                .baseUrl("")
-                .build())
-            .graphStore(GraphStoreConfig.builder()
-                .provider(GraphStoreConfig.Provider.KUZU)
-                // .url(tempDir.resolve("graph").toString())
-                // .url(":memory:")
-                .llm(llmConfig)
-                .enabled(true)
-                .build())
-            .historyDbPath(tempDir.resolve("history.db").toString())
-            .build();
+        // 从YAML配置文件加载配置
+        MemoryConfig config = YamlConfigLoader.loadWithTempDir("memory-config.yml", tempDir); 
         
         memory = new Memory(config);
         log.info("本地存储Memory实例创建成功");
@@ -174,6 +140,9 @@ public class LocalMemoryIntegrationTest {
     @Order(5)
     @DisplayName("测试数据持久化")
     void testPersistence() {
+        /**
+         * 使用Chroma和Kuzu的内存模式，并没有持久化在tempDir
+         */
         log.info("=== 测试数据持久化功能 ===");
         
         // 检查向量存储文件是否创建

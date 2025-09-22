@@ -136,7 +136,17 @@ public class GraphStoreConfig {
             Map<String, Object> config = (Map<String, Object>) configMap.get("config");
             builder.config(config);
         }
-        
+
+        if (configMap.containsKey("llm")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> llmMap = (Map<String, Object>) configMap.get("llm");
+            builder.llm(LlmConfig.fromMap(llmMap));
+        }
+
+        if (configMap.containsKey("customPrompt")) {
+            builder.customPrompt((String) configMap.get("customPrompt"));
+        }
+
         return builder.build();
     }
     

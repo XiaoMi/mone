@@ -17,6 +17,7 @@ import run.mone.hive.memory.longterm.graph.tools.GraphTools;
 import run.mone.hive.memory.longterm.graph.utils.GraphUtils;
 import run.mone.hive.memory.longterm.llm.LLMBase;
 import run.mone.hive.memory.longterm.llm.LLMFactory;
+import run.mone.hive.memory.longterm.utils.MemoryUtils;
 
 @Slf4j
 @Data
@@ -859,7 +860,7 @@ public class KuzuGraphStore implements GraphStoreBase {
                 }
             } else {
                 // when tool calls is empty, use json extraction
-                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
+                String content = MemoryUtils.removeCodeBlocks(response != null && response.get("content") != null ? response.get("content").toString() : "");
                 if (!content.isEmpty()) {
                     try {
                         @SuppressWarnings("unchecked")
@@ -867,7 +868,7 @@ public class KuzuGraphStore implements GraphStoreBase {
                         if (jsonResponse != null && jsonResponse.get("entities") != null) {
                             @SuppressWarnings("unchecked")
                             List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                            for (Map<String, Object> entity : entities) {
+                            for (Map<String, Object> entity : jsonEntities) {
                                 Map<String, Object> normalizedRel = new HashMap<>();
                                 String source = entity.get("source") != null ? entity.get("source").toString() : "";
                                 String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
@@ -876,6 +877,7 @@ public class KuzuGraphStore implements GraphStoreBase {
                                     normalizedRel.put("source", GraphUtils.normalizeEntityName(source));
                                     normalizedRel.put("relationship", GraphUtils.normalizeEntityName(relationship));
                                     normalizedRel.put("destination", GraphUtils.normalizeEntityName(destination));
+                                    entities.add(normalizedRel);
                                 }
                             }
                         }   
@@ -900,7 +902,7 @@ public class KuzuGraphStore implements GraphStoreBase {
             }
         }
 
-        log.debug("Extracted entities: {}", entities);
+        log.info("Extracted entities: {}", entities);
         return entities;
     }
 

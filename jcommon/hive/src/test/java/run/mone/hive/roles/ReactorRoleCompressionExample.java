@@ -59,8 +59,8 @@ public class ReactorRoleCompressionExample {
      */
     private LLMConfig createLLMConfig() {
         LLMConfig config = new LLMConfig();
-        config.setLlmProvider(LLMProvider.OPENAI);
-        config.setApiKey("your-api-key-here"); // 需要实际的API密钥
+        // config.setLlmProvider(LLMProvider.OPENAI);
+        // config.setApiKey("your-api-key-here"); // 需要实际的API密钥
         config.setModel("gpt-3.5-turbo");
         return config;
     }
