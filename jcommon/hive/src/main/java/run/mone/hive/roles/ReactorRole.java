@@ -100,16 +100,18 @@ public class ReactorRole extends Role {
 
     private AtomicInteger maxAssistantNum = new AtomicInteger();
 
+    private int MAX_ASSISTANT_NUM = Integer.MAX_VALUE;
+
     private McpHub mcpHub;
 
     private FocusChainManager focusChainManager;
 
     //工作区根目录路径，用于路径解析
     private String workspacePath = System.getProperty("user.dir");
-    
+
     // 上下文管理器 - 负责prompt压缩
     private ConversationContextManager contextManager;
-    
+
     // 任务状态 - 用于上下文压缩
     private TaskState taskState;
 
@@ -210,7 +212,7 @@ public class ReactorRole extends Role {
         focusChainSettings.setEnabled(true);
         LLMTaskProcessor llmTaskProcessor = new LLMTaskProcessorImpl(this.llm);
         focusChainManager = new FocusChainManager(UUID.randomUUID().toString(), this.taskState, Mode.ACT, "/tmp", focusChainSettings, llmTaskProcessor);
-        
+
         // 初始化上下文管理器
         this.contextManager = new ConversationContextManager(this.llm);
         // 配置压缩参数
@@ -308,7 +310,7 @@ public class ReactorRole extends Role {
         log.info("receive message:{}", msg);
 
         //机器人回答太多轮了
-        if (this.maxAssistantNum.get() > 10) {
+        if (this.maxAssistantNum.get() > MAX_ASSISTANT_NUM) {
             this.maxAssistantNum.set(0);
             return 2;
         }
@@ -338,7 +340,7 @@ public class ReactorRole extends Role {
 
         //放到记忆中
         this.putMemory(msg);
-        
+
         // 处理上下文压缩
         processContextCompression(msg);
 
@@ -433,7 +435,7 @@ public class ReactorRole extends Role {
                 handleCompressionCommand(msg, sink);
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
-            
+
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String userPrompt = buildUserPrompt(msg, history, sink);
             log.info("userPrompt:{}", userPrompt);
@@ -486,8 +488,10 @@ public class ReactorRole extends Role {
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
-                sink.next("不支持工具:" + name);
-                log.warn("不支持的工具 tool:{}", name);
+                String _msg = "发现不支持工具:" + name +",请继续";
+                sink.next(_msg);
+                log.warn("不支持的工具 tool:{}",_msg);
+                this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
             }
         } catch (Exception e) {
             sink.error(e);
@@ -708,12 +712,12 @@ public class ReactorRole extends Role {
             if (this.roleConfig.containsKey("workspacePath")) {
                 setWorkspacePath(this.roleConfig.get("workspacePath"));
             }
-            
+
             // 配置上下文压缩参数
             configureContextCompression();
         }
     }
-    
+
     /**
      * 配置上下文压缩参数
      */
@@ -721,21 +725,21 @@ public class ReactorRole extends Role {
         if (this.contextManager == null || this.roleConfig == null) {
             return;
         }
-        
+
         // 是否启用AI压缩
         if (this.roleConfig.containsKey("enableAiCompression")) {
             boolean enable = Boolean.parseBoolean(this.roleConfig.get("enableAiCompression"));
             this.contextManager.setEnableAiCompression(enable);
             log.info("AI压缩设置: {}", enable);
         }
-        
+
         // 是否启用规则优化
         if (this.roleConfig.containsKey("enableRuleBasedOptimization")) {
             boolean enable = Boolean.parseBoolean(this.roleConfig.get("enableRuleBasedOptimization"));
             this.contextManager.setEnableRuleBasedOptimization(enable);
             log.info("规则优化设置: {}", enable);
         }
-        
+
         // 压缩触发的消息数阈值
         if (this.roleConfig.containsKey("maxMessagesBeforeCompression")) {
             int maxMessages = Integer.parseInt(this.roleConfig.get("maxMessagesBeforeCompression"));
@@ -743,7 +747,7 @@ public class ReactorRole extends Role {
             log.info("压缩消息阈值设置: {}", maxMessages);
         }
     }
-    
+
     /**
      * 处理上下文压缩
      * 在每次收到新消息时检查是否需要压缩对话历史
@@ -752,33 +756,33 @@ public class ReactorRole extends Role {
         if (this.contextManager == null) {
             return;
         }
-        
+
         try {
             // 获取当前的消息历史
             List<Message> currentMessages = getCurrentMessageHistory();
-            
+
             // 异步处理上下文压缩
             this.contextManager.processNewMessage(
-                currentMessages, 
-                newMessage, 
-                this.taskState, 
-                this.focusChainManager.getFocusChainSettings()
+                    currentMessages,
+                    newMessage,
+                    this.taskState,
+                    this.focusChainManager.getFocusChainSettings()
             ).thenAccept(result -> {
                 if (result.wasCompressed()) {
-                    log.info("上下文已压缩: 原始消息数={}, 压缩后消息数={}", 
-                        currentMessages.size() + 1, result.getProcessedMessages().size());
-                    
+                    log.info("上下文已压缩: 原始消息数={}, 压缩后消息数={}",
+                            currentMessages.size() + 1, result.getProcessedMessages().size());
+
                     // 更新内存中的消息历史
                     updateMessageHistory(result.getProcessedMessages());
-                    
+
                     // 标记任务状态
                     this.taskState.setDidCompleteContextCompression(true);
-                    
+
                 } else if (result.wasOptimized()) {
                     log.info("应用了上下文规则优化");
                     updateMessageHistory(result.getProcessedMessages());
                 }
-                
+
                 if (result.hasError()) {
                     log.warn("上下文处理出现错误: {}", result.getErrorMessage());
                 }
@@ -786,31 +790,31 @@ public class ReactorRole extends Role {
                 log.error("上下文压缩处理异常", throwable);
                 return null;
             });
-            
+
         } catch (Exception e) {
             log.error("处理上下文压缩时发生异常", e);
         }
     }
-    
+
     /**
      * 获取当前的消息历史
      */
     private List<Message> getCurrentMessageHistory() {
         try {
             return this.rc.getMemory().getStorage().stream()
-                .map(msg -> Message.builder()
-                    .content(msg.getContent())
-                    .role(msg.getRole())
-                    .causeBy(msg.getCauseBy())
-                    .createTime(msg.getCreateTime())
-                    .build())
-                .collect(Collectors.toList());
+                    .map(msg -> Message.builder()
+                            .content(msg.getContent())
+                            .role(msg.getRole())
+                            .causeBy(msg.getCauseBy())
+                            .createTime(msg.getCreateTime())
+                            .build())
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("获取消息历史失败", e);
             return new ArrayList<>();
         }
     }
-    
+
     /**
      * 更新消息历史
      */
@@ -818,18 +822,18 @@ public class ReactorRole extends Role {
         try {
             // 清空当前记忆
             this.rc.getMemory().clear();
-            
+
             // 重新添加压缩后的消息
             for (Message msg : newMessages) {
                 this.rc.getMemory().add(msg);
             }
-            
+
             log.debug("消息历史已更新，当前消息数: {}", newMessages.size());
         } catch (Exception e) {
             log.error("更新消息历史失败", e);
         }
     }
-    
+
     /**
      * 手动触发上下文压缩
      * 可以通过特殊命令或API调用触发
@@ -838,18 +842,18 @@ public class ReactorRole extends Role {
         if (this.contextManager == null) {
             return CompletableFuture.completedFuture(false);
         }
-        
+
         try {
             List<Message> currentMessages = getCurrentMessageHistory();
-            
+
             return this.contextManager.manualCompression(
-                currentMessages, 
-                this.taskState, 
-                this.focusChainManager.getFocusChainSettings()
+                    currentMessages,
+                    this.taskState,
+                    this.focusChainManager.getFocusChainSettings()
             ).thenApply(result -> {
                 if (result.wasCompressed()) {
-                    log.info("手动压缩成功: {} -> {} 消息", 
-                        currentMessages.size(), result.getProcessedMessages().size());
+                    log.info("手动压缩成功: {} -> {} 消息",
+                            currentMessages.size(), result.getProcessedMessages().size());
                     updateMessageHistory(result.getProcessedMessages());
                     return true;
                 } else {
@@ -862,7 +866,7 @@ public class ReactorRole extends Role {
             return CompletableFuture.completedFuture(false);
         }
     }
-    
+
     /**
      * 获取上下文统计信息
      */
@@ -870,7 +874,7 @@ public class ReactorRole extends Role {
         if (this.contextManager == null) {
             return null;
         }
-        
+
         try {
             List<Message> currentMessages = getCurrentMessageHistory();
             return this.contextManager.getContextStats(currentMessages);
@@ -879,14 +883,14 @@ public class ReactorRole extends Role {
             return null;
         }
     }
-    
+
     /**
      * 检查是否正在进行压缩
      */
     public boolean isContextCompressing() {
         return this.contextManager != null && this.contextManager.isCompressing();
     }
-    
+
     /**
      * 检查是否是压缩命令
      */
@@ -894,16 +898,16 @@ public class ReactorRole extends Role {
         if (msg == null || msg.getContent() == null) {
             return false;
         }
-        
+
         String content = msg.getContent().trim().toLowerCase();
-        return content.startsWith("/compress") || 
-               content.startsWith("/compact") || 
-               content.startsWith("/summarize") ||
-               content.startsWith("/smol") ||
-               content.contains("压缩对话") ||
-               content.contains("总结对话");
+        return content.startsWith("/compress") ||
+                content.startsWith("/compact") ||
+                content.startsWith("/summarize") ||
+                content.startsWith("/smol") ||
+                content.contains("压缩对话") ||
+                content.contains("总结对话");
     }
-    
+
     /**
      * 处理压缩命令
      */
@@ -911,46 +915,46 @@ public class ReactorRole extends Role {
         if (sink != null) {
             sink.next("🔄 开始压缩对话上下文...\n");
         }
-        
+
         // 显示当前上下文统计
         ConversationContextManager.ContextStats stats = getContextStats();
         if (stats != null && sink != null) {
-            sink.next(String.format("📊 当前状态: %d条消息, %d个字符, 约%d个tokens\n", 
-                stats.getMessageCount(), stats.getTotalCharacters(), stats.getEstimatedTokens()));
+            sink.next(String.format("📊 当前状态: %d条消息, %d个字符, 约%d个tokens\n",
+                    stats.getMessageCount(), stats.getTotalCharacters(), stats.getEstimatedTokens()));
         }
-        
+
         // 执行压缩
         manualCompressContext().thenAccept(success -> {
             if (success) {
                 if (sink != null) {
                     ConversationContextManager.ContextStats newStats = getContextStats();
                     if (newStats != null) {
-                        sink.next(String.format("✅ 压缩完成! 现在有 %d条消息, %d个字符, 约%d个tokens\n", 
-                            newStats.getMessageCount(), newStats.getTotalCharacters(), newStats.getEstimatedTokens()));
+                        sink.next(String.format("✅ 压缩完成! 现在有 %d条消息, %d个字符, 约%d个tokens\n",
+                                newStats.getMessageCount(), newStats.getTotalCharacters(), newStats.getEstimatedTokens()));
                     } else {
                         sink.next("✅ 对话上下文压缩完成!\n");
                     }
                     sink.next("💡 对话历史已智能总结，重要信息已保留。\n");
                     sink.complete();
                 }
-                
+
                 // 添加压缩完成的消息到记忆
                 this.putMessage(Message.builder()
-                    .role(RoleType.assistant.name())
-                    .content("对话上下文已成功压缩，历史信息已智能总结。")
-                    .sink(sink)
-                    .build());
+                        .role(RoleType.assistant.name())
+                        .content("对话上下文已成功压缩，历史信息已智能总结。")
+                        .sink(sink)
+                        .build());
             } else {
                 if (sink != null) {
                     sink.next("❌ 压缩失败，请稍后重试。\n");
                     sink.complete();
                 }
-                
+
                 this.putMessage(Message.builder()
-                    .role(RoleType.assistant.name())
-                    .content("对话压缩失败，当前对话将继续使用原有历史。")
-                    .sink(sink)
-                    .build());
+                        .role(RoleType.assistant.name())
+                        .content("对话压缩失败，当前对话将继续使用原有历史。")
+                        .sink(sink)
+                        .build());
             }
         }).exceptionally(throwable -> {
             log.error("处理压缩命令时发生异常", throwable);
