@@ -557,17 +557,49 @@ public class ReactorRole extends Role {
         StringBuilder sb = new StringBuilder();
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
-        curLLM.compoundMsgCall(compoundMsg, systemPrompt)
-                .doOnNext(it -> {
-                    sb.append(it);
-                    Optional.ofNullable(sink).ifPresent(s -> s.next(it));
-                })
-                .doOnError(error -> {
-                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
-                    sb.append(error.getMessage());
-                    log.error(error.getMessage(), error);
+        
+        // 添加重试机制
+        int maxRetries = 3;
+        int retryCount = 0;
+        boolean success = false;
+        
+        while (!success && retryCount < maxRetries) {
+            try {
+                if (retryCount > 0) {
+                    log.info("LLM调用重试第{}次", retryCount);
+                    int tmpRetries = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
+                }
+                
+                sb.setLength(0); // 清空之前的结果
+                
+                curLLM.compoundMsgCall(compoundMsg, systemPrompt)
+                        .doOnNext(it -> {
+                            sb.append(it);
+                            Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                        })
+                        .doOnError(error -> {
+                            throw new RuntimeException(error);
+                        }).blockLast();
+                
+                success = true; // 如果执行到这里没有异常，说明成功了
+            } catch (Exception error) {
+                retryCount++;
+                log.error("LLM调用失败(第{}次): {}", retryCount, error.getMessage(), error);
+                
+                if (retryCount >= maxRetries) {
+                    // 所有重试都失败了
+                    final int finalRetryCount = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> {
+                        s.next("LLM调用失败，已重试" + finalRetryCount + "次，无法完成请求。\n");
+                        s.error(error);
+                    });
+                    sb.append("LLM调用失败: ").append(error.getMessage());
                     hasError.set(true);
-                }).blockLast();
+                }
+            }
+        }
+        
         return sb.toString();
     }
 
