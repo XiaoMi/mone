@@ -150,7 +150,7 @@ public class IntentClassificationService {
         
         try {
             String classify = getInterruptClassification(interruptQuery, msg);
-            return "需要打断".equals(classify) || "是".equals(classify);
+            return "打断".equals(classify);
         } catch (Exception e) {
             log.error("打断意图判断失败: {}", e.getMessage(), e);
             return false;
