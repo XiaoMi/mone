@@ -24,6 +24,7 @@ import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
+import run.mone.hive.mcp.service.IntentClassificationService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -116,6 +117,9 @@ public class ReactorRole extends Role {
     // 任务状态 - 用于上下文压缩
     private TaskState taskState;
 
+    // 意图分类服务
+    private IntentClassificationService classificationService;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
@@ -158,6 +162,8 @@ public class ReactorRole extends Role {
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
         this(name, "", "", "", "", "", 0, llm, Lists.newArrayList(), Lists.newArrayList());
+        // 初始化意图分类服务
+        this.classificationService = new IntentClassificationService();
     }
 
 
@@ -220,6 +226,9 @@ public class ReactorRole extends Role {
         this.contextManager.setEnableAiCompression(true);
         this.contextManager.setEnableRuleBasedOptimization(true);
         this.contextManager.setMaxMessagesBeforeCompression(15); // 15条消息后开始压缩
+
+        // 初始化意图分类服务
+        this.classificationService = new IntentClassificationService();
 
     }
 
@@ -347,6 +356,16 @@ public class ReactorRole extends Role {
 
         //放到记忆中
         this.putMemory(msg);
+
+        // 检查是否需要打断执行
+        if (classificationService.shouldInterruptExecution(roleMeta.getInterruptQuery(), msg)) {
+            log.info("收到打断指令，设置中断标志");
+            if (msg.getSink() != null) {
+                msg.getSink().next("🛑 检测到打断指令，正在停止当前执行...\n");
+            }
+            this.interrupt();
+            return 2; // 返回退出标志
+        }
 
         // 处理上下文压缩
         processContextCompression(msg);
@@ -708,22 +727,10 @@ public class ReactorRole extends Role {
                 "question", msg.getContent()));
     }
 
-    private String getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
-        //获取意图是否访问知识库
-        LLM llm = new LLM(LLMConfig.builder()
-                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
-                .url(System.getenv("ATLAS_URL"))
-                .build());
-        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1, releaseServiceName);
-        classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
-        return classify;
-    }
 
     private String getNetworkQueryInfo(Message msg, String queryInfo, FluxSink sink) {
-        //做下意图识别(看看是不是需要网络查询内容)
-        String classify = getClassificationLabel(msg);
-        //去网络搜索内容
-        if (!classify.equals("不需要搜索网络")) {
+        //使用意图分类服务判断是否需要网络查询
+        if (classificationService.shouldPerformWebQuery(roleMeta.getWebQuery(), msg)) {
             sink.next("从网络获取信息\n");
             TavilySearchTool tool = new TavilySearchTool();
             JsonObject queryObj = new JsonObject();
@@ -736,9 +743,8 @@ public class ReactorRole extends Role {
 
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
-            //是否访问知识库
-            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(), msg);
-            if (classify.equals("是")) {
+            //使用意图分类服务判断是否需要RAG查询
+            if (classificationService.shouldPerformRagQuery(roleMeta.getRag(), msg)) {
                 sink.next("从知识库获取信息\n");
                 String ragUrl = System.getenv("RAG_URL");
                 LLM llm = new LLM(LLMConfig.builder()
@@ -762,9 +768,6 @@ public class ReactorRole extends Role {
         return "";
     }
 
-    private String getClassificationLabel(Message msg) {
-        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), roleMeta.getWebQuery().getReleaseServiceName(), msg);
-    }
 
     public void setLlm(LLM llm) {
         this.llm = llm;

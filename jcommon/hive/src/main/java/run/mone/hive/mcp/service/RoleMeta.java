@@ -75,6 +75,10 @@ public class RoleMeta {
     @Builder.Default
     private Rag rag = new Rag();
 
+    //自动打断检测
+    @Builder.Default
+    private InterruptQuery interruptQuery = new InterruptQuery();
+
     //默认10s
     @Builder.Default
     private long timeout = 10000;
