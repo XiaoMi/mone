@@ -42,8 +42,8 @@ public class LocalMemoryIntegrationTest {
         LlmConfig llmConfig = LlmConfig.builder()
                 .provider(LlmConfig.Provider.OPENAI)
                 .model("gpt-4o")
-                .baseUrl("http://model.mify.ai.srv/v1")
-                .apiKey("sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R")  // 测试时不会真正调用
+                .baseUrl("")
+                .apiKey("")  // 测试时不会真正调用
                 .customHeaders(Map.of("X-Model-Provider-Id", "azure_openai"))
                 .build();
         
@@ -53,8 +53,8 @@ public class LocalMemoryIntegrationTest {
             .embedder(EmbedderConfig.builder()
                 .provider(EmbedderConfig.Provider.OPENAI)
                 .model("text-embedding-3-small")
-                .baseUrl("http://model.mify.ai.srv/v1")
-                .apiKey("sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R")  // 测试时不会真正调用
+                .baseUrl("")
+                .apiKey("")  // 测试时不会真正调用
                 .customHeaders(Map.of("X-Model-Provider-Id", "azure_openai"))
                 .build())
             .vectorStore(VectorStoreConfig.builder()
@@ -63,8 +63,8 @@ public class LocalMemoryIntegrationTest {
                 .path(tempDir.resolve("vector").toString())
                 .embeddingModelDims(1536)
                 .embeddingFunction(ChromaVectorStore.OPENAI_EMBEDDING_FUNCTION)
-                .apiKey("sk-wQBkKgluCqEkWBoJ6fkUix7sMvfcOPZa3xzpcbp1jeWe4C0R")
-                .baseUrl("http://model.mify.ai.srv/v1/embeddings")
+                .apiKey("")
+                .baseUrl("")
                 .build())
             .graphStore(GraphStoreConfig.builder()
                 .provider(GraphStoreConfig.Provider.KUZU)
