@@ -357,16 +357,6 @@ public class ReactorRole extends Role {
         //放到记忆中
         this.putMemory(msg);
 
-        // 检查是否需要打断执行
-        if (classificationService.shouldInterruptExecution(roleMeta.getInterruptQuery(), msg)) {
-            log.info("收到打断指令，设置中断标志");
-            if (msg.getSink() != null) {
-                msg.getSink().next("🛑 检测到打断指令，正在停止当前执行...\n");
-            }
-            this.interrupt();
-            return 2; // 返回退出标志
-        }
-
         // 处理上下文压缩
         processContextCompression(msg);
 

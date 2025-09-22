@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.schema.Message;
@@ -28,24 +29,27 @@ public class IntentClassificationServiceTest {
      */
     private static class TestableIntentClassificationService extends IntentClassificationService {
         private final String mockClassificationResult;
+        private final Double mockScore;
         private final boolean shouldThrowException;
         
-        public TestableIntentClassificationService(String mockClassificationResult) {
+        public TestableIntentClassificationService(String mockClassificationResult, Double mockScore) {
             this.mockClassificationResult = mockClassificationResult;
+            this.mockScore = mockScore;
             this.shouldThrowException = false;
         }
         
         public TestableIntentClassificationService(boolean shouldThrowException) {
             this.mockClassificationResult = null;
+            this.mockScore = null;
             this.shouldThrowException = shouldThrowException;
         }
         
         @Override
-        public String getInterruptClassification(InterruptQuery interruptQuery, Message msg) {
+        public Pair<String, Double> getInterruptClassification(InterruptQuery interruptQuery, Message msg) {
             if (shouldThrowException) {
                 throw new RuntimeException("模拟分类服务异常");
             }
-            return mockClassificationResult;
+            return Pair.of(mockClassificationResult, mockScore);
         }
     }
 
@@ -75,12 +79,12 @@ public class IntentClassificationServiceTest {
     }
 
     /**
-     * 测试当启用自动打断检测且分类结果为"需要打断"时，应该返回 true
+     * 测试当启用自动打断检测且分类结果为"打断"且分数>0.9时，应该返回 true
      */
     @Test 
-    void testShouldInterruptExecution_WhenEnabledAndClassificationReturnsNeedInterrupt_ShouldReturnTrue() {
-        // 创建测试专用服务，返回"需要打断"
-        TestableIntentClassificationService testService = new TestableIntentClassificationService("需要打断");
+    void testShouldInterruptExecution_WhenEnabledAndClassificationReturnsInterruptWithHighScore_ShouldReturnTrue() {
+        // 创建测试专用服务，返回"打断"且分数>0.9
+        TestableIntentClassificationService testService = new TestableIntentClassificationService("打断", 0.95);
         
         // 准备测试数据
         InterruptQuery interruptQuery = InterruptQuery.builder()
@@ -99,16 +103,16 @@ public class IntentClassificationServiceTest {
         boolean result = testService.shouldInterruptExecution(interruptQuery, message);
         
         // 验证结果
-        assertTrue(result, "当分类结果为'需要打断'时，应该返回 true");
+        assertTrue(result, "当分类结果为'打断'且分数>0.9时，应该返回 true");
     }
 
     /**
-     * 测试当启用自动打断检测且分类结果为"是"时，应该返回 true
+     * 测试当启用自动打断检测且分类结果为"打断"但分数≤0.9时，应该返回 false
      */
     @Test
-    void testShouldInterruptExecution_WhenEnabledAndClassificationReturnsYes_ShouldReturnTrue() {
-        // 创建测试专用服务，返回"是"
-        TestableIntentClassificationService testService = new TestableIntentClassificationService("是");
+    void testShouldInterruptExecution_WhenEnabledAndClassificationReturnsInterruptWithLowScore_ShouldReturnFalse() {
+        // 创建测试专用服务，返回"打断"但分数≤0.9
+        TestableIntentClassificationService testService = new TestableIntentClassificationService("打断", 0.85);
         
         // 准备测试数据
         InterruptQuery interruptQuery = InterruptQuery.builder()
@@ -127,7 +131,7 @@ public class IntentClassificationServiceTest {
         boolean result = testService.shouldInterruptExecution(interruptQuery, message);
         
         // 验证结果
-        assertTrue(result, "当分类结果为'是'时，应该返回 true");
+        assertFalse(result, "当分类结果为'打断'但分数≤0.9时，应该返回 false");
     }
 
     /**
@@ -136,7 +140,7 @@ public class IntentClassificationServiceTest {
     @Test
     void testShouldInterruptExecution_WhenEnabledAndClassificationReturnsOther_ShouldReturnFalse() {
         // 创建测试专用服务，返回"不需要打断"
-        TestableIntentClassificationService testService = new TestableIntentClassificationService("不需要打断");
+        TestableIntentClassificationService testService = new TestableIntentClassificationService("不需要打断", 0.95);
         
         // 准备测试数据
         InterruptQuery interruptQuery = InterruptQuery.builder()
@@ -212,7 +216,7 @@ public class IntentClassificationServiceTest {
     @Test
     void testShouldInterruptExecution_WithEmptyMessageContent() {
         // 创建测试专用服务，返回"未知"
-        TestableIntentClassificationService testService = new TestableIntentClassificationService("未知");
+        TestableIntentClassificationService testService = new TestableIntentClassificationService("未知", 0.5);
         
         // 准备测试数据
         InterruptQuery interruptQuery = InterruptQuery.builder()
@@ -242,10 +246,10 @@ public class IntentClassificationServiceTest {
     }
 
     /**
-     * 测试不同的打断关键词
+     * 测试不同的打断关键词和分数组合
      */
     @Test
-    void testShouldInterruptExecution_WithDifferentInterruptKeywords() {
+    void testShouldInterruptExecution_WithDifferentInterruptKeywordsAndScores() {
         // 准备测试数据
         InterruptQuery interruptQuery = InterruptQuery.builder()
                 .autoInterruptQuery(true)
@@ -259,20 +263,66 @@ public class IntentClassificationServiceTest {
                 .role("user")
                 .build();
         
-        // 测试应该返回true的分类结果
-        String[] interruptResults = {"需要打断", "是"};
-        for (String result : interruptResults) {
-            TestableIntentClassificationService testService = new TestableIntentClassificationService(result);
-            boolean shouldInterrupt = testService.shouldInterruptExecution(interruptQuery, message);
-            assertTrue(shouldInterrupt, "分类结果为'" + result + "'时应该返回 true");
-        }
+        // 测试应该返回true的分类结果：只有"打断"且分数>0.9
+        TestableIntentClassificationService testService1 = new TestableIntentClassificationService("打断", 0.95);
+        boolean shouldInterrupt1 = testService1.shouldInterruptExecution(interruptQuery, message);
+        assertTrue(shouldInterrupt1, "分类结果为'打断'且分数>0.9时应该返回 true");
         
         // 测试应该返回false的分类结果
-        String[] nonInterruptResults = {"不需要打断", "否", "继续", "未知", "", null};
-        for (String result : nonInterruptResults) {
-            TestableIntentClassificationService testService = new TestableIntentClassificationService(result);
+        Object[][] nonInterruptResults = {
+            {"打断", 0.85},  // 分类正确但分数不够
+            {"打断", 0.9},   // 分类正确但分数等于阈值
+            {"不需要打断", 0.95}, // 分数够但分类错误
+            {"否", 0.95},
+            {"继续", 0.95},
+            {"未知", 0.95},
+            {"", 0.95},
+            {null, 0.95}
+        };
+        
+        for (Object[] result : nonInterruptResults) {
+            TestableIntentClassificationService testService = new TestableIntentClassificationService((String) result[0], (Double) result[1]);
             boolean shouldInterrupt = testService.shouldInterruptExecution(interruptQuery, message);
-            assertFalse(shouldInterrupt, "分类结果为'" + result + "'时应该返回 false");
+            assertFalse(shouldInterrupt, "分类结果为'" + result[0] + "'且分数为" + result[1] + "时应该返回 false");
         }
+    }
+
+    /**
+     * 测试分数阈值边界条件
+     */
+    @Test
+    void testShouldInterruptExecution_ScoreThresholdBoundary() {
+        // 准备测试数据
+        InterruptQuery interruptQuery = InterruptQuery.builder()
+                .autoInterruptQuery(true)
+                .version("test-version")
+                .modelType("test-model")
+                .releaseServiceName("test-service")
+                .build();
+        
+        Message message = Message.builder()
+                .content("测试分数阈值")
+                .role("user")
+                .build();
+        
+        // 测试分数刚好等于0.9的情况（应该返回false）
+        TestableIntentClassificationService testService1 = new TestableIntentClassificationService("打断", 0.9);
+        boolean result1 = testService1.shouldInterruptExecution(interruptQuery, message);
+        assertFalse(result1, "当分数等于0.9时，应该返回 false");
+        
+        // 测试分数刚好大于0.9的情况（应该返回true）
+        TestableIntentClassificationService testService2 = new TestableIntentClassificationService("打断", 0.900001);
+        boolean result2 = testService2.shouldInterruptExecution(interruptQuery, message);
+        assertTrue(result2, "当分数刚好大于0.9时，应该返回 true");
+        
+        // 测试分数为1.0的情况（应该返回true）
+        TestableIntentClassificationService testService3 = new TestableIntentClassificationService("打断", 1.0);
+        boolean result3 = testService3.shouldInterruptExecution(interruptQuery, message);
+        assertTrue(result3, "当分数为1.0时，应该返回 true");
+        
+        // 测试分数为0的情况（应该返回false）
+        TestableIntentClassificationService testService4 = new TestableIntentClassificationService("打断", 0.0);
+        boolean result4 = testService4.shouldInterruptExecution(interruptQuery, message);
+        assertFalse(result4, "当分数为0时，应该返回 false");
     }
 }

@@ -1,7 +1,9 @@
 package run.mone.hive.mcp.service;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -19,95 +21,103 @@ public class IntentClassificationService {
 
     /**
      * 通用的意图分类方法
-     * @param version 模型版本
-     * @param modelType 模型类型
+     *
+     * @param version            模型版本
+     * @param modelType          模型类型
      * @param releaseServiceName 发布服务名称
-     * @param msg 用户消息
+     * @param msg                用户消息
      * @return 分类结果
      */
-    public String getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
+    public Pair<String, Double> getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
         try {
             LLM llm = new LLM(LLMConfig.builder()
                     .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
                     .url(System.getenv("ATLAS_URL"))
                     .build());
-            
+
             String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1, releaseServiceName);
-            classify = JsonParser.parseString(classify)
+
+            JsonObject obj = JsonParser.parseString(classify)
                     .getAsJsonObject()
                     .get("results")
                     .getAsJsonArray()
                     .get(0)
                     .getAsJsonArray()
                     .get(0)
-                    .getAsJsonObject()
-                    .get("label")
+                    .getAsJsonObject();
+
+            classify = obj.get("label")
                     .getAsString();
-            
+            double score = obj.get("score").getAsDouble();
+
             log.debug("意图分类结果: {} -> {}", msg.getContent(), classify);
-            return classify;
+            return Pair.of(classify, score);
         } catch (Exception e) {
             log.error("意图分类失败: {}", e.getMessage(), e);
-            return "未知";
+            return Pair.of("未知", 1.0);
         }
     }
 
     /**
      * 网络查询意图分类
+     *
      * @param webQuery 网络查询配置
-     * @param msg 用户消息
+     * @param msg      用户消息
      * @return 分类结果
      */
     public String getWebQueryClassification(WebQuery webQuery, Message msg) {
         return getIntentClassification(
-            webQuery.getVersion(), 
-            webQuery.getModelType(), 
-            webQuery.getReleaseServiceName(), 
-            msg
-        );
+                webQuery.getVersion(),
+                webQuery.getModelType(),
+                webQuery.getReleaseServiceName(),
+                msg
+        ).getKey();
     }
 
     /**
      * RAG意图分类
+     *
      * @param rag RAG配置
      * @param msg 用户消息
      * @return 分类结果
      */
     public String getRagClassification(Rag rag, Message msg) {
         return getIntentClassification(
-            rag.getVersion(), 
-            rag.getModelType(), 
-            rag.getReleaseServiceName(), 
-            msg
-        );
+                rag.getVersion(),
+                rag.getModelType(),
+                rag.getReleaseServiceName(),
+                msg
+        ).getKey();
     }
 
     /**
      * 打断意图分类
+     *
      * @param interruptQuery 打断查询配置
-     * @param msg 用户消息
+     * @param msg            用户消息
      * @return 分类结果
      */
-    public String getInterruptClassification(InterruptQuery interruptQuery, Message msg) {
+    public Pair<String, Double> getInterruptClassification(InterruptQuery interruptQuery, Message msg) {
         return getIntentClassification(
-            interruptQuery.getVersion(), 
-            interruptQuery.getModelType(), 
-            interruptQuery.getReleaseServiceName(), 
-            msg
+                interruptQuery.getVersion(),
+                interruptQuery.getModelType(),
+                interruptQuery.getReleaseServiceName(),
+                msg
         );
     }
 
     /**
      * 检查是否需要网络搜索
+     *
      * @param webQuery 网络查询配置
-     * @param msg 用户消息
+     * @param msg      用户消息
      * @return true如果需要网络搜索
      */
     public boolean shouldPerformWebQuery(WebQuery webQuery, Message msg) {
         if (!webQuery.isAutoWebQuery()) {
             return false;
         }
-        
+
         try {
             String classify = getWebQueryClassification(webQuery, msg);
             return !"不需要搜索网络".equals(classify);
@@ -119,6 +129,7 @@ public class IntentClassificationService {
 
     /**
      * 检查是否需要RAG查询
+     *
      * @param rag RAG配置
      * @param msg 用户消息
      * @return true如果需要RAG查询
@@ -127,7 +138,7 @@ public class IntentClassificationService {
         if (!rag.isAutoRag()) {
             return false;
         }
-        
+
         try {
             String classify = getRagClassification(rag, msg);
             return "是".equals(classify);
@@ -139,18 +150,19 @@ public class IntentClassificationService {
 
     /**
      * 检查是否需要打断执行
+     *
      * @param interruptQuery 打断查询配置
-     * @param msg 用户消息
+     * @param msg            用户消息
      * @return true如果需要打断
      */
     public boolean shouldInterruptExecution(InterruptQuery interruptQuery, Message msg) {
         if (!interruptQuery.isAutoInterruptQuery()) {
             return false;
         }
-        
+
         try {
-            String classify = getInterruptClassification(interruptQuery, msg);
-            return "打断".equals(classify);
+            Pair<String, Double> classify = getInterruptClassification(interruptQuery, msg);
+            return "打断".equals(classify.getKey()) && classify.getValue() > 0.9;
         } catch (Exception e) {
             log.error("打断意图判断失败: {}", e.getMessage(), e);
             return false;

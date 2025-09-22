@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.service.InterruptQuery;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
 
@@ -24,6 +25,7 @@ public class AgentConfig {
                 .profile("你是一名优秀的软件工程师")
                 .goal("你的目标是更好的帮助用户写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
+                .interruptQuery(InterruptQuery.builder().version("finetune-qwen-20250909-71039c8b").modelType("qwen").autoInterruptQuery(false).releaseServiceName("bert-is-break").build())
                 .tools(Lists.newArrayList(
                         new ListFilesTool(),
                         new ExecuteCommandTool(),

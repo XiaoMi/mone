@@ -7,9 +7,9 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan("run.mone.mcp.coder")
-public class CoderMcpBootstrap {
+public class CoderAgentBootstrap {
 
     public static void main(String[] args) {
-        SpringApplication.run(CoderMcpBootstrap.class, args);
+        SpringApplication.run(CoderAgentBootstrap.class, args);
     }
 }
