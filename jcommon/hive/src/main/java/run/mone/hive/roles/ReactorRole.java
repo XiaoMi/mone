@@ -16,6 +16,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.llm.LLMProvider;
@@ -25,18 +26,15 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
-import run.mone.hive.roles.tool.ExecuteCommandTool;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
-import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
+import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 import run.mone.hive.task.*;
 import run.mone.hive.utils.NetUtils;
-import run.mone.hive.context.ConversationContextManager;
-import run.mone.hive.context.ContextManager;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -590,29 +588,70 @@ public class ReactorRole extends Role {
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
         
-        curLLM.compoundMsgCall(compoundMsg, systemPrompt)
-                .doOnNext(it -> {
-                    // 在每次接收流式响应时检查中断状态
-                    if (this.interrupted.get()) {
-                        log.info("Role '{}' 在LLM流式响应中被中断", this.name);
-                        hasError.set(true);
-                        Optional.ofNullable(sink).ifPresent(s -> {
-                            s.next("⚠️ 执行已被中断\n");
-                            s.complete();
-                        });
-                        return; // 停止处理后续响应
-                    }
-                    sb.append(it);
-                    Optional.ofNullable(sink).ifPresent(s -> s.next(it));
-                })
-                .doOnError(error -> {
-                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
-                    sb.append(error.getMessage());
-                    log.error(error.getMessage(), error);
+        // 添加重试机制，同时支持中断功能
+        int maxRetries = 3;
+        int retryCount = 0;
+        boolean success = false;
+        
+        while (!success && retryCount < maxRetries) {
+            // 在重试前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
+                hasError.set(true);
+                Optional.ofNullable(sink).ifPresent(s -> {
+                    s.next("⚠️ 执行已被中断\n");
+                    s.complete();
+                });
+                break;
+            }
+            
+            try {
+                if (retryCount > 0) {
+                    log.info("LLM调用重试第{}次", retryCount);
+                    int tmpRetries = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
+                }
+                
+                sb.setLength(0); // 清空之前的结果
+                
+                curLLM.compoundMsgCall(compoundMsg, systemPrompt)
+                        .doOnNext(it -> {
+                            // 在每次接收流式响应时检查中断状态
+                            if (this.interrupted.get()) {
+                                log.info("Role '{}' 在LLM流式响应中被中断", this.name);
+                                hasError.set(true);
+                                Optional.ofNullable(sink).ifPresent(s -> {
+                                    s.next("⚠️ 执行已被中断\n");
+                                    s.complete();
+                                });
+                                return; // 停止处理后续响应
+                            }
+                            sb.append(it);
+                            Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                        })
+                        .doOnError(error -> {
+                            throw new RuntimeException(error);
+                        })
+                        .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
+                        .blockLast();
+                
+                success = true; // 如果执行到这里没有异常，说明成功了
+            } catch (Exception error) {
+                retryCount++;
+                log.error("LLM调用失败(第{}次): {}", retryCount, error.getMessage(), error);
+                
+                if (retryCount >= maxRetries) {
+                    // 所有重试都失败了
+                    final int finalRetryCount = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> {
+                        s.next("LLM调用失败，已重试" + finalRetryCount + "次，无法完成请求。\n");
+                        s.error(error);
+                    });
+                    sb.append("LLM调用失败: ").append(error.getMessage());
                     hasError.set(true);
-                })
-                .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
-                .blockLast();
+                }
+            }
+        }
         return sb.toString();
     }
 
