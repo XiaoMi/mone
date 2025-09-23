@@ -257,7 +257,7 @@ public class RoleService {
             }
 
             RoleMeta roleMeta = rr.getRoleMeta();
-            if (null != roleMeta && null != roleMeta.getInterruptQuery()) {
+            if (null != roleMeta && null != roleMeta.getInterruptQuery() && roleMeta.getInterruptQuery().isAutoInterruptQuery()) {
                 boolean intent = new IntentClassificationService().shouldInterruptExecution(roleMeta.getInterruptQuery(), message);
                 if (intent) {
                     message.setContent("/cancel");

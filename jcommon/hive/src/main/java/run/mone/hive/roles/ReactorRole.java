@@ -241,7 +241,6 @@ public class ReactorRole extends Role {
 
         // 初始化长期记忆管理器
         this.memoryManager = new LongTermMemoryManager(this.name);
-
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
@@ -295,7 +294,7 @@ public class ReactorRole extends Role {
     @Override
     protected int observe() {
         log.info("{} run observe", this.name);
-        
+
         this.state.set(RoleState.observe);
 
         if (this.roleMeta.getObserveFunc() != null) {
@@ -330,7 +329,7 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.take();
         lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
-        
+
         // 在收到消息后再次检查中断状态
         if (this.interrupted.get()) {
             log.info("Role '{}' 在处理消息前被中断", this.name);
@@ -426,13 +425,13 @@ public class ReactorRole extends Role {
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
         log.info("{} run act", this.name);
-        
+
         // 检查中断状态
         if (this.interrupted.get()) {
             log.info("Role '{}' 在act阶段被中断", this.name);
             return CompletableFuture.completedFuture(Message.builder().build());
         }
-        
+
         this.state.set(RoleState.act);
 
         Message msg = this.ac.getMsg();
@@ -539,9 +538,9 @@ public class ReactorRole extends Role {
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
-                String _msg = "发现不支持工具:" + name +",请继续";
+                String _msg = "发现不支持工具:" + name + ",请继续";
                 sink.next(_msg);
-                log.warn("不支持的工具 tool:{}",_msg);
+                log.warn("不支持的工具 tool:{}", _msg);
                 this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
             }
         } catch (Exception e) {
@@ -608,12 +607,12 @@ public class ReactorRole extends Role {
         StringBuilder sb = new StringBuilder();
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
-        
+
         // 添加重试机制，同时支持中断功能
         int maxRetries = 3;
         int retryCount = 0;
         boolean success = false;
-        
+
         while (!success && retryCount < maxRetries) {
             // 在重试前检查中断状态
             if (this.interrupted.get()) {
@@ -625,16 +624,16 @@ public class ReactorRole extends Role {
                 });
                 break;
             }
-            
+
             try {
                 if (retryCount > 0) {
                     log.info("LLM调用重试第{}次", retryCount);
                     int tmpRetries = retryCount;
                     Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
                 }
-                
+
                 sb.setLength(0); // 清空之前的结果
-                
+
                 curLLM.compoundMsgCall(compoundMsg, systemPrompt)
                         .doOnNext(it -> {
                             // 在每次接收流式响应时检查中断状态
@@ -655,12 +654,12 @@ public class ReactorRole extends Role {
                         })
                         .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
                         .blockLast();
-                
+
                 success = true; // 如果执行到这里没有异常，说明成功了
             } catch (Exception error) {
                 retryCount++;
                 log.error("LLM调用失败(第{}次): {}", retryCount, error.getMessage(), error);
-                
+
                 if (retryCount >= maxRetries) {
                     // 所有重试都失败了
                     final int finalRetryCount = retryCount;
@@ -792,11 +791,11 @@ public class ReactorRole extends Role {
             //使用意图分类服务判断是否需要知识库查询
             if (classificationService.shouldPerformKnowledgeBaseQuery(roleMeta.getKnowledgeBaseQuery(), msg)) {
                 sink.next("从新知识库获取信息\n");
-                
+
                 String apiUrl = System.getenv("NEW_RAG_URL");
                 String apiKey = roleMeta.getKnowledgeBaseQuery().getApiKey();
                 String knowledgeBaseId = roleMeta.getKnowledgeBaseQuery().getKnowledgeBaseId();
-                
+
                 if (StringUtils.isEmpty(apiUrl) || StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(knowledgeBaseId)) {
                     log.warn("知识库查询配置不完整");
                     return "";
@@ -812,7 +811,7 @@ public class ReactorRole extends Role {
                         knowledgeBaseId,   // knowledge_base_id
                         apiKey
                 );
-                
+
                 JsonObject jsonResult = JsonParser.parseString(result).getAsJsonObject();
                 if (jsonResult.has("success") && jsonResult.get("success").getAsBoolean()) {
                     JsonObject data = jsonResult.getAsJsonObject("data");
