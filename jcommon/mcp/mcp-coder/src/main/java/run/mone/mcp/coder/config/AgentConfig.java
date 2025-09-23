@@ -23,7 +23,7 @@ public class AgentConfig {
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
                 .profile("你是一名优秀的软件工程师")
-                .goal("你的目标是更好的帮助用户写好代码")
+                .goal("你的目标是根据用户的需求写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .interruptQuery(InterruptQuery.builder().version("finetune-qwen-20250909-71039c8b").modelType("qwen").autoInterruptQuery(false).releaseServiceName("bert-is-break").build())
                 .tools(Lists.newArrayList(
