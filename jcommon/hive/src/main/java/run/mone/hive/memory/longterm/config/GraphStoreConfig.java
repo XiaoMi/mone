@@ -91,6 +91,11 @@ public class GraphStoreConfig {
     private LlmConfig llm;
 
     /**
+     * 嵌入模型配置
+     */
+    private EmbedderConfig embedder;
+
+    /**
      * 自定义提示词
      */
     private String customPrompt;
@@ -141,6 +146,12 @@ public class GraphStoreConfig {
             @SuppressWarnings("unchecked")
             Map<String, Object> llmMap = (Map<String, Object>) configMap.get("llm");
             builder.llm(LlmConfig.fromMap(llmMap));
+        }
+
+        if (configMap.containsKey("embedder")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> embedderMap = (Map<String, Object>) configMap.get("embedder");
+            builder.embedder(EmbedderConfig.fromMap(embedderMap));
         }
 
         if (configMap.containsKey("customPrompt")) {
