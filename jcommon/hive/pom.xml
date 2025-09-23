@@ -213,6 +213,26 @@
             <version>3.45.1.0</version>
         </dependency>
 
+        <!-- Neo4j Java Driver for graph store -->
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>5.27.0</version>
+        </dependency>
+
+        <!-- BM25 implementation for graph search ranking -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>9.9.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analysis-common</artifactId>
+            <version>9.9.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>

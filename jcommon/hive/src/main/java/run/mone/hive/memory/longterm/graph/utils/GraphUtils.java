@@ -233,4 +233,110 @@ public class GraphUtils {
 
         return identity.toString();
     }
+
+    /**
+     * 验证图实体的完整性
+     * 
+     * @param source 源节点
+     * @param destination 目标节点
+     * @param relationship 关系
+     * @return 是否有效
+     */
+    public static boolean validateGraphEntity(String source, String destination, String relationship) {
+        return source != null && !source.trim().isEmpty() &&
+               destination != null && !destination.trim().isEmpty() &&
+               relationship != null && !relationship.trim().isEmpty();
+    }
+    
+    /**
+     * 清理和标准化实体名称
+     * 
+     * @param entityName 原始实体名称
+     * @return 清理后的实体名称
+     */
+    public static String cleanEntityName(String entityName) {
+        if (entityName == null) {
+            return "";
+        }
+        
+        // 移除多余的空格和特殊字符
+        String cleaned = entityName.trim()
+            .replaceAll("\\s+", " ")
+            .replaceAll("[\"'`]", "");
+        
+        return cleaned;
+    }
+    
+    /**
+     * 清理和标准化关系名称
+     * 
+     * @param relationshipName 原始关系名称
+     * @return 清理后的关系名称
+     */
+    public static String cleanRelationshipName(String relationshipName) {
+        if (relationshipName == null) {
+            return "";
+        }
+        
+        // 移除多余的空格，转为小写，用下划线连接
+        String cleaned = relationshipName.trim()
+            .toLowerCase()
+            .replaceAll("\\s+", "_")
+            .replaceAll("[^a-zA-Z0-9_]", "");
+        
+        return cleaned;
+    }
+    
+    /**
+     * 检查两个图记忆是否重复
+     * 
+     * @param memory1 记忆1
+     * @param memory2 记忆2
+     * @return 是否重复
+     */
+    public static boolean isDuplicateMemory(Map<String, Object> memory1, Map<String, Object> memory2) {
+        if (memory1 == null || memory2 == null) {
+            return false;
+        }
+        
+        String source1 = cleanEntityName((String) memory1.get("source"));
+        String dest1 = cleanEntityName((String) memory1.get("destination"));
+        String rel1 = cleanRelationshipName((String) memory1.get("relationship"));
+        
+        String source2 = cleanEntityName((String) memory2.get("source"));
+        String dest2 = cleanEntityName((String) memory2.get("destination"));
+        String rel2 = cleanRelationshipName((String) memory2.get("relationship"));
+        
+        return source1.equals(source2) && dest1.equals(dest2) && rel1.equals(rel2);
+    }
+    
+    /**
+     * 去重图记忆列表
+     * 
+     * @param memories 原始图记忆列表
+     * @return 去重后的图记忆列表
+     */
+    public static List<Map<String, Object>> deduplicateMemories(List<Map<String, Object>> memories) {
+        if (memories == null || memories.isEmpty()) {
+            return memories;
+        }
+        
+        List<Map<String, Object>> deduplicated = new java.util.ArrayList<>();
+        
+        for (Map<String, Object> memory : memories) {
+            boolean isDuplicate = false;
+            for (Map<String, Object> existing : deduplicated) {
+                if (isDuplicateMemory(memory, existing)) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            
+            if (!isDuplicate) {
+                deduplicated.add(memory);
+            }
+        }
+        
+        return deduplicated;
+    }
 }
