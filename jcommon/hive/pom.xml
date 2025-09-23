@@ -190,7 +190,6 @@
             <groupId>io.github.amikos-tech</groupId>
             <artifactId>chromadb-java-client</artifactId>
             <version>0.1.7</version>
-            <optional>true</optional>
         </dependency>
 
         <!-- Qdrant Java client for vector store -->
@@ -198,7 +197,6 @@
             <groupId>io.qdrant</groupId>
             <artifactId>client</artifactId>
             <version>1.15.0</version>
-            <optional>true</optional>
         </dependency>
 
         <!-- Kuzu Java client for embedded graph store -->
@@ -206,7 +204,6 @@
             <groupId>com.kuzudb</groupId>
             <artifactId>kuzu</artifactId>
             <version>0.11.2</version>
-            <optional>true</optional>
         </dependency>
 
         <!-- SQLite for local embedded storage -->
@@ -214,7 +211,6 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.45.1.0</version>
-            <optional>true</optional>
         </dependency>
 
     </dependencies>
