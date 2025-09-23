@@ -18,6 +18,7 @@ public enum LLMProvider {
     DEEPSEEK("https://api.deepseek.com/v1/chat/completions", "DEEPSEEK_API_KEY", "deepseek-chat", null),
     //openai/gpt-4o-2024-11-20 anthropic/claude-3.5-sonnet:beta anthropic/claude-3.7-sonnet
     OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-3.7-sonnet", null),
+    OPENROUTER_OPENAI_CODEX("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/codex-mini", null),
     OPENAICOMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
     DOUBAO_VISION("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_VISION_MODEL_KEY"),

@@ -1,4 +1,4 @@
-package run.mone.hive.memory.longterm;
+package run.mone.hive.memory.longterm.temptest;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;

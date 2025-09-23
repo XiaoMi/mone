@@ -215,7 +215,7 @@ public class RoleService {
     }
 
     private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role) {
-        Safe.run(()->{
+        Safe.run(() -> {
             if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
                 //每个用户的配置是不同的
                 Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
@@ -250,13 +250,76 @@ public class RoleService {
         return Flux.create(sink -> {
             message.setSink(sink);
             ReactorRole rr = roleMap.get(from);
-            if (!rr.getState().get().equals(RoleState.observe)) {
+            if (null == rr) {
+                sink.next("没有找到Agent\n");
+                sink.complete();
+                return;
+            }
+
+            RoleMeta roleMeta = rr.getRoleMeta();
+            if (null != roleMeta && null != roleMeta.getInterruptQuery()) {
+                boolean intent = new IntentClassificationService().shouldInterruptExecution(roleMeta.getInterruptQuery(), message);
+                if (intent) {
+                    message.setContent("/cancel");
+                }
+            }
+
+            // 检查是否是中断命令
+            String content = message.getContent();
+            if (isInterruptCommand(content)) {
+                handleInterruptCommand(rr, sink, from);
+                return;
+            }
+
+            // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
+            if (rr.isInterrupted() && !isInterruptCommand(content)) {
+                log.info("Agent {} 收到新的非中断命令，自动重置中断状态", from);
+                rr.resetInterrupt();
+                sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
+            }
+
+            if (!(rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                roleMap.get(from).putMessage(message);
+                rr.putMessage(message);
             }
         });
+    }
+
+    /**
+     * 检查是否是中断命令
+     */
+    private boolean isInterruptCommand(String content) {
+        if (content == null) {
+            return false;
+        }
+        String trimmed = content.trim().toLowerCase();
+        return trimmed.equals("/exit") ||
+                trimmed.equals("/stop") ||
+                trimmed.equals("/interrupt") ||
+                trimmed.equals("/cancel") ||
+                trimmed.contains("停止") ||
+                trimmed.contains("中断") ||
+                trimmed.contains("取消");
+    }
+
+    /**
+     * 处理中断命令
+     */
+    private void handleInterruptCommand(ReactorRole role, reactor.core.publisher.FluxSink<String> sink, String from) {
+        if (role.isInterrupted()) {
+            // 如果已经是中断状态，提示用户
+            sink.next("⚠️ Agent " + from + " 已经处于中断状态\n");
+            sink.next("💡 发送任何非中断命令将自动重置中断状态并继续执行\n");
+        } else {
+            // 执行中断
+            role.interrupt();
+            log.info("Agent {} 收到中断命令，已被中断", from);
+            sink.next("🛑 Agent " + from + " 已被强制中断\n");
+            sink.next("💡 发送任何新命令将自动重置中断状态并继续执行\n");
+        }
+        sink.complete();
     }
 
     //下线某个Agent
@@ -279,6 +342,60 @@ public class RoleService {
         if (null != role) {
             role.clearMemory();
         }
+    }
+
+    //中断某个Agent的执行
+    public Mono<String> interruptAgent(Message message) {
+        String from = message.getSentFrom().toString();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            role.interrupt();
+            log.info("Agent {} 已被中断", from);
+            return Mono.just("Agent " + from + " 已被强制中断");
+        } else {
+            log.warn("未找到要中断的Agent: {}", from);
+            return Mono.just("未找到要中断的Agent: " + from);
+        }
+    }
+
+    //重置某个Agent的中断状态
+    public Mono<String> resetAgentInterrupt(Message message) {
+        String from = message.getSentFrom().toString();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            role.resetInterrupt();
+            log.info("Agent {} 中断状态已重置", from);
+            return Mono.just("Agent " + from + " 中断状态已重置，可以重新开始执行");
+        } else {
+            log.warn("未找到要重置的Agent: {}", from);
+            return Mono.just("未找到要重置的Agent: " + from);
+        }
+    }
+
+    //获取某个Agent的中断状态
+    public Mono<String> getAgentInterruptStatus(Message message) {
+        String from = message.getSentFrom().toString();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            boolean interrupted = role.isInterrupted();
+            String status = interrupted ? "已中断" : "正常运行";
+            return Mono.just("Agent " + from + " 状态: " + status);
+        } else {
+            return Mono.just("未找到Agent: " + from);
+        }
+    }
+
+    //中断所有Agent
+    public Mono<String> interruptAllAgents() {
+        int count = 0;
+        for (ReactorRole role : roleMap.values()) {
+            if (role != null && !role.isInterrupted()) {
+                role.interrupt();
+                count++;
+            }
+        }
+        log.info("已中断 {} 个Agent", count);
+        return Mono.just("已中断 " + count + " 个Agent");
     }
 
     @Override

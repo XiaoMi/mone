@@ -16,6 +16,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.llm.LLMProvider;
@@ -23,13 +24,15 @@ import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
+import run.mone.hive.mcp.service.IntentClassificationService;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.memory.LongTermMemoryManager;
+import run.mone.hive.memory.longterm.config.MemoryConfig;
 import run.mone.hive.prompt.MonerSystemPrompt;
-import run.mone.hive.roles.tool.ExecuteCommandTool;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
-import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
+import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
@@ -98,12 +101,29 @@ public class ReactorRole extends Role {
 
     private AtomicInteger maxAssistantNum = new AtomicInteger();
 
+    private int MAX_ASSISTANT_NUM = Integer.MAX_VALUE;
+
+    // 中断标志 - 用于强制停止Role的执行
+    private AtomicBoolean interrupted = new AtomicBoolean(false);
+
     private McpHub mcpHub;
 
     private FocusChainManager focusChainManager;
 
     //工作区根目录路径，用于路径解析
     private String workspacePath = System.getProperty("user.dir");
+
+    // 上下文管理器 - 负责prompt压缩
+    private ConversationContextManager contextManager;
+
+    // 任务状态 - 用于上下文压缩
+    private TaskState taskState;
+
+    // 长期记忆管理器
+    private LongTermMemoryManager memoryManager;
+
+    // 意图分类服务
+    private IntentClassificationService classificationService;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -122,7 +142,11 @@ public class ReactorRole extends Role {
             
             ${rag_info}
             
+            ${knowledge_base_info}
+            
             ${web_query_info}
+            
+            ${memory_info}
             
             ===========
             Latest Questions(最后的步骤):
@@ -147,6 +171,8 @@ public class ReactorRole extends Role {
 
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
         this(name, "", "", "", "", "", 0, llm, Lists.newArrayList(), Lists.newArrayList());
+        // 初始化意图分类服务
+        this.classificationService = new IntentClassificationService();
     }
 
 
@@ -197,11 +223,24 @@ public class ReactorRole extends Role {
             });
         }, 0, 10, TimeUnit.SECONDS);
 
-        TaskState taskState = new TaskState();
+        this.taskState = new TaskState();
         FocusChainSettings focusChainSettings = new FocusChainSettings();
         focusChainSettings.setEnabled(true);
         LLMTaskProcessor llmTaskProcessor = new LLMTaskProcessorImpl(this.llm);
-        focusChainManager = new FocusChainManager(UUID.randomUUID().toString(), taskState, Mode.ACT, "/tmp", focusChainSettings, llmTaskProcessor);
+        focusChainManager = new FocusChainManager(UUID.randomUUID().toString(), this.taskState, Mode.ACT, "/tmp", focusChainSettings, llmTaskProcessor);
+
+        // 初始化上下文管理器
+        this.contextManager = new ConversationContextManager(this.llm);
+        // 配置压缩参数
+        this.contextManager.setEnableAiCompression(true);
+        this.contextManager.setEnableRuleBasedOptimization(true);
+        this.contextManager.setMaxMessagesBeforeCompression(15); // 15条消息后开始压缩
+
+        // 初始化意图分类服务
+        this.classificationService = new IntentClassificationService();
+
+        // 初始化长期记忆管理器
+        this.memoryManager = new LongTermMemoryManager(this.name);
 
     }
 
@@ -256,6 +295,7 @@ public class ReactorRole extends Role {
     @Override
     protected int observe() {
         log.info("{} run observe", this.name);
+        
         this.state.set(RoleState.observe);
 
         if (this.roleMeta.getObserveFunc() != null) {
@@ -277,7 +317,6 @@ public class ReactorRole extends Role {
                 fluxSink.complete();
             }
 
-
             int result = super.observe();
             Message msg = this.rc.news.take();
             ac.setMsg(msg);
@@ -291,9 +330,15 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.take();
         lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
+        
+        // 在收到消息后再次检查中断状态
+        if (this.interrupted.get()) {
+            log.info("Role '{}' 在处理消息前被中断", this.name);
+            return 2;
+        }
 
         //机器人回答太多轮了
-        if (this.maxAssistantNum.get() > 10) {
+        if (this.maxAssistantNum.get() > MAX_ASSISTANT_NUM) {
             this.maxAssistantNum.set(0);
             return 2;
         }
@@ -323,6 +368,9 @@ public class ReactorRole extends Role {
 
         //放到记忆中
         this.putMemory(msg);
+
+        // 处理上下文压缩
+        processContextCompression(msg);
 
 
         //用户可以扩展退出策略
@@ -378,6 +426,13 @@ public class ReactorRole extends Role {
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
         log.info("{} run act", this.name);
+        
+        // 检查中断状态
+        if (this.interrupted.get()) {
+            log.info("Role '{}' 在act阶段被中断", this.name);
+            return CompletableFuture.completedFuture(Message.builder().build());
+        }
+        
         this.state.set(RoleState.act);
 
         Message msg = this.ac.getMsg();
@@ -410,6 +465,12 @@ public class ReactorRole extends Role {
         }
 
         try {
+            // 检查是否是压缩命令
+            if (isCompressionCommand(msg)) {
+                handleCompressionCommand(msg, sink);
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
+
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String userPrompt = buildUserPrompt(msg, history, sink);
             log.info("userPrompt:{}", userPrompt);
@@ -429,6 +490,14 @@ public class ReactorRole extends Role {
 
             //获取系统提示词
             String systemPrompt = buildSystemPrompt();
+
+            // 在调用LLM前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在调用LLM前被中断", this.name);
+                sink.next("⚠️ 执行已被中断\n");
+                sink.complete();
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
 
             //调用大模型(选用合适的工具)
             focusChainManager.getTaskState().setApiRequestCount(focusChainManager.getTaskState().getApiRequestCount() + 1);
@@ -457,13 +526,23 @@ public class ReactorRole extends Role {
 
             this.ac.setLastTool(name);
 
+            // 在执行工具前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在执行工具前被中断", this.name);
+                sink.next("⚠️ 执行已被中断\n");
+                sink.complete();
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
+
             if (this.toolMap.containsKey(name)) {//执行内部tool
                 callTool(name, it, toolRes, sink, buildToolExtraParam(msg));
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
-                sink.next("不支持工具:" + name);
-                log.warn("不支持的工具 tool:{}", name);
+                String _msg = "发现不支持工具:" + name +",请继续";
+                sink.next(_msg);
+                log.warn("不支持的工具 tool:{}",_msg);
+                this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
             }
         } catch (Exception e) {
             sink.error(e);
@@ -529,17 +608,71 @@ public class ReactorRole extends Role {
         StringBuilder sb = new StringBuilder();
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
-        curLLM.compoundMsgCall(compoundMsg, systemPrompt)
-                .doOnNext(it -> {
-                    sb.append(it);
-                    Optional.ofNullable(sink).ifPresent(s -> s.next(it));
-                })
-                .doOnError(error -> {
-                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
-                    sb.append(error.getMessage());
-                    log.error(error.getMessage(), error);
+        
+        // 添加重试机制，同时支持中断功能
+        int maxRetries = 3;
+        int retryCount = 0;
+        boolean success = false;
+        
+        while (!success && retryCount < maxRetries) {
+            // 在重试前检查中断状态
+            if (this.interrupted.get()) {
+                log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
+                hasError.set(true);
+                Optional.ofNullable(sink).ifPresent(s -> {
+                    s.next("⚠️ 执行已被中断\n");
+                    s.complete();
+                });
+                break;
+            }
+            
+            try {
+                if (retryCount > 0) {
+                    log.info("LLM调用重试第{}次", retryCount);
+                    int tmpRetries = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
+                }
+                
+                sb.setLength(0); // 清空之前的结果
+                
+                curLLM.compoundMsgCall(compoundMsg, systemPrompt)
+                        .doOnNext(it -> {
+                            // 在每次接收流式响应时检查中断状态
+                            if (this.interrupted.get()) {
+                                log.info("Role '{}' 在LLM流式响应中被中断", this.name);
+                                hasError.set(true);
+                                Optional.ofNullable(sink).ifPresent(s -> {
+                                    s.next("⚠️ 执行已被中断\n");
+                                    s.complete();
+                                });
+                                return; // 停止处理后续响应
+                            }
+                            sb.append(it);
+                            Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                        })
+                        .doOnError(error -> {
+                            throw new RuntimeException(error);
+                        })
+                        .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
+                        .blockLast();
+                
+                success = true; // 如果执行到这里没有异常，说明成功了
+            } catch (Exception error) {
+                retryCount++;
+                log.error("LLM调用失败(第{}次): {}", retryCount, error.getMessage(), error);
+                
+                if (retryCount >= maxRetries) {
+                    // 所有重试都失败了
+                    final int finalRetryCount = retryCount;
+                    Optional.ofNullable(sink).ifPresent(s -> {
+                        s.next("LLM调用失败，已重试" + finalRetryCount + "次，无法完成请求。\n");
+                        s.error(error);
+                    });
+                    sb.append("LLM调用失败: ").append(error.getMessage());
                     hasError.set(true);
-                }).blockLast();
+                }
+            }
+        }
         return sb.toString();
     }
 
@@ -586,32 +719,37 @@ public class ReactorRole extends Role {
             ragInfo = queryKnowledgeBase(msg, sink);
         }
 
-        return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
+        //从新知识库中获取信息内容
+        String knowledgeBaseInfo = "";
+        if (roleMeta.getKnowledgeBaseQuery().isAutoQuery()) {
+            knowledgeBaseInfo = queryNewKnowledgeBase(msg, sink);
+        }
+
+        //从长期记忆中获取相关信息
+        String memoryInfo = "";
+        if (roleMeta.getMemoryQuery().isAutoMemoryQuery()) {
+            memoryInfo = memoryManager.queryLongTermMemory(msg, roleMeta.getMemoryQuery(), sink);
+        }
+
+        return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.<String, String>builder()
                 //聊天记录
-                "history", history,
+                .put("history", history)
                 //网络上下文
-                "web_query_info", queryInfo,
+                .put("web_query_info", queryInfo)
                 //rag上下文
-                "rag_info", ragInfo,
-                "question", msg.getContent()));
+                .put("rag_info", ragInfo)
+                //新知识库上下文
+                .put("knowledge_base_info", knowledgeBaseInfo)
+                //记忆上下文
+                .put("memory_info", memoryInfo)
+                .put("question", msg.getContent())
+                .build());
     }
 
-    private String getIntentClassification(String version, String modelType, String releaseServiceName, Message msg) {
-        //获取意图是否访问知识库
-        LLM llm = new LLM(LLMConfig.builder()
-                .llmProvider(LLMProvider.CLOUDML_CLASSIFY)
-                .url(System.getenv("ATLAS_URL"))
-                .build());
-        String classify = llm.getClassifyScore(modelType, version, Arrays.asList(msg.getContent()), 1, releaseServiceName);
-        classify = JsonParser.parseString(classify).getAsJsonObject().get("results").getAsJsonArray().get(0).getAsJsonArray().get(0).getAsJsonObject().get("label").getAsString();
-        return classify;
-    }
 
     private String getNetworkQueryInfo(Message msg, String queryInfo, FluxSink sink) {
-        //做下意图识别(看看是不是需要网络查询内容)
-        String classify = getClassificationLabel(msg);
-        //去网络搜索内容
-        if (!classify.equals("不需要搜索网络")) {
+        //使用意图分类服务判断是否需要网络查询
+        if (classificationService.shouldPerformWebQuery(roleMeta.getWebQuery(), msg)) {
             sink.next("从网络获取信息\n");
             TavilySearchTool tool = new TavilySearchTool();
             JsonObject queryObj = new JsonObject();
@@ -624,9 +762,8 @@ public class ReactorRole extends Role {
 
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
-            //是否访问知识库
-            String classify = getIntentClassification(roleMeta.getRag().getVersion(), roleMeta.getRag().getModelType(), roleMeta.getRag().getReleaseServiceName(), msg);
-            if (classify.equals("是")) {
+            //使用意图分类服务判断是否需要RAG查询
+            if (classificationService.shouldPerformRagQuery(roleMeta.getRag(), msg)) {
                 sink.next("从知识库获取信息\n");
                 String ragUrl = System.getenv("RAG_URL");
                 LLM llm = new LLM(LLMConfig.builder()
@@ -650,12 +787,110 @@ public class ReactorRole extends Role {
         return "";
     }
 
-    private String getClassificationLabel(Message msg) {
-        return getIntentClassification(roleMeta.getWebQuery().getVersion(), roleMeta.getWebQuery().getModelType(), roleMeta.getWebQuery().getReleaseServiceName(), msg);
+    private String queryNewKnowledgeBase(Message msg, FluxSink sink) {
+        try {
+            //使用意图分类服务判断是否需要知识库查询
+            if (classificationService.shouldPerformKnowledgeBaseQuery(roleMeta.getKnowledgeBaseQuery(), msg)) {
+                sink.next("从新知识库获取信息\n");
+                
+                String apiUrl = System.getenv("NEW_RAG_URL");
+                String apiKey = roleMeta.getKnowledgeBaseQuery().getApiKey();
+                String knowledgeBaseId = roleMeta.getKnowledgeBaseQuery().getKnowledgeBaseId();
+                
+                if (StringUtils.isEmpty(apiUrl) || StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(knowledgeBaseId)) {
+                    log.warn("知识库查询配置不完整");
+                    return "";
+                }
+
+                LLM llm = new LLM(LLMConfig.builder()
+                        .llmProvider(LLMProvider.KNOWLEDGE_BASE)
+                        .url(apiUrl)
+                        .build());
+
+                String result = llm.queryNewKnowledgeBase(
+                        msg.getContent(), // query
+                        knowledgeBaseId,   // knowledge_base_id
+                        apiKey
+                );
+                
+                JsonObject jsonResult = JsonParser.parseString(result).getAsJsonObject();
+                if (jsonResult.has("success") && jsonResult.get("success").getAsBoolean()) {
+                    JsonObject data = jsonResult.getAsJsonObject("data");
+                    String content = data.get("content").getAsString();
+                    return "===========\n" + "新知识库中的内容:" + "\n" + content + "\n";
+                } else {
+                    log.warn("知识库查询失败: {}", result);
+                }
+            }
+        } catch (Throwable ex) {
+            log.error("查询新知识库失败: {}", ex.getMessage(), ex);
+        }
+        return "";
     }
+
 
     public void setLlm(LLM llm) {
         this.llm = llm;
+    }
+
+    // ==================== 记忆管理相关方法 ====================
+
+    /**
+     * 获取记忆管理器
+     */
+    public LongTermMemoryManager getMemoryManager() {
+        return this.memoryManager;
+    }
+
+    /**
+     * 手动添加记忆
+     */
+    public CompletableFuture<Map<String, Object>> addMemory(String content, String userId, String agentId, String sessionId, Map<String, Object> metadata) {
+        return memoryManager != null ?
+                memoryManager.addMemory(content, userId, agentId, sessionId, metadata) :
+                CompletableFuture.completedFuture(Map.of("error", "记忆管理器未初始化"));
+    }
+
+    /**
+     * 手动搜索记忆
+     */
+    public CompletableFuture<Map<String, Object>> searchMemory(String query, String userId, String agentId, String sessionId, int limit, double threshold) {
+        return memoryManager != null ?
+                memoryManager.searchMemory(query, userId, agentId, sessionId, limit, threshold) :
+                CompletableFuture.completedFuture(Map.of("error", "记忆管理器未初始化"));
+    }
+
+    /**
+     * 获取所有记忆
+     */
+    public CompletableFuture<Map<String, Object>> getAllMemories(String userId, String agentId, String sessionId, int limit) {
+        return memoryManager != null ?
+                memoryManager.getAllMemories(userId, agentId, sessionId, limit) :
+                CompletableFuture.completedFuture(Map.of("error", "记忆管理器未初始化"));
+    }
+
+    /**
+     * 重置长期记忆
+     */
+    public CompletableFuture<Boolean> resetMemory() {
+        return memoryManager != null ?
+                memoryManager.resetMemory() :
+                CompletableFuture.completedFuture(false);
+    }
+
+    /**
+     * 设置自定义记忆配置
+     * 重新初始化记忆管理器
+     */
+    public void setMemoryConfig(MemoryConfig config) {
+        // 关闭现有的记忆管理器
+        if (this.memoryManager != null) {
+            this.memoryManager.close();
+        }
+
+        // 使用新配置重新初始化
+        this.memoryManager = new LongTermMemoryManager(this.name, config);
+        log.info("已为 role: {} 设置自定义记忆配置", this.name);
     }
 
     /**
@@ -679,11 +914,310 @@ public class ReactorRole extends Role {
         return this.workspacePath;
     }
 
+    /**
+     * 强制中断Role的执行
+     * 设置中断标志，使Role在下次检查时停止执行
+     */
+    public void interrupt() {
+        log.info("Role '{}' 收到中断信号", this.name);
+        this.interrupted.set(true);
+        // 如果有正在进行的流式输出，也要中断
+        if (this.fluxSink != null) {
+            try {
+                this.fluxSink.next("⚠️ 执行已被中断\n");
+                this.fluxSink.complete();
+            } catch (Exception e) {
+                log.debug("中断时关闭FluxSink出现异常: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 重置中断标志
+     * 允许Role重新开始执行
+     */
+    public void resetInterrupt() {
+        log.info("Role '{}' 重置中断标志", this.name);
+        this.interrupted.set(false);
+        this.state.set(RoleState.observe);
+    }
+
+    /**
+     * 检查是否被中断
+     *
+     * @return true如果被中断，false否则
+     */
+    public boolean isInterrupted() {
+        return this.interrupted.get();
+    }
+
+    /**
+     * 检查中断状态，如果被中断则抛出异常
+     * 用于在关键执行点进行中断检查
+     */
+    private void checkInterrupted() {
+        if (this.interrupted.get()) {
+            log.info("Role '{}' 执行被中断", this.name);
+            throw new RuntimeException("Role execution interrupted");
+        }
+    }
+
     public void initConfig() {
         if (null != this.roleConfig) {
             if (this.roleConfig.containsKey("workspacePath")) {
                 setWorkspacePath(this.roleConfig.get("workspacePath"));
             }
+
+            // 配置上下文压缩参数
+            configureContextCompression();
         }
+    }
+
+    /**
+     * 配置上下文压缩参数
+     */
+    private void configureContextCompression() {
+        if (this.contextManager == null || this.roleConfig == null) {
+            return;
+        }
+
+        // 是否启用AI压缩
+        if (this.roleConfig.containsKey("enableAiCompression")) {
+            boolean enable = Boolean.parseBoolean(this.roleConfig.get("enableAiCompression"));
+            this.contextManager.setEnableAiCompression(enable);
+            log.info("AI压缩设置: {}", enable);
+        }
+
+        // 是否启用规则优化
+        if (this.roleConfig.containsKey("enableRuleBasedOptimization")) {
+            boolean enable = Boolean.parseBoolean(this.roleConfig.get("enableRuleBasedOptimization"));
+            this.contextManager.setEnableRuleBasedOptimization(enable);
+            log.info("规则优化设置: {}", enable);
+        }
+
+        // 压缩触发的消息数阈值
+        if (this.roleConfig.containsKey("maxMessagesBeforeCompression")) {
+            int maxMessages = Integer.parseInt(this.roleConfig.get("maxMessagesBeforeCompression"));
+            this.contextManager.setMaxMessagesBeforeCompression(maxMessages);
+            log.info("压缩消息阈值设置: {}", maxMessages);
+        }
+    }
+
+    /**
+     * 处理上下文压缩
+     * 在每次收到新消息时检查是否需要压缩对话历史
+     */
+    private void processContextCompression(Message newMessage) {
+        if (this.contextManager == null) {
+            return;
+        }
+
+        try {
+            // 获取当前的消息历史
+            List<Message> currentMessages = getCurrentMessageHistory();
+
+            // 异步处理上下文压缩
+            this.contextManager.processNewMessage(
+                    currentMessages,
+                    newMessage,
+                    this.taskState,
+                    this.focusChainManager.getFocusChainSettings()
+            ).thenAccept(result -> {
+                if (result.wasCompressed()) {
+                    log.info("上下文已压缩: 原始消息数={}, 压缩后消息数={}",
+                            currentMessages.size() + 1, result.getProcessedMessages().size());
+
+                    // 更新内存中的消息历史
+                    updateMessageHistory(result.getProcessedMessages());
+
+                    // 标记任务状态
+                    this.taskState.setDidCompleteContextCompression(true);
+
+                } else if (result.wasOptimized()) {
+                    log.info("应用了上下文规则优化");
+                    updateMessageHistory(result.getProcessedMessages());
+                }
+
+                if (result.hasError()) {
+                    log.warn("上下文处理出现错误: {}", result.getErrorMessage());
+                }
+            }).exceptionally(throwable -> {
+                log.error("上下文压缩处理异常", throwable);
+                return null;
+            });
+
+        } catch (Exception e) {
+            log.error("处理上下文压缩时发生异常", e);
+        }
+    }
+
+    /**
+     * 获取当前的消息历史
+     */
+    private List<Message> getCurrentMessageHistory() {
+        try {
+            return this.rc.getMemory().getStorage().stream()
+                    .map(msg -> Message.builder()
+                            .content(msg.getContent())
+                            .role(msg.getRole())
+                            .causeBy(msg.getCauseBy())
+                            .createTime(msg.getCreateTime())
+                            .build())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("获取消息历史失败", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 更新消息历史
+     */
+    private void updateMessageHistory(List<Message> newMessages) {
+        try {
+            // 清空当前记忆
+            this.rc.getMemory().clear();
+
+            // 重新添加压缩后的消息
+            for (Message msg : newMessages) {
+                this.rc.getMemory().add(msg);
+            }
+
+            log.debug("消息历史已更新，当前消息数: {}", newMessages.size());
+        } catch (Exception e) {
+            log.error("更新消息历史失败", e);
+        }
+    }
+
+    /**
+     * 手动触发上下文压缩
+     * 可以通过特殊命令或API调用触发
+     */
+    public CompletableFuture<Boolean> manualCompressContext() {
+        if (this.contextManager == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        try {
+            List<Message> currentMessages = getCurrentMessageHistory();
+
+            return this.contextManager.manualCompression(
+                    currentMessages,
+                    this.taskState,
+                    this.focusChainManager.getFocusChainSettings()
+            ).thenApply(result -> {
+                if (result.wasCompressed()) {
+                    log.info("手动压缩成功: {} -> {} 消息",
+                            currentMessages.size(), result.getProcessedMessages().size());
+                    updateMessageHistory(result.getProcessedMessages());
+                    return true;
+                } else {
+                    log.info("手动压缩未执行: {}", result.getErrorMessage());
+                    return false;
+                }
+            });
+        } catch (Exception e) {
+            log.error("手动压缩失败", e);
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    /**
+     * 获取上下文统计信息
+     */
+    public ConversationContextManager.ContextStats getContextStats() {
+        if (this.contextManager == null) {
+            return null;
+        }
+
+        try {
+            List<Message> currentMessages = getCurrentMessageHistory();
+            return this.contextManager.getContextStats(currentMessages);
+        } catch (Exception e) {
+            log.error("获取上下文统计失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 检查是否正在进行压缩
+     */
+    public boolean isContextCompressing() {
+        return this.contextManager != null && this.contextManager.isCompressing();
+    }
+
+    /**
+     * 检查是否是压缩命令
+     */
+    private boolean isCompressionCommand(Message msg) {
+        if (msg == null || msg.getContent() == null) {
+            return false;
+        }
+
+        String content = msg.getContent().trim().toLowerCase();
+        return content.startsWith("/compress") ||
+                content.startsWith("/compact") ||
+                content.startsWith("/summarize") ||
+                content.startsWith("/smol") ||
+                content.contains("压缩对话") ||
+                content.contains("总结对话");
+    }
+
+    /**
+     * 处理压缩命令
+     */
+    private void handleCompressionCommand(Message msg, FluxSink sink) {
+        if (sink != null) {
+            sink.next("🔄 开始压缩对话上下文...\n");
+        }
+
+        // 显示当前上下文统计
+        ConversationContextManager.ContextStats stats = getContextStats();
+        if (stats != null && sink != null) {
+            sink.next(String.format("📊 当前状态: %d条消息, %d个字符, 约%d个tokens\n",
+                    stats.getMessageCount(), stats.getTotalCharacters(), stats.getEstimatedTokens()));
+        }
+
+        // 执行压缩
+        manualCompressContext().thenAccept(success -> {
+            if (success) {
+                if (sink != null) {
+                    ConversationContextManager.ContextStats newStats = getContextStats();
+                    if (newStats != null) {
+                        sink.next(String.format("✅ 压缩完成! 现在有 %d条消息, %d个字符, 约%d个tokens\n",
+                                newStats.getMessageCount(), newStats.getTotalCharacters(), newStats.getEstimatedTokens()));
+                    } else {
+                        sink.next("✅ 对话上下文压缩完成!\n");
+                    }
+                    sink.next("💡 对话历史已智能总结，重要信息已保留。\n");
+                    sink.complete();
+                }
+
+                // 添加压缩完成的消息到记忆
+                this.putMessage(Message.builder()
+                        .role(RoleType.assistant.name())
+                        .content("对话上下文已成功压缩，历史信息已智能总结。")
+                        .sink(sink)
+                        .build());
+            } else {
+                if (sink != null) {
+                    sink.next("❌ 压缩失败，请稍后重试。\n");
+                    sink.complete();
+                }
+
+                this.putMessage(Message.builder()
+                        .role(RoleType.assistant.name())
+                        .content("对话压缩失败，当前对话将继续使用原有历史。")
+                        .sink(sink)
+                        .build());
+            }
+        }).exceptionally(throwable -> {
+            log.error("处理压缩命令时发生异常", throwable);
+            if (sink != null) {
+                sink.next("❌ 压缩过程中发生异常: " + throwable.getMessage() + "\n");
+                sink.complete();
+            }
+            return null;
+        });
     }
 }
