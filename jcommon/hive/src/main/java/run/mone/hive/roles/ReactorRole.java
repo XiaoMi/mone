@@ -726,7 +726,7 @@ public class ReactorRole extends Role {
 
         //从长期记忆中获取相关信息
         String memoryInfo = "";
-        if (roleMeta.getMemoryQuery().isAutoMemoryQuery()) {
+        if (roleMeta.getMemoryQuery().isAutoMemoryManagement()) {
             memoryInfo = memoryManager.queryLongTermMemory(msg, roleMeta.getMemoryQuery(), sink);
         }
 
