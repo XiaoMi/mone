@@ -17,26 +17,11 @@ import lombok.NoArgsConstructor;
 public class MemoryQuery {
 
     /**
-     * 是否自动进行记忆搜索
+     * 是否自动进行记忆管理（包括查询相关记忆和保存当前对话）
      */
     @Builder.Default
-    private boolean autoMemoryQuery = false;
-    
-    /**
-     * 记忆配置版本
-     */
-    private String version;
-    
-    /**
-     * 模型类型
-     */
-    private String modelType;
-    
-    /**
-     * 发布服务名
-     */
-    private String releaseServiceName;
-    
+    private boolean autoMemoryManagement = false;
+
     /**
      * 记忆搜索的最大结果数量
      */
@@ -64,8 +49,4 @@ public class MemoryQuery {
      */
     private String sessionId;
     
-    /**
-     * 记忆类型过滤
-     */
-    private String memoryType;
 }

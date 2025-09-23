@@ -36,7 +36,7 @@ public class ReactorRoleMemoryTest {
 
         // 配置记忆查询
         MemoryQuery memoryQuery = MemoryQuery.builder()
-                .autoMemoryQuery(true)
+                .autoMemoryManagement(true)
                 .maxResults(5)
                 .threshold(0.7)
                 .agentId("TestRole")
