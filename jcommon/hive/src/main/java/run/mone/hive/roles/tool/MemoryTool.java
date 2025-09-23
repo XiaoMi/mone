@@ -55,14 +55,6 @@ public class MemoryTool implements ITool {
         return true;
     }
 
-    /**
-     *   常见对话触发：
-     *   1. "你还记得我上次说过的兴趣爱好吗？" → search
-     *   2. "记住我喜欢游泳" → save
-     *   3. "你都知道我哪些信息？" → get_all
-     *   4. "忘记之前的对话吧" → reset
-     * @return
-     */
     @Override
     public String description() {
         return """
@@ -72,6 +64,33 @@ public class MemoryTool implements ITool {
                 
                 **When to use:** Choose this tool when you need to access historical information,
                 save important context, user preferences, or manage memory from previous interactions.
+                
+                **Common conversation triggers:**
+                
+                **Search operations (action: search):**
+                1. "你还记得我上次说过的兴趣爱好吗？" → Search previous interests
+                2. "我之前提到过什么编程语言偏好？" → Search programming preferences
+                3. "还记得我们上次讨论的项目需求吗？" → Search project requirements
+                4. "我以前说过喜欢什么类型的音乐？" → Search music preferences
+                5. "你还记得我的工作经历吗？" → Search work experience
+                6. "之前我们聊过什么技术话题？" → Search technical discussions
+                
+                **Save operations (action: save):**
+                1. "记住我喜欢游泳" → Save hobby information
+                2. "我现在在学习React，请记住" → Save learning status
+                3. "记录一下我的新邮箱地址是xxx" → Save contact info
+                4. "记住我更喜欢用Python做数据分析" → Save tool preferences
+                5. "请记住我的生日是XX月XX日" → Save personal information
+                
+                **Get all operations (action: get_all):**
+                1. "你都知道我哪些信息？" → List all memories
+                2. "显示你记住的所有关于我的内容" → Show all stored info
+                3. "总结一下我们的历史对话记录" → Summarize conversation history
+                
+                **Reset operations (action: reset):**
+                1. "忘记之前的对话吧" → Clear all memories
+                2. "清除我的所有个人信息" → Reset personal data
+                3. "重新开始，清空记忆" → Start fresh conversation
                 
                 **Output:** The tool will return relevant memory entries with similarity scores and metadata for queries,
                 or confirmation messages for save/management operations.
@@ -99,8 +118,6 @@ public class MemoryTool implements ITool {
                 <memory>
                   <action>search</action>
                   <query>user programming language preferences</query>
-                  <max_results>3</max_results>
-                  <threshold>0.8</threshold>
                 </memory>
                 
                 Example 2: Saving new information
@@ -134,7 +151,7 @@ public class MemoryTool implements ITool {
                 return result;
             }
 
-            // 从环境变量获取配置参数
+            // 从环境变量获取配置参数？？
             String userId = System.getenv("MEMORY_USER_ID");
             String agentId = System.getenv("MEMORY_AGENT_ID");
             String sessionId = System.getenv("MEMORY_SESSION_ID");
@@ -380,26 +397,67 @@ public class MemoryTool implements ITool {
                 
                 // 处理搜索结果
                 if (resultMap.containsKey("results")) {
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> results = (List<Map<String, Object>>) resultMap.get("results");
+                    Object resultsObj = resultMap.get("results");
                     
-                    if (results != null) {
-                        for (Map<String, Object> result : results) {
+                    // 处理List<MemoryItem>的情况
+                    if (resultsObj instanceof List) {
+                        @SuppressWarnings("unchecked")
+                        List<Object> results = (List<Object>) resultsObj;
+                        
+                        for (Object resultObj : results) {
                             JsonObject memoryObj = new JsonObject();
                             
-                            // 提取记忆内容
-                            if (result.containsKey("memory")) {
-                                memoryObj.addProperty("content", result.get("memory").toString());
-                            }
-                            
-                            // 提取分数
-                            if (result.containsKey("score")) {
-                                memoryObj.addProperty("score", result.get("score").toString());
-                            }
-                            
-                            // 提取元数据
-                            if (result.containsKey("metadata")) {
-                                memoryObj.addProperty("metadata", result.get("metadata").toString());
+                            if (resultObj instanceof Map) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> result = (Map<String, Object>) resultObj;
+                                
+                                // 提取记忆ID
+                                if (result.containsKey("id")) {
+                                    memoryObj.addProperty("id", result.get("id").toString());
+                                }
+                                
+                                // 提取分数
+                                if (result.containsKey("score")) {
+                                    memoryObj.addProperty("score", result.get("score").toString());
+                                }
+                                
+                                // 提取记忆内容 - 从metadata.data获取
+                                String content = extractMemoryContent(result);
+                                if (content != null && !content.trim().isEmpty()) {
+                                    memoryObj.addProperty("content", content);
+                                } else if (result.containsKey("memory")) {
+                                    memoryObj.addProperty("content", result.get("memory").toString());
+                                }
+                                
+                                // 提取用户标识信息
+                                if (result.containsKey("userId")) {
+                                    memoryObj.addProperty("userId", result.get("userId").toString());
+                                }
+                                if (result.containsKey("agentId")) {
+                                    memoryObj.addProperty("agentId", result.get("agentId").toString());
+                                }
+                                if (result.containsKey("runId")) {
+                                    memoryObj.addProperty("sessionId", result.get("runId").toString());
+                                }
+                                
+                                // 提取时间信息
+                                if (result.containsKey("createdAt")) {
+                                    memoryObj.addProperty("createdAt", result.get("createdAt").toString());
+                                }
+                                if (result.containsKey("updatedAt")) {
+                                    memoryObj.addProperty("updatedAt", result.get("updatedAt").toString());
+                                }
+                                
+                                // 提取元数据
+                                if (result.containsKey("metadata")) {
+                                    memoryObj.addProperty("metadata", result.get("metadata").toString());
+                                }
+                                
+                            } else {
+                                // 如果是MemoryItem对象，直接转换为字符串
+                                String itemStr = resultObj.toString();
+                                memoryObj.addProperty("content", extractContentFromMemoryItemString(itemStr));
+                                memoryObj.addProperty("raw", itemStr);
                             }
                             
                             memoryObj.addProperty("type", type);
@@ -410,11 +468,73 @@ public class MemoryTool implements ITool {
                 }
             }
         } catch (Exception e) {
-            log.warn("处理{}级别记忆结果时发生异常: {}", type, e.getMessage());
+            log.warn("处理{}级别记忆结果时发生异常: {}", type, e);
             JsonObject errorObj = new JsonObject();
             errorObj.addProperty("error", "处理记忆结果异常: " + e.getMessage());
             errorObj.addProperty("type", "error");
             memories.add(errorObj);
+        }
+    }
+
+    /**
+     * 从MemoryItem的Map结构中提取记忆内容
+     */
+    private String extractMemoryContent(Map<String, Object> result) {
+        try {
+            // 首先尝试从metadata.data获取
+            if (result.containsKey("metadata")) {
+                Object metadataObj = result.get("metadata");
+                if (metadataObj instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> metadata = (Map<String, Object>) metadataObj;
+                    if (metadata.containsKey("data")) {
+                        return metadata.get("data").toString();
+                    }
+                }
+            }
+            
+            // 如果metadata.data不存在，尝试从memory字段获取
+            if (result.containsKey("memory")) {
+                String memory = result.get("memory").toString();
+                if (memory != null && !memory.trim().isEmpty()) {
+                    return memory;
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.warn("提取记忆内容时发生异常: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 从MemoryItem的toString字符串中提取记忆内容
+     */
+    private String extractContentFromMemoryItemString(String itemStr) {
+        try {
+            // 从toString字符串中提取data字段
+            // 格式：data=The user likes swimming.
+            String dataPrefix = "data=";
+            int dataIndex = itemStr.indexOf(dataPrefix);
+            if (dataIndex != -1) {
+                int startIndex = dataIndex + dataPrefix.length();
+                int endIndex = itemStr.indexOf(",", startIndex);
+                if (endIndex == -1) {
+                    endIndex = itemStr.indexOf("}", startIndex);
+                }
+                if (endIndex != -1) {
+                    return itemStr.substring(startIndex, endIndex).trim();
+                } else {
+                    return itemStr.substring(startIndex).trim();
+                }
+            }
+            
+            // 如果找不到data字段，返回原始字符串的摘要
+            return "记忆项: " + (itemStr.length() > 100 ? itemStr.substring(0, 100) + "..." : itemStr);
+        } catch (Exception e) {
+            log.warn("从字符串提取记忆内容时发生异常: {}", e.getMessage());
+            return "无法解析的记忆内容";
         }
     }
 }

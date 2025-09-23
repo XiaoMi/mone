@@ -57,7 +57,12 @@ public class KnowledgeBaseQueryTool implements ITool {
                 such as company documents, technical specifications, or other structured information.
                 
                 **When to use:** Choose this tool when the user needs to search for information that is likely to be
-                stored in a knowledge base rather than requiring a web search.
+                stored in a knowledge base rather than requiring a web search or personal memory.
+                
+                **Common conversation triggers:**
+                1. "看下XX手册，XX问题怎么解决" → Search manual/handbook
+                2. "XX文档里XX是怎么说的" → Search specific document content
+                3. "XX文档中关于XX的说明" → Search technical documentation
                 
                 **Output:** The tool will return relevant documents/content from the knowledge base with relevance scores.
                 """;
