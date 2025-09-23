@@ -3,6 +3,7 @@ build_info.properties
 .classpath
 dependency-reduced-pom.xml
 *.diff
+*.db
 .DS_Store
 .idea/
 .vscode/
