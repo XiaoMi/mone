@@ -36,6 +36,9 @@ public class AgentConfig {
                         new AskTool(),
                         //支持网络搜索
                         new TavilySearchTool(),
+                        //支持知识库查询
+                        new KnowledgeBaseQueryTool(),
+                        new MemoryTool(""),
                         new AttemptCompletionTool(),
                         new SpeechToTextTool(),
                         new SystemInfoTool(),
