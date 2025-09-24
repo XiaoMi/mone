@@ -1,7 +1,7 @@
 <!--
  * @Description:
  * @Date: 2024-03-05 18:11:47
- * @LastEditTime: 2024-03-14 19:57:43
+ * @LastEditTime: 2024-08-15 10:24:02
 -->
 <template>
   <el-drawer
@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Rates from '@/components/Rates.vue'
+import Rates from '@/components/probot/Rates.vue'
 
 const props = defineProps({
   modelValue: {

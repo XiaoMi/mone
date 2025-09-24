@@ -57,7 +57,7 @@ export const useChatStore = defineStore('chat-store', {
         this.recordState()
       }
 
-      return code
+      return { code, data }
     },
 
     async updateHistory(uuid: number, edit: Partial<Chat.History>) {

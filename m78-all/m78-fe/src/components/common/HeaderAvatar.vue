@@ -10,6 +10,7 @@ import HeaderAvatarModel from './HeaderAvatarModel.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { logout as doLogout } from '@/api'
 
+const isPro = ref(true)
 const route = useRoute()
 const router = useRouter()
 
@@ -35,6 +36,28 @@ const handleCommand = (command: string | number | object) => {
     })
   } else if (command === 'logout') {
     logout()
+  } else if (command === 'carousel') {
+    router.push({
+      path: '/probot-carousel'
+    })
+  } else if (command === 'platformStatistics') {
+    router.push({
+      path: '/probot-platformStatistics'
+    })
+  } else if (command === 'gitAccount') {
+    router.push({
+      path: '/git-account'
+    })
+  } else if (command === 'EmployeeManage') {
+    router.push({
+      path: '/employee-manage'
+    })
+  } else if (command == 'agent') {
+    router.push({
+      path: '/agent'
+    })
+  } else if (command == 'ide') {
+    console.log('ide')
   }
 }
 
@@ -54,6 +77,12 @@ const getCookie = (name: string) => {
 const logout = () => {
   doLogout(getCookie('TPC_TOKEN'))
 }
+
+// function updateZToken(token: string) {
+//   userStore.setZToken(token)
+//   ElMessage.success(t('zToken.success'))
+//   fetchModels(token)
+// }
 
 function updateSettings(options: Partial<SettingsState>) {
   settingStore.updateSetting(options)
@@ -87,9 +116,18 @@ watch(
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item command="settings">{{ t('setting.setting') }}</el-dropdown-item>
-        <el-dropdown-item command="classification" v-if="state.active?.includes('probot')">{{
+        <el-dropdown-item command="classification">{{
           t('setting.classification')
         }}</el-dropdown-item>
+        <el-dropdown-item command="carousel" v-if="userStore.userInfo.admin">{{
+          t('setting.carousel')
+        }}</el-dropdown-item>
+        <el-dropdown-item command="platformStatistics" v-if="userStore.userInfo.admin && !isPro">{{
+          t('setting.platformStatistics')
+        }}</el-dropdown-item>
+        <el-dropdown-item command="gitAccount">Gitlab账号</el-dropdown-item>
+        <!-- <el-dropdown-item command="agent">AI Agent</el-dropdown-item> -->
+        <!-- <el-dropdown-item command="ide">AI Ide</el-dropdown-item> -->
         <el-dropdown-item command="logout">登出</el-dropdown-item>
       </el-dropdown-menu>
     </template>
@@ -106,8 +144,9 @@ watch(
             </template>
             <template #default>
               <span
-                >去<el-link type="primary" href="https://xxxxxxxx" target="_blank">创建</el-link>z
-                token</span
+                >去<el-link type="primary" href="https://z.ozx.yling.top/z/info" target="_blank"
+                  >创建</el-link
+                >z token</span
               >
             </template>
           </el-popover>

@@ -2,7 +2,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteTeam } from '@/api/probot-team'
 
 export const removeTeam = (workspaceId: string | number, callback: () => void) => {
-  ElMessageBox.confirm('确定要删除当前团队?', '提示', {
+  ElMessageBox.confirm('确定要删除当前空间?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'

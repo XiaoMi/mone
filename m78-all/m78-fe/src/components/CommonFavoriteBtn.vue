@@ -1,3 +1,8 @@
+<!--
+ * @Description: 
+ * @Date: 2024-01-16 18:13:07
+ * @LastEditTime: 2024-03-15 10:59:37
+-->
 <template>
   <el-tooltip :content="props.favoriteData?.favorite ? removeText : addFavText">
     <el-button
@@ -79,7 +84,8 @@ const collectFn = () => {
 }
 </script>
 <style scoped lang="scss">
-.favorite-icon {
+.favorite-icon{
+
   width: 40px;
   height: 40px;
   border-radius: 50%;

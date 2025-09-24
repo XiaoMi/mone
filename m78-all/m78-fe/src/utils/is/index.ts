@@ -26,9 +26,7 @@ export function isArray<T extends any[]>(value: T | unknown): value is T {
   return Object.prototype.toString.call(value) === '[object Array]'
 }
 
-export function isFunction<T extends (...args: any[]) => any | void | never>(
-  value: T | unknown
-): value is T {
+export function isFunction<T extends (...args: any[]) => any | void | never>(value: T | unknown): value is T {
   return Object.prototype.toString.call(value) === '[object Function]'
 }
 

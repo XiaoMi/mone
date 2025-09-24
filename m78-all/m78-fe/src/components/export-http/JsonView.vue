@@ -1,8 +1,9 @@
 <template>
-  <json-viewer :value="props.modelValue" :expanded="true" :expand-depth="2" />
+  <json-viewer :value="modelValue" :expanded="true" :expand-depth="2" />
 </template>
 
 <script setup>
+import { reactive, ref } from 'vue'
 const props = defineProps({
   modelValue: { default: {} }
 })

@@ -1,3 +1,8 @@
+<!--
+ * @Description:
+ * @Date: 2024-03-06 14:29:51
+ * @LastEditTime: 2024-08-09 19:37:07
+-->
 <template>
   <div :class="'base-icon icon-item' + props.index + ' ' + props.size">
     <el-image v-if="isImage" :src="props.index" fit="cover"></el-image>
@@ -20,7 +25,6 @@ const props = defineProps({
 })
 
 const isImage = computed(() => {
-  console.log(props.index)
   if (typeof props.index === 'string' && props.index?.startsWith('http')) return true
   return false
 })
@@ -38,7 +42,8 @@ const uploadIcon = [
   'icon-tubiao-1',
   'icon-tubiao-',
   'icon-tuandui',
-  'icon-aixin1'
+  'icon-aixin1',
+  'icon-db-table'
 ]
 </script>
 
@@ -55,6 +60,14 @@ const uploadIcon = [
 
   .iconfont {
     font-size: 40px;
+  }
+  &.mini {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    .iconfont {
+      font-size: 14px;
+    }
   }
   &.small {
     width: 40px;
@@ -156,6 +169,13 @@ const uploadIcon = [
       #f99185 52%,
       #cf556c 100%
     );
+    .iconfont {
+      color: #fff;
+    }
+  }
+  &.icon-item12 {
+    background-color: rgb(223, 245, 249);
+    background-image: radial-gradient(180px at -5% -20%, #52c1fa, #dbefff);
     .iconfont {
       color: #fff;
     }

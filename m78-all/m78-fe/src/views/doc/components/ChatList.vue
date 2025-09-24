@@ -13,6 +13,7 @@
 </template>
 
 <script setup>
+// import MyText from './MyText.vue'
 import { Message } from '@/components/common-message'
 import { computed, watch, nextTick, ref } from 'vue'
 const props = defineProps({

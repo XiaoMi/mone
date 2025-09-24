@@ -49,7 +49,10 @@ export function getFlowList<T = any>(data) {
   return post<T>({
     url: '/v1/flow/list ',
     data,
-    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      workSpaceId: data.workSpaceId
+    }
   })
 }
 
@@ -72,6 +75,14 @@ export function getPluginList<T = any>() {
   })
 }
 
+export function getPluginsSearch<T = any>(data) {
+  return post<T>({
+    url: '/v1/botplugin/searchList',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
 export function getFlowStatus<T = any>(data?: any, onDownloadProgress?: any) {
   return post<T>({
     url: '/v1/flow/flowStatus/stream',
@@ -87,6 +98,85 @@ export function getCodeGen<T = any>(data?: any, onDownloadProgress?: any) {
     url: '/v1/code/generate',
     data,
     onDownloadProgress: onDownloadProgress,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+// 生成SQl
+export function getSQLGen<T = any>(data?: any) {
+  return post<T>({
+    url: '/v1/ai_table/generateSqlByComment',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function getTables<T = any>(data) {
+  return get<T>({
+    url: '/v1/ai_table/getTableByWorkspaceId',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function stopRunApi<T = any>(data) {
+  return post<T>({
+    url: '/v1/flow/cancel',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function copyFlowApi<T = any>(data) {
+  return get<T>({
+    url: '/v1/flow/copy',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function continueFlow<T = any>(data) {
+  return post<T>({
+    url: '/v1/flow/operate',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function importFlow<T = any>(data) {
+  return post<T>({
+    url: '/v1/flow/import',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function uploadLLMImg<T = any>(data) {
+  return post<T>({
+    url: '/v1/file/image/upload',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+
+export function uploadLLMPdf<T = any>(data) {
+  return post<T>({
+    url: '/v1/file/pdf/upload',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+
+export function getOperators<T = any>(data) {
+  return get<T>({
+    url: '/v1/flow/condition/operators',
+    data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }

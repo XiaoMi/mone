@@ -9,51 +9,54 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps } from 'vue'
-import mdKatex from '@traptitech/markdown-it-katex'
-import mila from 'markdown-it-link-attributes'
-import hljs from 'highlight.js'
-import MarkdownIt from 'markdown-it'
+import { defineProps } from "vue";
+import mdKatex from "@traptitech/markdown-it-katex";
+import mila from "markdown-it-link-attributes";
+import hljs from "highlight.js";
+import MarkdownIt from "markdown-it";
 
-import './assets/scss/github-markdown.scss'
-import './assets/scss/highlight.scss'
-import './assets/scss/MarkdownMessage.scss'
+import "./assets/scss/github-markdown.scss";
+import "./assets/scss/highlight.scss";
+import "./assets/scss/MarkdownMessage.scss";
 
 /**  传递过来的props和emit */
 const props = defineProps({
   message: {
     type: String,
-    default: ''
-  }
-})
+    default: "",
+  },
+});
 
 /**  init */
 const mdi = new MarkdownIt({
   html: false,
   linkify: true,
   highlight: (code: string, language: string) => {
-    const validLang = !!(language && hljs.getLanguage(language))
+    const validLang = !!(language && hljs.getLanguage(language));
     if (validLang) {
-      const lang = language ?? ''
-      return highlightBlock(hljs.highlight(code, { language: lang }).value, lang)
+      const lang = language ?? "";
+      return highlightBlock(
+        hljs.highlight(code, { language: lang }).value,
+        lang
+      );
     }
-    return highlightBlock(hljs.highlightAuto(code).value, '')
-  }
-})
+    return highlightBlock(hljs.highlightAuto(code).value, "");
+  },
+});
 
-mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
+mdi.use(mila, { attrs: { target: "_blank", rel: "noopener" } });
 mdi.use(mdKatex, {
-  blockClass: 'katexmath-block rounded-md p-[10px]',
-  errorColor: ' #cc0000'
-})
+  blockClass: "katexmath-block rounded-md p-[10px]",
+  errorColor: " #cc0000",
+});
 
 function highlightBlock(str: string, lang?: string) {
-  return `<pre class="code-block-wrapper"><div class="code-block-header"><span class="code-block-header__lang">${lang}</span></div><code class="hljs code-block-body ${lang}">${str}</code></pre>`
+  return `<pre class="code-block-wrapper"><div class="code-block-header"><span class="code-block-header__lang">${lang}</span></div><code class="hljs code-block-body ${lang}">${str}</code></pre>`;
 }
 
 const messageText = () => {
-  return mdi.render(props.message)
-}
+  return mdi.render(props.message);
+};
 </script>
 
 <style scoped lang="scss">
@@ -106,7 +109,7 @@ const messageText = () => {
   }
 
   code {
-    font-family: 'Courier New', Courier, monospace !important;
+    font-family: "Courier New", Courier, monospace !important;
   }
 }
 
