@@ -424,12 +424,27 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     @Override
     public List<Map<String, Object>> extractEntities(String text) {
+        return extractEntities(text, new HashMap<>());
+    }
+
+    /**
+     * 从文本中提取实体，支持过滤器
+     * 
+     * @param text 输入文本
+     * @param filters 过滤器，包含用户身份信息
+     * @return 实体列表
+     */
+    public List<Map<String, Object>> extractEntities(String text, Map<String, Object> filters) {
         try {
+            // 构建用户身份
+            String userIdentity = GraphUtils.buildUserIdentity(filters);
+            
+            // 处理系统prompt，替换USER_ID占位符
+            String systemPrompt = GraphUtils.EXTRACT_ENTITIES_PROMPT.replace("USER_ID", userIdentity);
+            
             // 构建提取实体的提示词
             List<Map<String, Object>> messages = Arrays.asList(
-                Map.of("role", "system", "content",
-                    "You are a smart assistant who understands entities and their types in a given text. " +
-                    "Extract all the entities from the text. ***DO NOT*** answer the question itself if the given text is a question."),
+                Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", text)
             );
 
@@ -494,8 +509,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     private Map<String, String> retrieveNodesFromData(String data, Map<String, Object> filters) {
         try {
-            // 使用extractEntities方法来智能提取实体
-            List<Map<String, Object>> entities = extractEntities(data);
+            // 使用extractEntities方法来智能提取实体，传递用户身份过滤器
+            List<Map<String, Object>> entities = extractEntities(data, filters);
             Map<String, String> entityTypeMap = new HashMap<>();
 
             for (Map<String, Object> entity : entities) {
@@ -543,15 +558,60 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     @Override
     public List<GraphEntity> establishRelations(String text) {
-        try {
-            // 构建提取关系的提示词
-            List<Map<String, Object>> messages = Arrays.asList(
-                Map.of("role", "system", "content", GraphUtils.EXTRACT_RELATIONS_PROMPT),
-                Map.of("role", "user", "content", text)
-            );
+        return establishRelations(text, "default_user");
+    }
 
-            // 获取对应的工具定义
-            List<Map<String, Object>> tools = Arrays.asList(Map.of("tool", GraphTools.RELATIONS_TOOL));
+    /**
+     * 从文本中建立实体关系，支持指定用户ID
+     * 
+     * @param text 输入文本
+     * @param userId 用户ID
+     * @return 关系列表
+     */
+    public List<GraphEntity> establishRelations(String text, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
+        try {
+            // 创建包含用户ID的过滤器
+            Map<String, Object> filters = new HashMap<>();
+            filters.put("user_id", userId);
+
+            // 首先提取实体
+            Map<String, String> entityTypeMap = retrieveNodesFromData(text, filters);
+
+            // 构建用户身份
+            String userIdentity = GraphUtils.buildUserIdentity(filters);
+
+            // 检查自定义prompt配置
+            String customPrompt = config.getCustomPrompt();
+
+            // 准备系统prompt
+            String systemPrompt;
+            List<Map<String, Object>> messages = new ArrayList<>();
+
+            if (customPrompt != null && !customPrompt.trim().isEmpty()) {
+                systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, customPrompt);
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                messages.add(Map.of("role", "user", "content", text));
+            } else {
+                systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, null);
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                String userContent = String.format("List of entities: %s. \n\nText: %s",
+                    new ArrayList<>(entityTypeMap.keySet()), text);
+                messages.add(Map.of("role", "user", "content", userContent));
+            }
+
+            // 准备工具 - 根据LLM提供商选择结构化工具
+            List<Map<String, Object>> tools = new ArrayList<>();
+            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
+
+            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
+                tools.add(Map.of("tool", GraphTools.RELATIONS_STRUCT_TOOL));
+            } else {
+                tools.add(Map.of("tool", GraphTools.RELATIONS_TOOL));
+            }
 
             // 调用LLM进行关系提取
             Map<String, Object> response = llm.generateResponseWithTools(messages, tools);

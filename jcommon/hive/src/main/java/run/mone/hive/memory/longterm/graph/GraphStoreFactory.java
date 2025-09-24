@@ -28,10 +28,6 @@ public class GraphStoreFactory {
         switch (config.getProvider()) {
             case NEO4J:
                 return new Neo4jGraphStore(config);
-            case MEMGRAPH:
-                return new MemgraphGraphStore(config);
-            case NEPTUNE:
-                return new NeptuneGraphStore(config);
             case KUZU:
                 return new KuzuGraphStore(config);
             default:
