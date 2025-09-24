@@ -64,7 +64,47 @@ public class NeptuneGraphStore implements GraphStoreBase {
     }
     
     @Override
+    public void deleteAll(String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
     public void deleteAll() {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public Map<String, Object> addMemory(String source, String destination, String relationship, String sourceType, String destinationType, String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public Map<String, Object> updateMemory(String source, String destination, String relationship, String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public Map<String, Object> deleteMemory(String source, String destination, String relationship, String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public List<Map<String, Object>> search(String query, int limit, String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public List<Map<String, Object>> getAll(int limit, String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public boolean relationshipExists(String source, String destination, String relationship, String userId) {
+        throw new UnsupportedOperationException("Neptune implementation coming soon");
+    }
+
+    @Override
+    public List<Map<String, Object>> getNodeRelationships(String nodeName, String userId) {
         throw new UnsupportedOperationException("Neptune implementation coming soon");
     }
 }

@@ -132,19 +132,23 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     @Override
     public Map<String, Object> addMemory(String source, String destination, String relationship,
-                                        String sourceType, String destinationType) {
+                                        String sourceType, String destinationType, String userId) {
         if (!GraphUtils.validateGraphEntity(source, destination, relationship)) {
             throw new IllegalArgumentException("Invalid graph entity parameters");
         }
 
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try (Session session = driver.session()) {
             Map<String, Object> filters = new HashMap<>();
-            filters.put("user_id", "default_user"); // 这里应该从上下文获取用户ID
+            filters.put("user_id", userId);
 
             Map<String, Object> result = addEntity(session, source, destination, relationship,
                                                  sourceType, destinationType, filters);
 
-            log.info("Added graph memory: {} --[{}]-> {}", source, relationship, destination);
+            log.info("Added graph memory for user {}: {} --[{}]-> {}", userId, source, relationship, destination);
             return result;
 
         } catch (Exception e) {
@@ -210,9 +214,13 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public Map<String, Object> updateMemory(String source, String destination, String relationship) {
+    public Map<String, Object> updateMemory(String source, String destination, String relationship, String userId) {
         if (!GraphUtils.validateGraphEntity(source, destination, relationship)) {
             throw new IllegalArgumentException("Invalid graph entity parameters");
+        }
+
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
         }
 
         try (Session session = driver.session()) {
@@ -226,11 +234,11 @@ public class Neo4jGraphStore implements GraphStoreBase {
             Map<String, Object> params = new HashMap<>();
             params.put("source_name", source);
             params.put("dest_name", destination);
-            params.put("user_id", "default_user");
+            params.put("user_id", userId);
 
             session.run(cypher, params);
 
-            log.info("Updated graph memory: {} --[{}]-> {}", source, relationship, destination);
+            log.info("Updated graph memory for user {}: {} --[{}]-> {}", userId, source, relationship, destination);
 
             Map<String, Object> result = new HashMap<>();
             result.put("source", source);
@@ -248,9 +256,13 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public Map<String, Object> deleteMemory(String source, String destination, String relationship) {
+    public Map<String, Object> deleteMemory(String source, String destination, String relationship, String userId) {
         if (!GraphUtils.validateGraphEntity(source, destination, relationship)) {
             throw new IllegalArgumentException("Invalid graph entity parameters");
+        }
+
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
         }
 
         try (Session session = driver.session()) {
@@ -265,11 +277,11 @@ public class Neo4jGraphStore implements GraphStoreBase {
             Map<String, Object> params = new HashMap<>();
             params.put("source_name", source);
             params.put("dest_name", destination);
-            params.put("user_id", "default_user");
+            params.put("user_id", userId);
 
             session.run(cypher, params);
 
-            log.info("Deleted graph memory: {} --[{}]-> {}", source, relationship, destination);
+            log.info("Deleted graph memory for user {}: {} --[{}]-> {}", userId, source, relationship, destination);
 
             Map<String, Object> result = new HashMap<>();
             result.put("source", source);
@@ -287,10 +299,14 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public List<Map<String, Object>> search(String query, int limit) {
+    public List<Map<String, Object>> search(String query, int limit, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try (Session session = driver.session()) {
             Map<String, Object> filters = new HashMap<>();
-            filters.put("user_id", "default_user");
+            filters.put("user_id", userId);
 
             // 提取查询中的实体
             Map<String, String> entityTypeMap = retrieveNodesFromData(query, filters);
@@ -311,7 +327,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 .map(searchOutput::get)
                 .collect(Collectors.toList());
 
-            log.info("Returned {} search results", searchResults.size());
+            log.info("Returned {} search results for user {}", searchResults.size(), userId);
             return searchResults;
 
         } catch (Exception e) {
@@ -370,7 +386,11 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public List<Map<String, Object>> getAll(int limit) {
+    public List<Map<String, Object>> getAll(int limit, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try (Session session = driver.session()) {
             String cypher = String.format("""
                 MATCH (n %s {user_id: $user_id})-[r]->(m %s {user_id: $user_id})
@@ -379,7 +399,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 """, nodeLabel, nodeLabel);
 
             Map<String, Object> params = new HashMap<>();
-            params.put("user_id", "default_user");
+            params.put("user_id", userId);
             params.put("limit", limit);
 
             Result result = session.run(cypher, params);
@@ -393,7 +413,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 results.add(memory);
             });
 
-            log.info("Retrieved {} relationships", results.size());
+            log.info("Retrieved {} relationships for user {}", results.size(), userId);
             return results;
 
         } catch (Exception e) {
@@ -615,7 +635,11 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public boolean relationshipExists(String source, String destination, String relationship) {
+    public boolean relationshipExists(String source, String destination, String relationship, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try (Session session = driver.session()) {
             String cypher = String.format("""
                 MATCH (n {name: $source_name, user_id: $user_id})-[r:%s]->(m {name: $dest_name, user_id: $user_id})
@@ -625,7 +649,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
             Map<String, Object> params = new HashMap<>();
             params.put("source_name", source);
             params.put("dest_name", destination);
-            params.put("user_id", "default_user");
+            params.put("user_id", userId);
 
             Result result = session.run(cypher, params);
             return result.hasNext() && result.next().get("count").asInt() > 0;
@@ -637,16 +661,20 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public List<Map<String, Object>> getNodeRelationships(String nodeName) {
+    public List<Map<String, Object>> getNodeRelationships(String nodeName, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try (Session session = driver.session()) {
             String cypher = String.format("""
-                MATCH (n {name: $node_name, user_id: $user_id})-[r]-(m)
+                MATCH (n {name: $node_name, user_id: $user_id})-[r]-(m {user_id: $user_id})
                 RETURN n.name as source, type(r) as relationship, m.name as destination
                 """);
 
             Map<String, Object> params = new HashMap<>();
             params.put("node_name", nodeName);
-            params.put("user_id", "default_user");
+            params.put("user_id", userId);
 
             Result result = session.run(cypher, params);
             List<Map<String, Object>> relationships = new ArrayList<>();
@@ -668,11 +696,15 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public void deleteAll() {
+    public void deleteAll(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try (Session session = driver.session()) {
             session.run("MATCH (n {user_id: $user_id}) DETACH DELETE n",
-                       Map.of("user_id", "default_user"));
-            log.info("Deleted all graph data from Neo4j");
+                       Map.of("user_id", userId));
+            log.info("Deleted all graph data for user {} from Neo4j", userId);
 
         } catch (Exception e) {
             log.error("Error deleting all graph data from Neo4j", e);

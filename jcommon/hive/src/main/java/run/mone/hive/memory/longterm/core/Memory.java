@@ -109,7 +109,7 @@ public class Memory implements MemoryBase {
                 () -> addToVectorStore(messageList, processedMetadata, effectiveFilters, infer), executor);
 
         CompletableFuture<List<String>> graphFuture = CompletableFuture.supplyAsync(
-                () -> addToGraph(messageList, effectiveFilters), executor);
+                () -> addToGraph(messageList, effectiveFilters, processedMetadata), executor);
 
         try {
             List<MemoryItem> vectorResult = vectorFuture.get();
@@ -680,7 +680,7 @@ public class Memory implements MemoryBase {
         }
     }
 
-    private List<String> addToGraph(List<Message> messages, Map<String, Object> filters) {
+    private List<String> addToGraph(List<Message> messages, Map<String, Object> filters, Map<String, Object> metadata) {
         if (!enableGraph || graphStore == null) {
             return new ArrayList<>();
         }
@@ -691,14 +691,14 @@ public class Memory implements MemoryBase {
 
             // 设置用户ID过滤器
             if (filters.get("user_id") == null) {
-                filters.put("user_id", "user");
+                filters.put("user_id", metadata.get("user_id"));
             }
 
             // 从文本中提取实体关系
             List<GraphStoreBase.GraphEntity> entities = graphStore.establishRelations(parsedMessages);
 
             // 添加关系到图存储
-            List<Map<String, Object>> addResults = graphStore.addMemories(entities);
+            List<Map<String, Object>> addResults = graphStore.addMemories(entities, metadata);
             log.debug("{}", addResults);
 
             // 格式化返回的关系
