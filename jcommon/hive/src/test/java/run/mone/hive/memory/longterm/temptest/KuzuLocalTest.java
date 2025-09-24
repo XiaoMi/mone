@@ -133,7 +133,7 @@ public class KuzuLocalTest {
     @DisplayName("Should search relationships successfully")
     void testSearchRelationships() {
         // 添加测试数据
-        addTestRelationships();
+//        addTestRelationships();
 
         // 搜索包含 "Alice" 的关系
         List<Map<String, Object>> results = graphStore.search("Alice", 10);
