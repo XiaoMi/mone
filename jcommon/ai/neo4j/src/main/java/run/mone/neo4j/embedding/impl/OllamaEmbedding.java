@@ -1,9 +1,9 @@
-package run.mone.hive.memory.longterm.embeddings.impl;
+package run.mone.neo4j.embedding.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.Data;
-import run.mone.hive.memory.longterm.config.EmbedderConfig;
-import run.mone.hive.memory.longterm.embeddings.EmbeddingBase;
+import run.mone.neo4j.embedding.config.EmbedderConfig;
+import run.mone.neo4j.embedding.EmbeddingBase;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
@@ -34,7 +34,7 @@ public class OllamaEmbedding implements EmbeddingBase {
     public OllamaEmbedding(EmbedderConfig config) {
         this.config = config;
         this.httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
+            .connectTimeout(Duration.ofSeconds(config.getConnectTimeout()))
             .build();
         this.gson = new Gson();
         
@@ -66,7 +66,7 @@ public class OllamaEmbedding implements EmbeddingBase {
                 .uri(URI.create(apiUrl))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(request)))
-                .timeout(Duration.ofMinutes(3));
+                .timeout(Duration.ofSeconds(config.getReadTimeout()));
 
             // 添加自定义请求头
             if (config.getCustomHeaders() != null) {
@@ -105,7 +105,7 @@ public class OllamaEmbedding implements EmbeddingBase {
         
         // Ollama的嵌入API一次只能处理一个文本
         for (String text : texts) {
-            embeddings.add(embed(text, "add"));
+            embeddings.add(embed(text, memoryAction));
         }
         
         return embeddings;
@@ -119,18 +119,7 @@ public class OllamaEmbedding implements EmbeddingBase {
         }
         
         // 根据模型返回默认维度
-        String model = config.getModel().toLowerCase();
-        if (model.contains("embeddinggemma")) {
-            return 768;
-        } else if (model.contains("nomic-embed-text")) {
-            return 768;
-        } else if (model.contains("mxbai-embed-large")) {
-            return 1024;
-        } else if (model.contains("all-minilm")) {
-            return 384;
-        } else {
-            return 768; // 默认维度
-        }
+        return getModelDimensions(config.getModel());
     }
     
     private List<Double> parseEmbeddingResponse(String responseBody) {
@@ -262,9 +251,13 @@ public class OllamaEmbedding implements EmbeddingBase {
      * 获取模型维度信息
      */
     public static int getModelDimensions(String model) {
+        if (model == null) {
+            return 768; // 默认
+        }
+        
         switch (model.toLowerCase()) {
             case "embeddinggemma":
-                return 768;
+                return 3584;
             case "nomic-embed-text":
             case "bge-base":
                 return 768;

@@ -18,12 +18,15 @@ import tech.amikos.chromadb.Embedding;
 import tech.amikos.chromadb.embeddings.DefaultEmbeddingFunction;
 import tech.amikos.chromadb.embeddings.EmbeddingFunction;
 import tech.amikos.chromadb.embeddings.WithParam;
+import tech.amikos.chromadb.embeddings.ollama.OllamaEmbeddingFunction;
 import tech.amikos.chromadb.embeddings.openai.CreateEmbeddingRequest;
 import tech.amikos.chromadb.embeddings.openai.CreateEmbeddingResponse;
 import tech.amikos.chromadb.handler.ApiException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.google.gson.Gson;
 
@@ -43,6 +46,7 @@ public class ChromaVectorStore implements VectorStoreBase {
 
     public static final String DEFAULT_EMBEDDING_FUNCTION = "default";
     public static final String OPENAI_EMBEDDING_FUNCTION = "openai";
+    public static final String OLLAMA_EMBEDDING_FUNCTION = "ollama";
 
     public ChromaVectorStore(VectorStoreConfig config) {
         this.config = config;
@@ -80,8 +84,7 @@ public class ChromaVectorStore implements VectorStoreBase {
             String collectionName = config.getCollectionName();
             EmbeddingFunction ef = config.getEmbeddingFunction() != null && config.getEmbeddingFunction().equals(OPENAI_EMBEDDING_FUNCTION)
             ? new OpenAIEmbeddingFunction(WithParam.apiKey(config.getApiKey()), WithParam.model("text-embedding-3-small"), WithParam.baseAPI(config.getBaseUrl()))
-            : new DefaultEmbeddingFunction();
-
+            : new OllamaEmbeddingFunction(WithParam.defaultModel("embeddinggemma"));
             try {
                 return chromaClient.getCollection(collectionName, ef);
             } catch (ApiException e) {
@@ -322,8 +325,8 @@ public class ChromaVectorStore implements VectorStoreBase {
     @Override
     public List<MemoryItem> list(Map<String, Object> filters, int limit) {
         try {
-            Map<String, Object> whereClause = generateWhereClause(filters);
-            GetResult result = collection.get(null, null, whereClause);
+            // no filter when get all
+            GetResult result = collection.get(null, null, null);
             return parseGetResponseList(result);
         } catch (Exception e) {
             log.error("Failed to list vectors: {}", e.getMessage());

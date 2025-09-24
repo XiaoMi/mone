@@ -14,8 +14,7 @@ import java.util.Map;
 /**
  * 记忆工具
  * 用于查询、保存和管理长期记忆
- *
- * @author assistant
+ * @author wangmin
  */
 public class MemoryTool implements ITool {
 
