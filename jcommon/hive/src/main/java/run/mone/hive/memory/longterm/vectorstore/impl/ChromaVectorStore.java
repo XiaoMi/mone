@@ -91,7 +91,7 @@ public class ChromaVectorStore implements VectorStoreBase {
                 ef = new OpenAIEmbeddingFunction(WithParam.apiKey(config.getApiKey()), WithParam.model("text-embedding-3-small"), WithParam.baseAPI(config.getBaseUrl()));
             }
             if (embeddingFunction.equals(OLLAMA_EMBEDDING_FUNCTION)) {
-                ef = new OllamaEmbeddingFunction(WithParam.model("embeddinggemma"), WithParam.baseAPI("http://localhost:11434"));
+                ef = new OllamaEmbeddingFunction(WithParam.model("embeddinggemma"));
             }
 
             try {
