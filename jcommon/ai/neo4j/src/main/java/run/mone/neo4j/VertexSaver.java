@@ -16,7 +16,6 @@ import java.util.ArrayList;
 
 /**
  * 顶点保存器 - 将List<Map>数据保存为Neo4j顶点
- * 参考MoneCodeParser实现
  */
 @Slf4j
 @Data
@@ -699,5 +698,256 @@ public class VertexSaver {
      */
     public List<VectorSearchResult> vectorSimilaritySearchByText(String indexName, String queryText) {
         return vectorSimilaritySearchByText(indexName, queryText, 5, "Document");
+    }
+
+    /**
+     * 在两个顶点之间创建边
+     * 
+     * @param fromVertexName 起始顶点名称
+     * @param toVertexName 目标顶点名称
+     * @param relationshipType 关系类型
+     * @param fromLabel 起始顶点标签，默认为"Vertex"
+     * @param toLabel 目标顶点标签，默认为"Vertex"
+     * @param properties 边的属性，可以为null
+     * @return 是否成功创建边
+     */
+    public boolean createEdge(String fromVertexName, String toVertexName, String relationshipType,
+                             String fromLabel, String toLabel, Map<String, Object> properties) {
+        if (fromVertexName == null || fromVertexName.isEmpty()) {
+            log.error("From vertex name cannot be null or empty");
+            return false;
+        }
+        
+        if (toVertexName == null || toVertexName.isEmpty()) {
+            log.error("To vertex name cannot be null or empty");
+            return false;
+        }
+        
+        if (relationshipType == null || relationshipType.isEmpty()) {
+            log.error("Relationship type cannot be null or empty");
+            return false;
+        }
+        
+        if (fromLabel == null || fromLabel.isEmpty()) {
+            fromLabel = "Vertex";
+        }
+        
+        if (toLabel == null || toLabel.isEmpty()) {
+            toLabel = "Vertex";
+        }
+        
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
+             Session session = driver.session()) {
+            
+            // 构建Cypher查询语句
+            StringBuilder cypher = new StringBuilder();
+            cypher.append("MATCH (from:").append(fromLabel).append(" {name: $fromName}), ");
+            cypher.append("(to:").append(toLabel).append(" {name: $toName}) ");
+            cypher.append("MERGE (from)-[r:").append(relationshipType).append("]->(to) ");
+            
+            // 如果有属性，则设置属性
+            if (properties != null && !properties.isEmpty()) {
+                cypher.append("ON CREATE SET ");
+                boolean first = true;
+                for (String key : properties.keySet()) {
+                    if (!first) {
+                        cypher.append(", ");
+                    }
+                    cypher.append("r.").append(key).append(" = $").append(key);
+                    first = false;
+                }
+                cypher.append(" ON MATCH SET ");
+                first = true;
+                for (String key : properties.keySet()) {
+                    if (!first) {
+                        cypher.append(", ");
+                    }
+                    cypher.append("r.").append(key).append(" = $").append(key);
+                    first = false;
+                }
+            }
+            
+            cypher.append(" RETURN r");
+            
+            // 准备参数
+            Map<String, Object> params = new HashMap<>();
+            params.put("fromName", fromVertexName);
+            params.put("toName", toVertexName);
+            if (properties != null) {
+                params.putAll(properties);
+            }
+            
+            Result result = session.run(cypher.toString(), params);
+            
+            if (result.hasNext()) {
+                log.info("Successfully created edge '{}' from vertex '{}' to vertex '{}'", 
+                        relationshipType, fromVertexName, toVertexName);
+                return true;
+            } else {
+                log.error("Failed to create edge. One or both vertices may not exist: '{}' -> '{}'", 
+                         fromVertexName, toVertexName);
+                return false;
+            }
+            
+        } catch (Exception e) {
+            log.error("Error creating edge '{}' from vertex '{}' to vertex '{}'", 
+                     relationshipType, fromVertexName, toVertexName, e);
+            return false;
+        }
+    }
+    
+    /**
+     * 在两个顶点之间创建边（使用默认标签）
+     * 
+     * @param fromVertexName 起始顶点名称
+     * @param toVertexName 目标顶点名称
+     * @param relationshipType 关系类型
+     * @return 是否成功创建边
+     */
+    public boolean createEdge(String fromVertexName, String toVertexName, String relationshipType) {
+        return createEdge(fromVertexName, toVertexName, relationshipType, "Vertex", "Vertex", null);
+    }
+    
+    /**
+     * 在两个顶点之间创建边（指定边的属性）
+     * 
+     * @param fromVertexName 起始顶点名称
+     * @param toVertexName 目标顶点名称
+     * @param relationshipType 关系类型
+     * @param properties 边的属性
+     * @return 是否成功创建边
+     */
+    public boolean createEdge(String fromVertexName, String toVertexName, String relationshipType,
+                             Map<String, Object> properties) {
+        return createEdge(fromVertexName, toVertexName, relationshipType, "Vertex", "Vertex", properties);
+    }
+
+    /**
+     * 查询一个顶点连接的所有相邻顶点（只查一层关系）
+     * 
+     * @param vertexName 顶点名称
+     * @param label 顶点标签，默认为"Vertex"
+     * @param direction 关系方向："outgoing"(出边)、"incoming"(入边)、"both"(双向)，默认为"both"
+     * @param relationshipType 关系类型过滤，可以为null表示不过滤
+     * @return 相邻顶点列表，每个元素包含顶点数据和关系信息
+     */
+    public List<Map<String, Object>> getNeighborVertices(String vertexName, String label, 
+                                                         String direction, String relationshipType) {
+        if (vertexName == null || vertexName.isEmpty()) {
+            log.error("Vertex name cannot be null or empty");
+            return new ArrayList<>();
+        }
+        
+        if (label == null || label.isEmpty()) {
+            label = "Vertex";
+        }
+        
+        if (direction == null || direction.isEmpty()) {
+            direction = "both";
+        }
+        
+        List<Map<String, Object>> neighbors = new ArrayList<>();
+        
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
+             Session session = driver.session()) {
+            
+            // 构建Cypher查询语句
+            StringBuilder cypher = new StringBuilder();
+            cypher.append("MATCH (v:").append(label).append(" {name: $vertexName})");
+            
+            // 根据方向构建关系模式
+            String relationPattern;
+            if ("outgoing".equalsIgnoreCase(direction)) {
+                relationPattern = relationshipType != null ? 
+                    String.format("-[r:%s]->(neighbor)", relationshipType) : "-[r]->(neighbor)";
+            } else if ("incoming".equalsIgnoreCase(direction)) {
+                relationPattern = relationshipType != null ? 
+                    String.format("<-[r:%s]-(neighbor)", relationshipType) : "<-[r]-(neighbor)";
+            } else { // both
+                relationPattern = relationshipType != null ? 
+                    String.format("-[r:%s]-(neighbor)", relationshipType) : "-[r]-(neighbor)";
+            }
+            
+            cypher.append(relationPattern);
+            cypher.append(" RETURN neighbor, r, type(r) as relationshipType");
+            
+            Map<String, Object> params = new HashMap<>();
+            params.put("vertexName", vertexName);
+            
+            log.info("Querying neighbors for vertex '{}' with direction '{}' and relationship type '{}'", 
+                    vertexName, direction, relationshipType != null ? relationshipType : "any");
+            
+            Result result = session.run(cypher.toString(), params);
+            
+            while (result.hasNext()) {
+                var record = result.next();
+                Map<String, Object> neighbor = record.get("neighbor").asMap();
+                Map<String, Object> relationship = record.get("r").asMap();
+                String relType = record.get("relationshipType").asString();
+                
+                // 构建结果对象，包含邻居顶点和关系信息
+                Map<String, Object> neighborInfo = new HashMap<>();
+                neighborInfo.put("vertex", neighbor);
+                neighborInfo.put("relationship", relationship);
+                neighborInfo.put("relationshipType", relType);
+                neighborInfo.put("neighborName", neighbor.get("name"));
+                
+                neighbors.add(neighborInfo);
+                
+                log.debug("Found neighbor: '{}' with relationship '{}'", 
+                         neighbor.get("name"), relType);
+            }
+            
+            log.info("Found {} neighbors for vertex '{}'", neighbors.size(), vertexName);
+            
+        } catch (Exception e) {
+            log.error("Error querying neighbors for vertex '{}' with label '{}'", vertexName, label, e);
+            throw new RuntimeException("Failed to query neighbor vertices", e);
+        }
+        
+        return neighbors;
+    }
+    
+    /**
+     * 查询一个顶点连接的所有相邻顶点（使用默认参数）
+     * 
+     * @param vertexName 顶点名称
+     * @return 相邻顶点列表
+     */
+    public List<Map<String, Object>> getNeighborVertices(String vertexName) {
+        return getNeighborVertices(vertexName, "Vertex", "both", null);
+    }
+    
+    /**
+     * 查询一个顶点的出边相邻顶点
+     * 
+     * @param vertexName 顶点名称
+     * @param label 顶点标签
+     * @return 出边相邻顶点列表
+     */
+    public List<Map<String, Object>> getOutgoingNeighbors(String vertexName, String label) {
+        return getNeighborVertices(vertexName, label, "outgoing", null);
+    }
+    
+    /**
+     * 查询一个顶点的入边相邻顶点
+     * 
+     * @param vertexName 顶点名称
+     * @param label 顶点标签
+     * @return 入边相邻顶点列表
+     */
+    public List<Map<String, Object>> getIncomingNeighbors(String vertexName, String label) {
+        return getNeighborVertices(vertexName, label, "incoming", null);
+    }
+    
+    /**
+     * 查询指定关系类型的相邻顶点
+     * 
+     * @param vertexName 顶点名称
+     * @param relationshipType 关系类型
+     * @return 指定关系类型的相邻顶点列表
+     */
+    public List<Map<String, Object>> getNeighborsByRelationType(String vertexName, String relationshipType) {
+        return getNeighborVertices(vertexName, "Vertex", "both", relationshipType);
     }
 }

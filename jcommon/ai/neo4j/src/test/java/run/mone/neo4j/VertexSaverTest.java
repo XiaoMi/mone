@@ -303,6 +303,214 @@ public class VertexSaverTest {
         assertEquals(0L, testVertex.get("category")); // 100 % 10 = 0
     }
 
+    @Test
+    public void testCreateEdge() {
+        // 先创建两个测试顶点
+        List<Map<String, Object>> vertices = createTestVertices();
+        vertexSaver.saveVertices(vertices, TEST_LABEL);
+        
+        // 测试创建基本边
+        boolean result = vertexSaver.createEdge("TestPerson1", "TestPerson2", "KNOWS", TEST_LABEL, TEST_LABEL, null);
+        assertTrue("Should successfully create edge", result);
+        
+        // 验证边是否创建成功 - 通过查询邻居验证
+        List<Map<String, Object>> neighbors = vertexSaver.getNeighborVertices("TestPerson1", TEST_LABEL, "outgoing", "KNOWS");
+        assertEquals("Should have 1 neighbor", 1, neighbors.size());
+        assertEquals("Neighbor should be TestPerson2", "TestPerson2", neighbors.get(0).get("neighborName"));
+        assertEquals("Relationship type should be KNOWS", "KNOWS", neighbors.get(0).get("relationshipType"));
+    }
+
+    @Test
+    public void testCreateEdgeWithProperties() {
+        // 先创建两个测试顶点
+        List<Map<String, Object>> vertices = createTestVertices();
+        vertexSaver.saveVertices(vertices, TEST_LABEL);
+        
+        // 创建带属性的边
+        Map<String, Object> edgeProperties = new HashMap<>();
+        edgeProperties.put("since", "2023-01-01");
+        edgeProperties.put("strength", 0.8);
+        edgeProperties.put("type", "colleague");
+        
+        boolean result = vertexSaver.createEdge("TestPerson1", "TestPerson3", "WORKS_WITH", 
+                                               TEST_LABEL, TEST_LABEL, edgeProperties);
+        assertTrue("Should successfully create edge with properties", result);
+        
+        // 验证边和属性
+        List<Map<String, Object>> neighbors = vertexSaver.getNeighborVertices("TestPerson1", TEST_LABEL, "outgoing", "WORKS_WITH");
+        assertEquals("Should have 1 neighbor", 1, neighbors.size());
+        
+        Map<String, Object> neighborInfo = neighbors.get(0);
+        assertEquals("Neighbor should be TestPerson3", "TestPerson3", neighborInfo.get("neighborName"));
+        assertEquals("Relationship type should be WORKS_WITH", "WORKS_WITH", neighborInfo.get("relationshipType"));
+        
+        // 验证边属性
+        @SuppressWarnings("unchecked")
+        Map<String, Object> relationship = (Map<String, Object>) neighborInfo.get("relationship");
+        assertEquals("Edge should have 'since' property", "2023-01-01", relationship.get("since"));
+        assertEquals("Edge should have 'strength' property", 0.8, relationship.get("strength"));
+        assertEquals("Edge should have 'type' property", "colleague", relationship.get("type"));
+    }
+
+    @Test
+    public void testCreateEdgeWithDefaultLabel() {
+        // 先创建两个测试顶点（使用默认标签）
+        List<Map<String, Object>> vertices = createTestVertices();
+        vertexSaver.saveVertices(vertices); // 使用默认标签
+        
+        // 使用简化方法创建边
+        boolean result = vertexSaver.createEdge("TestPerson1", "TestPerson2", "FRIENDS");
+        assertTrue("Should successfully create edge with default labels", result);
+        
+        // 验证边
+        List<Map<String, Object>> neighbors = vertexSaver.getNeighborVertices("TestPerson1");
+        assertEquals("Should have 1 neighbor", 1, neighbors.size());
+        assertEquals("Neighbor should be TestPerson2", "TestPerson2", neighbors.get(0).get("neighborName"));
+        
+        // 清理默认标签的数据
+        vertexSaver.deleteVerticesByLabel("Vertex");
+    }
+
+    @Test
+    public void testCreateEdgeWithInvalidVertices() {
+        // 测试创建边时顶点不存在的情况
+        boolean result = vertexSaver.createEdge("NonExistent1", "NonExistent2", "KNOWS", TEST_LABEL, TEST_LABEL, null);
+        assertFalse("Should fail when vertices don't exist", result);
+        
+        // 先创建一个顶点
+        Map<String, Object> vertex = new HashMap<>();
+        vertex.put("name", "ExistingVertex");
+        vertex.put("age", 25);
+        List<Map<String, Object>> vertices = Arrays.asList(vertex);
+        vertexSaver.saveVertices(vertices, TEST_LABEL);
+        
+        // 测试一个存在一个不存在的情况
+        boolean result2 = vertexSaver.createEdge("ExistingVertex", "NonExistentVertex", "KNOWS", TEST_LABEL, TEST_LABEL, null);
+        assertFalse("Should fail when one vertex doesn't exist", result2);
+    }
+
+    @Test
+    public void testCreateEdgeWithInvalidParameters() {
+        // 测试null参数
+        assertFalse("Should fail with null fromVertexName", 
+                   vertexSaver.createEdge(null, "TestPerson2", "KNOWS"));
+        
+        assertFalse("Should fail with null toVertexName", 
+                   vertexSaver.createEdge("TestPerson1", null, "KNOWS"));
+        
+        assertFalse("Should fail with null relationshipType", 
+                   vertexSaver.createEdge("TestPerson1", "TestPerson2", null));
+        
+        // 测试空字符串参数
+        assertFalse("Should fail with empty fromVertexName", 
+                   vertexSaver.createEdge("", "TestPerson2", "KNOWS"));
+        
+        assertFalse("Should fail with empty toVertexName", 
+                   vertexSaver.createEdge("TestPerson1", "", "KNOWS"));
+        
+        assertFalse("Should fail with empty relationshipType", 
+                   vertexSaver.createEdge("TestPerson1", "TestPerson2", ""));
+    }
+
+    @Test
+    public void testGetNeighborVertices() {
+        // 先创建测试顶点
+        List<Map<String, Object>> vertices = createTestVertices();
+        vertexSaver.saveVertices(vertices, TEST_LABEL);
+        
+        // 创建多个边
+        vertexSaver.createEdge("TestPerson1", "TestPerson2", "KNOWS", TEST_LABEL, TEST_LABEL, null);
+        vertexSaver.createEdge("TestPerson1", "TestPerson3", "WORKS_WITH", TEST_LABEL, TEST_LABEL, null);
+        vertexSaver.createEdge("TestPerson2", "TestPerson1", "LIKES", TEST_LABEL, TEST_LABEL, null);
+        
+        // 测试查询所有邻居（双向）
+        List<Map<String, Object>> allNeighbors = vertexSaver.getNeighborVertices("TestPerson1", TEST_LABEL, "both", null);
+        assertEquals("Should have 3 neighbors (2 outgoing + 1 incoming)", 3, allNeighbors.size());
+        
+        // 测试查询出边邻居
+        List<Map<String, Object>> outgoingNeighbors = vertexSaver.getOutgoingNeighbors("TestPerson1", TEST_LABEL);
+        assertEquals("Should have 2 outgoing neighbors", 2, outgoingNeighbors.size());
+        
+        // 测试查询入边邻居
+        List<Map<String, Object>> incomingNeighbors = vertexSaver.getIncomingNeighbors("TestPerson1", TEST_LABEL);
+        assertEquals("Should have 1 incoming neighbor", 1, incomingNeighbors.size());
+        assertEquals("Incoming neighbor should be TestPerson2", "TestPerson2", incomingNeighbors.get(0).get("neighborName"));
+        assertEquals("Incoming relationship should be LIKES", "LIKES", incomingNeighbors.get(0).get("relationshipType"));
+        
+        // 测试按关系类型查询
+        List<Map<String, Object>> knowsNeighbors = vertexSaver.getNeighborsByRelationType("TestPerson1", "KNOWS");
+        assertEquals("Should have 1 KNOWS neighbor", 1, knowsNeighbors.size());
+        assertEquals("KNOWS neighbor should be TestPerson2", "TestPerson2", knowsNeighbors.get(0).get("neighborName"));
+    }
+
+    @Test
+    public void testGetNeighborVerticesWithDefaultParameters() {
+        // 先创建测试顶点（使用默认标签）
+        List<Map<String, Object>> vertices = createTestVertices();
+        vertexSaver.saveVertices(vertices); // 使用默认标签
+        
+        // 创建边
+        vertexSaver.createEdge("TestPerson1", "TestPerson2", "FRIENDS");
+        vertexSaver.createEdge("TestPerson1", "TestPerson3", "COLLEAGUES");
+        
+        // 使用默认参数查询邻居
+        List<Map<String, Object>> neighbors = vertexSaver.getNeighborVertices("TestPerson1");
+        assertEquals("Should have 2 neighbors", 2, neighbors.size());
+        
+        // 验证邻居信息
+        Set<String> neighborNames = new HashSet<>();
+        Set<String> relationshipTypes = new HashSet<>();
+        for (Map<String, Object> neighbor : neighbors) {
+            neighborNames.add((String) neighbor.get("neighborName"));
+            relationshipTypes.add((String) neighbor.get("relationshipType"));
+        }
+        
+        assertTrue("Should contain TestPerson2", neighborNames.contains("TestPerson2"));
+        assertTrue("Should contain TestPerson3", neighborNames.contains("TestPerson3"));
+        assertTrue("Should contain FRIENDS relationship", relationshipTypes.contains("FRIENDS"));
+        assertTrue("Should contain COLLEAGUES relationship", relationshipTypes.contains("COLLEAGUES"));
+        
+        // 清理默认标签的数据
+        vertexSaver.deleteVerticesByLabel("Vertex");
+    }
+
+    @Test
+    public void testGetNeighborVerticesWithNonExistentVertex() {
+        // 测试查询不存在的顶点的邻居
+        List<Map<String, Object>> neighbors = vertexSaver.getNeighborVertices("NonExistentVertex", TEST_LABEL, "both", null);
+        assertEquals("Should return empty list for non-existent vertex", 0, neighbors.size());
+    }
+
+    @Test
+    public void testCreateMultipleEdgesBetweenSameVertices() {
+        // 先创建测试顶点
+        List<Map<String, Object>> vertices = createTestVertices();
+        vertexSaver.saveVertices(vertices, TEST_LABEL);
+        
+        // 在同一对顶点之间创建多个不同类型的边
+        assertTrue("Should create KNOWS edge", 
+                  vertexSaver.createEdge("TestPerson1", "TestPerson2", "KNOWS", TEST_LABEL, TEST_LABEL, null));
+        assertTrue("Should create WORKS_WITH edge", 
+                  vertexSaver.createEdge("TestPerson1", "TestPerson2", "WORKS_WITH", TEST_LABEL, TEST_LABEL, null));
+        assertTrue("Should create FRIENDS edge", 
+                  vertexSaver.createEdge("TestPerson1", "TestPerson2", "FRIENDS", TEST_LABEL, TEST_LABEL, null));
+        
+        // 验证所有边都存在
+        List<Map<String, Object>> allNeighbors = vertexSaver.getNeighborVertices("TestPerson1", TEST_LABEL, "outgoing", null);
+        assertEquals("Should have 3 relationships to TestPerson2", 3, allNeighbors.size());
+        
+        // 验证每种关系类型都存在
+        Set<String> relationshipTypes = new HashSet<>();
+        for (Map<String, Object> neighbor : allNeighbors) {
+            relationshipTypes.add((String) neighbor.get("relationshipType"));
+            assertEquals("All neighbors should be TestPerson2", "TestPerson2", neighbor.get("neighborName"));
+        }
+        
+        assertTrue("Should contain KNOWS relationship", relationshipTypes.contains("KNOWS"));
+        assertTrue("Should contain WORKS_WITH relationship", relationshipTypes.contains("WORKS_WITH"));
+        assertTrue("Should contain FRIENDS relationship", relationshipTypes.contains("FRIENDS"));
+    }
+
     /**
      * 创建测试用的顶点数据
      */
