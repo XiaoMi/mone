@@ -132,7 +132,7 @@ public class ChromaVectorStore implements VectorStoreBase {
             collection.add(
                 embeddings,
                 metadatas,
-                null,
+                documents,
                 ids
             );
 

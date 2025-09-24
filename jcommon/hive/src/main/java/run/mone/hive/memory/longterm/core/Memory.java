@@ -154,14 +154,34 @@ public class Memory implements MemoryBase {
 
     @Override
     public Map<String, Object> getAll(String userId, String agentId, String runId,
-                                      Map<String, Object> filters, int limit) {
+                                    Map<String, Object> filters, int limit) {
         Map<String, Object> effectiveFilters = buildFilters(userId, agentId, runId, filters);
         validateSessionIds(userId, agentId, runId);
+        
         try {
-            List<MemoryItem> memories = vectorStore.list(effectiveFilters, limit);
+            // 并行执行向量存储和图存储查询
+            CompletableFuture<List<MemoryItem>> vectorFuture = CompletableFuture.supplyAsync(() -> 
+                vectorStore.list(effectiveFilters, limit), executor);
+
+            CompletableFuture<List<Map<String, Object>>> graphFuture = CompletableFuture.supplyAsync(() -> {
+                if (enableGraph && graphStore != null) {
+                    return graphStore.getAll(limit);
+                }
+                return new ArrayList<>();
+            }, executor);
+
+            List<MemoryItem> vectorResults = vectorFuture.get();
+            List<Map<String, Object>> graphResults = graphFuture.get();
+
             Map<String, Object> result = new HashMap<>();
-            result.put("results", memories);
+            result.put("results", vectorResults);
+            
+            if (enableGraph && !graphResults.isEmpty()) {
+                result.put("relations", graphResults);
+            }
+
             return result;
+
         } catch (Exception e) {
             log.error("Error getting all memories", e);
             throw new RuntimeException("Failed to get all memories", e);
@@ -171,32 +191,46 @@ public class Memory implements MemoryBase {
     @Override
     public CompletableFuture<Map<String, Object>> getAllAsync(String userId, String agentId, String runId,
                                                               Map<String, Object> filters, int limit) {
-        return CompletableFuture.supplyAsync(() ->
-                getAll(userId, agentId, runId, filters, limit), executor);
+        return CompletableFuture.supplyAsync(() -> 
+            getAll(userId, agentId, runId, filters, limit), executor);
     }
 
     @Override
     public Map<String, Object> search(String query, String userId, String agentId, String runId,
-                                      int limit, Map<String, Object> filters, Double threshold) {
+                                    int limit, Map<String, Object> filters, Double threshold) {
         Map<String, Object> effectiveFilters = buildFilters(userId, agentId, runId, filters);
         validateSessionIds(userId, agentId, runId);
 
         try {
-            // 生成查询向量
-            List<Double> queryEmbedding = embeddingModel.embed(query, "search");
+            // 并行执行向量搜索和图搜索
+            CompletableFuture<List<MemoryItem>> vectorFuture = CompletableFuture.supplyAsync(() -> {
+                List<Double> queryEmbedding = embeddingModel.embed(query, "search");
+                List<MemoryItem> memories = vectorStore.search(query, queryEmbedding, limit, effectiveFilters);
+                
+                if (threshold != null) {
+                    return memories.stream()
+                            .filter(m -> m.getScore() == null || m.getScore() >= threshold)
+                            .collect(java.util.stream.Collectors.toList());
+                }
+                return memories;
+            }, executor);
 
-            // 搜索相似向量
-            List<MemoryItem> memories = vectorStore.search(query, queryEmbedding, limit, effectiveFilters);
+            CompletableFuture<List<Map<String, Object>>> graphFuture = CompletableFuture.supplyAsync(() -> {
+                if (enableGraph && graphStore != null) {
+                    return graphStore.search(query, limit);
+                }
+                return new ArrayList<>();
+            }, executor);
 
-            // 应用阈值过滤
-            if (threshold != null) {
-                memories = memories.stream()
-                        .filter(m -> m.getScore() == null || m.getScore() >= threshold)
-                        .collect(java.util.stream.Collectors.toList());
-            }
+            List<MemoryItem> vectorResults = vectorFuture.get();
+            List<Map<String, Object>> graphResults = graphFuture.get();
 
             Map<String, Object> result = new HashMap<>();
-            result.put("results", memories);
+            result.put("results", vectorResults);
+            
+            if (enableGraph && !graphResults.isEmpty()) {
+                result.put("relations", graphResults);
+            }
 
             return result;
 
@@ -544,7 +578,7 @@ public class Memory implements MemoryBase {
                     : embeddingModel.embed(data, "add");
 
             String memoryId = UUID.randomUUID().toString();
-            metadata.put("data", data);
+            metadata.put("memory", data);
             metadata.put("hash", calculateHash(data));
             metadata.put("created_at", LocalDateTime.now().toString());
 
@@ -571,7 +605,7 @@ public class Memory implements MemoryBase {
             }
 
             Map<String, Object> newMetadata = new HashMap<>(existingMemory.getMetadata());
-            newMetadata.put("data", data);
+            newMetadata.put("memory", data);
             newMetadata.put("hash", calculateHash(data));
             newMetadata.put("updated_at", LocalDateTime.now().toString());
 
