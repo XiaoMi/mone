@@ -135,7 +135,7 @@ public class MemoryIntegrationTest {
         log.info("=== 开始真实API记忆添加测试 ===");
 
         try {
-            String testMemory = "用户小张喜欢喝绿茶，不喜欢咖啡，住在上海徐汇区";
+            String testMemory = "使用框架包括 springboot  gson  netty";
 
             log.info("添加记忆: {}", testMemory);
             Map<String, Object> result = memory.add(
