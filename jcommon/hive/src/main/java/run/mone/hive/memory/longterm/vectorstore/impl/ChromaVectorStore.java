@@ -132,7 +132,7 @@ public class ChromaVectorStore implements VectorStoreBase {
             collection.add(
                 embeddings,
                 metadatas,
-                null,
+                documents,
                 ids
             );
 
@@ -213,22 +213,14 @@ public class ChromaVectorStore implements VectorStoreBase {
         // If only one filter is supplied, return it as is
         // (no need to wrap in $and based on chroma docs)
         if (filters.size() <= 1) {
-            Map<String, Object> finalFilter = new HashMap<>();
-            filters.forEach((key, value) -> {
-                if (value instanceof String) {  
-                    finalFilter.putAll(generateSingleFilter(key, (String) value));
-                } else {
-                    finalFilter.put(key, value);
-                }
-            });
-            return finalFilter;
+            return new HashMap<>(filters);
         }
 
         List<Map<String, Object>> whereFilters = new ArrayList<>();
         for (Map.Entry<String, Object> entry : filters.entrySet()) {
             if (entry.getValue() instanceof String) {
                 Map<String, Object> filter = new HashMap<>();
-                filter.putAll(generateSingleFilter(entry.getKey(), (String) entry.getValue()));
+                filter.put(entry.getKey(), entry.getValue());
                 whereFilters.add(filter);
             }
         }
@@ -236,12 +228,6 @@ public class ChromaVectorStore implements VectorStoreBase {
         Map<String, Object> result = new HashMap<>();
         result.put("$and", whereFilters);
         return result;
-    }
-
-    private Map<String, Object> generateSingleFilter(String key, String value) {
-        Map<String, Object> filter = new HashMap<>();
-        filter.put(key, Map.of("$eq", value));
-        return filter;
     }
 
     /**
@@ -339,8 +325,8 @@ public class ChromaVectorStore implements VectorStoreBase {
     @Override
     public List<MemoryItem> list(Map<String, Object> filters, int limit) {
         try {
-            Map<String, Object> whereClause = generateWhereClause(filters);
-            GetResult result = collection.get(null, null, whereClause);
+            // no filter when get all
+            GetResult result = collection.get(null, null, null);
             return parseGetResponseList(result);
         } catch (Exception e) {
             log.error("Failed to list vectors: {}", e.getMessage());
