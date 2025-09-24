@@ -414,7 +414,6 @@ public class Neo4jGraphStore implements GraphStoreBase {
             );
 
             // 获取对应的工具定义
-            String llmProvider = llm.getConfig().getProvider().toString();
             List<Map<String, Object>> tools = Arrays.asList(Map.of("tool", GraphTools.EXTRACT_ENTITIES_TOOL));
 
             // 调用LLM进行实体提取
@@ -532,7 +531,6 @@ public class Neo4jGraphStore implements GraphStoreBase {
             );
 
             // 获取对应的工具定义
-            String llmProvider = llm.getConfig().getProvider().toString();
             List<Map<String, Object>> tools = Arrays.asList(Map.of("tool", GraphTools.RELATIONS_TOOL));
 
             // 调用LLM进行关系提取
