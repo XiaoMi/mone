@@ -180,9 +180,7 @@ public class LongTermMemoryManager {
             content.contains("上次") || content.contains("记录") || content.contains("回忆")) {
             return "是";
         }
-        
-        // 默认对所有消息都搜索记忆（可根据需要调整）
-        return "是";
+        return "否";
     }
 
     /**
