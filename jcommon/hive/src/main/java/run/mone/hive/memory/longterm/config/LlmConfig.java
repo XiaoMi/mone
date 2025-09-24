@@ -223,4 +223,17 @@ public class LlmConfig {
                 .topP(1.0)
                 .build();
     }
+
+    public static LlmConfig deepseekDefault() {
+        return LlmConfig.builder()
+                .provider(Provider.DEEPSEEK)  // 假设有 DEEPSEEK 枚举值
+                .apiKey(System.getenv("DEEPSEEK_API_KEY"))
+                .model("deepseek-chat")       // DeepSeek 的主要聊天模型
+                .baseUrl("https://api.deepseek.com")  // DeepSeek API 地址
+                .temperature(0.1)
+                .maxTokens(4000)
+                .topP(1.0)
+                .build();
+    }
+
 }

@@ -31,7 +31,8 @@ public class ChromaLocalTest {
                 .collectionName("test_collection")
                 .host("localhost")
                 .path(testPath)
-                .embeddingModelDims(384)
+                .port(8000)
+                .embeddingModelDims(768)
                 .build();
 
         vectorStore = VectorStoreFactory.create(config);

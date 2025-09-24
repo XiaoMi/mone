@@ -86,7 +86,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
             LlmConfig llmConfig = config.getLlm();
             if (llmConfig == null) {
                 // 使用默认配置
-                llmConfig = LlmConfig.openAiDefault();
+                llmConfig = LlmConfig.deepseekDefault();
             }
             this.llm = LLMFactory.create(llmConfig);
             log.info("LLM initialized with provider: {}", llmConfig.getProvider());
