@@ -26,7 +26,7 @@ public class ChromaLocalTest {
     void setUp() {
         config = VectorStoreConfig.builder()
                 .provider(VectorStoreConfig.Provider.CHROMA)
-                .collectionName("test_collection")
+                .collectionName("test_collectionb")
                 .host("localhost")
                 .port(8000)
                 .embeddingModelDims(768)
@@ -66,8 +66,6 @@ public class ChromaLocalTest {
     @Test
     @DisplayName("Should insert and retrieve vectors successfully")
     void testInsertAndRetrieve() {
-
-
         String first = "First test memory";
         String second = "Second test memory";
 

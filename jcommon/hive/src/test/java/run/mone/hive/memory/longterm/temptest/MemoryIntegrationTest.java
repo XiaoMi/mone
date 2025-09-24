@@ -55,7 +55,7 @@ public class MemoryIntegrationTest {
                 .embedder(embedderConfig)
                 .vectorStore(VectorStoreConfig.builder()
                         .provider(VectorStoreConfig.Provider.CHROMA)
-                        .collectionName("integration_test_memory")
+                        .collectionName("integration_test_memory_newa")
                         .host("localhost")
                         .port(8000)
                         .embeddingModelDims(768)

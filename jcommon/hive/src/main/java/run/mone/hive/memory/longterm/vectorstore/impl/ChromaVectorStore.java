@@ -18,6 +18,7 @@ import tech.amikos.chromadb.Embedding;
 import tech.amikos.chromadb.embeddings.DefaultEmbeddingFunction;
 import tech.amikos.chromadb.embeddings.EmbeddingFunction;
 import tech.amikos.chromadb.embeddings.WithParam;
+import tech.amikos.chromadb.embeddings.ollama.OllamaEmbeddingFunction;
 import tech.amikos.chromadb.embeddings.openai.CreateEmbeddingRequest;
 import tech.amikos.chromadb.embeddings.openai.CreateEmbeddingResponse;
 import tech.amikos.chromadb.handler.ApiException;
@@ -80,7 +81,8 @@ public class ChromaVectorStore implements VectorStoreBase {
             String collectionName = config.getCollectionName();
             EmbeddingFunction ef = config.getEmbeddingFunction() != null && config.getEmbeddingFunction().equals(OPENAI_EMBEDDING_FUNCTION)
             ? new OpenAIEmbeddingFunction(WithParam.apiKey(config.getApiKey()), WithParam.model("text-embedding-3-small"), WithParam.baseAPI(config.getBaseUrl()))
-            : new DefaultEmbeddingFunction();
+            : new OllamaEmbeddingFunction(WithParam.defaultModel("embeddinggemma"));
+
 
             try {
                 return chromaClient.getCollection(collectionName, ef);
@@ -129,7 +131,7 @@ public class ChromaVectorStore implements VectorStoreBase {
             collection.add(
                 embeddings,
                 metadatas,
-                documents,
+                null,
                 ids
             );
 
