@@ -161,15 +161,15 @@ public class ChromaVectorStore implements VectorStoreBase {
 
             for (int i = 0; i < ids.size(); i++) {
                 String id = ids.get(i);
+                // FIY: 这里是余弦距离(取值范围0-2)，越小越相似，这里直接取2 - 余弦距离作为score
                 double distance = distances.get(0).get(i).doubleValue();
-                double similarity = 1.0 - distance;  // Convert distance to similarity
                 Map<String, Object> metadata = metadatas.get(i);
                 String document = documents.get(i);
 
                 MemoryItem item = MemoryItem.builder()
                         .id(id)
                         .memory(document)
-                        .score(similarity)
+                        .score(2 - distance)
                         .userId(getStringFromMetadata(metadata, "user_id"))
                         .agentId(getStringFromMetadata(metadata, "agent_id"))
                         .runId(getStringFromMetadata(metadata, "run_id"))

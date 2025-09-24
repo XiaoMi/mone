@@ -26,8 +26,6 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.service.IntentClassificationService;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.memory.LongTermMemoryManager;
-import run.mone.hive.memory.longterm.config.MemoryConfig;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.roles.tool.TavilySearchTool;
@@ -119,8 +117,6 @@ public class ReactorRole extends Role {
     // 任务状态 - 用于上下文压缩
     private TaskState taskState;
 
-    // 长期记忆管理器
-    private LongTermMemoryManager memoryManager;
 
     // 意图分类服务
     private IntentClassificationService classificationService;
@@ -142,11 +138,7 @@ public class ReactorRole extends Role {
             
             ${rag_info}
             
-            ${knowledge_base_info}
-            
             ${web_query_info}
-            
-            ${memory_info}
             
             ===========
             Latest Questions(最后的步骤):
@@ -239,8 +231,6 @@ public class ReactorRole extends Role {
         // 初始化意图分类服务
         this.classificationService = new IntentClassificationService();
 
-        // 初始化长期记忆管理器
-        this.memoryManager = new LongTermMemoryManager(this.name);
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
@@ -718,18 +708,6 @@ public class ReactorRole extends Role {
             ragInfo = queryKnowledgeBase(msg, sink);
         }
 
-        //从新知识库中获取信息内容
-        String knowledgeBaseInfo = "";
-        if (roleMeta.getKnowledgeBaseQuery().isAutoQuery()) {
-            knowledgeBaseInfo = queryNewKnowledgeBase(msg, sink);
-        }
-
-        //从长期记忆中获取相关信息
-        String memoryInfo = "";
-        if (roleMeta.getMemoryQuery().isAutoMemoryQuery()) {
-            memoryInfo = memoryManager.queryLongTermMemory(msg, roleMeta.getMemoryQuery(), sink);
-        }
-
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.<String, String>builder()
                 //聊天记录
                 .put("history", history)
@@ -737,10 +715,6 @@ public class ReactorRole extends Role {
                 .put("web_query_info", queryInfo)
                 //rag上下文
                 .put("rag_info", ragInfo)
-                //新知识库上下文
-                .put("knowledge_base_info", knowledgeBaseInfo)
-                //记忆上下文
-                .put("memory_info", memoryInfo)
                 .put("question", msg.getContent())
                 .build());
     }
@@ -786,110 +760,9 @@ public class ReactorRole extends Role {
         return "";
     }
 
-    private String queryNewKnowledgeBase(Message msg, FluxSink sink) {
-        try {
-            //使用意图分类服务判断是否需要知识库查询
-            if (classificationService.shouldPerformKnowledgeBaseQuery(roleMeta.getKnowledgeBaseQuery(), msg)) {
-                sink.next("从新知识库获取信息\n");
-
-                String apiUrl = System.getenv("NEW_RAG_URL");
-                String apiKey = roleMeta.getKnowledgeBaseQuery().getApiKey();
-                String knowledgeBaseId = roleMeta.getKnowledgeBaseQuery().getKnowledgeBaseId();
-
-                if (StringUtils.isEmpty(apiUrl) || StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(knowledgeBaseId)) {
-                    log.warn("知识库查询配置不完整");
-                    return "";
-                }
-
-                LLM llm = new LLM(LLMConfig.builder()
-                        .llmProvider(LLMProvider.KNOWLEDGE_BASE)
-                        .url(apiUrl)
-                        .build());
-
-                String result = llm.queryNewKnowledgeBase(
-                        msg.getContent(), // query
-                        knowledgeBaseId,   // knowledge_base_id
-                        apiKey
-                );
-
-                JsonObject jsonResult = JsonParser.parseString(result).getAsJsonObject();
-                if (jsonResult.has("success") && jsonResult.get("success").getAsBoolean()) {
-                    JsonObject data = jsonResult.getAsJsonObject("data");
-                    String content = data.get("content").getAsString();
-                    return "===========\n" + "新知识库中的内容:" + "\n" + content + "\n";
-                } else {
-                    log.warn("知识库查询失败: {}", result);
-                }
-            }
-        } catch (Throwable ex) {
-            log.error("查询新知识库失败: {}", ex.getMessage(), ex);
-        }
-        return "";
-    }
-
 
     public void setLlm(LLM llm) {
         this.llm = llm;
-    }
-
-    // ==================== 记忆管理相关方法 ====================
-
-    /**
-     * 获取记忆管理器
-     */
-    public LongTermMemoryManager getMemoryManager() {
-        return this.memoryManager;
-    }
-
-    /**
-     * 手动添加记忆
-     */
-    public CompletableFuture<Map<String, Object>> addMemory(String content, String userId, String agentId, String sessionId, Map<String, Object> metadata) {
-        return memoryManager != null ?
-                memoryManager.addMemory(content, userId, agentId, sessionId, metadata) :
-                CompletableFuture.completedFuture(Map.of("error", "记忆管理器未初始化"));
-    }
-
-    /**
-     * 手动搜索记忆
-     */
-    public CompletableFuture<Map<String, Object>> searchMemory(String query, String userId, String agentId, String sessionId, int limit, double threshold) {
-        return memoryManager != null ?
-                memoryManager.searchMemory(query, userId, agentId, sessionId, limit, threshold) :
-                CompletableFuture.completedFuture(Map.of("error", "记忆管理器未初始化"));
-    }
-
-    /**
-     * 获取所有记忆
-     */
-    public CompletableFuture<Map<String, Object>> getAllMemories(String userId, String agentId, String sessionId, int limit) {
-        return memoryManager != null ?
-                memoryManager.getAllMemories(userId, agentId, sessionId, limit) :
-                CompletableFuture.completedFuture(Map.of("error", "记忆管理器未初始化"));
-    }
-
-    /**
-     * 重置长期记忆
-     */
-    public CompletableFuture<Boolean> resetMemory() {
-        return memoryManager != null ?
-                memoryManager.resetMemory() :
-                CompletableFuture.completedFuture(false);
-    }
-
-    /**
-     * 设置自定义记忆配置
-     * 重新初始化记忆管理器
-     */
-    public void setMemoryConfig(MemoryConfig config) {
-        // 关闭现有的记忆管理器
-        if (this.memoryManager != null) {
-            this.memoryManager.close();
-        }
-
-        // 使用新配置重新初始化
-        this.memoryManager = new LongTermMemoryManager(this.name, config);
-        log.info("已为 role: {} 设置自定义记忆配置", this.name);
     }
 
     /**
