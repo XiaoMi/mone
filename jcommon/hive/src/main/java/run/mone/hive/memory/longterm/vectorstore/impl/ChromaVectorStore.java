@@ -26,6 +26,8 @@ import tech.amikos.chromadb.handler.ApiException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -44,6 +46,7 @@ public class ChromaVectorStore implements VectorStoreBase {
 
     public static final String DEFAULT_EMBEDDING_FUNCTION = "default";
     public static final String OPENAI_EMBEDDING_FUNCTION = "openai";
+    public static final String OLLAMA_EMBEDDING_FUNCTION = "ollama";
 
     public ChromaVectorStore(VectorStoreConfig config) {
         this.config = config;
@@ -82,8 +85,6 @@ public class ChromaVectorStore implements VectorStoreBase {
             EmbeddingFunction ef = config.getEmbeddingFunction() != null && config.getEmbeddingFunction().equals(OPENAI_EMBEDDING_FUNCTION)
             ? new OpenAIEmbeddingFunction(WithParam.apiKey(config.getApiKey()), WithParam.model("text-embedding-3-small"), WithParam.baseAPI(config.getBaseUrl()))
             : new OllamaEmbeddingFunction(WithParam.defaultModel("embeddinggemma"));
-
-
             try {
                 return chromaClient.getCollection(collectionName, ef);
             } catch (ApiException e) {
@@ -212,14 +213,22 @@ public class ChromaVectorStore implements VectorStoreBase {
         // If only one filter is supplied, return it as is
         // (no need to wrap in $and based on chroma docs)
         if (filters.size() <= 1) {
-            return new HashMap<>(filters);
+            Map<String, Object> finalFilter = new HashMap<>();
+            filters.forEach((key, value) -> {
+                if (value instanceof String) {  
+                    finalFilter.putAll(generateSingleFilter(key, (String) value));
+                } else {
+                    finalFilter.put(key, value);
+                }
+            });
+            return finalFilter;
         }
 
         List<Map<String, Object>> whereFilters = new ArrayList<>();
         for (Map.Entry<String, Object> entry : filters.entrySet()) {
             if (entry.getValue() instanceof String) {
                 Map<String, Object> filter = new HashMap<>();
-                filter.put(entry.getKey(), entry.getValue());
+                filter.putAll(generateSingleFilter(entry.getKey(), (String) entry.getValue()));
                 whereFilters.add(filter);
             }
         }
@@ -227,6 +236,12 @@ public class ChromaVectorStore implements VectorStoreBase {
         Map<String, Object> result = new HashMap<>();
         result.put("$and", whereFilters);
         return result;
+    }
+
+    private Map<String, Object> generateSingleFilter(String key, String value) {
+        Map<String, Object> filter = new HashMap<>();
+        filter.put(key, Map.of("$eq", value));
+        return filter;
     }
 
     /**
