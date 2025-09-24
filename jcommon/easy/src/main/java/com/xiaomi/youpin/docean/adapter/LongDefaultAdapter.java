@@ -14,18 +14,15 @@ import java.lang.reflect.Type;
 @Slf4j
 public class LongDefaultAdapter implements JsonSerializer<Long>, JsonDeserializer<Long> {
 
-    private Gson gson = new Gson();
-
     @Override
     public Long deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        if (json.getAsString().equals("")) {
+        if ("".equals(json.getAsString())) {
             return null;
         }
         try {
             return json.getAsLong();
         } catch (NumberFormatException e) {
-            log.error("Long LongDefaultAdapter error,param:{}", gson.toJson(json), e);
-            throw new JsonSyntaxException(e);
+            return null;
         }
     }
 

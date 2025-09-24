@@ -3,8 +3,10 @@ build_info.properties
 .classpath
 dependency-reduced-pom.xml
 *.diff
+*.db
 .DS_Store
 .idea/
+.vscode/
 *.iml
 logs/
 .project
@@ -19,4 +21,5 @@ nohup*
 *.pyc
 *.class
 .sbtserver*
-
+.vscode/settings.json
+selector_config.json

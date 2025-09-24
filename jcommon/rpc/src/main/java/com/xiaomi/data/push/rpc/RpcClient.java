@@ -74,6 +74,8 @@ public class RpcClient implements Service {
 
     private int serverPort;
 
+    private boolean virtualThread;
+
     @Getter
     private NacosNaming nacosNaming;
 
@@ -131,6 +133,9 @@ public class RpcClient implements Service {
         this.nacosAddrs = nacosAddrs;
         this.serverName = serverName;
         nacosNaming = new NacosNaming();
+        if (virtualThread) {
+            this.defaultPool =  Executors.newVirtualThreadPerTaskExecutor();
+        }
     }
 
     /**
@@ -188,7 +193,7 @@ public class RpcClient implements Service {
      * 需要二次注册的时候
      */
     public void registerProcessor() {
-        processorList.stream().forEach(it -> client.registerProcessor(it.getObject1(), it.getObject2(), defaultPool));
+        processorList.forEach(it -> client.registerProcessor(it.getObject1(), it.getObject2(), defaultPool));
     }
 
 

@@ -1,0 +1,41 @@
+@import './base.css';
+/* @import './github-markdown.css'; */
+
+body {
+  background-color: transparent;
+  width: 100%;
+  height: 100vh;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+}
+
+.app-header {
+  background-color: var(--el-bg-color);
+  padding: 1rem;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+.app-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.app-lang-switch {
+  margin-left: 20px;
+}
+
+.app-content {
+  height: 100%;
+}
+
+.app-content {
+  flex: 1;
+  overflow: hidden;
+}

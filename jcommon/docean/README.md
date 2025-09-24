@@ -16,3 +16,19 @@
   The plugin package has added extended support for some commonly used dependencies in projects, such as nacos, dubbo,
   mybatis, and so on.
 * rate limited or exceeded quota
+
+#Feature
+
+## session用法
+### 单机session使用
+需要在ioc中加入一个bean[LocalSessionStore.java](src/main/java/com/xiaomi/youpin/docean/mvc/session/impl/LocalSessionStore.java)
+ioc init时，添加扫描路径"com.xiaomi.youpin.docean.mvc.session"
+
+### 分布式事务
+1.工程中引入两个plugin：[docean-plugin-redis](../docean-plugin/docean-plugin-redis)、[docean-plugin-redisSession](../docean-plugin/docean-plugin-redisSession)
+2.添加配置，开启分布式配置：ioc.putBean("$cluster-session", "true")
+
+
+
+
+

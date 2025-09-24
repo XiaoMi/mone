@@ -75,7 +75,7 @@ public class LogFile implements ILogFile {
         this.lineNumber = lineNumber;
     }
 
-    private void open() {
+    private void open() throws FileNotFoundException {
         try {
             //日志文件进行切分时，减少FileNotFoundException概率,这个应该删掉了,在使用前保证就好了，由于历史原因,降低了休眠时间
 //            TimeUnit.SECONDS.sleep(1);
@@ -87,6 +87,7 @@ public class LogFile implements ILogFile {
 //            log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
             log.error("open file FileNotFoundException", e);
+            throw e;
         } catch (IOException e) {
             log.error("open file IOException", e);
         }
@@ -95,81 +96,91 @@ public class LogFile implements ILogFile {
     @Override
     public void readLine() throws Exception {
         while (true) {
-            open();
-            //兼容文件切换时，缓存的pointer
             try {
-                log.info("open file:{},pointer:{},fileKey:{}", file, pointer, FileUtils.fileKey(new File(file)));
-                if (pointer > raf.length()) {
-                    pointer = 0;
-                    lineNumber = 0;
-                }
-            } catch (Exception e) {
-                log.error("file.length() IOException, file:{}", this.file, e);
-            }
-            raf.seek(pointer);
-            log.info("start readLine file:{},pointer:{}", file, pointer);
-
-            while (true) {
-                String line = raf.getNextLine();
-
-                if (null != line && lineNumber == 0 && pointer == 0) {
-                    String hashLine = line.length() > 100 ? line.substring(0, 100) : line;
-                    beforePointerHashCode = hashLine.hashCode();
-                }
-                //大行文件先临时截断
-                line = lineCutOff(line);
-
-                if (reFresh) {
-                    log.info("readline reFresh:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
-                    break;
-                }
-
-                if (reOpen) {
-                    log.info("readline reOpen:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
-                    pointer = 0;
-                    lineNumber = 0;
-                    break;
-                }
-
-                if (stop) {
-                    log.info("readline stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
-                    break;
-                }
-
-                //文件内容被切割，重头开始采集内容
-                if (contentHasCutting(line)) {
-                    reOpen = true;
-                    pointer = 0;
-                    lineNumber = 0;
-                    log.info("readline file:{} content have been cut, goto reOpen file,pointer:{},lineNumber:{},fileKey:{}", file, pointer, lineNumber, FileUtils.fileKey(new File(file)));
-                    break;
-                }
-
-                if (listener.isContinue(line)) {
-                    log.debug("readline isBreak:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
-                    continue;
-                }
-
+                open();
+                //兼容文件切换时，缓存的pointer
                 try {
-                    pointer = raf.getFilePointer();
-                    maxPointer = raf.length();
-                } catch (IOException e) {
+                    log.info("open file:{},pointer:{},fileKey:{}", file, pointer, FileUtils.fileKey(new File(file)));
+                    if (pointer > raf.length()) {
+                        pointer = 0;
+                        lineNumber = 0;
+                    }
+                } catch (Exception e) {
                     log.error("file.length() IOException, file:{}", this.file, e);
                 }
+                raf.seek(pointer);
+                log.info("start readLine file:{},pointer:{}", file, pointer);
 
-                ReadResult readResult = new ReadResult();
-                readResult.setLines(Lists.newArrayList(line));
-                readResult.setPointer(pointer);
-                readResult.setFileMaxPointer(maxPointer);
-                readResult.setLineNumber(++lineNumber);
-                ReadEvent event = new ReadEvent(readResult);
+                while (true) {
+                    String line = raf.getNextLine();
 
-                listener.onEvent(event);
-            }
-            raf.close();
-            if (stop) {
-                log.info("read file stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
-                break;
+                    if (null != line && lineNumber == 0 && pointer == 0) {
+                        String hashLine = line.length() > 100 ? line.substring(0, 100) : line;
+                        beforePointerHashCode = hashLine.hashCode();
+                    }
+                    //大行文件先临时截断
+                    line = lineCutOff(line);
+
+                    if (reFresh) {
+                        log.info("readline reFresh:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
+                        break;
+                    }
+
+                    if (reOpen) {
+                        log.info("readline reOpen:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
+                        pointer = 0;
+                        lineNumber = 0;
+                        break;
+                    }
+
+                    if (stop || exceptionFinish) {
+                        log.info("readline stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
+                        break;
+                    }
+
+                    //文件内容被切割，重头开始采集内容
+                    if (contentHasCutting(line)) {
+                        reOpen = true;
+                        pointer = 0;
+                        lineNumber = 0;
+                        log.info("readline file:{} content have been cut, goto reOpen file,pointer:{},lineNumber:{},fileKey:{}", file, pointer, lineNumber, FileUtils.fileKey(new File(file)));
+                        break;
+                    }
+
+                    if (listener.isContinue(line)) {
+                        log.debug("readline isBreak:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
+                        continue;
+                    }
+
+                    try {
+                        pointer = raf.getFilePointer();
+                        maxPointer = raf.length();
+                    } catch (IOException e) {
+                        log.error("file.length() IOException, file:{}", this.file, e);
+                    }
+
+                    ReadResult readResult = new ReadResult();
+                    readResult.setLines(Lists.newArrayList(line));
+                    readResult.setPointer(pointer);
+                    readResult.setFileMaxPointer(maxPointer);
+                    readResult.setLineNumber(++lineNumber);
+                    ReadEvent event = new ReadEvent(readResult);
+
+                    listener.onEvent(event);
+                }
+                raf.close();
+                if (stop) {
+                    log.info("read file stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
+                    break;
+                }
+            } catch (Exception e) {
+                if (raf != null) {
+                    raf.close();
+                }
+                log.error("readLine error", e);
+                if (e instanceof FileNotFoundException) {
+                    throw e;
+                }
             }
         }
     }

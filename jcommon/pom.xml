@@ -61,6 +61,7 @@
         <module>grpc</module>
         <module>easy</module>
         <module>df</module>
+        <module>moner-server</module> 
         <module>monespring</module>
         <module>graalvm</module>
         <module>mquic</module>
@@ -89,17 +90,36 @@
         <module>docean-spring-starter</module>
         <module>ai</module>
         <module>ai/neo4j</module>
-        <module>ai/mcp</module>
+        <module>ai/m78</module>
+        <module>mcp</module>
+        <module>hive</module>
+        <module>hive-client</module>
+        <module>hive-manager</module>
+        <module>hive-mind</module>
+        <module>hive-spring-starter</module>
     </modules>
+
+<!--    <distributionManagement>-->
+<!--        <repository>-->
+<!--            <id>ossrh</id>-->
+<!--            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
+<!--        </repository>-->
+<!--        <snapshotRepository>-->
+<!--            <id>ossrh</id>-->
+<!--            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>-->
+<!--        </snapshotRepository>-->
+<!--    </distributionManagement>-->
 
     <distributionManagement>
         <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>central</id>
+            <name>maven-release-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
         </repository>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <id>snapshots</id>
+            <name>maven-snapshot-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -107,7 +127,7 @@
         <maven.jcommonDirectory>~/</maven.jcommonDirectory>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <submodule-release.version>1.6.0-jdk21-SNAPSHOT</submodule-release.version>
+        <submodule-release.version>1.6.1-jdk21-SNAPSHOT</submodule-release.version>
     </properties>
     <dependencies>
         <dependency>
@@ -119,7 +139,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.5</version>
+            <version>2.8.9</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

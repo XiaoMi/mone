@@ -328,34 +328,15 @@ public abstract class NettyRemotingAbstract {
     public void invokeOnewayImpl(final Channel channel, final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
         request.markOnewayRPC();
-        boolean acquired = this.semaphoreOneway.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
-        if (acquired) {
-            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreOneway);
-            try {
-                channel.writeAndFlush(request).addListener((ChannelFutureListener) f -> {
-                    once.release();//* 释放一次限流次数
-                    if (!f.isSuccess()) {
-                        plog.warn("send a request command to channel <" + channel.remoteAddress() + "> failed.");
-                    }
-                });
-            } catch (Exception e) {
-                once.release();
-                plog.warn("write send a request command to channel <" + channel.remoteAddress() + "> failed.");
-                throw new RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel), e);
-            }
-        } else {
-            if (timeoutMillis <= 0) {
-                throw new RemotingTooMuchRequestException("invokeOnewayImpl invoke too fast");
-            } else {
-                String info = String.format(
-                        "invokeOnewayImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d",
-                        timeoutMillis,
-                        this.semaphoreAsync.getQueueLength(),
-                        this.semaphoreAsync.availablePermits()
-                );
-                plog.warn(info);
-                throw new RemotingTimeoutException(info);
-            }
+        try {
+            channel.writeAndFlush(request).addListener((ChannelFutureListener) f -> {
+                if (!f.isSuccess()) {
+                    plog.warn("send a request command to channel <" + channel.remoteAddress() + "> failed.");
+                }
+            });
+        } catch (Exception e) {
+            plog.warn("write send a request command to channel <" + channel.remoteAddress() + "> failed.");
+            throw new RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel), e);
         }
     }
 

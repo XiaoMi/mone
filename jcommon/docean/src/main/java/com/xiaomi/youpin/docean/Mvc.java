@@ -39,9 +39,12 @@ import com.xiaomi.youpin.docean.mvc.util.Jump;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -51,6 +54,9 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
+ * MVC framework implementation that handles HTTP requests and controller methods.
+ * Supports synchronous returns as well as reactive types (Mono and Flux).
+ *
  * @author goodjava@qq.com
  * @date 2020/6/20
  */
@@ -81,17 +87,19 @@ public class Mvc {
     }
 
     private void setConfig(Ioc ioc) {
-        this.mvcConfig.setAllowCross(Boolean.valueOf(ioc.getBean(MvcConst.ALLOW_CROSS_DOMAIN, MvcConst.FALSE)));
-        this.mvcConfig.setDownload(Boolean.valueOf(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));
-        this.mvcConfig.setUseCglib(Boolean.valueOf(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
+        this.mvcConfig.setAllowCross(Boolean.parseBoolean(ioc.getBean(MvcConst.ALLOW_CROSS_DOMAIN, MvcConst.FALSE)));
+        this.mvcConfig.setDownload(Boolean.parseBoolean(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));
+        this.mvcConfig.setUseCglib(Boolean.parseBoolean(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
 
-        this.mvcConfig.setOpenStaticFile(Boolean.valueOf(ioc.getBean(MvcConst.OPEN_STATIC_FILE, MvcConst.FALSE)));
+        this.mvcConfig.setOpenStaticFile(Boolean.parseBoolean(ioc.getBean(MvcConst.OPEN_STATIC_FILE, MvcConst.FALSE)));
         this.mvcConfig.setStaticFilePath(ioc.getBean(MvcConst.STATIC_FILE_PATH, MvcConst.EMPTY));
 
-        this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
+        this.mvcConfig.setResponseOriginalValue(Boolean.parseBoolean(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
-        this.mvcConfig.setVirtualThread(Boolean.valueOf(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
+        this.mvcConfig.setVirtualThread(Boolean.parseBoolean(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
         this.mvcConfig.setResponseOriginalPath(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_PATH, ""));
+        this.mvcConfig.setClusterSession(Boolean.parseBoolean(ioc.getBean(MvcConst.CLUSTER_SESSION, MvcConst.FALSE)));
+
         ioc.publishEvent(new Event(EventType.mvcBegin, this.mvcConfig));
     }
 
@@ -235,53 +243,97 @@ public class Mvc {
                 return;
             }
 
-            if (data instanceof MvcResult) {
-                MvcResult<String> mr = (MvcResult) data;
-                // use akka to handle
-                if (mr.getCode() == -999) {
-                    return;
-                }
-                // need to jump (302)
-                if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
-                    Jump.jump(response, mr.getData());
-                    return;
-                }
-            }
-            // directly returns the result of the construction
-            if (data instanceof FullHttpResponse) {
-                FullHttpResponse res = (FullHttpResponse) data;
-                response.getCtx().writeAndFlush(HttpResponseUtils.create(res));
+            // Handle Mono return type
+            if (data instanceof Mono) {
+                Mono<?> monoData = (Mono<?>) data;
+                monoData.subscribe(
+                    value -> handleResponse(value, context, response, result, method),
+                    error -> handleError(error, context, response, result)
+                );
                 return;
             }
-            // get whether the configuration returns an unwrapped value
-            boolean needOriginalValue = isNeedOriginalValue(method);
+            
+            // Handle Flux return type
+            if (data instanceof Flux) {
+                Flux<?> fluxData = (Flux<?>) data;
 
-            if (needOriginalValue) {
-                String responseData = data instanceof String ? (String) data : gson.toJson(data);
-                response.writeAndFlush(context, responseData);
-            } else {
-                result.setData(data);
-                response.writeAndFlush(context, gson.toJson(result));
+                // Check if WebSocket is requested
+                if (context.isWebsocket()) {
+                    handleWebSocketResponse(fluxData, context, response);
+                    return;
+                }
+
+                
+                // Check if SSE is requested
+                if (isSSERequested(context, method)) {
+                    handleSSEResponse(fluxData, context, response);
+                    return;
+                }
+
+                // Default handling (collect to list and return once)
+                fluxData.collectList().subscribe(
+                    value -> handleResponse(value, context, response, result, method),
+                    error -> handleError(error, context, response, result)
+                );
+                return;
             }
+
+            // Handle regular return types
+            handleResponse(data, context, response, result, method);
         }, ex -> {
             if (context.isSync()) {
                 context.setResponse(ex);
                 return;
             }
-            ex = Throwables.getRootCause(ex);
-            Throwable unwrapThrowable = ExceptionUtil.unwrapThrowable(ex);
-            result.setCode(500);
-            int httpCode = 200;
-            if (ex instanceof DoceanException de) {
-                int code = de.getCode();
-                if (0 != code) {
-                    result.setCode(code);
-                    httpCode = code;
-                }
-            }
-            result.setMessage(unwrapThrowable.getMessage());
-            response.writeAndFlush(context, gson.toJson(result), httpCode);
+            handleError(ex, context, response, result);
         });
+    }
+
+    private void handleResponse(Object data, MvcContext context, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
+        if (data instanceof MvcResult) {
+            MvcResult<String> mr = (MvcResult) data;
+            // use akka to handle
+            if (mr.getCode() == -999) {
+                return;
+            }
+            // need to jump (302)
+            if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
+                Jump.jump(response, mr.getData());
+                return;
+            }
+        }
+        // directly returns the result of the construction
+        if (data instanceof FullHttpResponse) {
+            FullHttpResponse res = (FullHttpResponse) data;
+            response.getCtx().writeAndFlush(HttpResponseUtils.create(res));
+            return;
+        }
+        // get whether the configuration returns an unwrapped value
+        boolean needOriginalValue = isNeedOriginalValue(method);
+
+        if (needOriginalValue) {
+            String responseData = data instanceof String ? (String) data : gson.toJson(data);
+            response.writeAndFlush(context, responseData);
+        } else {
+            result.setData(data);
+            response.writeAndFlush(context, gson.toJson(result));
+        }
+    }
+
+    private void handleError(Throwable ex, MvcContext context, MvcResponse response, MvcResult<Object> result) {
+        ex = Throwables.getRootCause(ex);
+        Throwable unwrapThrowable = ExceptionUtil.unwrapThrowable(ex);
+        result.setCode(500);
+        int httpCode = 200;
+        if (ex instanceof DoceanException de) {
+            int code = de.getCode();
+            if (0 != code) {
+                result.setCode(code);
+                httpCode = code;
+            }
+        }
+        result.setMessage(unwrapThrowable.getMessage());
+        response.writeAndFlush(context, gson.toJson(result), httpCode);
     }
 
     private boolean isNeedOriginalValue(HttpRequestMethod method) {
@@ -355,6 +407,17 @@ public class Mvc {
     }
 
     /**
+     * Check if the method returns a reactive type (Mono or Flux)
+     *
+     * @param method The HTTP request method
+     * @return true if the method returns Mono or Flux, false otherwise
+     */
+    private static boolean isReactiveReturnType(HttpRequestMethod method) {
+        Class<?> returnType = method.getMethod().getReturnType();
+        return Mono.class.isAssignableFrom(returnType) || Flux.class.isAssignableFrom(returnType);
+    }
+
+    /**
      * parsing parameters
      *
      * @param method
@@ -379,5 +442,89 @@ public class Mvc {
 
     public void destory() {
         this.methodInvoker.clear();
+    }
+
+    /**
+     * Check if the client has requested Server-Sent Events
+     * 
+     * @param context The MVC context
+     * @param method The HTTP request method
+     * @return true if SSE is requested, false otherwise
+     */
+    private boolean isSSERequested(MvcContext context, HttpRequestMethod method) {
+        // Check for special request header or query parameter indicating SSE
+        if (null == context.getHeaders()) {
+            return false;
+        }
+        return "text/event-stream".equals(context.getHeaders().get(HttpHeaderNames.ACCEPT.toString())) ||
+               method.getPath().endsWith("/sse") ||
+               Boolean.parseBoolean(context.getHeaders().get("X-SSE-Request"));
+    }
+    
+    /**
+     * Handle Server-Sent Events (SSE) response for a Flux
+     * 
+     * @param flux The Flux data source
+     * @param context The MVC context
+     * @param response The MVC response
+     */
+    private void handleSSEResponse(Flux<?> flux, MvcContext context, MvcResponse response) {
+        // Set appropriate headers for SSE
+        context.getResHeaders().put(HttpHeaderNames.CONTENT_TYPE.toString(), "text/event-stream");
+        context.getResHeaders().put(HttpHeaderNames.CACHE_CONTROL.toString(), "no-cache");
+        context.getResHeaders().put(HttpHeaderNames.CONNECTION.toString(), "keep-alive");
+        context.getResHeaders().put("X-Accel-Buffering", "no"); // Disable nginx buffering if used
+        
+        // Initialize SSE connection
+        response.initSSE(context);
+        
+        // Subscribe to flux and send each item as an SSE event
+        flux.subscribe(
+            item -> {
+                String data = item instanceof String ? (String) item : gson.toJson(item);
+                response.sendSSEEvent(context, data);
+            },
+            error -> {
+                log.error("Error in SSE stream", error);
+                response.closeSSE(context);
+            },
+            () -> response.closeSSE(context)
+        );
+    }
+
+    /**
+     * Handle WebSocket response for a Flux
+     * 
+     * @param flux The Flux data source
+     * @param context The MVC context
+     * @param response The MVC response
+     */
+    private void handleWebSocketResponse(Flux<?> flux, MvcContext context, MvcResponse response) {
+        // For WebSockets, we send each flux item as a separate WebSocket message
+        flux.subscribe(
+            item -> {
+                // Convert the item to a JSON string if it's not already a string
+                String data = item instanceof String ? (String) item : gson.toJson(item);
+                
+                // Send the message through the WebSocket
+                if (context.isWebsocket()) {
+                    // Use TextWebSocketFrame directly since that's what MvcResponse.writeAndFlush does
+                    // for WebSocket connections
+                    response.writeAndFlush(context, data);
+                }
+            },
+            error -> {
+                // Handle errors by sending an error message
+                String errorMessage = gson.toJson(new MvcResult<String>() {{
+                    setCode(500);
+                    setMessage(error.getMessage());
+                }});
+                response.writeAndFlush(context, errorMessage);
+            },
+            () -> {
+                // Optional completion handling - could send a completion message
+                // or do nothing since WebSockets stay open
+            }
+        );
     }
 }

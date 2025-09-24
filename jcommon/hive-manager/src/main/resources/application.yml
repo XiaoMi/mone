@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+mcp:
+  llm: CLAUDE_COMPANY
+#  llm: doubao_deepseek_v3
+#  llm: grok
+  transport:
+    type: grpc
+  grpc:
+    port: 9286
+  hub:
+    path:
+  agent:
+    name: agentManager
+    delay: 8
+
+spring:
+  profiles:
+    active: dev
+  r2dbc:
+    url: r2dbc:mysql://${TEST_DB_URL}/${TEST_DB_NAME}
+    username: ${TEST_DB_USER_NAME}
+    password: ${TEST_DB_PASSWORD}
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+  web:
+    resources:
+      static-locations: classpath:/static/dist/
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+jwt:
+  expiration: 86400000 # 24 hours in milliseconds
+
+logging:
+  level:
+    org.springframework.security: INFO
+    run.mone.agentx: INFO
+    org.springframework.r2dbc: INFO
+    io.r2dbc.mysql: INFO
+
+hive:
+  manager:
+    token: ${hive_manager_token}

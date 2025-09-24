@@ -1,0 +1,230 @@
+:root {
+    --sidebar-width: 100%;
+    --header-height: 48px;
+    --primary-color: #1a1a1a;
+    --secondary-color: #2d2d2d;
+    --text-color: #ffffff;
+    --border-color: #3d3d3d;
+    --hover-color: #3d3d3d;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: transparent;
+    color: var(--text-color);
+}
+
+.sidebar {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background-color: var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+}
+
+.sidebar-header {
+    height: var(--header-height);
+    background-color: var(--secondary-color);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.close-btn:hover {
+    background-color: var(--hover-color);
+    border-radius: 4px;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.position-tracker, .selector-container, .coordinates {
+    background-color: var(--secondary-color);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.input-group {
+    margin-bottom: 8px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: var(--text-color);
+}
+
+.action-button {
+    width: 100%;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.action-button:hover {
+    background-color: var(--hover-color);
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#tabs-list {
+    margin-top: 16px;
+}
+
+#status-text {
+    margin-top: 16px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.message-item {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+}
+
+.message-time {
+    color: #666;
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+.message-content {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.message-content.json {
+    color: #0066cc;
+}
+
+.message-content.text {
+    color: #333;
+}
+
+.message-input-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+
+#realtime-messages {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.button-container-wrapper {
+    margin: 10px 0;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+    overflow: hidden;
+    overflow: auto;
+}
+
+.button-container-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.collapse-arrow {
+    margin-right: 8px;
+    transition: transform 0.3s ease;
+    color: var(--text-color);
+}
+
+.collapse-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+.button-container {
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding: 0 12px;
+    overflow-y: auto;
+}
+
+.button-container.collapsed {
+    max-height: 0;
+    padding: 0 12px;
+}
+
+.header-text {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.selector-input-group {
+    display: flex;
+    flex-direction: column;
+    margin: 8px 0;
+    padding: 0 10px;
+}
+
+.selector-input {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.selector-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
