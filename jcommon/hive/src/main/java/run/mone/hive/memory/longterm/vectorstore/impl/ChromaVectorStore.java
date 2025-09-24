@@ -325,8 +325,8 @@ public class ChromaVectorStore implements VectorStoreBase {
     @Override
     public List<MemoryItem> list(Map<String, Object> filters, int limit) {
         try {
-            Map<String, Object> whereClause = generateWhereClause(filters);
-            GetResult result = collection.get(null, whereClause, null);
+            // no filter when get all
+            GetResult result = collection.get(null, null, null);
             return parseGetResponseList(result);
         } catch (Exception e) {
             log.error("Failed to list vectors: {}", e.getMessage());
