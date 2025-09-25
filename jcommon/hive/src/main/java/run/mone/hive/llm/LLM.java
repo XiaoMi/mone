@@ -938,6 +938,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.DOUBAO_VISION ||
                     this.llmProvider == LLMProvider.GROK ||
                     this.llmProvider == LLMProvider.DOUBAO ||
+                    this.llmProvider == LLMProvider.QWEN ||
                     this.llmProvider == LLMProvider.MIFY ||
                     this.llmProvider == LLMProvider.MIFY_GATEWAY ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
