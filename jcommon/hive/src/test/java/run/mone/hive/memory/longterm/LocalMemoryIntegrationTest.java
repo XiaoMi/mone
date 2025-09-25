@@ -81,7 +81,7 @@ public class LocalMemoryIntegrationTest {
         
         try {
             Map<String, Object> searchResult = memory.search(
-                "用户的饮品偏好", TEST_USER_ID, null, null, 5, null, 0.7);
+                TEST_USER_ID + "的饮品偏好", TEST_USER_ID, null, null, 5, null, 0.7);
             
             assertNotNull(searchResult, "搜索结果不应为null");
             log.info("向量存储搜索成功: {}", searchResult);
