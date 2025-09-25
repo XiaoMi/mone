@@ -42,6 +42,7 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<search_files>") ||
         mcpContent.includes("<write_to_file>") ||
         mcpContent.includes("<list_files>") ||
+        mcpContent.includes("<list_code_definition_names>") ||
         mcpContent.includes("<tool_result>")
       )
     ) {
@@ -60,10 +61,11 @@ export function markdownItMcp(md: MarkdownIt) {
     // const getParentTag = () => tagStack[tagStack.length - 2];
     // // 辅助函数：检查是否在指定标签内
     // const isInsideTag = (tagName: string) => tagStack.includes(tagName);
+    let toolResult: string = "" 
 
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
-        console.log("onopentag", name, attributes);
+        // console.log("onopentag", name, attributes);
         tagStack.push(name); // 将标签推入栈中
         /*
          * This fires when a new tag is opened.
@@ -223,6 +225,16 @@ export function markdownItMcp(md: MarkdownIt) {
                 <span>文件列表</span>
               </div>
               <div class="list-files-content">`;
+        } else if (name === "list_code_definition_names") {
+          html += `
+            <div class="list-code-definition-names-block">
+              <div class="list-code-definition-names-header">
+                <i class="fa-solid fa-code"></i>
+                <span>代码定义列表</span>
+              </div>
+              <div class="list-code-definition-names-content">
+                <div class="path-section">
+                  <pre><code>`;
         } else if (name === "recursive") {
           html += `<div class="recursive-section">
             <span class="recursive-label">递归：</span>
@@ -247,6 +259,7 @@ export function markdownItMcp(md: MarkdownIt) {
             </div>
             <div class="task-progress-content">`;
         } else if (name === "tool_result") {
+          toolResult = "";
           html += `
             <div class="tool-result-block">
               <div class="tool-result-header">
@@ -277,16 +290,22 @@ export function markdownItMcp(md: MarkdownIt) {
       ontext(text) {
         const tagName = getCurrentTag();
         if (tagName === "tool_result") {
-          try {
-            // 验证是否为有效的 JSON
-            JSON.parse(text);
-            // 生成一个特殊的标记，包含原始 JSON 数据
-            html += `<div class="vue3-json-viewer-placeholder" data-json="${md.utils.escapeHtml(text).replace(/"/g, '&quot;')}"></div>`;
-          } catch (e) {
-            // 不是合法 JSON，作为普通文本处理
-            console.warn("tool_result 解析 JSON 失败，作为普通文本处理", e);
-            html += `<pre><code class="language-json">${md.utils.escapeHtml(text)}</code></pre>`;
-          }
+          html += `${md.utils.escapeHtml(text)}`
+          // try {
+          //   // 验证是否为有效的 JSON
+          //   console.log("tool_result text:", text);
+          //   const parsedJson = JSON.parse(text);
+          //   // 直接显示格式化的 JSON 代码块
+          //   html += `${md.utils.escapeHtml(JSON.stringify(parsedJson, null, 2))}`;
+          // } catch (e) {
+          //   // 不是合法 JSON，作为普通文本处理
+          //   console.warn("tool_result 解析 JSON 失败，作为普通文本处理", e);
+          //   html += `${md.utils.escapeHtml(text)}`;
+          // }
+          return;
+        } else if (tagName === "task_progress") {
+          // 处理任务进度内容，转换为列表
+          html += md.render(text);
           return;
         }
         if (isDownloadFile) {
@@ -331,7 +350,10 @@ export function markdownItMcp(md: MarkdownIt) {
          * opening tags will be ignored.
          */
         const poppedTag = tagStack.pop(); // 从栈中弹出标签
-        console.log("onclosetag", tagname, "popped:", poppedTag, "stack:", tagStack);
+        if (tagname !== poppedTag) {
+          console.warn(`标签不匹配: expected </${poppedTag}>, but got </${tagname}>`);
+        }
+        // console.log("onclosetag", tagname, "popped:", poppedTag, "stack:", tagStack);
 
         if (tagname === "thinking") {
           html += `</div></div>`;
@@ -382,6 +404,8 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</span></div>`;
         } else if (tagname === "list_files") {
           html += `</div></div>`;
+        } else if (tagname === "list_code_definition_names") {
+          html += `</code></pre></div></div></div>`;
         } else if (tagname === "recursive") {
           html += `</span></div>`;
         } else if (tagname === "execute_command") {
@@ -410,7 +434,7 @@ export function markdownItMcp(md: MarkdownIt) {
     parser.write(mcpContent);
     parser.end();
 
-    console.log("Generated HTML:", html);
+    // console.log("Generated HTML:", html);
 
     const token = state.push("html_block", "", 0);
     token.content = html;

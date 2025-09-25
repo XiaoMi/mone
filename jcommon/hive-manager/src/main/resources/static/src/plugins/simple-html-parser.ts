@@ -38,7 +38,8 @@ type SupportedTag =
   | 'file_pattern'
   | 'working_directory'
   | 'timeout'
-  | 'tool_result';
+  | 'tool_result'
+  | 'list_code_definition_names';
 
 interface Position {
   line: number;    // 行号
@@ -110,7 +111,8 @@ export class SimpleHtmlParser {
       'file_pattern',
       'working_directory',
       'timeout',
-      'tool_result'
+      'tool_result',
+      'list_code_definition_names'
     ]);
   }
 
