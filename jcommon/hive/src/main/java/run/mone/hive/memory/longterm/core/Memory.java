@@ -109,7 +109,7 @@ public class Memory implements MemoryBase {
                 () -> addToVectorStore(messageList, processedMetadata, effectiveFilters, infer), executor);
 
         CompletableFuture<List<String>> graphFuture = CompletableFuture.supplyAsync(
-                () -> addToGraph(messageList, effectiveFilters), executor);
+                () -> addToGraph(messageList, effectiveFilters, processedMetadata), executor);
 
         try {
             List<MemoryItem> vectorResult = vectorFuture.get();
@@ -217,7 +217,7 @@ public class Memory implements MemoryBase {
 
             CompletableFuture<List<Map<String, Object>>> graphFuture = CompletableFuture.supplyAsync(() -> {
                 if (enableGraph && graphStore != null) {
-                    return graphStore.search(query, limit);
+                    return graphStore.search(query, limit, userId);
                 }
                 return new ArrayList<>();
             }, executor);
@@ -609,7 +609,11 @@ public class Memory implements MemoryBase {
             newMetadata.put("hash", calculateHash(data));
             newMetadata.put("updated_at", LocalDateTime.now().toString());
 
+            // 更新向量存储
             vectorStore.update(memoryId, embeddings, newMetadata);
+
+            // 更新图记忆（如果启用）
+            updateGraphMemoryOnUpdate(data, newMetadata);
 
             historyManager.addHistory(memoryId, existingMemory.getMemory(), data, "UPDATE",
                     (String) newMetadata.get("created_at"),
@@ -631,7 +635,11 @@ public class Memory implements MemoryBase {
                 return;
             }
 
+            // 删除向量存储中的记忆
             vectorStore.delete(memoryId);
+
+            // 删除相关的图记忆（如果启用）
+            deleteRelatedGraphMemories(existingMemory);
 
             historyManager.addHistory(memoryId, existingMemory.getMemory(), null, "DELETE",
                     null, null,
@@ -680,7 +688,7 @@ public class Memory implements MemoryBase {
         }
     }
 
-    private List<String> addToGraph(List<Message> messages, Map<String, Object> filters) {
+    private List<String> addToGraph(List<Message> messages, Map<String, Object> filters, Map<String, Object> metadata) {
         if (!enableGraph || graphStore == null) {
             return new ArrayList<>();
         }
@@ -691,14 +699,14 @@ public class Memory implements MemoryBase {
 
             // 设置用户ID过滤器
             if (filters.get("user_id") == null) {
-                filters.put("user_id", "user");
+                filters.put("user_id", metadata.get("user_id"));
             }
 
             // 从文本中提取实体关系
             List<GraphStoreBase.GraphEntity> entities = graphStore.establishRelations(parsedMessages);
 
             // 添加关系到图存储
-            List<Map<String, Object>> addResults = graphStore.addMemories(entities);
+            List<Map<String, Object>> addResults = graphStore.addMemories(entities, metadata);
             log.debug("{}", addResults);
 
             // 格式化返回的关系
@@ -900,6 +908,101 @@ public class Memory implements MemoryBase {
             result.put("success", false);
             result.put("error", e.getMessage());
             return result;
+        }
+    }
+
+    /**
+     * 在记忆更新时同时更新图记忆
+     * 从新的文本数据中提取关系并更新到图存储中
+     */
+    private void updateGraphMemoryOnUpdate(String data, Map<String, Object> metadata) {
+        if (!enableGraph || graphStore == null) {
+            return;
+        }
+
+        try {
+            // 构建过滤器，包含用户身份信息
+            Map<String, Object> filters = new HashMap<>();
+            filters.put("user_id", metadata.getOrDefault("user_id", "default_user"));
+            if (metadata.containsKey("agent_id")) {
+                filters.put("agent_id", metadata.get("agent_id"));
+            }
+            if (metadata.containsKey("run_id")) {
+                filters.put("run_id", metadata.get("run_id"));
+            }
+
+            // 从更新的文本中提取新的实体关系
+            List<GraphStoreBase.GraphEntity> newEntities = graphStore.establishRelations(data);
+            
+            if (!newEntities.isEmpty()) {
+                // 添加新的关系到图存储
+                // 注意：这里使用addMemories方法，图存储会自动处理重复关系
+                List<Map<String, Object>> addResults = graphStore.addMemories(newEntities, metadata);
+                
+                log.debug("Updated graph memory with {} new relationships during memory update", newEntities.size());
+                log.debug("Graph update results: {}", addResults);
+            }
+
+        } catch (Exception e) {
+            // 图记忆更新失败不应该影响主要的记忆更新操作
+            log.warn("Failed to update graph memory during memory update, but vector store update succeeded", e);
+        }
+    }
+
+    /**
+     * 删除与已删除记忆相关的图记忆
+     * 当删除一个记忆时，也应该删除包含该记忆内容的图关系
+     */
+    private void deleteRelatedGraphMemories(MemoryItem memory) {
+        if (!enableGraph || graphStore == null) {
+            return;
+        }
+
+        try {
+            String data = memory.getMemory();
+            Map<String, Object> metadata = memory.getMetadata();
+            
+            // 构建过滤器
+            Map<String, Object> filters = new HashMap<>();
+            filters.put("user_id", metadata.getOrDefault("user_id", "default_user"));
+            if (metadata.containsKey("agent_id")) {
+                filters.put("agent_id", metadata.get("agent_id"));
+            }
+            if (metadata.containsKey("run_id")) {
+                filters.put("run_id", metadata.get("run_id"));
+            }
+
+            // 从已删除的记忆文本中提取可能的实体关系
+            List<GraphStoreBase.GraphEntity> extractedEntities = graphStore.establishRelations(data);
+            
+            if (!extractedEntities.isEmpty()) {
+                // 对于每个提取的关系，尝试从图存储中删除
+                for (GraphStoreBase.GraphEntity entity : extractedEntities) {
+                    try {
+                        // 检查关系是否存在，如果存在则删除
+                        String userId = (String) filters.getOrDefault("user_id", "default_user");
+                        if (graphStore.relationshipExists(entity.getSource(), entity.getDestination(), entity.getRelationship(), userId)) {
+                            Map<String, Object> deleteResult = graphStore.deleteMemory(
+                                entity.getSource(), 
+                                entity.getDestination(), 
+                                entity.getRelationship(), 
+                                userId
+                            );
+                            log.debug("Deleted graph relationship: {} -> {} -> {} (result: {})", 
+                                entity.getSource(), entity.getRelationship(), entity.getDestination(), deleteResult);
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to delete specific graph relationship: {} -> {} -> {}", 
+                            entity.getSource(), entity.getRelationship(), entity.getDestination(), e);
+                    }
+                }
+                
+                log.debug("Processed {} potential graph relationships for deletion during memory delete", extractedEntities.size());
+            }
+
+        } catch (Exception e) {
+            // 图记忆删除失败不应该影响主要的记忆删除操作
+            log.warn("Failed to delete related graph memories during memory deletion, but vector store deletion succeeded", e);
         }
     }
 

@@ -294,30 +294,34 @@ public class KuzuGraphStore implements GraphStoreBase {
 
     @Override
     public Map<String, Object> addMemory(String source, String destination, String relationship,
-                                        String sourceType, String destinationType) {
+                                        String sourceType, String destinationType, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             // Insert source entity if not exists
             String sourceQuery = String.format("""
-                MERGE (s:Entity {name: '%s'})
+                MERGE (s:Entity {name: '%s', user_id: '%s'})
                 ON CREATE SET s.type = '%s', s.created_at = timestamp()
                 """,
-                escapeString(source), escapeString(sourceType));
+                escapeString(source), escapeString(userId), escapeString(sourceType));
             executeQuery(sourceQuery);
 
             // Insert destination entity if not exists
             String destQuery = String.format("""
-                MERGE (d:Entity {name: '%s'})
+                MERGE (d:Entity {name: '%s', user_id: '%s'})
                 ON CREATE SET d.type = '%s', d.created_at = timestamp()
                 """,
-                escapeString(destination), escapeString(destinationType));
+                escapeString(destination), escapeString(userId), escapeString(destinationType));
             executeQuery(destQuery);
 
             // Create relationship
             String relQuery = String.format("""
-                MATCH (s:Entity {name: '%s'}), (d:Entity {name: '%s'})
+                MATCH (s:Entity {name: '%s', user_id: '%s'}), (d:Entity {name: '%s', user_id: '%s'})
                 CREATE (s)-[r:Relationship {type: '%s', created_at: timestamp(), updated_at: timestamp()}]->(d)
                 """,
-                escapeString(source), escapeString(destination), escapeString(relationship));
+                escapeString(source), escapeString(userId), escapeString(destination), escapeString(userId), escapeString(relationship));
             executeQuery(relQuery);
 
             Map<String, Object> result = new HashMap<>();
@@ -325,9 +329,10 @@ public class KuzuGraphStore implements GraphStoreBase {
             result.put("source", source);
             result.put("destination", destination);
             result.put("relationship", relationship);
+            result.put("user_id", userId);
             result.put("status", "success");
 
-            log.info("Added relationship: {} -[{}]-> {}", source, relationship, destination);
+            log.info("Added relationship for user {}: {} -[{}]-> {}", userId, source, relationship, destination);
             return result;
         } catch (Exception e) {
             log.error("Failed to add memory: {}", e.getMessage());
@@ -340,13 +345,17 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public Map<String, Object> updateMemory(String source, String destination, String relationship) {
+    public Map<String, Object> updateMemory(String source, String destination, String relationship, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             String query = String.format("""
-                MATCH (s:Entity {name: '%s'})-[r:Relationship]->(d:Entity {name: '%s'})
+                MATCH (s:Entity {name: '%s', user_id: '%s'})-[r:Relationship]->(d:Entity {name: '%s', user_id: '%s'})
                 SET r.type = '%s', r.updated_at = timestamp()
                 """,
-                escapeString(source), escapeString(destination), escapeString(relationship));
+                escapeString(source), escapeString(userId), escapeString(destination), escapeString(userId), escapeString(relationship));
             executeQuery(query);
 
             Map<String, Object> result = new HashMap<>();
@@ -354,9 +363,10 @@ public class KuzuGraphStore implements GraphStoreBase {
             result.put("source", source);
             result.put("destination", destination);
             result.put("relationship", relationship);
+            result.put("user_id", userId);
             result.put("status", "success");
 
-            log.info("Updated relationship: {} -[{}]-> {}", source, relationship, destination);
+            log.info("Updated relationship for user {}: {} -[{}]-> {}", userId, source, relationship, destination);
             return result;
         } catch (Exception e) {
             log.error("Failed to update memory: {}", e.getMessage());
@@ -369,13 +379,17 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public Map<String, Object> deleteMemory(String source, String destination, String relationship) {
+    public Map<String, Object> deleteMemory(String source, String destination, String relationship, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             String query = String.format("""
-                MATCH (s:Entity {name: '%s'})-[r:Relationship {type: '%s'}]->(d:Entity {name: '%s'})
+                MATCH (s:Entity {name: '%s', user_id: '%s'})-[r:Relationship {type: '%s'}]->(d:Entity {name: '%s', user_id: '%s'})
                 DELETE r
                 """,
-                escapeString(source), escapeString(relationship), escapeString(destination));
+                escapeString(source), escapeString(userId), escapeString(relationship), escapeString(destination), escapeString(userId));
             executeQuery(query);
 
             Map<String, Object> result = new HashMap<>();
@@ -383,9 +397,10 @@ public class KuzuGraphStore implements GraphStoreBase {
             result.put("source", source);
             result.put("destination", destination);
             result.put("relationship", relationship);
+            result.put("user_id", userId);
             result.put("status", "success");
 
-            log.info("Deleted relationship: {} -[{}]-> {}", source, relationship, destination);
+            log.info("Deleted relationship for user {}: {} -[{}]-> {}", userId, source, relationship, destination);
             return result;
         } catch (Exception e) {
             log.error("Failed to delete memory: {}", e.getMessage());
@@ -398,16 +413,20 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public List<Map<String, Object>> search(String query, int limit) {
+    public List<Map<String, Object>> search(String query, int limit, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             String searchQuery = String.format("""
-                MATCH (s:Entity)-[r:Relationship]->(d:Entity)
+                MATCH (s:Entity {user_id: '%s'})-[r:Relationship]->(d:Entity {user_id: '%s'})
                 WHERE s.name CONTAINS '%s' OR d.name CONTAINS '%s' OR r.type CONTAINS '%s'
                 RETURN s.name as source, r.type as relationship, d.name as destination,
                        s.type as source_type, d.type as destination_type
                 LIMIT %d
                 """,
-                escapeString(query), escapeString(query), escapeString(query), limit);
+                escapeString(userId), escapeString(userId), escapeString(query), escapeString(query), escapeString(query), limit);
 
             QueryResult result = executeQuery(searchQuery);
             List<Map<String, Object>> results = new ArrayList<>();
@@ -423,7 +442,7 @@ public class KuzuGraphStore implements GraphStoreBase {
                 results.add(row);
             }
 
-            log.info("Found {} relationships matching query: {}", results.size(), query);
+            log.info("Found {} relationships for user {} matching query: {}", results.size(), userId, query);
             return results;
         } catch (Exception e) {
             log.error("Failed to search memories: {}", e.getMessage());
@@ -432,14 +451,18 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public List<Map<String, Object>> getAll(int limit) {
+    public List<Map<String, Object>> getAll(int limit, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             String query = String.format("""
-                MATCH (s:Entity)-[r:Relationship]->(d:Entity)
+                MATCH (s:Entity {user_id: '%s'})-[r:Relationship]->(d:Entity {user_id: '%s'})
                 RETURN s.name as source, r.type as relationship, d.name as destination,
                        s.type as source_type, d.type as destination_type
                 LIMIT %d
-                """, limit);
+                """, escapeString(userId), escapeString(userId), limit);
 
             QueryResult result = executeQuery(query);
             List<Map<String, Object>> results = new ArrayList<>();
@@ -490,9 +513,24 @@ public class KuzuGraphStore implements GraphStoreBase {
 
     @Override
     public List<GraphEntity> establishRelations(String text) {
-        // Create default filters for compatibility with existing interface
+        return establishRelations(text, "default_user");
+    }
+
+    /**
+     * 从文本中建立实体关系，支持指定用户ID
+     * 
+     * @param text 输入文本
+     * @param userId 用户ID
+     * @return 关系列表
+     */
+    public List<GraphEntity> establishRelations(String text, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
+        // Create filters with user ID
         Map<String, Object> filters = new HashMap<>();
-        filters.put("user_id", "default_user");
+        filters.put("user_id", userId);
 
         // First extract entities
         Map<String, String> entityTypeMap = retrieveNodesFromData(text, filters);
@@ -513,13 +551,17 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public boolean relationshipExists(String source, String destination, String relationship) {
+    public boolean relationshipExists(String source, String destination, String relationship, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             String query = String.format("""
-                MATCH (s:Entity {name: '%s'})-[r:Relationship {type: '%s'}]->(d:Entity {name: '%s'})
+                MATCH (s:Entity {name: '%s', user_id: '%s'})-[r:Relationship {type: '%s'}]->(d:Entity {name: '%s', user_id: '%s'})
                 RETURN COUNT(r) as count
                 """,
-                escapeString(source), escapeString(relationship), escapeString(destination));
+                escapeString(source), escapeString(userId), escapeString(relationship), escapeString(destination), escapeString(userId));
 
             QueryResult result = executeQuery(query);
             if (result.hasNext()) {
@@ -534,10 +576,14 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public List<Map<String, Object>> getNodeRelationships(String nodeName) {
+    public List<Map<String, Object>> getNodeRelationships(String nodeName, String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
             String query = String.format("""
-                MATCH (n:Entity {name: '%s'})-[r:Relationship]-(other:Entity)
+                MATCH (n:Entity {name: '%s', user_id: '%s'})-[r:Relationship]-(other:Entity {user_id: '%s'})
                 RETURN CASE
                          WHEN startNode(r) = n THEN 'outgoing'
                          ELSE 'incoming'
@@ -545,7 +591,7 @@ public class KuzuGraphStore implements GraphStoreBase {
                        r.type as relationship,
                        other.name as other_node,
                        other.type as other_type
-                """, escapeString(nodeName));
+                """, escapeString(nodeName), escapeString(userId), escapeString(userId));
 
             QueryResult result = executeQuery(query);
             List<Map<String, Object>> relationships = new ArrayList<>();
@@ -568,10 +614,15 @@ public class KuzuGraphStore implements GraphStoreBase {
     }
 
     @Override
-    public void deleteAll() {
+    public void deleteAll(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            userId = "default_user";
+        }
+
         try {
-            executeQuery("MATCH (n) DETACH DELETE n");
-            log.info("Deleted all data from Kuzu graph store");
+            String query = String.format("MATCH (n:Entity {user_id: '%s'}) DETACH DELETE n", escapeString(userId));
+            executeQuery(query);
+            log.info("Deleted all data for user {} from Kuzu graph store", userId);
         } catch (Exception e) {
             log.error("Failed to delete all data: {}", e.getMessage());
             throw new RuntimeException("Failed to delete all data", e);

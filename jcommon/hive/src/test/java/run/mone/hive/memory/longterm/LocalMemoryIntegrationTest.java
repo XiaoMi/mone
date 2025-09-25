@@ -61,8 +61,7 @@ public class LocalMemoryIntegrationTest {
         log.info("=== 测试向量存储添加功能 ===");
         
         try {
-            // 注意：这里使用模拟的嵌入向量，因为实际API调用需要真实密钥
-            Map<String, Object> result = addMemoryWithMockEmbedding(
+            Map<String, Object> result = addMemoryWithEmbedding(
                 "用户喜欢喝咖啡，不喜欢茶", TEST_USER_ID);
             
             assertNotNull(result, "添加结果不应为null");
@@ -82,7 +81,7 @@ public class LocalMemoryIntegrationTest {
         
         try {
             Map<String, Object> searchResult = memory.search(
-                "用户的饮品偏好", TEST_USER_ID, null, null, 5, null, 0.7);
+                TEST_USER_ID + "的饮品偏好", TEST_USER_ID, null, null, 5, null, 0.7);
             
             assertNotNull(searchResult, "搜索结果不应为null");
             log.info("向量存储搜索成功: {}", searchResult);
@@ -100,7 +99,7 @@ public class LocalMemoryIntegrationTest {
         
         try {
             // 添加包含实体关系的记忆
-            Map<String, Object> result = addMemoryWithMockEmbedding(
+            Map<String, Object> result = addMemoryWithEmbedding(
                 "张三是北京大学的教授，他住在海淀区。李四是他的学生。", TEST_USER_ID);
             
             assertNotNull(result, "图存储添加结果不应为null");
@@ -137,45 +136,6 @@ public class LocalMemoryIntegrationTest {
     }
     
     @Test
-    @Order(5)
-    @DisplayName("测试数据持久化")
-    void testPersistence() {
-        /**
-         * 使用Chroma和Kuzu的内存模式，并没有持久化在tempDir
-         */
-        log.info("=== 测试数据持久化功能 ===");
-        
-        // 检查向量存储文件是否创建
-        Path vectorPath = tempDir.resolve("vector");
-        if (vectorPath.toFile().exists()) {
-            log.info("向量存储目录已创建: {}", vectorPath);
-            
-            Path vectorFile = vectorPath.resolve("test_collection").resolve("vectors.json");
-            Path metadataFile = vectorPath.resolve("test_collection").resolve("metadata.json");
-            
-            // 注意：文件可能在内存中还未刷新到磁盘
-            log.info("向量文件存在: {}, 元数据文件存在: {}", 
-                vectorFile.toFile().exists(), metadataFile.toFile().exists());
-        }
-        
-        // 检查图存储文件是否创建
-        Path graphPath = tempDir.resolve("graph");
-        if (graphPath.toFile().exists()) {
-            log.info("图存储目录已创建: {}", graphPath);
-            
-            Path entitiesFile = graphPath.resolve("entities.json");
-            Path relationsFile = graphPath.resolve("relations.json");
-            
-            log.info("实体文件存在: {}, 关系文件存在: {}", 
-                entitiesFile.toFile().exists(), relationsFile.toFile().exists());
-        }
-        
-        // 检查历史数据库文件
-        Path historyFile = tempDir.resolve("history.db");
-        log.info("历史数据库文件存在: {}", historyFile.toFile().exists());
-    }
-    
-    @Test
     @Order(6)
     @DisplayName("测试配置验证")
     void testConfigValidation() {
@@ -196,30 +156,7 @@ public class LocalMemoryIntegrationTest {
             graphConfig.getProvider(), graphConfig.isEnabled());
     }
     
-    @Test
-    @Order(7)
-    @DisplayName("测试异步操作")
-    void testAsyncOperations() {
-        log.info("=== 测试异步操作功能 ===");
-        
-        try {
-            // 测试异步添加（使用模拟数据）
-            var future = memory.addAsync(
-                "异步添加的记忆内容", TEST_USER_ID, TEST_AGENT_ID, null, 
-                Map.of("source", "async_test"), true, null, null);
-            
-            assertNotNull(future, "异步操作Future不应为null");
-            log.info("异步操作启动成功");
-            
-            // 注意：实际的完成可能需要API调用，这里主要测试接口
-            
-        } catch (Exception e) {
-            log.warn("异步操作测试跳过: {}", e.getMessage());
-        }
-    }
-    
-    // 工具方法：模拟添加记忆（用于不依赖真实API的测试）
-    private Map<String, Object> addMemoryWithMockEmbedding(String content, String userId) {
+    private Map<String, Object> addMemoryWithEmbedding(String content, String userId) {
         try {
             return memory.add(content, userId, null, null, null, true, null, null);
         } catch (Exception e) {
@@ -257,19 +194,4 @@ public class LocalMemoryIntegrationTest {
         log.info("错误处理测试完成");
     }
     
-    @Test
-    @Order(9)
-    @DisplayName("测试资源清理")
-    void testResourceCleanup() {
-        log.info("=== 测试资源清理功能 ===");
-        
-        // 测试内存重置（谨慎使用，会清空所有数据）
-        try {
-            // 注意：这会清空测试数据
-            // memory.reset();
-            log.info("资源清理功能可用（已跳过实际执行以保护测试数据）");
-        } catch (Exception e) {
-            log.error("资源清理测试失败: {}", e.getMessage());
-        }
-    }
 }

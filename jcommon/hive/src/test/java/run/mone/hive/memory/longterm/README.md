@@ -13,7 +13,7 @@ docker run -d \
   -p 7474:7474 -p 7687:7687 \
   --env NEO4J_AUTH=neo4j/password \
   --env NEO4J_PLUGINS='["apoc"]' \
-  neo4j:5.15.0
+  neo4j:latest
 ```
     - 或者使用kuzu默认随进程启动(InMemory模式，不会持久化到文件)
 - 运行[LocalMemoryIntegrationTest.java](LocalMemoryIntegrationTest.java) 验证向量和图存储功能

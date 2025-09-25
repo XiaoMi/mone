@@ -21,26 +21,8 @@ public class VectorStoreFactory {
         }
         
         switch (config.getProvider()) {
-            case LOCAL:
-                return new LocalVectorStore(config);
             case CHROMA:
                 return new ChromaVectorStore(config);
-            case QDRANT:
-                return new QdrantVectorStore(config);
-            case WEAVIATE:
-                return new WeaviateVectorStore(config);
-            case PINECONE:
-                return new PineconeVectorStore(config);
-            case FAISS:
-                return new FaissVectorStore(config);
-            case ELASTICSEARCH:
-                return new ElasticsearchVectorStore(config);
-            case REDIS:
-                return new RedisVectorStore(config);
-            case PGVECTOR:
-                return new PgVectorStore(config);
-            case MILVUS:
-                return new MilvusVectorStore(config);
             default:
                 throw new IllegalArgumentException("Unsupported vector store provider: " + config.getProvider());
         }
