@@ -13,6 +13,7 @@ import run.mone.hive.memory.longterm.embeddings.EmbeddingBase;
 import run.mone.hive.memory.longterm.vectorstore.VectorStoreFactory;
 import run.mone.hive.memory.longterm.vectorstore.VectorStoreBase;
 import run.mone.hive.memory.longterm.storage.HistoryManager;
+import run.mone.hive.memory.longterm.utils.MemoryUtils;
 import run.mone.hive.memory.longterm.utils.MessageParser;
 import run.mone.hive.memory.longterm.graph.GraphStoreBase;
 import run.mone.hive.memory.longterm.graph.GraphStoreFactory;
@@ -585,7 +586,7 @@ public class Memory implements MemoryBase {
      */
     private List<String> parseFactsFromJsonResponse(String response) {
         try {
-            JsonElement element = JsonParser.parseString(response.trim());
+            JsonElement element = JsonParser.parseString(MemoryUtils.removeCodeBlocks(response.trim()));
             if (element.isJsonObject()) {
                 JsonObject jsonObject = element.getAsJsonObject();
                 if (jsonObject.has("facts")) {
@@ -677,7 +678,7 @@ public class Memory implements MemoryBase {
      */
     private List<Map<String, Object>> parseMemoryActionsFromJsonResponse(String response) {
         try {
-            JsonElement element = JsonParser.parseString(response.trim());
+            JsonElement element = JsonParser.parseString(MemoryUtils.removeCodeBlocks(response.trim()));
             if (element.isJsonObject()) {
                 JsonObject jsonObject = element.getAsJsonObject();
                 if (jsonObject.has("memory")) {
