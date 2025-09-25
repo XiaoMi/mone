@@ -2,34 +2,42 @@
     <el-drawer
         title="调用记录"
         v-model="modelValue"
-        size="70%"
+        size="60%"
         :close-on-click-modal="false"
         :close-on-press-escape="false"
         class="invoke-history"
         direction="rtl">
         <template #default>
-            <div v-if="Object.keys(invokeHistory).length">
-                <div class="invoke-history-wrap">
-                    <div class="invoke-history-item">
-                        <strong>调用时间:</strong> {{ formatDate(invokeHistory.invokeTime) }}
-                    </div>
-                    <div class="invoke-history-item">
-                        <strong>调用用户:</strong> {{ invokeHistory.invokeUserName }}
-                    </div>
-                </div>
-                <div class="invoke-history-item">
-                    <strong>输入:</strong>
-                    <vue-json-pretty :data="handleParse(invokeHistory.inputs)" :deep="3" :showDoubleQuotes="true" :showIcon="true" :highlightSelectedItem="false" :highlightMouseoverNode="false"/>
-                </div>
-                <div class="invoke-history-item">
-                    <strong>输出:</strong> {{ invokeHistory.outputs }}
-                </div>
-            </div>
+            <el-table :data="invokeHistory" style="width: 100%; height: 100%;" v-if="invokeHistory.length">
+                <el-table-column prop="id" label="ID" align="center"/>
+                <el-table-column prop="invokeUserName" label="调用用户" align="center" />
+                <el-table-column prop="invokeTime" label="调用时间" width="150" align="center">
+                    <template #default="scope">
+                        {{ formatDate(scope.row.invokeTime) }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="invokeWay" label="invokeWay" align="center" >
+                    <template #default="scope">
+                        {{ invokeWayMap[scope.row.invokeWay] }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="type" label="type" align="center" >
+                    <template #default="scope">
+                        {{ typeMap[scope.row.type] }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" align="center" width="100">
+                    <template #default="scope">
+                        <el-button type="primary" size="small" text @click="handleDetail(scope.row)">详情</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
             <div v-else>
                 暂无调用记录
             </div>
         </template>
     </el-drawer>
+    <InvokeHistoryDialog v-model="detailVisible" :invokeHistory="detailInvokeHistory" />
 </template>
 
 <script setup lang="ts">
@@ -37,6 +45,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { getInvokeHistory } from '@/api/agent';
 import VueJsonPretty from 'vue-json-pretty';
+import InvokeHistoryDialog from './InvokeHistoryDialog.vue';
 import 'vue-json-pretty/lib/styles.css'
 
 interface InvokeHistory {
@@ -59,19 +68,32 @@ const modelValue = computed({
     set: (value) => emit('update:modelValue', value)
 })
 
-const invokeHistory = ref<InvokeHistory>({} as InvokeHistory)
+const invokeWayMap = ref<Record<string, string>>({
+    '1': '页面',
+    '2': '接口',
+    '3': '系统内部',
+    '4': '其他'
+})
+
+const typeMap = ref<Record<string, string>>({
+    '1': 'agnet',
+})
+
+const invokeHistory = ref<InvokeHistory[]>([])
+const detailVisible = ref(false)
+const detailInvokeHistory = ref<InvokeHistory | null>(null)
 
 watch(() => props.modelValue, (val) => {
     if (val) {
-        getInvokeHistory(props.agentId).then((res) => {
+        getInvokeHistory(Number(props.agentId)).then((res) => {
             if (res.data.code === 200) {
-                invokeHistory.value = res.data.data || {} as InvokeHistory
+                invokeHistory.value = res.data.data || [] as InvokeHistory[]
             } else {
                 ElMessage.error(res.data.message)
             }
         })
     } else {
-        invokeHistory.value = {} as InvokeHistory
+        invokeHistory.value = [] as InvokeHistory[]
     }
 })
 
@@ -80,9 +102,9 @@ const handleParse = (str: string) => {
     try {
         // 首先尝试直接解析
         let parsed = JSON.parse(str);
-        
+
         // 检查解析后的对象中是否还有字符串类型的JSON
-        const deepParse = (obj) => {
+        const deepParse = (obj: any) => {
             if (typeof obj === 'string') {
                 // 如果是字符串，尝试再次解析
                 try {
@@ -95,10 +117,10 @@ const handleParse = (str: string) => {
                 }
             } else if (Array.isArray(obj)) {
                 // 如果是数组，递归处理每个元素
-                return obj.map(item => deepParse(item));
+                return obj.map((item: any) => deepParse(item));
             } else if (typeof obj === 'object' && obj !== null) {
                 // 如果是对象，递归处理每个属性
-                const result = {};
+                const result: any = {};
                 for (const key in obj) {
                     if (obj.hasOwnProperty(key)) {
                         result[key] = deepParse(obj[key]);
@@ -109,7 +131,7 @@ const handleParse = (str: string) => {
             // 其他类型直接返回
             return obj;
         };
-        
+
         return deepParse(parsed);
     } catch (e) {
         console.error("Failed to parse JSON:", e);
@@ -118,6 +140,11 @@ const handleParse = (str: string) => {
   }
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString()
+  }
+
+  const handleDetail = (row: InvokeHistory) => {
+    detailInvokeHistory.value = row
+    detailVisible.value = true
   }
 </script>
 
@@ -156,5 +183,11 @@ const handleParse = (str: string) => {
     display: inline-block;
     align-self: flex-start;
 }
-
+.el-table {
+    background-color: transparent !important;
+}
+.el-table th .cell {
+    color: var(--el-color-chat-link-color);
+    font-weight: bold;
+}
 </style>

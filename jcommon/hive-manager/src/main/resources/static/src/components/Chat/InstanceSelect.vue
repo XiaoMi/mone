@@ -9,10 +9,34 @@
             />
         </el-select>
         <div class="right-btns">
-            <el-icon title="配置" size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"><Setting /></el-icon>
-            <el-icon title="MCP配置" size="14px" color="var(--el-color-info)" @click="handleOpenMcpConfig"><CreditCard /></el-icon>
-            <el-icon title="清除历史记录" size="14px" color="var(--el-color-warning)" @click="handleClearHistory"><Delete /></el-icon>
-            <el-icon title="下线" size="16px" color="var(--el-color-danger)" @click="confirmOffline"><SwitchButton /></el-icon>
+            <el-tooltip
+                class="instance-select-tooltip"
+                effect="dark"
+                content="配置"
+                placement="top"
+            >
+                <el-icon size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"><Setting /></el-icon>
+            </el-tooltip>
+            <el-tooltip
+                class="instance-select-tooltip"
+                effect="dark"
+                content="终止对话"
+                placement="top"
+            >
+                <el-icon size="16px" color="var(--el-color-warning)"  @click="handleStopMsg">
+                    <svg t="1758526773421" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2595" width="16" height="16"><path d="M783.058824 602.352941a210.823529 210.823529 0 1 1 0 421.647059 210.823529 210.823529 0 0 1 0-421.647059z m-121.072942 139.444706a140.528941 140.528941 0 0 0 192.451765 192.451765l-192.512-192.451765z m121.072942-69.150118c-26.081882 0-50.477176 7.047529-71.378824 19.395765l192.512 192.512a140.528941 140.528941 0 0 0-121.072941-211.907765zM451.764706 60.235294c232.869647 0 421.647059 161.792 421.647059 361.411765 0 44.995765-9.637647 88.124235-27.105883 127.879529a271.058824 271.058824 0 0 0-332.137411 229.616941 485.857882 485.857882 0 0 1-193.656471-13.854117l-132.999529 79.570823a60.235294 60.235294 0 0 1-91.136-54.512941l0.783058-6.987294 23.070118-138.420706C63.789176 583.499294 30.117647 505.976471 30.117647 421.647059c0-199.619765 188.777412-361.411765 421.647059-361.411765zM271.058824 361.411765a60.235294 60.235294 0 1 0 0 120.470588 60.235294 60.235294 0 0 0 0-120.470588z m180.705882 0a60.235294 60.235294 0 1 0 0 120.470588 60.235294 60.235294 0 0 0 0-120.470588z m180.705882 0a60.235294 60.235294 0 1 0 0 120.470588 60.235294 60.235294 0 0 0 0-120.470588z" fill="currentColor" p-id="2596"></path></svg>
+                </el-icon>
+            </el-tooltip>
+
+            <el-tooltip
+                class="instance-select-tooltip"
+                effect="dark"
+                content="清除历史记录"
+                placement="top"
+            >
+                <el-icon size="14px" color="var(--el-color-warning)" @click="handleClearHistory"><Delete /></el-icon>
+            </el-tooltip>
+            <el-icon size="16px" color="var(--el-color-danger)" @click="confirmOffline"><SwitchButton /></el-icon>
         </div>
 
         <!-- 配置对话框 -->
@@ -40,27 +64,6 @@
                 </span>
             </template>
         </el-dialog>
-
-        <!-- MCP 配置对话框 -->
-        <el-dialog
-            v-model="mcpConfigDialogVisible"
-            title="MCP 配置管理"
-            width="80%"
-            :close-on-click-modal="false"
-            class="mcp-config-dialog"
-            top="5vh"
-            :destroy-on-close="true"
-        >
-            <McpConfig />
-            <template #footer>
-                <div class="dialog-footer">
-                    <el-button @click="mcpConfigDialogVisible = false" size="default">
-                        <el-icon><Close /></el-icon>
-                        关闭
-                    </el-button>
-                </div>
-            </template>
-        </el-dialog>
     </div>
 </template>
 
@@ -69,16 +72,8 @@ import { useUserStore } from "@/stores/user";
 import { computed, ref, watch, watchEffect } from "vue";
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { useChatContextStore } from "@/stores/chat-context";
-import { Setting, CreditCard, Delete, SwitchButton, Close } from '@element-plus/icons-vue';
-import { getAgentConfigs, setBatchAgentConfig, deleteAgentConfig } from '@/api/agent';
-import McpConfig from './McpConfig.vue';
-
-interface InstanceType {
-  id: string | number;
-  ip: string;
-  port: string | number;
-  agentId?: string | number;
-}
+import { Setting } from '@element-plus/icons-vue';
+import { getAgentConfigs, setBatchAgentConfig, type AgentConfig, deleteAgentConfig } from '@/api/agent';
 
 const { getInstance, setSelectedInstance } = useUserStore();
 const { setMessageList } = useChatContextStore();
@@ -92,12 +87,17 @@ const props = defineProps({
         type: Function,
         required: true,
     },
+    onStopMsg: {
+        type: Function,
+        required: true,
+    },
 })
 const list = computed(() => {
     return getInstance()
 })
-watch(() => selectedIp.value, (newIp) => {
-    setSelectedInstance(list.value?.find((item) => item.ip === newIp))
+
+watch(()=>selectedIp.value, (newIp) => {
+    setSelectedInstance(list.value?.find((item: any) => item.ip === newIp))
 })
 
 // 添加 watchEffect 来设置默认值
@@ -124,13 +124,13 @@ const confirmOffline = () => {
     });
 };
 
+const handleStopMsg = () => {
+    props.onStopMsg?.();
+}
+
 const handleClearHistory = () => {
     setMessageList([]);
     props.onClearHistory?.();
-};
-
-const handleOpenMcpConfig = () => {
-    mcpConfigDialogVisible.value = true;
 };
 
 // 配置相关
@@ -138,11 +138,8 @@ const configDialogVisible = ref(false);
 const configList = ref<Array<{key: string, value: string}>>([]);
 const loading = ref(false);
 
-// MCP 配置相关
-const mcpConfigDialogVisible = ref(false);
-
 const handleOpenConfig = async () => {
-    const selectedInstance = getInstance()?.find((item: InstanceType) => item.ip === selectedIp.value);
+    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
     if (!selectedInstance?.agentId) {
         ElMessage.error('未找到当前实例对应的Agent');
         return;
@@ -186,7 +183,7 @@ const removeConfig = async (index: number) => {
             }
         );
 
-        const selectedInstance = getInstance()?.find((item: InstanceType) => item.ip === selectedIp.value);
+        const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
         if (!selectedInstance?.agentId) {
             ElMessage.error('未找到当前实例对应的Agent');
             return;
@@ -215,7 +212,7 @@ const handleSubmitConfig = async () => {
         return;
     }
 
-    const selectedInstance = getInstance()?.find((item: InstanceType) => item.ip === selectedIp.value);
+    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value);
     if (!selectedInstance?.agentId) {
         ElMessage.error('未找到当前实例对应的Agent');
         return;
@@ -325,40 +322,5 @@ const handleSubmitConfig = async () => {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-}
-
-:deep(.mcp-config-dialog) {
-    .el-dialog__header {
-        background: linear-gradient(135deg, var(--el-color-primary-light-9), var(--el-color-primary-light-8));
-        border-bottom: 1px solid var(--el-border-color-light);
-        padding: 20px 24px;
-
-        .el-dialog__title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--el-color-primary);
-        }
-    }
-
-    .el-dialog__body {
-        padding: 0;
-        background: var(--el-bg-color-page);
-    }
-
-    .el-dialog__footer {
-        background: var(--el-fill-color-lighter);
-        border-top: 1px solid var(--el-border-color-light);
-        padding: 16px 24px;
-
-        .dialog-footer {
-            margin: 0;
-        }
-    }
-
-    .el-dialog {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-    }
 }
 </style>

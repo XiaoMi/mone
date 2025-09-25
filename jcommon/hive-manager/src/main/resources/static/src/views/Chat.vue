@@ -15,6 +15,7 @@
       :onPlayAudio="onPlayAudio"
       :onClearHistory="onClearHistory"
       :onOffline="onOfflineAgent"
+      :onStopMsg="onStopMsg"
     />
   </div>
 </template>
@@ -44,7 +45,7 @@ const functionPanelStore = useFunctionPanelStore();
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string);
 const messageId = ref<string>('');
-const sendMethod = ref<string>('sse');
+const sendMethod = ref<string>('ws');
 const list = computed(() => {
   return messageList
 })
@@ -235,6 +236,24 @@ const toggleSendMethod = (val: string) => {
     }
   }
 
+const onStopMsg = () => {
+  sendMessage({
+    type: "md",
+    author: {
+      cname: user.cname,
+      username: user.username,
+      avatar: user.avatar,
+    },
+    meta: {
+      role: "USER",
+    },
+    data: {
+      text: "/cancel",
+    },
+  })
+}
+
+
 const messageClick = async (item: { type: string; text: string; params: any }) => {
       // 发消息
       addMessage({
@@ -372,6 +391,7 @@ onMounted(async () => {
                 text: `你好，我是 ${agent.name}，有什么可以帮你的吗？`,
             },
         });
+        toggleSendMethod('ws')
       }
     } catch (error) {
       console.error('获取Agent详情失败:', error)
