@@ -1,7 +1,6 @@
 package run.mone.hive.prompt;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.common.AiTemplate;
 
 import java.util.HashMap;
@@ -18,26 +17,11 @@ import java.util.Map;
 public class TechnicalDocTemplate {
 
     /**
-     * 生成技术文档模板
-     * 
-     * @param projectName 项目名称
-     * @param description 项目简介
-     * @return 技术文档模板内容
-     */
-    public static String generateTechnicalDoc(String projectName, String description) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("projectName", projectName);
-        data.put("description", description);
-        
-        return AiTemplate.renderTemplate(TECHNICAL_DOC_TEMPLATE, data);
-    }
-
-    /**
      * 技术文档模板
      * 包含项目概述、系统架构、模块设计、数据库设计、API设计、对象设计等章节
      */
     public static final String TECHNICAL_DOC_TEMPLATE = """
-            # ${projectName} 技术设计文档
+            # 技术设计文档
             
             ## 1. 文档概述
             
@@ -45,12 +29,14 @@ public class TechnicalDocTemplate {
             本文档旨在详细描述${projectName}的技术设计，包括系统架构、模块设计、数据库设计、API设计等内容，为开发团队提供技术参考和指导。
             
             ### 1.2 项目简介
-            ${description}
             
             ### 1.3 文档修订历史
             | 版本号 | 修订日期 | 修订人 | 修订内容 |
             | ----- | ------- | ----- | ------- |
             | v1.0  | YYYY-MM-DD | 作者名 | 初始版本 |
+            
+            ### 1.4 自动分析说明
+            本文档部分内容由系统自动分析生成，包括项目结构、依赖关系和主要模块等信息。自动分析结果仅供参考，可能需要人工校验和补充。
             
             ## 2. 系统架构设计
             

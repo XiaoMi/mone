@@ -498,6 +498,11 @@ public class ReactorRole extends Role {
 
             // 解析工具调用(有可能是tool也可能是mcp)
             List<ToolDataInfo> tools = new MultiXmlParser().parse(toolRes);
+            if (tools.isEmpty()) {
+                sink.next("当前已无更多Tool可执行\n");
+                sink.complete();
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
 
             //直接使用最后一个工具(每次只会返回一个)
             ToolDataInfo it = tools.get(tools.size() - 1);

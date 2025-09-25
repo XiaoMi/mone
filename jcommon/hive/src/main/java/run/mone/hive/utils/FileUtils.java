@@ -1,12 +1,14 @@
 package run.mone.hive.utils;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -31,5 +33,23 @@ public class FileUtils {
             }
         }
         return content.toString();
+    }
+    
+    /**
+     * 写入Markdown文件内容
+     *
+     * @param filePath Markdown文件路径
+     * @param content 要写入的内容
+     * @throws IOException 如果写入失败
+     */
+    public static void writeMarkdownFile(String filePath, String content) throws IOException {
+        // 确保目录存在
+        Path path = Paths.get(filePath);
+        Files.createDirectories(path.getParent());
+        
+        // 写入文件
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, StandardCharsets.UTF_8))) {
+            writer.write(content);
+        }
     }
 }
