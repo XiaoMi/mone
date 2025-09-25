@@ -1,6 +1,6 @@
 <template>
   <div class="sc-chat-window" :class="{ opened: isOpen, closed: !isOpen }">
-    <InstanceSelect :onClearHistory="onClearHistory" :onOffline="onOffline"/>
+    <InstanceSelect :onClearHistory="onClearHistory" :onOffline="onOffline" :onStopMsg="onStopMsg" />
     <MessageList
       :messages="messages"
       :always-scroll-to-bottom="alwaysScrollToBottom"
@@ -122,6 +122,10 @@ export default {
       required: true,
     },
     onOffline: {
+      type: Function,
+      required: true,
+    },
+    onStopMsg: {
       type: Function,
       required: true,
     },
