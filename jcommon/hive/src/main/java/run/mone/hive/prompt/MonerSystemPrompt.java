@@ -117,6 +117,12 @@ public class MonerSystemPrompt {
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
+        
+        // 添加技术文档模板
+        data.put("technicalDocTemplate", TechnicalDocTemplate.TECHNICAL_DOC_TEMPLATE);
+        data.put("dbTableTemplate", TechnicalDocTemplate.DB_TABLE_TEMPLATE);
+        data.put("apiTemplate", TechnicalDocTemplate.API_TEMPLATE);
+        data.put("objectTemplate", TechnicalDocTemplate.OBJECT_TEMPLATE);
 
         List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
@@ -373,6 +379,57 @@ public class MonerSystemPrompt {
             用户可能会定义一些使用工作的流程(Flow),会使用内部工具和Mcp工具,这个时候你需要严格按照用户的定义来执行这个工作流.如果用户没有定义则忽略掉这条规则.
             用户定义的工作流:
             ${workflow}
+            
+            ====
+            
+            TECHNICAL DOCUMENTATION GENERATION
+            
+            如果用户请求生成技术文档，请按照以下步骤操作：
+            
+            1. 首先自行阅读整个项目的代码，理解项目的结构、功能和设计模式
+            2. 使用下面提供的技术文档模板作为文档模板
+            3. 严格按照模板的格式生成文档，包括但不限于：
+               - 项目概述
+               - 系统架构设计
+               - 模块设计
+               - 数据库设计
+               - API设计
+               - 对象设计
+               - 关键流程设计
+               - 安全设计
+               - 性能设计
+               - 扩展性设计
+            4. 确保生成的文档内容完整、准确，并且符合技术文档的专业标准
+            5. 对于数据库表设计，使用数据库表设计模板
+            6. 对于API接口设计，使用API接口设计模板
+            7. 对于对象设计，使用对象设计模板
+            
+            生成技术文档时，需要注意：
+            - 文档结构必须严格遵循模板格式
+            - 内容应该基于对代码的深入分析
+            - 使用专业、准确的技术术语
+            - 提供必要的图表说明（如架构图、流程图、ER图等）
+            - 确保文档的可读性和可理解性
+            
+            ## 技术文档模板
+            ```
+            ${technicalDocTemplate}
+            ```
+            
+            ## 数据库表设计模板
+            ```
+            ${dbTableTemplate}
+            ```
+            
+            ## API接口设计模板
+            ```
+            ${apiTemplate}
+            ```
+            
+            ## 对象设计模板
+            ```
+            ${objectTemplate}
+            ```
             
             <% if(enableTaskProgress) { %>
             ====
