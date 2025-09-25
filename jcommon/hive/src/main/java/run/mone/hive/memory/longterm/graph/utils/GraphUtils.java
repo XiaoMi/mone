@@ -33,7 +33,7 @@ public class GraphUtils {
             - Normalize entity names (lowercase, underscore-separated)
             - Map self-references to USER_ID
 
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -58,7 +58,7 @@ public class GraphUtils {
             If user message contains self reference such as 'I', 'me', 'my' etc. then use USER_ID as the source entity.
             Extract all the entities from the text. ***DO NOT*** answer the question itself if the given text is a question.
 
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -163,6 +163,17 @@ public class GraphUtils {
                 - Be conservative - when in doubt, don't delete
                 - Consider temporal aspects - newer information may supersede older information
                 - Focus on factual contradictions, not subjective differences
+
+                If you cannot response with tool_calls, you can response with the relationships to be deleted in the text with following JSON format, and return json only!!!:
+                {
+                    "toBeDeleted": [
+                        {
+                            "source": "The source entity of the relationship to be deleted.",
+                            "relationship": "The relationship between the source and destination entities to be deleted.",
+                            "destination": "The destination entity of the relationship to be deleted."
+                        }
+                    ]
+                }
                 """;
 
         String userPrompt = String.format("""

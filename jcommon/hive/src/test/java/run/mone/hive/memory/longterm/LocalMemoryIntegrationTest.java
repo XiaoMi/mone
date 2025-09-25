@@ -148,7 +148,9 @@ public class LocalMemoryIntegrationTest {
             
             assertNotNull(addResult, "添加记忆结果不应为null");
             
-            String memoryId = (String) addResult.get("id");
+            String memoryId = (String) (addResult.get("results") instanceof List 
+                ? ((List<Map<String, Object>>) addResult.get("results")).get(0).get("id") 
+                : ((Map<String, Object>) addResult.get("results")).get("id"));
             
             // 测试更新记忆
             Map<String, Object> updateResult = memory.update(memoryId, "用户最喜欢的颜色改成了红色，并且喜欢户外运动");

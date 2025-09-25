@@ -214,7 +214,17 @@ public interface GraphStoreBase {
      * @param text 输入文本
      * @return 关系列表，每个关系包含source、destination、relationship
      */
-    List<GraphEntity> establishRelations(String text);
+    List<GraphEntity> establishRelations(String text, String userId);
+
+    /**
+     * 从文本中建立实体关系（兼容性方法，使用默认用户ID）
+     * 
+     * @param text 输入文本
+     * @return 关系列表，每个关系包含source、destination、relationship
+     */
+    default List<GraphEntity> establishRelations(String text) {
+        return establishRelations(text, "default_user");
+    }
     
     /**
      * 检查关系是否存在

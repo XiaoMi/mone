@@ -146,15 +146,660 @@ public class Neo4jGraphStore implements GraphStoreBase {
             Map<String, Object> filters = new HashMap<>();
             filters.put("user_id", userId);
 
-            Map<String, Object> result = addEntity(session, source, destination, relationship,
-                                                 sourceType, destinationType, filters);
-
-            log.info("Added graph memory for user {}: {} --[{}]-> {}", userId, source, relationship, destination);
-            return result;
+            // 按照mem0的add方法流程实现
+            return addMemoryWithFlow(session, source, destination, relationship, 
+                                   sourceType, destinationType, filters);
 
         } catch (Exception e) {
             log.error("Error adding graph memory to Neo4j", e);
             throw new RuntimeException("Failed to add graph memory", e);
+        }
+    }
+
+    /**
+     * 按照mem0流程实现的添加内存方法
+     * 1. 提取实体类型映射 (_retrieve_nodes_from_data)
+     * 2. 建立节点关系 (_establish_nodes_relations_from_data) 
+     * 3. 搜索图数据库 (_search_graph_db)
+     * 4. 获取需要删除的实体 (_get_delete_entities_from_search_output)
+     * 5. 删除实体 (_delete_entities)
+     * 6. 添加实体 (_add_entities)
+     */
+    private Map<String, Object> addMemoryWithFlow(Session session, String source, String destination, 
+                                                String relationship, String sourceType, String destinationType,
+                                                Map<String, Object> filters) {
+        // 构建输入数据文本，模拟传入add方法的data参数
+        String data = String.format("%s %s %s", source, relationship, destination);
+        
+        // 1. 提取实体类型映射 (复用现有方法)
+        Map<String, String> entityTypeMap = retrieveNodesFromData(data, filters);
+        
+        // 2. 建立节点关系数据 (使用establishRelations方法并转换为兼容格式)
+        List<Map<String, Object>> toBeAdded = establishNodesRelationsFromData(data, filters, entityTypeMap);
+        
+        // 3. 搜索图数据库中的相似节点
+        List<Map<String, Object>> searchOutput = searchGraphDB(session, 
+            new ArrayList<>(entityTypeMap.keySet()), filters, 100);
+        
+        // 4. 获取需要删除的实体
+        List<Map<String, Object>> toBeDeleted = getDeleteEntitiesFromSearchOutput(searchOutput, data, filters);
+        
+        // 5. 删除冲突的实体
+        List<Map<String, Object>> deletedEntities = deleteEntities(session, toBeDeleted, filters);
+        
+        // 6. 添加新的实体
+        List<Map<String, Object>> addedEntities = addEntities(session, toBeAdded, filters, entityTypeMap);
+
+        // 构建返回结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("deleted_entities", deletedEntities);
+        result.put("added_entities", addedEntities);
+        result.put("operation", "add_with_flow");
+        result.put("success", true);
+
+        log.info("Added graph memory with flow for user {}: {} --[{}]-> {}, deleted: {}, added: {}", 
+                filters.get("user_id"), source, relationship, destination, 
+                deletedEntities.size(), addedEntities.size());
+        
+        return result;
+    }
+
+    /**
+     * 建立节点关系数据，对应Python中的_establish_nodes_relations_from_data方法
+     * 
+     * @param data 输入数据文本
+     * @param filters 过滤器
+     * @param entityTypeMap 实体类型映射
+     * @return 需要添加的关系列表
+     */
+    private List<Map<String, Object>> establishNodesRelationsFromData(String data, Map<String, Object> filters,
+                                                                     Map<String, String> entityTypeMap) {
+        try {
+            // 构建用户身份
+            String userIdentity = GraphUtils.buildUserIdentity(filters);
+
+            // 准备系统prompt
+            String systemPrompt;
+            List<Map<String, Object>> messages = new ArrayList<>();
+
+            // 检查自定义prompt配置
+            String customPrompt = config.getCustomPrompt();
+
+            if (customPrompt != null && !customPrompt.trim().isEmpty()) {
+                systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, customPrompt);
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                messages.add(Map.of("role", "user", "content", data));
+            } else {
+                systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, null);
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                String userContent = String.format("List of entities: %s. \n\nText: %s",
+                    new ArrayList<>(entityTypeMap.keySet()), data);
+                messages.add(Map.of("role", "user", "content", userContent));
+            }
+
+            // 准备工具
+            List<Map<String, Object>> tools = new ArrayList<>();
+            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
+
+            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
+                tools.add(Map.of("tool", GraphTools.RELATIONS_STRUCT_TOOL));
+            } else {
+                tools.add(Map.of("tool", GraphTools.RELATIONS_TOOL));
+            }
+
+            // 调用LLM进行关系提取
+            Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
+
+            // 解析结果并转换为兼容格式
+            List<Map<String, Object>> entities = new ArrayList<>();
+            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
+
+                for (Map<String, Object> toolCall : toolCalls) {
+                    if ("establish_relationships".equals(toolCall.get("name"))) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
+                        if (arguments != null && arguments.get("entities") instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) arguments.get("entities");
+                            entities.addAll(extractedRelations);
+                        }
+                    }
+                }
+            } else {
+                // json format
+                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
+                if (!content.isEmpty()) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
+                        if (jsonResponse != null && jsonResponse.get("entities") != null) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                            entities.addAll(extractedEntities);
+                        }
+                    } catch (Exception jsonEx) {
+                        log.error("Failed to parse JSON response from LLM establishNodesRelationsFromData: {}, content: {}", jsonEx.getMessage(), content);
+                    }
+                }
+            }
+
+            // 清理实体格式，对应Python中的_remove_spaces_from_entities
+            entities = removeSpacesFromEntities(entities);
+            log.debug("Extracted {} relations from data", entities.size());
+            return entities;
+
+        } catch (Exception e) {
+            log.error("Error establishing nodes relations from data", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 获取需要删除的实体，对应Python中的_get_delete_entities_from_search_output方法
+     * 
+     * @param searchOutput 搜索输出结果
+     * @param data 新数据
+     * @param filters 过滤器
+     * @return 需要删除的实体列表
+     */
+    private List<Map<String, Object>> getDeleteEntitiesFromSearchOutput(List<Map<String, Object>> searchOutput,
+                                                                       String data, Map<String, Object> filters) {
+        try {
+            String searchOutputString = GraphUtils.formatEntities(searchOutput);
+
+            // 构建用户身份
+            String userIdentity = GraphUtils.buildUserIdentity(filters);
+
+            // 获取删除消息
+            String[] deleteMessages = GraphUtils.getDeleteMessages(searchOutputString, data, userIdentity);
+            String systemPrompt = deleteMessages[0];
+            String userPrompt = deleteMessages[1];
+
+            // 准备工具
+            List<Map<String, Object>> tools = new ArrayList<>();
+            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
+
+            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
+                tools.add(Map.of("tool", GraphTools.DELETE_MEMORY_STRUCT_TOOL_GRAPH));
+            } else {
+                tools.add(Map.of("tool", GraphTools.DELETE_MEMORY_TOOL_GRAPH));
+            }
+
+            // 调用LLM进行删除决策
+            Map<String, Object> response = llm.generateResponseWithTools(
+                Arrays.asList(
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", userPrompt)
+                ),
+                tools
+            );
+
+            // 解析结果
+            List<Map<String, Object>> toBeDeleted = new ArrayList<>();
+            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
+                
+                for (Map<String, Object> toolCall : toolCalls) {
+                    if ("delete_graph_memory".equals(toolCall.get("name"))) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
+                        if (arguments != null) {
+                            toBeDeleted.add(arguments);
+                        }
+                    }
+                }
+            } else {
+                // json format
+                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
+                if (!content.isEmpty()) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
+                        if (jsonResponse != null && jsonResponse.get("toBeDeleted") != null) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) jsonResponse.get("toBeDeleted");
+                            toBeDeleted.addAll(extractedRelations);
+                        }
+                    } catch (Exception jsonEx) {
+                        log.error("Failed to parse JSON response from LLM getDeleteEntitiesFromSearchOutput: {}, content: {}", jsonEx.getMessage(), content);
+                    }
+                }
+            }
+
+            // 清理实体格式
+            toBeDeleted = removeSpacesFromEntities(toBeDeleted);
+            log.debug("Identified {} relations for deletion", toBeDeleted.size());
+            return toBeDeleted;
+
+        } catch (Exception e) {
+            log.error("Error getting delete entities from search output", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 删除实体，对应Python中的_delete_entities方法
+     * 
+     * @param session Neo4j会话
+     * @param toBeDeleted 需要删除的实体列表
+     * @param filters 过滤器
+     * @return 删除操作结果列表
+     */
+    private List<Map<String, Object>> deleteEntities(Session session, List<Map<String, Object>> toBeDeleted,
+                                                    Map<String, Object> filters) {
+        List<Map<String, Object>> results = new ArrayList<>();
+        String userId = (String) filters.get("user_id");
+        String agentId = (String) filters.get("agent_id");
+        String runId = (String) filters.get("run_id");
+
+        for (Map<String, Object> item : toBeDeleted) {
+            try {
+                String source = (String) item.get("source");
+                String destination = (String) item.get("destination");
+                String relationship = (String) item.get("relationship");
+
+                if (source == null || destination == null || relationship == null) {
+                    continue;
+                }
+
+                // 构建查询参数
+                Map<String, Object> params = new HashMap<>();
+                params.put("source_name", source);
+                params.put("dest_name", destination);
+                params.put("user_id", userId);
+
+                if (agentId != null) {
+                    params.put("agent_id", agentId);
+                }
+                if (runId != null) {
+                    params.put("run_id", runId);
+                }
+
+                // 构建节点属性过滤
+                List<String> sourceProps = Arrays.asList("name: $source_name", "user_id: $user_id");
+                List<String> destProps = Arrays.asList("name: $dest_name", "user_id: $user_id");
+                if (agentId != null) {
+                    sourceProps.add("agent_id: $agent_id");
+                    destProps.add("agent_id: $agent_id");
+                }
+                if (runId != null) {
+                    sourceProps.add("run_id: $run_id");
+                    destProps.add("run_id: $run_id");
+                }
+                String sourcePropsStr = String.join(", ", sourceProps);
+                String destPropsStr = String.join(", ", destProps);
+
+                // 执行删除
+                String cypher = String.format("""
+                    MATCH (n %s {%s})
+                    -[r:%s]->
+                    (m %s {%s})
+                    DELETE r
+                    RETURN 
+                        n.name AS source,
+                        m.name AS target,
+                        type(r) AS relationship
+                    """, nodeLabel, sourcePropsStr, relationship, nodeLabel, destPropsStr);
+
+                Result result = session.run(cypher, params);
+                if (result.hasNext()) {
+                    Record record = result.next();
+                    Map<String, Object> deleteResult = new HashMap<>();
+                    deleteResult.put("source", record.get("source").asString());
+                    deleteResult.put("target", record.get("target").asString());
+                    deleteResult.put("relationship", record.get("relationship").asString());
+                    deleteResult.put("operation", "delete");
+                    results.add(deleteResult);
+                }
+
+            } catch (Exception e) {
+                log.warn("Failed to delete entity relation: {}", item, e);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 添加实体，对应Python中的_add_entities方法
+     * 
+     * @param session Neo4j会话
+     * @param toBeAdded 需要添加的实体列表
+     * @param filters 过滤器
+     * @param entityTypeMap 实体类型映射
+     * @return 添加操作结果列表
+     */
+    private List<Map<String, Object>> addEntities(Session session, List<Map<String, Object>> toBeAdded,
+                                                 Map<String, Object> filters, Map<String, String> entityTypeMap) {
+        List<Map<String, Object>> results = new ArrayList<>();
+        String userId = (String) filters.get("user_id");
+        String agentId = (String) filters.get("agent_id");
+        String runId = (String) filters.get("run_id");
+
+        for (Map<String, Object> item : toBeAdded) {
+            try {
+                String source = (String) item.get("source");
+                String destination = (String) item.get("destination");
+                String relationship = (String) item.get("relationship");
+
+                if (source == null || destination == null || relationship == null) {
+                    continue;
+                }
+
+                // 获取实体类型
+                String sourceType = entityTypeMap.getOrDefault(source, "__User__");
+                String destinationType = entityTypeMap.getOrDefault(destination, "__User__");
+
+                // 构建标签
+                String sourceLabel = nodeLabel.isEmpty() ? String.format(":`%s`", sourceType) : nodeLabel;
+                String destLabel = nodeLabel.isEmpty() ? String.format(":`%s`", destinationType) : nodeLabel;
+                String sourceExtraSet = nodeLabel.isEmpty() ? "" : String.format(", source:`%s`", sourceType);
+                String destExtraSet = nodeLabel.isEmpty() ? "" : String.format(", destination:`%s`", destinationType);
+
+                // 生成嵌入向量
+                List<Double> sourceEmbedding = embeddingModel.embed(source, "add");
+                List<Double> destEmbedding = embeddingModel.embed(destination, "add");
+
+                // 搜索现有节点 (阈值0.9，高相似度匹配)
+                List<Map<String, Object>> sourceNodeSearchResult = searchSourceNode(sourceEmbedding, filters, 0.9);
+                List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 0.9);
+
+                String cypher;
+                Map<String, Object> params = new HashMap<>();
+                params.put("user_id", userId);
+                if (agentId != null) params.put("agent_id", agentId);
+                if (runId != null) params.put("run_id", runId);
+
+                // 根据节点搜索结果选择不同的Cypher查询策略
+                if (sourceNodeSearchResult.isEmpty() && destinationNodeSearchResult.isEmpty()) {
+                    // 两个节点都不存在，创建新的
+                    List<String> sourceProps = Arrays.asList("name: $source_name", "user_id: $user_id");
+                    List<String> destProps = Arrays.asList("name: $dest_name", "user_id: $user_id");
+                    if (agentId != null) {
+                        sourceProps.add("agent_id: $agent_id");
+                        destProps.add("agent_id: $agent_id");
+                    }
+                    if (runId != null) {
+                        sourceProps.add("run_id: $run_id");
+                        destProps.add("run_id: $run_id");
+                    }
+                    String sourcePropsStr = String.join(", ", sourceProps);
+                    String destPropsStr = String.join(", ", destProps);
+
+                    cypher = String.format("""
+                        MERGE (source %s {%s})
+                        ON CREATE SET source.created = timestamp(),
+                                    source.mentions = 1
+                                    %s
+                        ON MATCH SET source.mentions = coalesce(source.mentions, 0) + 1
+                        WITH source
+                        CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
+                        WITH source
+                        MERGE (destination %s {%s})
+                        ON CREATE SET destination.created = timestamp(),
+                                    destination.mentions = 1
+                                    %s
+                        ON MATCH SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                        WITH source, destination
+                        CALL db.create.setNodeVectorProperty(destination, 'embedding', $dest_embedding)
+                        WITH source, destination
+                        MERGE (source)-[rel:%s]->(destination)
+                        ON CREATE SET rel.created = timestamp(), rel.mentions = 1
+                        ON MATCH SET rel.mentions = coalesce(rel.mentions, 0) + 1
+                        RETURN source.name AS source, type(rel) AS relationship, destination.name AS target
+                        """, sourceLabel, sourcePropsStr, sourceExtraSet,
+                            destLabel, destPropsStr, destExtraSet, relationship);
+
+                    params.put("source_name", source);
+                    params.put("dest_name", destination);
+                    params.put("source_embedding", sourceEmbedding);
+                    params.put("dest_embedding", destEmbedding);
+
+                } else if (!sourceNodeSearchResult.isEmpty() && destinationNodeSearchResult.isEmpty()) {
+                    // 源节点存在，目标节点不存在
+                    List<String> mergeProps = Arrays.asList("name: $destination_name", "user_id: $user_id");
+                    if (agentId != null) mergeProps.add("agent_id: $agent_id");
+                    if (runId != null) mergeProps.add("run_id: $run_id");
+                    String mergePropsStr = String.join(", ", mergeProps);
+
+                    cypher = String.format("""
+                        MATCH (source)
+                        WHERE elementId(source) = $source_id
+                        SET source.mentions = coalesce(source.mentions, 0) + 1
+                        WITH source
+                        MERGE (destination %s {%s})
+                        ON CREATE SET
+                            destination.created = timestamp(),
+                            destination.mentions = 1
+                            %s
+                        ON MATCH SET
+                            destination.mentions = coalesce(destination.mentions, 0) + 1
+                        WITH source, destination
+                        CALL db.create.setNodeVectorProperty(destination, 'embedding', $destination_embedding)
+                        WITH source, destination
+                        MERGE (source)-[r:%s]->(destination)
+                        ON CREATE SET 
+                            r.created = timestamp(),
+                            r.mentions = 1
+                        ON MATCH SET
+                            r.mentions = coalesce(r.mentions, 0) + 1
+                        RETURN source.name AS source, type(r) AS relationship, destination.name AS target
+                        """, destLabel, mergePropsStr, destExtraSet, relationship);
+
+                    params.put("source_id", sourceNodeSearchResult.get(0).get("elementId"));
+                    params.put("destination_name", destination);
+                    params.put("destination_embedding", destEmbedding);
+
+                } else if (sourceNodeSearchResult.isEmpty() && !destinationNodeSearchResult.isEmpty()) {
+                    // 源节点不存在，目标节点存在
+                    List<String> mergeProps = Arrays.asList("name: $source_name", "user_id: $user_id");
+                    if (agentId != null) mergeProps.add("agent_id: $agent_id");
+                    if (runId != null) mergeProps.add("run_id: $run_id");
+                    String mergePropsStr = String.join(", ", mergeProps);
+
+                    cypher = String.format("""
+                        MATCH (destination)
+                        WHERE elementId(destination) = $destination_id
+                        SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                        WITH destination
+                        MERGE (source %s {%s})
+                        ON CREATE SET
+                            source.created = timestamp(),
+                            source.mentions = 1
+                            %s
+                        ON MATCH SET
+                            source.mentions = coalesce(source.mentions, 0) + 1
+                        WITH source, destination
+                        CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
+                        WITH source, destination
+                        MERGE (source)-[r:%s]->(destination)
+                        ON CREATE SET 
+                            r.created = timestamp(),
+                            r.mentions = 1
+                        ON MATCH SET
+                            r.mentions = coalesce(r.mentions, 0) + 1
+                        RETURN source.name AS source, type(r) AS relationship, destination.name AS target
+                        """, sourceLabel, mergePropsStr, sourceExtraSet, relationship);
+
+                    params.put("destination_id", destinationNodeSearchResult.get(0).get("elementId"));
+                    params.put("source_name", source);
+                    params.put("source_embedding", sourceEmbedding);
+
+                } else {
+                    // 两个节点都存在
+                    cypher = String.format("""
+                        MATCH (source)
+                        WHERE elementId(source) = $source_id
+                        SET source.mentions = coalesce(source.mentions, 0) + 1
+                        WITH source
+                        MATCH (destination)
+                        WHERE elementId(destination) = $destination_id
+                        SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                        MERGE (source)-[r:%s]->(destination)
+                        ON CREATE SET 
+                            r.created_at = timestamp(),
+                            r.updated_at = timestamp(),
+                            r.mentions = 1
+                        ON MATCH SET r.mentions = coalesce(r.mentions, 0) + 1
+                        RETURN source.name AS source, type(r) AS relationship, destination.name AS target
+                        """, relationship);
+
+                    params.put("source_id", sourceNodeSearchResult.get(0).get("elementId"));
+                    params.put("destination_id", destinationNodeSearchResult.get(0).get("elementId"));
+                }
+
+                Result result = session.run(cypher, params);
+                if (result.hasNext()) {
+                    Record record = result.next();
+                    Map<String, Object> addResult = new HashMap<>();
+                    addResult.put("source", record.get("source").asString());
+                    addResult.put("relationship", record.get("relationship").asString());
+                    addResult.put("target", record.get("target").asString());
+                    addResult.put("operation", "add");
+                    results.add(addResult);
+                }
+
+            } catch (Exception e) {
+                log.warn("Failed to add entity relation: {}", item, e);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 清理实体格式，对应Python中的_remove_spaces_from_entities方法
+     * 
+     * @param entityList 实体列表
+     * @return 清理后的实体列表
+     */
+    private List<Map<String, Object>> removeSpacesFromEntities(List<Map<String, Object>> entityList) {
+        for (Map<String, Object> item : entityList) {
+            if (item.get("source") != null) {
+                item.put("source", GraphUtils.normalizeEntityName(item.get("source").toString()));
+            }
+            if (item.get("relationship") != null) {
+                item.put("relationship", GraphUtils.cleanRelationshipName(item.get("relationship").toString()));
+            }
+            if (item.get("destination") != null) {
+                item.put("destination", GraphUtils.normalizeEntityName(item.get("destination").toString()));
+            }
+        }
+        return entityList;
+    }
+
+    /**
+     * 搜索源节点，对应Python中的_search_source_node方法
+     */
+    private List<Map<String, Object>> searchSourceNode(List<Double> sourceEmbedding, Map<String, Object> filters, double threshold) {
+        try (Session session = driver.session()) {
+            // 构建WHERE条件
+            List<String> whereConditions = Arrays.asList(
+                "source_candidate.embedding IS NOT NULL", 
+                "source_candidate.user_id = $user_id"
+            );
+            if (filters.get("agent_id") != null) {
+                whereConditions.add("source_candidate.agent_id = $agent_id");
+            }
+            if (filters.get("run_id") != null) {
+                whereConditions.add("source_candidate.run_id = $run_id");
+            }
+            String whereClause = String.join(" AND ", whereConditions);
+
+            String cypher = String.format("""
+                MATCH (source_candidate %s)
+                WHERE %s
+                WITH source_candidate,
+                round(2 * vector.similarity.cosine(source_candidate.embedding, $source_embedding) - 1, 4) AS source_similarity
+                WHERE source_similarity >= $threshold
+                WITH source_candidate, source_similarity
+                ORDER BY source_similarity DESC
+                LIMIT 1
+                RETURN elementId(source_candidate) as elementId
+                """, nodeLabel, whereClause);
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("source_embedding", sourceEmbedding);
+            params.put("user_id", filters.get("user_id"));
+            params.put("threshold", threshold);
+            if (filters.get("agent_id") != null) {
+                params.put("agent_id", filters.get("agent_id"));
+            }
+            if (filters.get("run_id") != null) {
+                params.put("run_id", filters.get("run_id"));
+            }
+
+            Result result = session.run(cypher, params);
+            List<Map<String, Object>> results = new ArrayList<>();
+            result.stream().forEach(record -> {
+                Map<String, Object> node = new HashMap<>();
+                node.put("elementId", record.get("elementId").asString());
+                results.add(node);
+            });
+            
+            return results;
+        } catch (Exception e) {
+            log.warn("Failed to search source node", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 搜索目标节点，对应Python中的_search_destination_node方法
+     */
+    private List<Map<String, Object>> searchDestinationNode(List<Double> destEmbedding, Map<String, Object> filters, double threshold) {
+        try (Session session = driver.session()) {
+            // 构建WHERE条件
+            List<String> whereConditions = Arrays.asList(
+                "destination_candidate.embedding IS NOT NULL", 
+                "destination_candidate.user_id = $user_id"
+            );
+            if (filters.get("agent_id") != null) {
+                whereConditions.add("destination_candidate.agent_id = $agent_id");
+            }
+            if (filters.get("run_id") != null) {
+                whereConditions.add("destination_candidate.run_id = $run_id");
+            }
+            String whereClause = String.join(" AND ", whereConditions);
+
+            String cypher = String.format("""
+                MATCH (destination_candidate %s)
+                WHERE %s
+                WITH destination_candidate,
+                round(2 * vector.similarity.cosine(destination_candidate.embedding, $destination_embedding) - 1, 4) AS destination_similarity
+                WHERE destination_similarity >= $threshold
+                WITH destination_candidate, destination_similarity
+                ORDER BY destination_similarity DESC
+                LIMIT 1
+                RETURN elementId(destination_candidate) as elementId
+                """, nodeLabel, whereClause);
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("destination_embedding", destEmbedding);
+            params.put("user_id", filters.get("user_id"));
+            params.put("threshold", threshold);
+            if (filters.get("agent_id") != null) {
+                params.put("agent_id", filters.get("agent_id"));
+            }
+            if (filters.get("run_id") != null) {
+                params.put("run_id", filters.get("run_id"));
+            }
+
+            Result result = session.run(cypher, params);
+            List<Map<String, Object>> results = new ArrayList<>();
+            result.stream().forEach(record -> {
+                Map<String, Object> node = new HashMap<>();
+                node.put("elementId", record.get("elementId").asString());
+                results.add(node);
+            });
+            
+            return results;
+        } catch (Exception e) {
+            log.warn("Failed to search destination node", e);
+            return new ArrayList<>();
         }
     }
 
@@ -492,7 +1137,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                             }
                         }
                     } catch (Exception jsonEx) {
-                        log.error("Failed to parse JSON response from LLM: {}", jsonEx.getMessage());
+                        log.error("Failed to parse JSON response from LLM extractEntities: {}, content: {}", jsonEx.getMessage(), content);
                         // 如果JSON解析失败，可以在这里添加额外的处理逻辑
                     }
                 }
@@ -569,6 +1214,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
      * @param userId 用户ID
      * @return 关系列表
      */
+    @Override
     public List<GraphEntity> establishRelations(String text, String userId) {
         if (userId == null || userId.trim().isEmpty()) {
             userId = "default_user";
@@ -678,7 +1324,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                             }
                         }   
                     } catch (Exception jsonEx) {
-                        log.error("Failed to parse JSON response from LLM: {}", jsonEx.getMessage());
+                        log.error("Failed to parse JSON response from LLM establishRelations: {}, content: {}", jsonEx.getMessage(), content);
                         // 如果JSON解析失败，可以在这里添加额外的处理逻辑
                     }
                 } else {

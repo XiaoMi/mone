@@ -89,6 +89,11 @@ public class MemoryItem {
     private String memoryType;
     
     /**
+     * 之前的记忆内容 (用于UPDATE操作)
+     */
+    private String previousMemory;
+    
+    /**
      * 转换为简化的Map格式
      */
     public Map<String, Object> toMap() {
