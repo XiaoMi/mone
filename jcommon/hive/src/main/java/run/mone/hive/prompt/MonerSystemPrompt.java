@@ -56,6 +56,13 @@ public class MonerSystemPrompt {
         return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
     }
 
+    public static String hiveCwd(ReactorRole role) {
+        String workspacePath = cwd(role);
+        return workspacePath
+                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + ".hive";
+    }
+
     /**
      * 获取自定义指令
      * 
@@ -67,7 +74,7 @@ public class MonerSystemPrompt {
      * @return 自定义指令内容
      */
     public static String customInstructions(ReactorRole role, String customInstructions) {
-        String workspacePath = role.getWorkspacePath();
+        String workspacePath = cwd(role);
         if (StringUtils.isBlank(workspacePath)) {
             log.warn("工作空间路径为空，使用默认指令");
             return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
@@ -100,6 +107,32 @@ public class MonerSystemPrompt {
         return null;
     }
 
+    @Nullable
+    private static String getTechDocMd(ReactorRole role) {
+        String workspacePath = cwd(role);
+        if (StringUtils.isBlank(workspacePath)) {
+            return TechnicalDocTemplate.TECHNICAL_DOC_TEMPLATE;
+        }
+
+        String filePath = workspacePath
+                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + ".hive" + File.separator + "tech_doc.md";
+
+        try {
+            // 尝试读取文件内容
+            String mdStr = FileUtils.readMarkdownFile(filePath);
+            if (StringUtils.isNotBlank(mdStr)) {
+                log.debug("成功从{}读取技术文档", filePath);
+                return mdStr;
+            }
+        } catch (Exception e) {
+            log.debug("无法读取技术文档: {}, 原因: {}", filePath, e.getMessage());
+        }
+        return TechnicalDocTemplate.TECHNICAL_DOC_TEMPLATE;
+    }
+
+
+
     // 为了向后兼容，提供不带enableTaskProgress参数的重载方法
     public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
         return mcpPrompt(role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
@@ -114,12 +147,13 @@ public class MonerSystemPrompt {
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", MonerSystemPrompt.cwd(role));
+        data.put("hiveCwd",  MonerSystemPrompt.hiveCwd(role));
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
         
         // 添加技术文档模板
-        data.put("technicalDocTemplate", TechnicalDocTemplate.TECHNICAL_DOC_TEMPLATE);
+        data.put("technicalDocTemplate", getTechDocMd(role));
         data.put("dbTableTemplate", TechnicalDocTemplate.DB_TABLE_TEMPLATE);
         data.put("apiTemplate", TechnicalDocTemplate.API_TEMPLATE);
         data.put("objectTemplate", TechnicalDocTemplate.OBJECT_TEMPLATE);
@@ -403,6 +437,7 @@ public class MonerSystemPrompt {
             5. 对于数据库表设计，使用数据库表设计模板
             6. 对于API接口设计，使用API接口设计模板
             7. 对于对象设计，使用对象设计模板
+            8. 对于最后生成的技术文档（一定是最后生成的技术文档，而不是模板），需要放到指定的目录：${hiveCwd}，指定的文件名是：tech_doc.md
             
             生成技术文档时，需要注意：
             - 文档结构必须严格遵循模板格式
