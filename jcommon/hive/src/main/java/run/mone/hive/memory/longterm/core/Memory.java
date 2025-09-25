@@ -19,6 +19,7 @@ import run.mone.hive.memory.longterm.graph.GraphStoreBase;
 import run.mone.hive.memory.longterm.graph.GraphStoreFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.Executors;
@@ -115,8 +116,31 @@ public class Memory implements MemoryBase {
             List<MemoryItem> vectorResult = vectorFuture.get();
             List<String> graphResult = graphFuture.get();
 
+            // 转换为与Python版本一致的Map格式
+            List<Map<String, Object>> results = vectorResult.stream()
+                    .map(item -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", item.getId());
+                        map.put("memory", item.getMemory());
+                        map.put("event", item.getEvent() != null ? item.getEvent() : "ADD");
+                        if (item.getScore() != null) {
+                            map.put("score", item.getScore());
+                        }
+                        if (item.getHash() != null) {
+                            map.put("hash", item.getHash());
+                        }
+                        if (item.getCreatedAt() != null) {
+                            map.put("created_at", item.getCreatedAt().toString());
+                        }
+                        if (item.getUpdatedAt() != null) {
+                            map.put("updated_at", item.getUpdatedAt().toString());
+                        }
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
             Map<String, Object> result = new HashMap<>();
-            result.put("results", vectorResult);
+            result.put("results", results);
 
             if (enableGraph && !graphResult.isEmpty()) {
                 result.put("relations", graphResult);
@@ -173,8 +197,39 @@ public class Memory implements MemoryBase {
             List<MemoryItem> vectorResults = vectorFuture.get();
             List<Map<String, Object>> graphResults = graphFuture.get();
 
+            // 转换为与Python版本一致的Map格式
+            List<Map<String, Object>> results = vectorResults.stream()
+                    .map(item -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", item.getId());
+                        map.put("memory", item.getMemory());
+                        if (item.getScore() != null) {
+                            map.put("score", item.getScore());
+                        }
+                        if (item.getHash() != null) {
+                            map.put("hash", item.getHash());
+                        }
+                        if (item.getCreatedAt() != null) {
+                            map.put("created_at", item.getCreatedAt().toString());
+                        }
+                        if (item.getUpdatedAt() != null) {
+                            map.put("updated_at", item.getUpdatedAt().toString());
+                        }
+                        if (item.getUserId() != null) {
+                            map.put("user_id", item.getUserId());
+                        }
+                        if (item.getAgentId() != null) {
+                            map.put("agent_id", item.getAgentId());
+                        }
+                        if (item.getRunId() != null) {
+                            map.put("run_id", item.getRunId());
+                        }
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
             Map<String, Object> result = new HashMap<>();
-            result.put("results", vectorResults);
+            result.put("results", results);
             
             if (enableGraph && !graphResults.isEmpty()) {
                 result.put("relations", graphResults);
@@ -225,8 +280,39 @@ public class Memory implements MemoryBase {
             List<MemoryItem> vectorResults = vectorFuture.get();
             List<Map<String, Object>> graphResults = graphFuture.get();
 
+            // 转换为与Python版本一致的Map格式
+            List<Map<String, Object>> results = vectorResults.stream()
+                    .map(item -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("id", item.getId());
+                        map.put("memory", item.getMemory());
+                        if (item.getScore() != null) {
+                            map.put("score", item.getScore());
+                        }
+                        if (item.getHash() != null) {
+                            map.put("hash", item.getHash());
+                        }
+                        if (item.getCreatedAt() != null) {
+                            map.put("created_at", item.getCreatedAt().toString());
+                        }
+                        if (item.getUpdatedAt() != null) {
+                            map.put("updated_at", item.getUpdatedAt().toString());
+                        }
+                        if (item.getUserId() != null) {
+                            map.put("user_id", item.getUserId());
+                        }
+                        if (item.getAgentId() != null) {
+                            map.put("agent_id", item.getAgentId());
+                        }
+                        if (item.getRunId() != null) {
+                            map.put("run_id", item.getRunId());
+                        }
+                        return map;
+                    })
+                    .collect(Collectors.toList());
+
             Map<String, Object> result = new HashMap<>();
-            result.put("results", vectorResults);
+            result.put("results", results);
             
             if (enableGraph && !graphResults.isEmpty()) {
                 result.put("relations", graphResults);

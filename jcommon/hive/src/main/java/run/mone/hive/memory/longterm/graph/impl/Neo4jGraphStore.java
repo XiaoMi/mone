@@ -777,6 +777,312 @@ public class Neo4jGraphStore implements GraphStoreBase {
         return config;
     }
 
+    /**
+     * 智能添加图数据 - 类似Python版本的add方法
+     * 包含智能冲突检测和删除逻辑
+     * 
+     * @param data 要添加的文本数据
+     * @param filters 过滤器，包含用户ID等信息
+     * @return 操作结果，包含删除和添加的实体
+     */
+    public Map<String, Object> add(String data, Map<String, Object> filters) {
+        try (Session session = driver.session()) {
+            // 1. 提取实体类型映射
+            Map<String, String> entityTypeMap = retrieveNodesFromData(data, filters);
+            
+            // 2. 建立节点关系
+            List<GraphEntity> toBeAdded = establishNodesRelationsFromData(data, filters, entityTypeMap);
+            
+            // 3. 搜索现有相关关系
+            List<Map<String, Object>> searchOutput = searchGraphDB(session, 
+                new ArrayList<>(entityTypeMap.keySet()), filters, 100);
+            
+            // 4. 智能分析需要删除的冲突关系
+            List<GraphEntity> toBeDeleted = getDeleteEntitiesFromSearchOutput(searchOutput, data, filters);
+            
+            // 5. 删除冲突关系
+            List<Map<String, Object>> deletedEntities = deleteEntities(session, toBeDeleted, filters);
+            
+            // 6. 添加新关系
+            List<Map<String, Object>> addedEntities = addEntities(session, toBeAdded, filters, entityTypeMap);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("deleted_entities", deletedEntities);
+            result.put("added_entities", addedEntities);
+            
+            log.info("Smart add completed: deleted {} relations, added {} relations", 
+                deletedEntities.size(), addedEntities.size());
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("Error in smart add operation", e);
+            throw new RuntimeException("Failed to execute smart add operation", e);
+        }
+    }
+
+    /**
+     * 从数据中建立节点关系 - 类似Python版本的_establish_nodes_relations_from_data
+     */
+    private List<GraphEntity> establishNodesRelationsFromData(String data, Map<String, Object> filters, 
+                                                            Map<String, String> entityTypeMap) {
+        try {
+            // 构建用户身份信息
+            String userIdentity = GraphUtils.buildUserIdentity(filters);
+            
+            // 准备系统prompt
+            String systemPrompt;
+            List<Map<String, Object>> messages = new ArrayList<>();
+            
+            String customPrompt = config.getCustomPrompt();
+            if (customPrompt != null && !customPrompt.trim().isEmpty()) {
+                systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, customPrompt);
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                messages.add(Map.of("role", "user", "content", data));
+            } else {
+                systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, null);
+                messages.add(Map.of("role", "system", "content", systemPrompt));
+                String userContent = String.format("List of entities: %s. \n\nText: %s",
+                    new ArrayList<>(entityTypeMap.keySet()), data);
+                messages.add(Map.of("role", "user", "content", userContent));
+            }
+            
+            // 选择工具
+            List<Map<String, Object>> tools = new ArrayList<>();
+            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
+            
+            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
+                tools.add(Map.of("tool", GraphTools.RELATIONS_STRUCT_TOOL));
+            } else {
+                tools.add(Map.of("tool", GraphTools.RELATIONS_TOOL));
+            }
+            
+            // 调用LLM提取关系
+            Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
+            
+            List<GraphEntity> entities = new ArrayList<>();
+            if (response.containsKey("tool_calls")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
+                
+                for (Map<String, Object> toolCall : toolCalls) {
+                    if ("extract_relations".equals(toolCall.get("name"))) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
+                        
+                        if (arguments.containsKey("entities")) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> entityList = (List<Map<String, Object>>) arguments.get("entities");
+                            
+                            for (Map<String, Object> entity : entityList) {
+                                String source = GraphUtils.cleanEntityName((String) entity.get("source"));
+                                String destination = GraphUtils.cleanEntityName((String) entity.get("destination"));
+                                String relationship = GraphUtils.cleanRelationshipName((String) entity.get("relationship"));
+                                
+                                if (!source.isEmpty() && !destination.isEmpty() && !relationship.isEmpty()) {
+                                    entities.add(new GraphEntity(source, destination, relationship));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            log.debug("Extracted {} relations from data", entities.size());
+            return entities;
+            
+        } catch (Exception e) {
+            log.error("Error establishing relations from data", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 智能分析需要删除的实体关系 - 类似Python版本的_get_delete_entities_from_search_output
+     */
+    private List<GraphEntity> getDeleteEntitiesFromSearchOutput(List<Map<String, Object>> searchOutput, 
+                                                               String data, Map<String, Object> filters) {
+        if (searchOutput.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        try {
+            // 格式化搜索输出为字符串
+            String searchOutputString = GraphUtils.formatEntities(searchOutput);
+            
+            // 构建用户身份信息
+            String userIdentity = GraphUtils.buildUserIdentity(filters);
+            
+            // 获取删除消息
+            String[] deleteMessages = GraphUtils.getDeleteMessages(searchOutputString, data, userIdentity);
+            String systemPrompt = deleteMessages[0];
+            String userPrompt = deleteMessages[1];
+            
+            // 选择工具
+            List<Map<String, Object>> tools = new ArrayList<>();
+            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
+            
+            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
+                tools.add(Map.of("tool", GraphTools.DELETE_MEMORY_STRUCT_TOOL_GRAPH));
+            } else {
+                tools.add(Map.of("tool", GraphTools.DELETE_MEMORY_TOOL_GRAPH));
+            }
+            
+            // 调用LLM分析需要删除的关系
+            Map<String, Object> response = llm.generateResponseWithTools(
+                Arrays.asList(
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", userPrompt)
+                ),
+                tools
+            );
+            
+            List<GraphEntity> toBeDeleted = new ArrayList<>();
+            if (response.containsKey("tool_calls")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
+                
+                for (Map<String, Object> toolCall : toolCalls) {
+                    if ("delete_graph_memory".equals(toolCall.get("name"))) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
+                        
+                        String source = GraphUtils.cleanEntityName((String) arguments.get("source"));
+                        String destination = GraphUtils.cleanEntityName((String) arguments.get("destination"));
+                        String relationship = GraphUtils.cleanRelationshipName((String) arguments.get("relationship"));
+                        
+                        if (!source.isEmpty() && !destination.isEmpty() && !relationship.isEmpty()) {
+                            toBeDeleted.add(new GraphEntity(source, destination, relationship));
+                        }
+                    }
+                }
+            }
+            
+            log.debug("Identified {} relationships to delete", toBeDeleted.size());
+            return toBeDeleted;
+            
+        } catch (Exception e) {
+            log.error("Error analyzing entities to delete", e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 删除指定的实体关系 - 类似Python版本的_delete_entities
+     */
+    private List<Map<String, Object>> deleteEntities(Session session, List<GraphEntity> toBeDeleted, 
+                                                    Map<String, Object> filters) {
+        List<Map<String, Object>> results = new ArrayList<>();
+        String userId = (String) filters.get("user_id");
+        
+        for (GraphEntity entity : toBeDeleted) {
+            try {
+                String cypher = String.format("""
+                    MATCH (source%s {name: $source_name, user_id: $user_id})
+                    -[r:%s]->
+                    (destination%s {name: $dest_name, user_id: $user_id})
+                    DELETE r
+                    RETURN source.name AS source, destination.name AS destination, type(r) AS relationship
+                    """, nodeLabel, entity.getRelationship(), nodeLabel);
+                
+                Map<String, Object> params = new HashMap<>();
+                params.put("source_name", entity.getSource());
+                params.put("dest_name", entity.getDestination());
+                params.put("user_id", userId);
+                
+                Result result = session.run(cypher, params);
+                
+                while (result.hasNext()) {
+                    Record record = result.next();
+                    Map<String, Object> deletedRelation = new HashMap<>();
+                    deletedRelation.put("source", record.get("source").asString());
+                    deletedRelation.put("destination", record.get("destination").asString());
+                    deletedRelation.put("relationship", record.get("relationship").asString());
+                    deletedRelation.put("operation", "delete");
+                    results.add(deletedRelation);
+                }
+                
+            } catch (Exception e) {
+                log.error("Error deleting entity relationship: {} -[{}]-> {}", 
+                    entity.getSource(), entity.getRelationship(), entity.getDestination(), e);
+            }
+        }
+        
+        log.debug("Deleted {} relationships", results.size());
+        return results;
+    }
+
+    /**
+     * 添加新的实体关系 - 类似Python版本的_add_entities
+     */
+    private List<Map<String, Object>> addEntities(Session session, List<GraphEntity> toBeAdded, 
+                                                 Map<String, Object> filters, Map<String, String> entityTypeMap) {
+        List<Map<String, Object>> results = new ArrayList<>();
+        String userId = (String) filters.get("user_id");
+        
+        for (GraphEntity entity : toBeAdded) {
+            try {
+                String sourceType = entityTypeMap.getOrDefault(entity.getSource(), "__Entity__");
+                String destType = entityTypeMap.getOrDefault(entity.getDestination(), "__Entity__");
+                
+                // 生成嵌入向量
+                List<Double> sourceEmbedding = embeddingModel.embed(entity.getSource(), "add");
+                List<Double> destEmbedding = embeddingModel.embed(entity.getDestination(), "add");
+                
+                // 构建标签
+                String sourceLabel = nodeLabel.isEmpty() ? String.format(":`%s`", sourceType) : nodeLabel;
+                String destLabel = nodeLabel.isEmpty() ? String.format(":`%s`", destType) : nodeLabel;
+                
+                String cypher = String.format("""
+                    MERGE (source %s {name: $source_name, user_id: $user_id})
+                    ON CREATE SET source.created = timestamp(),
+                                source.mentions = 1
+                    ON MATCH SET source.mentions = coalesce(source.mentions, 0) + 1
+                    WITH source
+                    CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
+                    WITH source
+                    MERGE (destination %s {name: $dest_name, user_id: $user_id})
+                    ON CREATE SET destination.created = timestamp(),
+                                destination.mentions = 1
+                    ON MATCH SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                    WITH source, destination
+                    CALL db.create.setNodeVectorProperty(destination, 'embedding', $dest_embedding)
+                    WITH source, destination
+                    MERGE (source)-[rel:%s]->(destination)
+                    ON CREATE SET rel.created = timestamp(), rel.mentions = 1
+                    ON MATCH SET rel.mentions = coalesce(rel.mentions, 0) + 1
+                    RETURN source.name AS source, type(rel) AS relationship, destination.name AS destination
+                    """, sourceLabel, destLabel, entity.getRelationship());
+                
+                Map<String, Object> params = new HashMap<>();
+                params.put("source_name", entity.getSource());
+                params.put("dest_name", entity.getDestination());
+                params.put("source_embedding", sourceEmbedding);
+                params.put("dest_embedding", destEmbedding);
+                params.put("user_id", userId);
+                
+                Result result = session.run(cypher, params);
+                
+                if (result.hasNext()) {
+                    Record record = result.next();
+                    Map<String, Object> addedRelation = new HashMap<>();
+                    addedRelation.put("source", record.get("source").asString());
+                    addedRelation.put("destination", record.get("destination").asString());
+                    addedRelation.put("relationship", record.get("relationship").asString());
+                    addedRelation.put("operation", "add");
+                    results.add(addedRelation);
+                }
+                
+            } catch (Exception e) {
+                log.error("Error adding entity relationship: {} -[{}]-> {}", 
+                    entity.getSource(), entity.getRelationship(), entity.getDestination(), e);
+            }
+        }
+        
+        log.debug("Added {} relationships", results.size());
+        return results;
+    }
+
     @Override
     public void close() {
         try {

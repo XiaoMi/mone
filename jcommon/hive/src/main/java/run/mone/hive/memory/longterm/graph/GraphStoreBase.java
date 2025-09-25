@@ -31,6 +31,14 @@ public interface GraphStoreBase {
             this.destinationType = destinationType;
         }
         
+        public GraphEntity(String source, String destination, String relationship) {
+            this.source = source;
+            this.destination = destination;
+            this.relationship = relationship;
+            this.sourceType = "__Entity__";
+            this.destinationType = "__Entity__";
+        }
+        
         // Getters and setters
         public String getSource() { return source; }
         public void setSource(String source) { this.source = source; }
@@ -270,6 +278,18 @@ public interface GraphStoreBase {
      * @return 图存储配置
      */
     GraphStoreConfig getConfig();
+
+    /**
+     * 智能添加图数据 - 包含冲突检测和删除逻辑
+     * 类似Python版本的add方法
+     * 
+     * @param data 要添加的文本数据
+     * @param filters 过滤器，包含用户ID等信息
+     * @return 操作结果，包含删除和添加的实体
+     */
+    default Map<String, Object> add(String data, Map<String, Object> filters) {
+        throw new UnsupportedOperationException("Smart add operation not implemented");
+    }
     
     /**
      * 验证连接
