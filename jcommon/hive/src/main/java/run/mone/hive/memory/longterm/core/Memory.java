@@ -217,7 +217,7 @@ public class Memory implements MemoryBase {
 
             CompletableFuture<List<Map<String, Object>>> graphFuture = CompletableFuture.supplyAsync(() -> {
                 if (enableGraph && graphStore != null) {
-                    return graphStore.search(query, limit);
+                    return graphStore.search(query, limit, userId);
                 }
                 return new ArrayList<>();
             }, executor);
