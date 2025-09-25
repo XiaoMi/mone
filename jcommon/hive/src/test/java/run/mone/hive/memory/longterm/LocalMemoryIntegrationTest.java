@@ -144,7 +144,7 @@ public class LocalMemoryIntegrationTest {
         try {
             // 首先添加一个记忆
             Map<String, Object> addResult = addMemoryWithEmbedding(
-                "用户最喜欢的颜色是蓝色", TEST_USER_ID);
+                TEST_USER_ID + "最喜欢的颜色是蓝色", TEST_USER_ID);
             
             assertNotNull(addResult, "添加记忆结果不应为null");
             
