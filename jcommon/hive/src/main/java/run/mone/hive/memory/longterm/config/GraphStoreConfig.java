@@ -101,6 +101,11 @@ public class GraphStoreConfig {
     private String customPrompt;
 
     /**
+     * 相似度阈值
+     */
+    private double threshold;
+
+    /**
      * @param configMap
      * @return
      */
@@ -158,6 +163,10 @@ public class GraphStoreConfig {
             builder.customPrompt((String) configMap.get("customPrompt"));
         }
 
+        if (configMap.containsKey("threshold")) {
+            builder.threshold((Double) configMap.get("threshold"));
+        }
+
         return builder.build();
     }
     
@@ -183,6 +192,7 @@ public class GraphStoreConfig {
                 .password("password")
                 .database("neo4j")
                 .enabled(false)
+                .threshold(0.7)
                 .build();
     }
     
@@ -197,6 +207,7 @@ public class GraphStoreConfig {
             .username("memgraph")
             .password("memgraph")
             .enabled(false)
+            .threshold(0.7)
             .build();
     }
     
@@ -208,6 +219,7 @@ public class GraphStoreConfig {
             .provider(Provider.NEPTUNE)
             .url("neptune-graph://your-graph-id")
             .enabled(false)
+            .threshold(0.7)
             .build();
     }
     
@@ -219,6 +231,7 @@ public class GraphStoreConfig {
             .provider(Provider.KUZU)
             .url("./data/kuzu")
             .enabled(true)
+            .threshold(0.7)
             .build();
     }
 
@@ -230,6 +243,7 @@ public class GraphStoreConfig {
             .provider(Provider.KUZU)
             .url("./data/kuzu_embedded")
             .enabled(true)
+            .threshold(0.7)
             .build();
     }
 }

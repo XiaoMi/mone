@@ -40,6 +40,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     public Neo4jGraphStore(GraphStoreConfig config) {
         this.config = config;
+        this.threshold = config.getThreshold();
         this.nodeLabel = config.getConfig().containsKey("base_label") &&
                         (Boolean) config.getConfig().get("base_label") ?
                         ":`__Entity__`" : "";
@@ -456,7 +457,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 解析工具调用结果
             List<Map<String, Object>> entities = new ArrayList<>();
-            if (response.get("tool_calls") instanceof List) {
+            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
 
