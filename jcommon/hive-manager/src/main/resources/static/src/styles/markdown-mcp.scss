@@ -344,13 +344,13 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
@@ -839,13 +839,13 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
@@ -927,13 +927,13 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
@@ -1058,13 +1058,13 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
@@ -1184,13 +1184,13 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
@@ -1293,13 +1293,13 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
@@ -1399,16 +1399,79 @@
           color: #e1e1e1;
 
           &:before {
-            content: '□';
+            content: '';
             margin-right: 8px;
             color: #888;
           }
 
           &.completed:before {
-            content: '☑';
+            content: '';
             color: #67c23a;
           }
         }
+      }
+    }
+  }
+}
+
+// 代码定义列表块样式
+.list-code-definition-names-block {
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  line-height: 0;
+  overflow: hidden;
+
+  .list-code-definition-names-header {
+    display: flex;
+    align-items: center;
+    padding: 20px 15px;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3d3d3d;
+
+    i {
+      font-size: 16px;
+      color: #9c27b0;
+      margin-right: 12px;
+    }
+
+    span {
+      color: #e1e1e1;
+      font-weight: 500;
+    }
+  }
+
+  .list-code-definition-names-content {
+    padding: 16px 24px;
+    color: #e1e1e1;
+    line-height: 1.6;
+    background: #1e1e1e;
+
+    .path-section {
+      margin: 8px 0;
+      padding: 12px;
+      background: #2d2d2d;
+      border-radius: 4px;
+      border-left: 4px solid #9c27b0;
+
+      &::before {
+        content: "路径";
+        display: block;
+        color: #9c27b0;
+        font-size: 0.9em;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-size: 0.9em;
+        color: #00b3ff;
+        background: #1e1e1e;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
       }
     }
   }
