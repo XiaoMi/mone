@@ -130,6 +130,7 @@ export default {
     this.addDiffEvents();
     this.collapseFn();
     this.addBoltToggleEvents();
+    this.addToolResultToggleEvents();
     this.addFileUrlLinkEvents();
   },
   updated() {
@@ -140,6 +141,7 @@ export default {
     this.collapseFn();
     this.bindCollapse();
     this.addBoltToggleEvents();
+    this.addToolResultToggleEvents();
     this.addFileUrlLinkEvents();
   },
   unmounted() {
@@ -329,6 +331,34 @@ export default {
         });
       }
     },
+    addToolResultToggleEvents() {
+      const textRef = this.$refs.textRef as HTMLDivElement;
+      if (textRef) {
+        const toolResultHeaders = textRef.querySelectorAll('.tool-result-header');
+        toolResultHeaders.forEach((header: any) => {
+          const toggleHandler = header._toggleHandler || (() => {
+            const content = header.parentElement.querySelector('.tool-result-content');
+            const toggleIcon = header.querySelector('.toggle-icon');
+            
+            if (content.classList.contains('is-active')) {
+              content.classList.remove('is-active');
+              toggleIcon.classList.remove('expanded');
+            } else {
+              content.classList.add('is-active');
+              toggleIcon.classList.add('expanded');
+            }
+          });
+
+          // 先移除旧的事件(如果存在)
+          header.removeEventListener('click', header._toggleHandler);
+          // 添加新的事件
+          header.addEventListener('click', toggleHandler);
+
+          // 将handler存储在DOM元素上,方便之后移除
+          header._toggleHandler = toggleHandler;
+        });
+      }
+    },
     addFileUrlLinkEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;
       if (textRef) {
@@ -422,6 +452,15 @@ export default {
             delete btn._toggleHandler;
           }
         });
+        // 移除tool-result toggle事件
+        const toolResultHeaders = textRef.querySelectorAll('.tool-result-header');
+        toolResultHeaders.forEach((header: any) => {
+          if (header._toggleHandler) {
+            header.removeEventListener('click', header._toggleHandler);
+            delete header._toggleHandler;
+          }
+        });
+        
         // 移除file-url-link事件
         const fileLinks = textRef.querySelectorAll('.file-url-link');
         fileLinks.forEach((link: any) => {

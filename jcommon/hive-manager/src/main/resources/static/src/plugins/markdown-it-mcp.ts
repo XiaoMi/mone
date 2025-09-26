@@ -265,6 +265,7 @@ export function markdownItMcp(md: MarkdownIt) {
               <div class="tool-result-header">
                 <i class="fa-solid fa-code"></i>
                 <span>工具结果</span>
+                <i class="toggle-icon fa-solid fa-chevron-down"></i>
               </div>
               <div class="tool-result-content">`;
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
