@@ -1334,6 +1334,28 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     @include content-base;
     background: $background-primary;
     line-height: 1.4;
+    max-height: 300px; // 限制最大高度为300px
+    overflow-y: auto; // 添加垂直滚动条
+    overflow-x: hidden; // 隐藏水平滚动条
+
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba($text-secondary, 0.1);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba($accent-green, 0.6);
+      border-radius: 4px;
+      
+      &:hover {
+        background: rgba($accent-green, 0.8);
+      }
+    }
 
     pre {
       margin: 0;
@@ -1345,7 +1367,7 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
       color: $text-primary;
       white-space: pre-wrap;
       word-wrap: break-word;
-      overflow-x: auto;
+      overflow-x: visible; // 让文本正常换行，不需要水平滚动
     }
   }
 }
