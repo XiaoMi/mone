@@ -460,13 +460,20 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "pid") {
           html += `</span>`;
         } else if (tagname === "terminal_append") {
-          // 处理 terminal_append 标签关闭，生成或更新进程终端组件
+          // 处理 terminal_append 标签关闭
           if (currentPid && currentContent) {
             if (existingPidComponents.has(currentPid)) {
-              // 已存在组件，生成用于追加内容的标记
-              html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-content="${md.utils.escapeHtml(currentContent)}"><!-- append to existing terminal --></div>`;
+              // 已存在组件，输出更新指令
+              const existingContent = existingPidComponents.get(currentPid);
+              if (existingContent) {
+                // 合并内容
+                const updatedContent = existingContent + '\n' + currentContent;
+                existingPidComponents.set(currentPid, updatedContent);
+                // 输出更新指令
+                html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-content="${md.utils.escapeHtml(currentContent)}"></div>`;
+              }
             } else {
-              // 创建新的终端组件
+              // 第一次遇到此PID，立即在当前位置输出终端组件
               const componentHtml = `
               <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
                 <div class="terminal-process-header">
@@ -478,13 +485,14 @@ export function markdownItMcp(md: MarkdownIt) {
                 </div>
               </div>`;
               html += componentHtml;
-              existingPidComponents.set(currentPid, componentHtml);
+              // 存储内容，供后续追加使用
+              existingPidComponents.set(currentPid, currentContent);
             }
+            
             // 重置变量
             currentPid = "";
             currentContent = "";
           }
-          html += `<!-- terminal_append_end -->`;
         } else if (tagname === "process_pid") {
           // process_pid 标签关闭，不需要额外处理
         } else if (tagname === "process_content") {
@@ -506,6 +514,9 @@ export function markdownItMcp(md: MarkdownIt) {
 
     parser.write(mcpContent);
     parser.end();
+
+    // 清空映射，为下次解析做准备
+    existingPidComponents.clear();
 
     // console.log("Generated HTML:", html);
 

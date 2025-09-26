@@ -508,10 +508,10 @@ export default {
     addTerminalAppendEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;
       if (textRef) {
-        // 处理追加更新标记
-        const appendUpdates = textRef.querySelectorAll('.terminal-append-update');
-        appendUpdates.forEach((update: Element) => {
-          const htmlUpdate = update as HTMLElement;
+        // 处理终端追加更新指令
+        const updateElements = textRef.querySelectorAll('.terminal-append-update');
+        updateElements.forEach((updateEl: Element) => {
+          const htmlUpdate = updateEl as HTMLElement;
           const pid = htmlUpdate.getAttribute('data-pid');
           const content = htmlUpdate.getAttribute('data-content');
           
@@ -526,8 +526,11 @@ export default {
                 const newText = currentText + '\n' + content;
                 contentElement.textContent = newText;
                 
-                // 添加滚动到底部的效果
-                contentElement.scrollTop = contentElement.scrollHeight;
+                // 滚动到底部
+                const contentContainer = targetTerminal.querySelector('.terminal-process-content') as HTMLElement;
+                if (contentContainer) {
+                  contentContainer.scrollTop = contentContainer.scrollHeight;
+                }
                 
                 // 添加闪烁效果表示有新内容
                 targetTerminal.classList.add('terminal-updated');
@@ -537,44 +540,19 @@ export default {
               }
             }
             
-            // 移除处理过的更新标记
+            // 移除处理过的更新指令
             htmlUpdate.remove();
           }
         });
-        
-        // 为所有终端组件设置更新处理器（用于动态更新）
+
+        // 为所有终端组件设置滚动到底部的行为
         const terminalBlocks = textRef.querySelectorAll('.terminal-process-block');
         terminalBlocks.forEach((block: Element) => {
           const htmlBlock = block as HTMLElement;
-          const pid = htmlBlock.getAttribute('data-pid');
-          
-          if (pid) {
-            const updateHandler = (htmlBlock as any)._updateHandler || ((newContent: string) => {
-              const contentElement = htmlBlock.querySelector('.terminal-process-content pre') as HTMLElement;
-              if (contentElement) {
-                // 将新内容追加到现有内容后面
-                const currentText = contentElement.textContent || '';
-                const updatedText = currentText + '\n' + newContent;
-                contentElement.textContent = updatedText;
-                
-                // 滚动到底部
-                contentElement.scrollTop = contentElement.scrollHeight;
-                
-                // 添加更新效果
-                htmlBlock.classList.add('terminal-updated');
-                setTimeout(() => {
-                  htmlBlock.classList.remove('terminal-updated');
-                }, 1000);
-              }
-            });
-            
-            // 将更新处理器绑定到全局对象，以便其他组件可以调用
-            if (!(window as any).terminalUpdaters) {
-              (window as any).terminalUpdaters = {};
-            }
-            (window as any).terminalUpdaters[pid] = updateHandler;
-            
-            (htmlBlock as any)._updateHandler = updateHandler;
+          const contentContainer = htmlBlock.querySelector('.terminal-process-content') as HTMLElement;
+          if (contentContainer) {
+            // 确保新内容显示时滚动到底部（滚动条在容器上）
+            contentContainer.scrollTop = contentContainer.scrollHeight;
           }
         });
       }
@@ -661,18 +639,7 @@ export default {
           }
         });
         
-        // 移除terminal-append事件
-        const terminalBlocks = textRef.querySelectorAll('.terminal-process-block');
-        terminalBlocks.forEach((block: Element) => {
-          const htmlBlock = block as HTMLElement;
-          const pid = htmlBlock.getAttribute('data-pid');
-          if (pid && (window as any).terminalUpdaters) {
-            delete (window as any).terminalUpdaters[pid];
-          }
-          if ((htmlBlock as any)._updateHandler) {
-            delete (htmlBlock as any)._updateHandler;
-          }
-        });
+        // 终端组件不需要特殊的清理逻辑，因为内容已经在解析器层面处理
       }
     },
     removeColapseEvents() {
