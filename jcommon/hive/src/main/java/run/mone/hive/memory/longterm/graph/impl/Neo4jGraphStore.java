@@ -1309,7 +1309,6 @@ public class Neo4jGraphStore implements GraphStoreBase {
                             @SuppressWarnings("unchecked")
                             List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
                             for (Map<String, Object> entity : jsonEntities) {
-                                Map<String, Object> normalizedRel = new HashMap<>();
                                 String source = entity.get("source") != null ? entity.get("source").toString() : "";
                                 String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
                                 String destination = entity.get("destination") != null ? entity.get("destination").toString() : "general";
