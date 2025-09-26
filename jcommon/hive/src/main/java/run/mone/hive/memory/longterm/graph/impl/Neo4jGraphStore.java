@@ -115,14 +115,14 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 try {
                     session.run(String.format("CREATE INDEX entity_single IF NOT EXISTS FOR (n %s) ON (n.user_id)", nodeLabel));
                 } catch (Exception e) {
-                    log.debug("Failed to create entity_single index: {}", e.getMessage());
+                    log.info("Failed to create entity_single index: {}", e.getMessage());
                 }
 
                 // 尝试创建复合索引（企业版功能）
                 try {
                     session.run(String.format("CREATE INDEX entity_composite IF NOT EXISTS FOR (n %s) ON (n.name, n.user_id)", nodeLabel));
                 } catch (Exception e) {
-                    log.debug("Failed to create entity_composite index: {}", e.getMessage());
+                    log.info("Failed to create entity_composite index: {}", e.getMessage());
                 }
             }
             log.info("Neo4j indices created successfully");
@@ -288,7 +288,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 清理实体格式，对应Python中的_remove_spaces_from_entities
             entities = removeSpacesFromEntities(entities);
-            log.debug("Extracted {} relations from data", entities.size());
+            log.info("Extracted {} relations from data", entities.size());
             return entities;
 
         } catch (Exception e) {
@@ -373,7 +373,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 清理实体格式
             toBeDeleted = removeSpacesFromEntities(toBeDeleted);
-            log.debug("Identified {} relations for deletion", toBeDeleted.size());
+            log.info("Identified {} relations for deletion", toBeDeleted.size());
             return toBeDeleted;
 
         } catch (Exception e) {
@@ -1146,7 +1146,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
  
             }
 
-            log.debug("Extracted {} entities from text", entities.size());
+            log.info("Extracted {} entities from text", entities.size());
             return entities;
 
         } catch (Exception e) {
@@ -1187,7 +1187,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 }
             }
 
-            log.debug("Retrieved {} entities from data: {}", entityTypeMap.size(), entityTypeMap.keySet());
+            log.info("Retrieved {} entities from data: {}", entityTypeMap.size(), entityTypeMap.keySet());
             return entityTypeMap;
 
         } catch (Exception e) {
@@ -1333,7 +1333,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 }
             }
 
-            log.debug("Extracted {} relations from text", relations.size());
+            log.info("Extracted {} relations from text", relations.size());
             return relations;
 
         } catch (Exception e) {

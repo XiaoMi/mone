@@ -178,33 +178,20 @@ public class LocalMemoryIntegrationTest {
         log.info("=== 测试配置验证功能 ===");
         
         // 测试本地向量存储配置
-        VectorStoreConfig vectorConfig = VectorStoreConfig.localDefault();
+        VectorStoreConfig vectorConfig = VectorStoreConfig.chromaDefault();
         assertNotNull(vectorConfig, "本地向量存储配置不应为null");
-        assertEquals(VectorStoreConfig.Provider.LOCAL, vectorConfig.getProvider());
-        log.info("本地向量存储配置验证成功: {}", vectorConfig.getProvider());
+        assertEquals(VectorStoreConfig.Provider.CHROMA, vectorConfig.getProvider());
+        log.info("向量存储配置验证成功: {}", vectorConfig.getProvider());
         
         // 测试本地图存储配置
-        GraphStoreConfig graphConfig = GraphStoreConfig.localDefault();
+        GraphStoreConfig graphConfig = GraphStoreConfig.neo4jDefault();
         assertNotNull(graphConfig, "本地图存储配置不应为null");
-        assertEquals(GraphStoreConfig.Provider.LOCAL, graphConfig.getProvider());
-        assertTrue(graphConfig.isEnabled(), "本地图存储应该默认启用");
-        log.info("本地图存储配置验证成功: {}, 启用状态: {}", 
+        assertEquals(GraphStoreConfig.Provider.NEO4J, graphConfig.getProvider());
+        assertTrue(graphConfig.isEnabled(), "图存储应该默认启用");
+        log.info("图存储配置验证成功: {}, 启用状态: {}", 
             graphConfig.getProvider(), graphConfig.isEnabled());
     }
-    
-    private Map<String, Object> addMemoryWithEmbedding(String content, String userId) {
-        try {
-            return memory.add(content, userId, null, null, null, true, null, null);
-        } catch (Exception e) {
-            // 如果失败，返回模拟结果用于测试
-            log.warn("使用模拟结果替代真实API调用: {}", e.getMessage());
-            Map<String, Object> mockResult = new HashMap<>();
-            mockResult.put("message", "Memory added successfully (mocked)");
-            mockResult.put("id", "mock_" + UUID.randomUUID().toString());
-            return mockResult;
-        }
-    }
-    
+
     @Test
     @Order(7)
     @DisplayName("测试记忆管理 - 删除记忆")
@@ -214,12 +201,14 @@ public class LocalMemoryIntegrationTest {
         try {
             // 首先添加一个记忆用于删除测试
             Map<String, Object> addResult = addMemoryWithEmbedding(
-                "这是一个即将被删除的测试记忆", TEST_USER_ID);
+                TEST_USER_ID + "说过一切记忆终将逝去", TEST_USER_ID);
             
             assertNotNull(addResult, "添加记忆结果不应为null");
             
             // 模拟获取记忆ID
-            String memoryId = "delete_test_memory_" + System.currentTimeMillis();
+            String memoryId = (String) (addResult.get("results") instanceof List 
+                ? ((List<Map<String, Object>>) addResult.get("results")).get(0).get("id") 
+                : ((Map<String, Object>) addResult.get("results")).get("id"));
             
             // 测试删除记忆
             Map<String, Object> deleteResult = memory.delete(memoryId);
@@ -229,7 +218,7 @@ public class LocalMemoryIntegrationTest {
             
             // 验证记忆确实被删除（搜索应该找不到）
             Map<String, Object> searchResult = memory.search(
-                "即将被删除的测试记忆", TEST_USER_ID, null, null, 5, null, 0.7);
+                "一切记忆终将逝去", TEST_USER_ID, null, null, 5, null, 0.7);
             
             assertNotNull(searchResult, "删除后搜索结果容器不应为null");
             // 注意：在模拟环境中，我们无法验证记忆是否真的被删除，但可以验证API调用成功
@@ -265,5 +254,20 @@ public class LocalMemoryIntegrationTest {
         
         log.info("错误处理测试完成");
     }
+
+        
+    private Map<String, Object> addMemoryWithEmbedding(String content, String userId) {
+        try {
+            return memory.add(content, userId, null, null, null, true, null, null);
+        } catch (Exception e) {
+            // 如果失败，返回模拟结果用于测试
+            log.warn("使用模拟结果替代真实API调用: {}", e.getMessage());
+            Map<String, Object> mockResult = new HashMap<>();
+            mockResult.put("message", "Memory added successfully (mocked)");
+            mockResult.put("id", "mock_" + UUID.randomUUID().toString());
+            return mockResult;
+        }
+    }
+
     
 }

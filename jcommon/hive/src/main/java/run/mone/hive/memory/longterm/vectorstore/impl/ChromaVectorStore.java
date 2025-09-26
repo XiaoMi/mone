@@ -186,7 +186,7 @@ public class ChromaVectorStore implements VectorStoreBase {
                 results.add(item);
             }
 
-            log.debug("Found {} similar vectors in Chroma collection {}", results.size(), config.getCollectionName());
+            log.info("Found {} similar vectors in Chroma collection {}", results.size(), config.getCollectionName());
             return results;
         } catch (Exception e) {
             log.error("Failed to search vectors: {}", e.getMessage());
@@ -304,7 +304,7 @@ public class ChromaVectorStore implements VectorStoreBase {
             results.add(item);
         }
 
-        log.debug("Listed {} vectors from Chroma collection {}", results.size(), config.getCollectionName());
+        log.info("Listed {} vectors from Chroma collection {}", results.size(), config.getCollectionName());
         return results;
     }
 
@@ -366,7 +366,7 @@ public class ChromaVectorStore implements VectorStoreBase {
     public void delete(String vectorId) {
         try {
             collection.delete(Arrays.asList(vectorId), null, null);
-            log.debug("Deleted vector {} from Chroma collection {}", vectorId, config.getCollectionName());
+            log.info("Deleted vector {} from Chroma collection {}", vectorId, config.getCollectionName());
         } catch (Exception e) {
             log.error("Failed to delete vector {}: {}", vectorId, e.getMessage());
             throw new RuntimeException("Failed to delete vector", e);
