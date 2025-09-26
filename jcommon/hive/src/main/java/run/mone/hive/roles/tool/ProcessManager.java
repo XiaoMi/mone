@@ -202,7 +202,38 @@ public class ProcessManager {
             if (forceKill) {
                 // 强制终止
                 process.destroyForcibly();
-                log.info("强制终止进程: {} (PID: {})", processId, processInfo.getPid());
+                // 使用ProcessHandle查找并杀死所有子进程和后代进程
+                try {
+                    ProcessHandle processHandle = process.toHandle();
+                    log.info("正在查找并终止进程 {} 的所有子进程...", processId);
+                    
+                    // 先终止所有后代进程（包括子进程的子进程）
+                    processHandle.descendants().forEach(descendantHandle -> {
+                        try {
+                            log.info("终止后代进程 - PID: {}, 命令: {}", 
+                                    descendantHandle.pid(), 
+                                    descendantHandle.info().command().orElse("未知命令"));
+                            descendantHandle.destroyForcibly();
+                        } catch (Exception e) {
+                            log.warn("终止后代进程 {} 时发生异常: {}", descendantHandle.pid(), e.getMessage());
+                        }
+                    });
+                    
+                    // 再终止直接子进程
+                    processHandle.children().forEach(childHandle -> {
+                        try {
+                            log.info("终止子进程 - PID: {}, 命令: {}", 
+                                    childHandle.pid(), 
+                                    childHandle.info().command().orElse("未知命令"));
+                            childHandle.destroyForcibly();
+                        } catch (Exception e) {
+                            log.warn("终止子进程 {} 时发生异常: {}", childHandle.pid(), e.getMessage());
+                        }
+                    });
+                    
+                } catch (Exception e) {
+                    log.warn("查找并终止子进程时发生异常: {}", e.getMessage());
+                }
             } else {
                 // 优雅关闭
                 process.destroy();
