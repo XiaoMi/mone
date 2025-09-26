@@ -479,6 +479,68 @@ public class ProcessManager {
     }
     
     /**
+     * 杀死所有进程（强制终止），每个进程独立处理，互不影响
+     * 
+     * @return 成功杀死的进程数量
+     */
+    public int killAllProcesses() {
+        int killedCount = 0;
+        int totalCount = processes.size();
+        
+        log.info("开始强制杀死所有进程，共 {} 个进程", totalCount);
+        
+        // 使用新的列表避免并发修改异常
+        List<String> processIds = new ArrayList<>(processes.keySet());
+        
+        for (String processId : processIds) {
+            try {
+                ProcessInfo processInfo = processes.get(processId);
+                if (processInfo == null) {
+                    log.debug("进程 {} 已不存在，跳过", processId);
+                    continue;
+                }
+                
+                Process process = processInfo.getProcess();
+                if (process == null) {
+                    log.debug("进程 {} 的Process对象为null，跳过", processId);
+                    continue;
+                }
+                
+                if (!process.isAlive()) {
+                    log.debug("进程 {} 已经不在运行，标记为stopped", processId);
+                    processInfo.setStatus("stopped");
+                    continue;
+                }
+                
+                // 强制杀死进程
+                process.destroyForcibly();
+                processInfo.setStatus("killed");
+                killedCount++;
+                
+                log.info("成功强制杀死进程: {} (PID: {}, 命令: {})", 
+                        processId, processInfo.getPid(), processInfo.getCommand());
+                
+            } catch (Exception e) {
+                // 每个进程的异常都独立处理，不影响其他进程
+                log.error("杀死进程 {} 时发生异常: {}", processId, e.getMessage(), e);
+                
+                // 尝试标记进程状态为error
+                try {
+                    ProcessInfo processInfo = processes.get(processId);
+                    if (processInfo != null) {
+                        processInfo.setStatus("error");
+                    }
+                } catch (Exception statusException) {
+                    log.error("设置进程 {} 状态时发生异常: {}", processId, statusException.getMessage());
+                }
+            }
+        }
+        
+        log.info("强制杀死进程完成，成功杀死 {}/{} 个进程", killedCount, totalCount);
+        return killedCount;
+    }
+    
+    /**
      * 自动清理已完成的进程（状态为 completed, failed, error, timeout, interrupted 的进程）
      * 这些进程已经结束，可以安全地从管理器中移除
      * 

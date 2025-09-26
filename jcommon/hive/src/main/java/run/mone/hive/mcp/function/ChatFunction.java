@@ -10,6 +10,7 @@ import run.mone.hive.bo.TokenRes;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.tool.ProcessManager;
 import run.mone.hive.schema.Message;
 
 import java.time.Duration;
@@ -103,6 +104,15 @@ public class ChatFunction implements McpFunction {
         //退出agent
         if ("/exit".equalsIgnoreCase(message.trim())) {
             return exit(ownerId);
+        }
+
+        //杀死进程
+        if ("/kill".equalsIgnoreCase(message.trim())) {
+            ProcessManager.getInstance().killAllProcesses();
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("进程已经被kill")),
+                    false
+            ));
         }
 
         try {

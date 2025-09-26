@@ -40,12 +40,12 @@ public class ExecuteCommandToolOptimized implements ITool {
     private static volatile Map<String, String> cachedZshEnv = null;
     private static volatile long lastEnvCacheTime = 0;
     private static final long ENV_CACHE_TIMEOUT = 300_000; // 5分钟缓存超时
-    
+
     // 进程管理器实例
     private static final ProcessManager processManager = ProcessManager.getInstance();
 
     // 输出缓冲配置（参考 Cline 的设置）
-    private static final int CHUNK_LINE_COUNT = 20;          // 20行触发刷新
+    private static final int CHUNK_LINE_COUNT = 1;          // 20行触发刷新
     private static final int CHUNK_BYTE_SIZE = 2048;         // 2KB触发刷新
     private static final long CHUNK_DEBOUNCE_MS = 100;       // 100ms延迟刷新
     private static final long COMPLETION_TIMEOUT_MS = 6000;  // 6秒完成超时
@@ -144,11 +144,10 @@ public class ExecuteCommandToolOptimized implements ITool {
                 </task_progress>
                 </execute_command>
                 
-                Example 3: Build operation - may take time
+                Example 3: Build operation
                 <execute_command>
                 <command>mvn clean compile</command>
                 <requires_approval>false</requires_approval>
-                <timeout>120</timeout>
                 <interactive>true</interactive>
                 </execute_command>
                 """;
@@ -178,7 +177,7 @@ public class ExecuteCommandToolOptimized implements ITool {
                     inputJson.get("interactive").getAsBoolean() : true;
 
             int timeout = inputJson.has("timeout") ?
-                    inputJson.get("timeout").getAsInt() : 60; // 默认超时60秒
+                    inputJson.get("timeout").getAsInt() : 300; // 默认超时300秒
 
             // 处理任务进度（可选）
             String taskProgress = inputJson.has("task_progress") ?
@@ -196,7 +195,7 @@ public class ExecuteCommandToolOptimized implements ITool {
             String workingDirectory = getWorkingDirectory(role);
 
             // 执行命令（新的智能缓冲机制）
-            JsonObject commandResult = executeCommandWithBuffering(role,command, timeout, workingDirectory, interactive);
+            JsonObject commandResult = executeCommandWithBuffering(role, command, timeout, workingDirectory, interactive);
 
             // 添加额外信息到结果中
             commandResult.addProperty("requires_approval", requiresApproval);
@@ -268,9 +267,14 @@ public class ExecuteCommandToolOptimized implements ITool {
             // 启动进程
             process = processBuilder.start();
             final Process finalProcess = process;
-            
+
             // 注册到进程管理器（前台进程，因为这是带缓冲的交互式执行）
             processId = processManager.registerProcess(process, command, workingDirectory, false);
+
+            //发送到前端,用来停止用
+            role.getFluxSink().next("<pid>" + processId + "</pid>");
+
+            final String _processId = processId;
 
             // 缓冲刷新函数（参考 Cline 的 flushBuffer）
             final Runnable flushBuffer = new Runnable() {
@@ -310,7 +314,7 @@ public class ExecuteCommandToolOptimized implements ITool {
 
                             //发送到前端
                             if (null != role.getFluxSink()) {
-                                role.getFluxSink().next(chunk);
+                                role.getFluxSink().next("<terminal_append><process_pid>%s</process_pid><process_content>%s</process_content></terminal_append>".formatted(_processId, chunk));
                             }
 
                         } finally {
@@ -356,6 +360,7 @@ public class ExecuteCommandToolOptimized implements ITool {
                                 if (outputBuffer.size() >= CHUNK_LINE_COUNT ||
                                         outputBufferSize.get() >= CHUNK_BYTE_SIZE) {
                                     // 立即刷新
+                                    log.info("flushBuffer---");
                                     scheduler.execute(flushBuffer);
                                 } else {
                                     // 调度延迟刷新
@@ -365,6 +370,9 @@ public class ExecuteCommandToolOptimized implements ITool {
                         } else {
                             // 用户已经确认继续，直接输出
                             log.info("实时输出: {}", line);
+                            if (null != role.getFluxSink()) {
+                                role.getFluxSink().next("<terminal_append><process_pid>%s</process_pid><process_content>%s</process_content></terminal_append>".formatted(_processId, line));
+                            }
                         }
                     }
                 } catch (IOException e) {
@@ -400,13 +408,13 @@ public class ExecuteCommandToolOptimized implements ITool {
                 log.warn("命令执行超时 ({}秒): {}", timeout, command);
                 result.addProperty("error", "命令执行超时 (" + timeout + "秒)");
                 result.addProperty("timeout", true);
-                
+
                 // 进程超时被终止，更新进程管理器中的状态
                 ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
                 if (processInfo != null) {
                     processInfo.setStatus("timeout");
                 }
-                
+
                 return result;
             }
 
@@ -448,7 +456,7 @@ public class ExecuteCommandToolOptimized implements ITool {
                 log.warn("命令执行完成，但退出代码非零: {}", exitCode);
                 result.addProperty("success", false);
             }
-            
+
             // 更新进程管理器中的状态
             ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
             if (processInfo != null) {
@@ -459,7 +467,7 @@ public class ExecuteCommandToolOptimized implements ITool {
             log.error("执行命令IO异常", e);
             result.addProperty("error", "执行命令IO异常: " + e.getMessage());
             result.addProperty("success", false);
-            
+
             // 更新进程状态为错误
             if (processId != null) {
                 ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
@@ -472,7 +480,7 @@ public class ExecuteCommandToolOptimized implements ITool {
             result.addProperty("error", "命令执行被中断: " + e.getMessage());
             result.addProperty("success", false);
             Thread.currentThread().interrupt();
-            
+
             // 更新进程状态为中断
             if (processId != null) {
                 ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
@@ -484,7 +492,7 @@ public class ExecuteCommandToolOptimized implements ITool {
             log.error("命令执行时发生异常", e);
             result.addProperty("error", "命令执行失败: " + e.getMessage());
             result.addProperty("success", false);
-            
+
             // 更新进程状态为错误
             if (processId != null) {
                 ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
@@ -693,106 +701,106 @@ public class ExecuteCommandToolOptimized implements ITool {
         lastEnvCacheTime = 0;
         log.debug("已清除 zsh 环境变量缓存");
     }
-    
+
     // ============ 进程管理便捷方法 ============
-    
+
     /**
      * 获取进程管理器实例
-     * 
+     *
      * @return ProcessManager实例
      */
     public static ProcessManager getProcessManager() {
         return processManager;
     }
-    
+
     /**
      * 获取所有进程的状态
-     * 
+     *
      * @return 包含所有进程状态的JsonObject
      */
     public static JsonObject getAllProcessesStatus() {
         return processManager.getAllProcessesStatus();
     }
-    
+
     /**
      * 停止指定进程
-     * 
+     *
      * @param processId 进程ID
      * @return 是否成功停止
      */
     public static boolean stopProcess(String processId) {
         return processManager.stopProcess(processId);
     }
-    
+
     /**
      * 强制终止指定进程
-     * 
+     *
      * @param processId 进程ID
      * @return 是否成功终止
      */
     public static boolean killProcess(String processId) {
         return processManager.killProcess(processId);
     }
-    
+
     /**
      * 检查指定进程是否还在运行
-     * 
+     *
      * @param processId 进程ID
      * @return 是否在运行
      */
     public static boolean isProcessRunning(String processId) {
         return processManager.isProcessRunning(processId);
     }
-    
+
     /**
      * 停止所有进程
-     * 
+     *
      * @return 停止的进程数量
      */
     public static int stopAllProcesses() {
         return processManager.stopAllProcesses();
     }
-    
+
     /**
      * 强制终止所有进程
-     * 
+     *
      * @return 终止的进程数量
      */
     public static int killAllProcesses() {
         return processManager.stopAllProcesses(true);
     }
-    
+
     /**
      * 根据命令查找进程
-     * 
+     *
      * @param command 命令字符串（支持部分匹配）
      * @return 匹配的进程ID列表
      */
     public static List<String> findProcessesByCommand(String command) {
         return processManager.findProcessesByCommand(command);
     }
-    
+
     /**
      * 获取运行中的进程数量
-     * 
+     *
      * @return 运行中的进程数量
      */
     public static int getRunningProcessCount() {
         return processManager.getRunningProcessCount();
     }
-    
+
     /**
      * 清理已停止的进程记录
-     * 
+     *
      * @return 清理的进程数量
      */
     public static int cleanupStoppedProcesses() {
         return processManager.cleanupStoppedProcesses();
     }
-    
+
     /**
      * 自动清理已完成的进程记录
-     * 
+     *
      * @return 清理的进程数量
      */
     public static int autoCleanupCompletedProcesses() {
@@ -804,13 +812,13 @@ public class ExecuteCommandToolOptimized implements ITool {
      */
     public static void shutdown() {
         log.info("ExecuteCommandToolOptimized 开始关闭，停止所有进程...");
-        
+
         // 停止所有进程
         int stoppedProcesses = processManager.stopAllProcesses(true);
         if (stoppedProcesses > 0) {
             log.info("已停止 {} 个进程", stoppedProcesses);
         }
-        
+
         // 关闭线程池
         executorService.shutdown();
         scheduler.shutdown();
