@@ -272,6 +272,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
                 if (!content.isEmpty()) {
                     try {
+                        content = MemoryUtils.removeCodeBlocks(content);
                         @SuppressWarnings("unchecked")
                         Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
                         if (jsonResponse != null && jsonResponse.get("entities") != null) {
@@ -356,6 +357,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
                 if (!content.isEmpty()) {
                     try {
+                        content = MemoryUtils.removeCodeBlocks(content);
                         @SuppressWarnings("unchecked")
                         Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
                         if (jsonResponse != null && jsonResponse.get("toBeDeleted") != null) {
@@ -1122,7 +1124,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
                 if (!content.isEmpty()) {
                     try {
-                        
+                        content = MemoryUtils.removeCodeBlocks(content); 
                         @SuppressWarnings("unchecked")
                         Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
                         if (jsonResponse != null && jsonResponse.get("entities") != null) {
