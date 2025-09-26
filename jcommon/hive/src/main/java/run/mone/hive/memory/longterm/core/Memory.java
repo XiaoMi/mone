@@ -13,13 +13,20 @@ import run.mone.hive.memory.longterm.embeddings.EmbeddingBase;
 import run.mone.hive.memory.longterm.vectorstore.VectorStoreFactory;
 import run.mone.hive.memory.longterm.vectorstore.VectorStoreBase;
 import run.mone.hive.memory.longterm.storage.HistoryManager;
-import run.mone.hive.memory.longterm.utils.MessageParser;
 import run.mone.hive.memory.longterm.utils.MemoryUtils;
+import run.mone.hive.memory.longterm.utils.MessageParser;
 import run.mone.hive.memory.longterm.graph.GraphStoreBase;
 import run.mone.hive.memory.longterm.graph.GraphStoreFactory;
+import run.mone.hive.memory.longterm.graph.utils.PromptUtils;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonElement;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.Executors;
@@ -514,141 +521,277 @@ public class Memory implements MemoryBase {
 
     private List<MemoryItem> addWithInference(List<Message> messages, Map<String, Object> metadata,
                                               Map<String, Object> filters) {
-        // 解析消息
+        // 解析消息，与Python版本一致
         String parsedMessages = MessageParser.parseMessagesToString(messages);
+        log.info("Parsed messages: {}", parsedMessages);
 
-        // 使用LLM提取事实
-        List<String> facts = extractFacts(parsedMessages);
+        // 第一步：使用LLM提取事实 (类似Python的FACT_RETRIEVAL_PROMPT)
+        List<String> newRetrievedFacts = extractFactsFromMessages(parsedMessages);
+        log.info("Extracted facts: {}", newRetrievedFacts);
 
-        if (facts.isEmpty()) {
+        if (newRetrievedFacts.isEmpty()) {
             log.info("No facts extracted from input, skipping memory update");
             return new ArrayList<>();
         }
 
-        // 查找相关的现有记忆
-        List<Map<String, Object>> existingMemories = findRelevantMemories(facts, filters);
+        // 第二步：为每个事实搜索相关的现有记忆
+        List<Map<String, Object>> retrievedOldMemory = searchRelevantMemoriesForFacts(newRetrievedFacts, filters);
+        log.info("Retrieved {} existing memories", retrievedOldMemory.size());
 
-        // 使用LLM决定如何更新记忆
-        List<Map<String, Object>> memoryActions = determineMemoryActions(existingMemories, facts);
+        // 建立临时ID映射（类似Python版本的temp_uuid_mapping）
+        Map<String, String> tempUuidMapping = new HashMap<>(); 
+        for (int i = 0; i < retrievedOldMemory.size(); i++) {
+            Map<String, Object> memory = retrievedOldMemory.get(i);
+            String originalId = (String) memory.get("id");
+            tempUuidMapping.put(String.valueOf(i), originalId);
+            memory.put("id", String.valueOf(i)); // 临时替换为索引
+        }
 
-        // 执行记忆操作
-        return executeMemoryActions(memoryActions, metadata);
+        // 第三步：使用LLM决定如何更新记忆 (类似Python的UPDATE_MEMORY_PROMPT)
+        List<Map<String, Object>> newMemoriesWithActions = determineMemoryActionsWithPrompt(
+            retrievedOldMemory, newRetrievedFacts);
+        log.info("Determined {} memory actions", newMemoriesWithActions.size());
+
+        // 第四步：执行记忆操作
+        return executeMemoryActionsWithMapping(newMemoriesWithActions, tempUuidMapping, metadata);
     }
 
-    private List<String> extractFacts(String parsedMessages) {
+    /**
+     * 从消息中提取事实，类似Python版本的FACT_RETRIEVAL_PROMPT
+     */
+    private List<String> extractFactsFromMessages(String parsedMessages) {
         try {
-            String prompt = config.getCustomFactExtractionPrompt() != null
-                    ? config.getCustomFactExtractionPrompt() + "\n\nInput:\n" + parsedMessages
-                    : getDefaultFactExtractionPrompt(parsedMessages);
+            // 使用PromptUtils中的标准事实提取提示词
+            String factExtractionPrompt = PromptUtils.DEFAULT_FACT_RETRIEVAL_PROMPT + 
+                "\n\nFollowing is a conversation between the user and the assistant. You have to extract the relevant facts and preferences about the user, if any, from the conversation and return them in the json format as shown above.\n\n" +
+                parsedMessages;
 
-            String response = llm.generateResponse(Arrays.asList(
-                    Map.of("role", "system", "content", getFactExtractionSystemPrompt()),
-                    Map.of("role", "user", "content", prompt)
-            ), "json_object");
+            List<Map<String, Object>> messages = Arrays.asList(
+                Map.of("role", "user", "content", factExtractionPrompt)
+            );
 
-            return MemoryUtils.parseFactsFromJson(response);
+            String response = llm.generateResponse(messages, "json_object");
+            log.info("Fact extraction LLM response: {}", response);
+
+            return parseFactsFromJsonResponse(response);
 
         } catch (Exception e) {
-            log.error("Error extracting facts", e);
+            log.error("Error extracting facts from messages", e);
             return new ArrayList<>();
         }
     }
 
-    private List<Map<String, Object>> findRelevantMemories(List<String> facts, Map<String, Object> filters) {
-        List<Map<String, Object>> allMemories = new ArrayList<>();
+    /**
+     * 从 JSON 响应中解析事实列表
+     */
+    private List<String> parseFactsFromJsonResponse(String response) {
+        try {
+            JsonElement element = JsonParser.parseString(MemoryUtils.removeCodeBlocks(response.trim()));
+            if (element.isJsonObject()) {
+                JsonObject jsonObject = element.getAsJsonObject();
+                if (jsonObject.has("facts")) {
+                    JsonArray factsArray = jsonObject.getAsJsonArray("facts");
+                    List<String> facts = new ArrayList<>();
+                    for (JsonElement factElement : factsArray) {
+                        if (factElement.isJsonPrimitive()) {
+                            facts.add(factElement.getAsString());
+                        }
+                    }
+                    return facts;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing facts from JSON response: {}", response, e);
+        }
+        return new ArrayList<>();
+    }
 
+    /**
+     * 为每个事实搜索相关的现有记忆，类似Python版本的向量搜索逻辑
+     */
+    private List<Map<String, Object>> searchRelevantMemoriesForFacts(List<String> facts, Map<String, Object> filters) {
+        Map<String, Map<String, Object>> uniqueMemories = new HashMap<>();
+        
+        // 为每个事实分别搜索相关记忆
         for (String fact : facts) {
             try {
                 List<Double> embedding = embeddingModel.embed(fact, "add");
+                // 搜索最相关的5个记忆，与Python版本一致
                 List<MemoryItem> memories = vectorStore.search(fact, embedding, 5, filters);
-
+                
                 for (MemoryItem memory : memories) {
-                    Map<String, Object> memoryMap = new HashMap<>();
-                    memoryMap.put("id", memory.getId());
-                    memoryMap.put("text", memory.getMemory());
-                    allMemories.add(memoryMap);
+                    String memoryId = memory.getId();
+                    if (!uniqueMemories.containsKey(memoryId)) {
+                        Map<String, Object> memoryMap = new HashMap<>();
+                        memoryMap.put("id", memoryId);
+                        memoryMap.put("text", memory.getMemory());
+                        // 添加其他可能有用的元数据
+                        if (memory.getScore() != null) {
+                            memoryMap.put("score", memory.getScore());
+                        }
+                        uniqueMemories.put(memoryId, memoryMap);
+                    }
                 }
             } catch (Exception e) {
-                log.error("Error finding relevant memories for fact: {}", fact, e);
+                log.error("Error searching relevant memories for fact: {}", fact, e);
             }
         }
-
-        // 去重
-        Map<String, Map<String, Object>> uniqueMemories = new HashMap<>();
-        for (Map<String, Object> memory : allMemories) {
-            String id = (String) memory.get("id");
-            uniqueMemories.put(id, memory);
-        }
-
-        return new ArrayList<>(uniqueMemories.values());
+        
+        List<Map<String, Object>> result = new ArrayList<>(uniqueMemories.values());
+        log.info("Found {} unique relevant memories for {} facts", result.size(), facts.size());
+        return result;
     }
 
-    private List<Map<String, Object>> determineMemoryActions(List<Map<String, Object>> existingMemories,
-                                                             List<String> newFacts) {
+    /**
+     * 使用LLM决定如何更新记忆，类似Python版本的UPDATE_MEMORY_PROMPT
+     */
+    private List<Map<String, Object>> determineMemoryActionsWithPrompt(List<Map<String, Object>> retrievedOldMemory,
+                                                                        List<String> newRetrievedFacts) {
         try {
-            String prompt = getUpdateMemoryPrompt(existingMemories, newFacts);
-            String response = llm.generateResponse(Arrays.asList(
-                    Map.of("role", "user", "content", prompt)
-            ), "json_object");
+            // 使用PromptUtils中的标准更新提示词
+            String customUpdateMemoryPrompt = config.getCustomUpdateMemoryPrompt();
+            String updatePrompt = PromptUtils.getUpdateMemoryMessages(
+                retrievedOldMemory, 
+                newRetrievedFacts, 
+                customUpdateMemoryPrompt
+            );
+            
+            log.info("Update memory prompt: {}", updatePrompt);
+            
+            List<Map<String, Object>> messages = Arrays.asList(
+                Map.of("role", "user", "content", updatePrompt)
+            );
 
-            return MemoryUtils.parseMemoryActionsFromJson(response);
+            String response = llm.generateResponse(messages, "json_object");
+            log.info("Memory decision LLM response: {}", response);
+
+            return parseMemoryActionsFromJsonResponse(response);
 
         } catch (Exception e) {
-            log.error("Error determining memory actions", e);
+            log.error("Error determining memory actions with prompt", e);
             return new ArrayList<>();
         }
     }
+    
+    /**
+     * 从 JSON 响应中解析记忆操作列表
+     */
+    private List<Map<String, Object>> parseMemoryActionsFromJsonResponse(String response) {
+        try {
+            JsonElement element = JsonParser.parseString(MemoryUtils.removeCodeBlocks(response.trim()));
+            if (element.isJsonObject()) {
+                JsonObject jsonObject = element.getAsJsonObject();
+                if (jsonObject.has("memory")) {
+                    JsonArray memoryArray = jsonObject.getAsJsonArray("memory");
+                    List<Map<String, Object>> actions = new ArrayList<>();
+                    
+                    for (JsonElement memoryElement : memoryArray) {
+                        if (memoryElement.isJsonObject()) {
+                            JsonObject memoryObj = memoryElement.getAsJsonObject();
+                            Map<String, Object> action = new HashMap<>();
+                            
+                            if (memoryObj.has("id")) {
+                                action.put("id", memoryObj.get("id").getAsString());
+                            }
+                            if (memoryObj.has("text")) {
+                                action.put("text", memoryObj.get("text").getAsString());
+                            }
+                            if (memoryObj.has("event")) {
+                                action.put("event", memoryObj.get("event").getAsString());
+                            }
+                            if (memoryObj.has("old_memory")) {
+                                action.put("old_memory", memoryObj.get("old_memory").getAsString());
+                            }
+                            
+                            actions.add(action);
+                        }
+                    }
+                    return actions;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing memory actions from JSON response: {}", response, e);
+        }
+        return new ArrayList<>();
+    }
 
-    private List<MemoryItem> executeMemoryActions(List<Map<String, Object>> memoryActions,
-                                                  Map<String, Object> metadata) {
+    /**
+     * 执行记忆操作，带有ID映射，类似Python版本的temp_uuid_mapping逻辑
+     */
+    private List<MemoryItem> executeMemoryActionsWithMapping(List<Map<String, Object>> newMemoriesWithActions,
+                                                             Map<String, String> tempUuidMapping,
+                                                             Map<String, Object> metadata) {
         List<MemoryItem> returnedMemories = new ArrayList<>();
+        
+        // 预处理所有新消息的嵌入向量，类似Python的new_message_embeddings
+        Map<String, List<Double>> newMessageEmbeddings = new HashMap<>();
 
-        for (Map<String, Object> action : memoryActions) {
+        if (newMemoriesWithActions == null || newMemoriesWithActions.isEmpty()) {
+            log.info("No memory actions to be executed!");
+            return returnedMemories;
+        }
+
+        // 遍历所有记忆操作
+        for (Map<String, Object> action : newMemoriesWithActions) {
             try {
-                String text = (String) action.get("text");
-                String event = (String) action.get("event");
-
-                if (text == null || text.trim().isEmpty()) {
+                log.info("Processing memory action: {}", action);
+                
+                String actionText = (String) action.get("text");
+                String eventType = (String) action.get("event");
+                
+                if (actionText == null || actionText.trim().isEmpty()) {
+                    log.info("Skipping memory entry because of empty 'text' field.");
                     continue;
                 }
 
-                switch (event) {
+                switch (eventType) {
                     case "ADD":
-                        String memoryId = createMemory(text, null, new HashMap<>(metadata));
+                        String memoryId = createMemoryWithEmbeddings(actionText, newMessageEmbeddings, new HashMap<>(metadata));
                         returnedMemories.add(MemoryItem.builder()
                                 .id(memoryId)
-                                .memory(text)
-                                .event(event)
+                                .memory(actionText)
+                                .event(eventType)
                                 .build());
                         break;
 
                     case "UPDATE":
-                        String updateId = (String) action.get("id");
-                        List<Double> embeddings = embeddingModel.embed(text, "update");
-                        updateMemory(updateId, text, embeddings);
-                        returnedMemories.add(MemoryItem.builder()
-                                .id(updateId)
-                                .memory(text)
-                                .event(event)
-                                .build());
+                        String tempId = (String) action.get("id");
+                        String realMemoryId = tempUuidMapping.get(tempId);
+                        if (realMemoryId != null) {
+                            updateMemoryWithEmbeddings(realMemoryId, actionText, newMessageEmbeddings, new HashMap<>(metadata));
+                            String previousMemory = (String) action.get("old_memory");
+                            returnedMemories.add(MemoryItem.builder()
+                                    .id(realMemoryId)
+                                    .memory(actionText)
+                                    .event(eventType)
+                                    .previousMemory(previousMemory)
+                                    .build());
+                        }
                         break;
 
                     case "DELETE":
-                        String deleteId = (String) action.get("id");
-                        deleteMemory(deleteId);
-                        returnedMemories.add(MemoryItem.builder()
-                                .id(deleteId)
-                                .memory(text)
-                                .event(event)
-                                .build());
+                        String deleteTempId = (String) action.get("id");
+                        String realDeleteId = tempUuidMapping.get(deleteTempId);
+                        if (realDeleteId != null) {
+                            deleteMemory(realDeleteId);
+                            returnedMemories.add(MemoryItem.builder()
+                                    .id(realDeleteId)
+                                    .memory(actionText)
+                                    .event(eventType)
+                                    .build());
+                        }
                         break;
 
+                    case "NONE":
+                        log.info("NOOP for Memory.");
+                        break;
+                        
                     default:
-                        log.info("No operation for memory action: {}", event);
+                        log.warn("Unknown event type: {}", eventType);
                         break;
                 }
             } catch (Exception e) {
-                log.error("Error executing memory action: {}", action, e);
+                log.error("Error processing memory action: {}", action, e);
             }
         }
 
@@ -682,6 +825,41 @@ public class Memory implements MemoryBase {
             throw new RuntimeException("Failed to create memory", e);
         }
     }
+    
+    /**
+     * 带有嵌入向量缓存的创建记忆方法
+     */
+    private String createMemoryWithEmbeddings(String data, Map<String, List<Double>> existingEmbeddings, Map<String, Object> metadata) {
+        log.info("Creating memory with data: {}", data);
+
+        try {
+            List<Double> embeddings;
+            if (existingEmbeddings.containsKey(data)) {
+                embeddings = existingEmbeddings.get(data);
+            } else {
+                embeddings = embeddingModel.embed(data, "add");
+                existingEmbeddings.put(data, embeddings); // 缓存嵌入向量
+            }
+
+            String memoryId = UUID.randomUUID().toString();
+            metadata.put("memory", data);
+            metadata.put("hash", calculateHash(data));
+            metadata.put("created_at", LocalDateTime.now().toString());
+
+            vectorStore.insert(Arrays.asList(embeddings), Arrays.asList(memoryId), Arrays.asList(metadata));
+
+            historyManager.addHistory(memoryId, null, data, "ADD",
+                    (String) metadata.get("created_at"),
+                    (String) metadata.get("actor_id"),
+                    (String) metadata.get("role"));
+
+            return memoryId;
+
+        } catch (Exception e) {
+            log.error("Error creating memory with embeddings", e);
+            throw new RuntimeException("Failed to create memory", e);
+        }
+    }
 
     private void updateMemory(String memoryId, String data, List<Double> embeddings) {
         try {
@@ -690,18 +868,36 @@ public class Memory implements MemoryBase {
                 throw new IllegalArgumentException("Memory with ID " + memoryId + " not found");
             }
 
+            String prevValue = existingMemory.getMemory();
             Map<String, Object> newMetadata = new HashMap<>(existingMemory.getMetadata());
             newMetadata.put("memory", data);
             newMetadata.put("hash", calculateHash(data));
+            
+            // 保持创建时间
+            if (existingMemory.getCreatedAt() != null) {
+                newMetadata.put("created_at", existingMemory.getCreatedAt().toString());
+            }
             newMetadata.put("updated_at", LocalDateTime.now().toString());
+
+            // 保持原有的用户ID等信息
+            if (existingMemory.getUserId() != null) {
+                newMetadata.put("user_id", existingMemory.getUserId());
+            }
+            if (existingMemory.getAgentId() != null) {
+                newMetadata.put("agent_id", existingMemory.getAgentId());
+            }
+            if (existingMemory.getRunId() != null) {
+                newMetadata.put("run_id", existingMemory.getRunId());
+            }
 
             // 更新向量存储
             vectorStore.update(memoryId, embeddings, newMetadata);
+            log.info("Updated memory with ID: {} with data: {}", memoryId, data);
 
             // 更新图记忆（如果启用）
             updateGraphMemoryOnUpdate(data, newMetadata);
 
-            historyManager.addHistory(memoryId, existingMemory.getMemory(), data, "UPDATE",
+            historyManager.addHistory(memoryId, prevValue, data, "UPDATE",
                     (String) newMetadata.get("created_at"),
                     (String) newMetadata.get("updated_at"),
                     (String) newMetadata.get("actor_id"),
@@ -712,23 +908,91 @@ public class Memory implements MemoryBase {
             throw new RuntimeException("Failed to update memory", e);
         }
     }
+    
+    /**
+     * 带有嵌入向量缓存的更新记忆方法
+     */
+    private void updateMemoryWithEmbeddings(String memoryId, String data, Map<String, List<Double>> existingEmbeddings, Map<String, Object> metadata) {
+        log.info("Updating memory with ID: {} with data: {}", memoryId, data);
+        
+        try {
+            MemoryItem existingMemory = vectorStore.get(memoryId);
+            if (existingMemory == null) {
+                log.error("Error getting memory with ID {} during update.", memoryId);
+                throw new IllegalArgumentException("Error getting memory with ID " + memoryId + ". Please provide a valid 'memory_id'");
+            }
+
+            String prevValue = existingMemory.getMemory();
+            Map<String, Object> newMetadata = new HashMap<>(metadata);
+            
+            newMetadata.put("memory", data);
+            newMetadata.put("hash", calculateHash(data));
+            if (existingMemory.getCreatedAt() != null) {
+                newMetadata.put("created_at", existingMemory.getCreatedAt().toString());
+            }
+            newMetadata.put("updated_at", LocalDateTime.now().toString());
+
+            // 保持原有的标识符
+            if (existingMemory.getUserId() != null) {
+                newMetadata.put("user_id", existingMemory.getUserId());
+            }
+            if (existingMemory.getAgentId() != null) {
+                newMetadata.put("agent_id", existingMemory.getAgentId());
+            }
+            if (existingMemory.getRunId() != null) {
+                newMetadata.put("run_id", existingMemory.getRunId());
+            }
+            if (existingMemory.getActorId() != null) {
+                newMetadata.put("actor_id", existingMemory.getActorId());
+            }
+            if (existingMemory.getRole() != null) {
+                newMetadata.put("role", existingMemory.getRole());
+            }
+
+            List<Double> embeddings;
+            if (existingEmbeddings.containsKey(data)) {
+                embeddings = existingEmbeddings.get(data);
+            } else {
+                embeddings = embeddingModel.embed(data, "update");
+                existingEmbeddings.put(data, embeddings);
+            }
+
+            vectorStore.update(memoryId, embeddings, newMetadata);
+            log.info("Updated memory with ID: {} with data: {}", memoryId, data);
+
+            historyManager.addHistory(memoryId, prevValue, data, "UPDATE",
+                    (String) newMetadata.get("created_at"),
+                    (String) newMetadata.get("updated_at"),
+                    (String) newMetadata.get("actor_id"),
+                    (String) newMetadata.get("role"));
+            
+        } catch (Exception e) {
+            log.error("Error updating memory with embeddings for ID: {}", memoryId, e);
+            throw new RuntimeException("Failed to update memory", e);
+        }
+    }
 
     private void deleteMemory(String memoryId) {
+        log.info("Deleting memory with ID: {}", memoryId);
+        
         try {
             MemoryItem existingMemory = vectorStore.get(memoryId);
             if (existingMemory == null) {
                 log.warn("Memory with ID {} not found", memoryId);
                 return;
             }
-
+            
+            String prevValue = existingMemory.getMemory();
+            
             // 删除向量存储中的记忆
             vectorStore.delete(memoryId);
 
             // 删除相关的图记忆（如果启用）
             deleteRelatedGraphMemories(existingMemory);
 
-            historyManager.addHistory(memoryId, existingMemory.getMemory(), null, "DELETE",
-                    null, null,
+            historyManager.addHistory(memoryId, prevValue, null, "DELETE",
+                    existingMemory.getCreatedAt() != null ? existingMemory.getCreatedAt().toString() : null,
+                    null, // updated_at 为 null
                     (String) existingMemory.getMetadata().get("actor_id"),
                     (String) existingMemory.getMetadata().get("role"));
 
@@ -789,11 +1053,11 @@ public class Memory implements MemoryBase {
             }
 
             // 从文本中提取实体关系
-            List<GraphStoreBase.GraphEntity> entities = graphStore.establishRelations(parsedMessages);
+            List<GraphStoreBase.GraphEntity> entities = graphStore.establishRelations(parsedMessages, (String) filters.get("user_id"));
 
             // 添加关系到图存储
             List<Map<String, Object>> addResults = graphStore.addMemories(entities, metadata);
-            log.debug("{}", addResults);
+            log.info("{}", addResults);
 
             // 格式化返回的关系
             List<String> relations = new ArrayList<>();
@@ -834,35 +1098,8 @@ public class Memory implements MemoryBase {
         }
     }
 
-    // ========== 提示词模板 ==========
-
-    private String getFactExtractionSystemPrompt() {
-        return "You are a memory extraction assistant. Extract key facts and information from conversations.";
-    }
-
-    private String getDefaultFactExtractionPrompt(String messages) {
-        return String.format("Extract key facts from the following conversation:\n\n%s\n\n" +
-                "Return a JSON object with a 'facts' array containing the extracted facts.", messages);
-    }
-
-    private String getUpdateMemoryPrompt(List<Map<String, Object>> existingMemories, List<String> newFacts) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("Existing memories:\n");
-
-        for (int i = 0; i < existingMemories.size(); i++) {
-            Map<String, Object> memory = existingMemories.get(i);
-            prompt.append(String.format("%d. %s\n", i, memory.get("text")));
-        }
-
-        prompt.append("\nNew facts:\n");
-        for (String fact : newFacts) {
-            prompt.append("- ").append(fact).append("\n");
-        }
-
-        prompt.append("\nReturn a JSON object with a 'memory' array containing objects with 'text', 'event' (ADD/UPDATE/DELETE), and 'id' (for UPDATE/DELETE) fields.");
-
-        return prompt.toString();
-    }
+    // ========== 事实提取和记忆决策方法已更新为使用PromptUtils ==========
+    // 这些方法现在使用PromptUtils中的标准化提示词，与Python版本保持一致
 
     private String getProceduralMemorySystemPrompt() {
         return "You are a procedural memory assistant. Create a concise summary of the conversation that captures the process or procedure discussed.";
@@ -1018,15 +1255,15 @@ public class Memory implements MemoryBase {
             }
 
             // 从更新的文本中提取新的实体关系
-            List<GraphStoreBase.GraphEntity> newEntities = graphStore.establishRelations(data);
+            List<GraphStoreBase.GraphEntity> newEntities = graphStore.establishRelations(data, (String) metadata.get("user_id"));
             
             if (!newEntities.isEmpty()) {
                 // 添加新的关系到图存储
                 // 注意：这里使用addMemories方法，图存储会自动处理重复关系
                 List<Map<String, Object>> addResults = graphStore.addMemories(newEntities, metadata);
                 
-                log.debug("Updated graph memory with {} new relationships during memory update", newEntities.size());
-                log.debug("Graph update results: {}", addResults);
+                log.info("Updated graph memory with {} new relationships during memory update", newEntities.size());
+                log.info("Graph update results: {}", addResults);
             }
 
         } catch (Exception e) {
@@ -1059,7 +1296,7 @@ public class Memory implements MemoryBase {
             }
 
             // 从已删除的记忆文本中提取可能的实体关系
-            List<GraphStoreBase.GraphEntity> extractedEntities = graphStore.establishRelations(data);
+            List<GraphStoreBase.GraphEntity> extractedEntities = graphStore.establishRelations(data, (String) metadata.get("user_id"));
             
             if (!extractedEntities.isEmpty()) {
                 // 对于每个提取的关系，尝试从图存储中删除
@@ -1074,7 +1311,7 @@ public class Memory implements MemoryBase {
                                 entity.getRelationship(), 
                                 userId
                             );
-                            log.debug("Deleted graph relationship: {} -> {} -> {} (result: {})", 
+                            log.info("Deleted graph relationship: {} -> {} -> {} (result: {})", 
                                 entity.getSource(), entity.getRelationship(), entity.getDestination(), deleteResult);
                         }
                     } catch (Exception e) {
@@ -1083,7 +1320,7 @@ public class Memory implements MemoryBase {
                     }
                 }
                 
-                log.debug("Processed {} potential graph relationships for deletion during memory delete", extractedEntities.size());
+                log.info("Processed {} potential graph relationships for deletion during memory delete", extractedEntities.size());
             }
 
         } catch (Exception e) {
@@ -1183,3 +1420,4 @@ public class Memory implements MemoryBase {
         return enableGraph && graphStore != null;
     }
 }
+

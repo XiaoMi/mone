@@ -338,15 +338,24 @@ public class ChromaVectorStore implements VectorStoreBase {
     public void update(String vectorId, List<Double> vector, Map<String, Object> payload) {
         try {
             Map<String, Object> metadata = new HashMap<>(payload);
+            Map<String, String> metadataString = new HashMap<>();
+            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                metadataString.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+            }
             metadata.put("timestamp", System.currentTimeMillis());
             metadata.put("collection", config.getCollectionName());
 
-            collection.update(
-                vectorId,
-                metadata
+            String document = payload.get("memory") != null ? payload.get("memory").toString() : "";
+
+
+            collection.updateEmbeddings(
+                List.of(new Embedding(vector)),
+                List.of(metadataString),
+                List.of(document),
+                List.of(vectorId)
             );
 
-            log.debug("Updated vector {} in Chroma collection {}", vectorId, config.getCollectionName());
+            log.info("Updated vector {} in Chroma collection {}", vectorId, config.getCollectionName());
         } catch (Exception e) {
             log.error("Failed to update vector {}: {}", vectorId, e.getMessage());
             throw new RuntimeException("Failed to update vector", e);

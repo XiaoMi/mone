@@ -56,7 +56,7 @@ public class LocalMemoryIntegrationTest {
     
     @Test
     @Order(1)
-    @DisplayName("测试向量存储 - 添加记忆")
+    @DisplayName("测试 - 添加记忆")
     void testVectorStoreAdd() {
         log.info("=== 测试向量存储添加功能 ===");
         
@@ -75,7 +75,7 @@ public class LocalMemoryIntegrationTest {
     
     @Test
     @Order(2)
-    @DisplayName("测试向量存储 - 搜索记忆")
+    @DisplayName("测试 - 搜索记忆")
     void testVectorStoreSearch() {
         log.info("=== 测试向量存储搜索功能 ===");
         
@@ -84,7 +84,7 @@ public class LocalMemoryIntegrationTest {
                 TEST_USER_ID + "的饮品偏好", TEST_USER_ID, null, null, 5, null, 0.7);
             
             assertNotNull(searchResult, "搜索结果不应为null");
-            log.info("向量存储搜索成功: {}", searchResult);
+            log.info("记忆存储搜索成功: {}", searchResult);
             
         } catch (Exception e) {
             log.warn("向量存储搜索测试跳过: {}", e.getMessage());
@@ -93,7 +93,7 @@ public class LocalMemoryIntegrationTest {
     
     @Test
     @Order(3)
-    @DisplayName("测试图存储 - 实体关系")
+    @DisplayName("测试 - 实体关系")
     void testGraphStoreEntities() {
         log.info("=== 测试图存储实体关系功能 ===");
         
@@ -148,7 +148,9 @@ public class LocalMemoryIntegrationTest {
             
             assertNotNull(addResult, "添加记忆结果不应为null");
             
-            String memoryId = (String) addResult.get("id");
+            String memoryId = (String) (addResult.get("results") instanceof List 
+                ? ((List<Map<String, Object>>) addResult.get("results")).get(0).get("id") 
+                : ((Map<String, Object>) addResult.get("results")).get("id"));
             
             // 测试更新记忆
             Map<String, Object> updateResult = memory.update(memoryId, "用户最喜欢的颜色改成了红色，并且喜欢户外运动");
