@@ -13,7 +13,6 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.ProcessManager;
 import run.mone.hive.schema.Message;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -106,13 +105,14 @@ public class ChatFunction implements McpFunction {
             return exit(ownerId);
         }
 
-        //杀死进程
-        if ("/kill".equalsIgnoreCase(message.trim())) {
-            ProcessManager.getInstance().killAllProcesses();
-            return Flux.just(new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("进程已经被kill")),
-                    false
-            ));
+        //杀死进程 - 格式: /kill [processId|all]
+        if (message.trim().toLowerCase().startsWith("/kill")) {
+            return handleKillProcess(message.trim());
+        }
+
+        //分离进程 - 格式: /detach <processId>
+        if (message.trim().toLowerCase().startsWith("/detach")) {
+            return handleDetachProcess(message.trim());
         }
 
         try {
@@ -158,6 +158,146 @@ public class ChatFunction implements McpFunction {
                 List.of(new McpSchema.TextContent("聊天历史已清空")),
                 false
         ));
+    }
+
+    /**
+     * 处理杀死进程命令
+     * 支持的格式：
+     * - /kill - 杀死所有进程（兼容旧格式）
+     * - /kill <processId> - 杀死指定进程
+     * - /kill all - 杀死所有进程
+     * - /kill list - 列出所有进程
+     */
+    @NotNull
+    private Flux<McpSchema.CallToolResult> handleKillProcess(String message) {
+        String[] parts = message.split("\\s+");
+        ProcessManager processManager = ProcessManager.getInstance();
+        
+        // 如果只有 /kill，默认杀死所有进程（兼容旧格式）
+        if (parts.length == 1) {
+            int killedCount = processManager.killAllProcesses();
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("已杀死 " + killedCount + " 个进程")),
+                    false
+            ));
+        }
+        
+        String action = parts[1].toLowerCase();
+        
+        switch (action) {
+            case "list":
+                // 列出所有进程
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent(processManager.getAllProcessesStatus().toString())),
+                        false
+                ));
+                
+            case "all":
+                // 杀死所有进程
+                int killedCount = processManager.killAllProcesses();
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("已杀死 " + killedCount + " 个进程")),
+                        false
+                ));
+                
+            default:
+                // 杀死指定进程
+                String processId = parts[1];
+                
+                // 先获取进程信息用于显示
+                ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                if (processInfo == null) {
+                    return Flux.just(new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent("杀死进程失败：未找到进程 " + processId)),
+                            false
+                    ));
+                }
+                
+                boolean success = processManager.killProcess(processId);
+                
+                if (success) {
+                    String processDetails = String.format("进程 %s (PID: %d, 命令: %s) 已被杀死", 
+                            processId, processInfo.getPid(), processInfo.getCommand());
+                    
+                    return Flux.just(new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent(processDetails)),
+                            false
+                    ));
+                } else {
+                    return Flux.just(new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent("杀死进程失败：进程 " + processId + " 可能已经停止或无法终止")),
+                            false
+                    ));
+                }
+        }
+    }
+
+    /**
+     * 处理分离进程命令
+     * 支持的格式：
+     * - /detach <processId> - 分离指定进程
+     * - /detach all - 分离所有进程
+     * - /detach list - 列出所有进程
+     */
+    @NotNull
+    private Flux<McpSchema.CallToolResult> handleDetachProcess(String message) {
+        String[] parts = message.split("\\s+");
+        
+        if (parts.length < 2) {
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("""
+                            分离进程命令格式错误！
+                            支持的格式：
+                            - /detach <processId> - 分离指定进程
+                            - /detach all - 分离所有进程  
+                            - /detach list - 列出所有进程
+                            """)),
+                    false
+            ));
+        }
+        
+        String action = parts[1].toLowerCase();
+        ProcessManager processManager = ProcessManager.getInstance();
+        
+        switch (action) {
+            case "list":
+                // 列出所有进程
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent(processManager.getAllProcessesStatus().toString())),
+                        false
+                ));
+                
+            case "all":
+                // 分离所有进程
+                int detachedCount = processManager.detachAllProcesses();
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("已分离 " + detachedCount + " 个进程到后台运行")),
+                        false
+                ));
+                
+            default:
+                // 分离指定进程
+                String processId = parts[1];
+                boolean success = processManager.detachProcess(processId);
+                
+                if (success) {
+                    ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                    String processDetails = processInfo != null ? 
+                            String.format("进程 %s (PID: %d, 命令: %s) 已分离到后台运行", 
+                                    processId, processInfo.getPid(), processInfo.getCommand()) :
+                            String.format("进程 %s 已分离到后台运行", processId);
+                    
+                    return Flux.just(new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent(processDetails)),
+                            false
+                    ));
+                } else {
+                    return Flux.just(new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent("分离进程失败：未找到进程 " + processId)),
+                            false
+                    ));
+                }
+        }
     }
 
     public String getName() {

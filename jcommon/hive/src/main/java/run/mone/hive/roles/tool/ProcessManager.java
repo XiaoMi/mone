@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -30,6 +31,9 @@ public class ProcessManager {
     // 进程信息存储
     private final Map<String, ProcessInfo> processes = new ConcurrentHashMap<>();
     private final AtomicLong processIdCounter = new AtomicLong(1);
+    
+    // 进程分离标志存储（用于指示进程应该从前台tool调用中分离，转为后台继续运行）
+    private final Map<String, AtomicBoolean> processDetachFlags = new ConcurrentHashMap<>();
     
     // 私有构造函数，防止外部实例化
     private ProcessManager() {
@@ -117,6 +121,9 @@ public class ProcessManager {
         
         ProcessInfo processInfo = new ProcessInfo(processId, pid, process, command, workingDirectory, isBackground);
         processes.put(processId, processInfo);
+        
+        // 为进程创建分离标志
+        processDetachFlags.put(processId, new AtomicBoolean(false));
         
         log.info("注册新进程: {} (PID: {}, 命令: {}, 后台: {})", processId, pid, command, isBackground);
         return processId;
@@ -302,6 +309,7 @@ public class ProcessManager {
         
         for (String processId : toRemove) {
             processes.remove(processId);
+            processDetachFlags.remove(processId);
             log.debug("清理已停止的进程: {}", processId);
         }
         
@@ -459,6 +467,7 @@ public class ProcessManager {
         
         // 清空记录
         processes.clear();
+        processDetachFlags.clear();
         
         log.info("已清空所有进程记录");
     }
@@ -471,11 +480,127 @@ public class ProcessManager {
      */
     public boolean removeProcess(String processId) {
         ProcessInfo removed = processes.remove(processId);
+        AtomicBoolean detachFlag = processDetachFlags.remove(processId);
         if (removed != null) {
             log.debug("移除进程记录: {}", processId);
             return true;
         }
         return false;
+    }
+    
+    /**
+     * 获取进程的分离标志
+     * 
+     * @param processId 进程ID
+     * @return 分离标志，如果进程不存在返回null
+     */
+    public AtomicBoolean getDetachFlag(String processId) {
+        return processDetachFlags.get(processId);
+    }
+    
+    /**
+     * 分离指定进程（设置分离标志，让进程转为后台运行，结束当前tool调用）
+     * 
+     * @param processId 进程ID
+     * @return 是否成功设置分离标志
+     */
+    public boolean detachProcess(String processId) {
+        AtomicBoolean detachFlag = processDetachFlags.get(processId);
+        if (detachFlag != null) {
+            detachFlag.set(true);
+            log.info("已设置进程 {} 的分离标志，进程将转为后台运行", processId);
+            
+            // 将进程标记为后台进程
+            ProcessInfo processInfo = processes.get(processId);
+            if (processInfo != null) {
+                processInfo.setBackground(true);
+                log.info("进程 {} 已转为后台模式", processId);
+            }
+            
+            return true;
+        } else {
+            log.warn("未找到进程 {} 的分离标志", processId);
+            return false;
+        }
+    }
+    
+    /**
+     * 分离所有进程（设置所有进程的分离标志）
+     * 
+     * @return 成功分离的进程数量
+     */
+    public int detachAllProcesses() {
+        int detachedCount = 0;
+        
+        for (String processId : new ArrayList<>(processDetachFlags.keySet())) {
+            if (detachProcess(processId)) {
+                detachedCount++;
+            }
+        }
+        
+        log.info("已设置 {} 个进程的分离标志", detachedCount);
+        return detachedCount;
+    }
+    
+    /**
+     * 使用可分离的等待机制等待进程完成
+     * 
+     * @param processId 进程ID
+     * @param timeoutSeconds 超时时间（秒）
+     * @return true表示进程正常完成，false表示超时或被分离
+     */
+    public boolean waitWithDetachment(String processId, long timeoutSeconds) {
+        ProcessInfo processInfo = processes.get(processId);
+        if (processInfo == null) {
+            log.warn("未找到进程: {}", processId);
+            return false;
+        }
+        
+        Process process = processInfo.getProcess();
+        if (process == null) {
+            log.warn("进程 {} 的Process对象为null", processId);
+            return false;
+        }
+        
+        AtomicBoolean detachFlag = processDetachFlags.get(processId);
+        if (detachFlag == null) {
+            log.warn("未找到进程 {} 的分离标志", processId);
+            return false;
+        }
+        
+        return waitWithDetachment(process, detachFlag, timeoutSeconds);
+    }
+    
+    /**
+     * 使用可分离的等待机制等待进程完成
+     * 
+     * @param process 进程对象
+     * @param detached 分离标志
+     * @param timeout 超时时间（秒）
+     * @return true表示进程正常完成，false表示超时或被分离
+     */
+    public boolean waitWithDetachment(Process process, AtomicBoolean detached, long timeout) {
+        long startTime = System.currentTimeMillis();
+        
+        while (!detached.get() && System.currentTimeMillis() - startTime < timeout * 1000) {
+            try {
+                if (process.waitFor(1, TimeUnit.SECONDS)) {
+                    return true; // 进程完成
+                }
+            } catch (InterruptedException e) {
+                log.warn("等待进程时被中断");
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        
+        if (detached.get()) {
+            log.info("进程等待被分离，进程将继续在后台运行");
+        } else {
+            log.warn("进程等待超时 ({}秒)", timeout);
+        }
+        
+        return false; // 超时或被分离
     }
     
     /**
@@ -565,6 +690,7 @@ public class ProcessManager {
         
         for (String processId : toRemove) {
             processes.remove(processId);
+            processDetachFlags.remove(processId);
             log.debug("自动清理已完成的进程: {}", processId);
         }
         

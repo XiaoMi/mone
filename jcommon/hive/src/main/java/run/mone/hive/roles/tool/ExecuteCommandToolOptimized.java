@@ -349,9 +349,13 @@ public class ExecuteCommandToolOptimized implements ITool {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         allOutputLines.add(line);
+                        
+                        // 检查进程是否被分离
+                        AtomicBoolean currentDetachFlag = processManager.getDetachFlag(_processId);
+                        boolean isDetached = currentDetachFlag != null && currentDetachFlag.get();
 
-                        if (!didContinue.get()) {
-                            // 还没有用户确认，需要缓冲
+                        if (!didContinue.get() && !isDetached) {
+                            // 还没有用户确认且未分离，需要缓冲
                             synchronized (outputBuffer) {
                                 outputBuffer.add(line);
                                 outputBufferSize.addAndGet(line.getBytes().length);
@@ -368,8 +372,13 @@ public class ExecuteCommandToolOptimized implements ITool {
                                 }
                             }
                         } else {
-                            // 用户已经确认继续，直接输出
-                            log.info("实时输出: {}", line);
+                            // 用户已经确认继续或进程已分离，直接输出
+                            if (isDetached) {
+                                log.info("后台进程输出: {}", line);
+                            } else {
+                                log.info("实时输出: {}", line);
+                            }
+                            
                             if (null != role.getFluxSink()) {
                                 role.getFluxSink().next("<terminal_append><process_pid>%s</process_pid><process_content>%s</process_content></terminal_append>".formatted(_processId, line));
                             }
@@ -388,8 +397,9 @@ public class ExecuteCommandToolOptimized implements ITool {
                 }
             }, COMPLETION_TIMEOUT_MS, TimeUnit.MILLISECONDS));
 
-            // 等待进程完成
-            boolean processCompleted = finalProcess.waitFor(timeout, TimeUnit.SECONDS);
+            // 等待进程完成（使用可分离的等待机制）
+            AtomicBoolean detachFlag = processManager.getDetachFlag(processId);
+            boolean processCompleted = processManager.waitWithDetachment(finalProcess, detachFlag, timeout);
             completed.set(true);
 
             // 清理定时器
@@ -403,16 +413,43 @@ public class ExecuteCommandToolOptimized implements ITool {
             }
 
             if (!processCompleted) {
-                // 超时，强制终止进程
-                finalProcess.destroyForcibly();
-                log.warn("命令执行超时 ({}秒): {}", timeout, command);
-                result.addProperty("error", "命令执行超时 (" + timeout + "秒)");
-                result.addProperty("timeout", true);
-
-                // 进程超时被终止，更新进程管理器中的状态
-                ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
-                if (processInfo != null) {
-                    processInfo.setStatus("timeout");
+                // 检查是否是被分离还是超时
+                boolean wasDetached = detachFlag != null && detachFlag.get();
+                
+                if (wasDetached) {
+                    // 进程被分离，不杀死进程，让它继续在后台运行
+                    log.info("命令执行被分离，进程将继续在后台运行: {}", command);
+                    result.addProperty("message", "进程已分离到后台继续运行");
+                    result.addProperty("detached", true);
+                    result.addProperty("success", true);
+                    result.addProperty("background_process_id", processId);
+                    
+                    // 进程被分离，更新进程管理器中的状态
+                    ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                    if (processInfo != null) {
+                        processInfo.setStatus("detached");
+                        // 确保进程标记为后台运行
+                        processInfo.setBackground(true);
+                    }
+                    
+                    // 通知前端进程已分离到后台
+                    if (null != role.getFluxSink()) {
+                        role.getFluxSink().next("<terminal_append><process_pid>%s</process_pid><process_content>%s</process_content></terminal_append>"
+                                .formatted(processId, "\n[进程已分离到后台继续运行，PID: " + processId + "]\n"));
+                    }
+                    
+                } else {
+                    // 超时，强制终止进程
+                    finalProcess.destroyForcibly();
+                    log.warn("命令执行超时 ({}秒): {}", timeout, command);
+                    result.addProperty("error", "命令执行超时 (" + timeout + "秒)");
+                    result.addProperty("timeout", true);
+                    
+                    // 进程超时被终止，更新进程管理器中的状态
+                    ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                    if (processInfo != null) {
+                        processInfo.setStatus("timeout");
+                    }
                 }
 
                 return result;
@@ -501,10 +538,21 @@ public class ExecuteCommandToolOptimized implements ITool {
                 }
             }
         } finally {
-            // 清理资源
+            // 清理资源，但不杀死分离的进程
             if (process != null && process.isAlive()) {
-                process.destroyForcibly();
+                // 检查进程是否被分离
+                AtomicBoolean detachFlag = processManager.getDetachFlag(processId);
+                boolean wasDetached = detachFlag != null && detachFlag.get();
+                
+                if (!wasDetached) {
+                    // 只有未分离的进程才强制终止
+                    process.destroyForcibly();
+                    log.debug("清理未分离的进程: {}", processId);
+                } else {
+                    log.info("保留分离的后台进程: {}", processId);
+                }
             }
+            
             ScheduledFuture<?> cleanupChunkTmr = chunkTimer.get();
             if (cleanupChunkTmr != null) {
                 cleanupChunkTmr.cancel(false);
@@ -767,7 +815,7 @@ public class ExecuteCommandToolOptimized implements ITool {
      * @return 终止的进程数量
      */
     public static int killAllProcesses() {
-        return processManager.stopAllProcesses(true);
+        return processManager.killAllProcesses();
     }
 
     /**
@@ -805,6 +853,46 @@ public class ExecuteCommandToolOptimized implements ITool {
      */
     public static int autoCleanupCompletedProcesses() {
         return processManager.autoCleanupCompletedProcesses();
+    }
+    
+    /**
+     * 分离指定进程（让进程转为后台运行，结束当前tool调用）
+     *
+     * @param processId 进程ID
+     * @return 是否成功设置分离标志
+     */
+    public static boolean detachProcess(String processId) {
+        return processManager.detachProcess(processId);
+    }
+    
+    /**
+     * 分离所有进程
+     *
+     * @return 成功分离的进程数量
+     */
+    public static int detachAllProcesses() {
+        return processManager.detachAllProcesses();
+    }
+    
+    /**
+     * 获取进程的分离标志
+     *
+     * @param processId 进程ID
+     * @return 分离标志，如果进程不存在返回null
+     */
+    public static AtomicBoolean getDetachFlag(String processId) {
+        return processManager.getDetachFlag(processId);
+    }
+    
+    /**
+     * 使用可分离的等待机制等待进程完成
+     *
+     * @param processId 进程ID
+     * @param timeoutSeconds 超时时间（秒）
+     * @return true表示进程正常完成，false表示超时或被分离
+     */
+    public static boolean waitWithDetachment(String processId, long timeoutSeconds) {
+        return processManager.waitWithDetachment(processId, timeoutSeconds);
     }
 
     /**
