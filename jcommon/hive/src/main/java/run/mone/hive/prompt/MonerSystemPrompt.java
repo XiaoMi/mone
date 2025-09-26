@@ -20,10 +20,7 @@ import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -81,13 +78,62 @@ public class MonerSystemPrompt {
         }
         
         // 构建.hive/agent.md文件路径
-        String mdStr = getAgentMd(workspacePath);
+        String mdStr = getAllMdFiles(workspacePath);
         if (mdStr != null) return mdStr;
 
         // 从角色配置中获取自定义指令，如果不存在则使用默认指令
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
     }
 
+    /**
+     * 获取.hive目录下所有md文件的内容并拼接
+     * 
+     * @param workspacePath 工作空间路径
+     * @return 拼接后的md内容，如果没有找到任何md文件则返回null
+     */
+    @Nullable
+    private static String getAllMdFiles(String workspacePath) {
+        String hiveDir = workspacePath
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
+                + ".hive";
+        
+        File hiveDirFile = new File(hiveDir);
+        if (!hiveDirFile.exists() || !hiveDirFile.isDirectory()) {
+            log.debug(".hive目录不存在: {}", hiveDir);
+            return null;
+        }
+        
+        // 获取所有.md文件
+        File[] mdFiles = hiveDirFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".md"));
+        if (mdFiles == null || mdFiles.length == 0) {
+            log.debug(".hive目录下没有找到md文件: {}", hiveDir);
+            return null;
+        }
+        
+        StringBuilder result = new StringBuilder();
+        boolean hasContent = false;
+        
+        // 按文件名排序，确保输出顺序一致
+        Arrays.sort(mdFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));
+        
+        for (File mdFile : mdFiles) {
+            try {
+                String content = FileUtils.readMarkdownFile(mdFile.getAbsolutePath());
+                if (StringUtils.isNotBlank(content)) {
+                    if (hasContent) {
+                        result.append("\n\n");
+                    }
+                    result.append(content);
+                    hasContent = true;
+                    log.debug("成功读取md文件: {}", mdFile.getName());
+                }
+            } catch (Exception e) {
+                log.debug("读取md文件失败: {}, 原因: {}", mdFile.getName(), e.getMessage());
+            }
+        }
+        
+        return hasContent ? result.toString() : null;
+    }
     @Nullable
     private static String getAgentMd(String workspacePath) {
         String filePath = workspacePath
@@ -107,29 +153,6 @@ public class MonerSystemPrompt {
         return null;
     }
 
-    @Nullable
-    private static String getTechDocMd(ReactorRole role) {
-        String workspacePath = cwd(role);
-        if (StringUtils.isBlank(workspacePath)) {
-            return TechnicalDocTemplate.TECHNICAL_DOC_TEMPLATE;
-        }
-
-        String filePath = workspacePath
-                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
-                + ".hive" + File.separator + "tech_doc.md";
-
-        try {
-            // 尝试读取文件内容
-            String mdStr = FileUtils.readMarkdownFile(filePath);
-            if (StringUtils.isNotBlank(mdStr)) {
-                log.debug("成功从{}读取技术文档", filePath);
-                return mdStr;
-            }
-        } catch (Exception e) {
-            log.debug("无法读取技术文档: {}, 原因: {}", filePath, e.getMessage());
-        }
-        return TechnicalDocTemplate.TECHNICAL_DOC_TEMPLATE;
-    }
 
 
 
@@ -151,13 +174,6 @@ public class MonerSystemPrompt {
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
-        
-        // 添加技术文档模板
-        data.put("technicalDocTemplate", getTechDocMd(role));
-        data.put("dbTableTemplate", TechnicalDocTemplate.DB_TABLE_TEMPLATE);
-        data.put("apiTemplate", TechnicalDocTemplate.API_TEMPLATE);
-        data.put("objectTemplate", TechnicalDocTemplate.OBJECT_TEMPLATE);
-
         List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
         if (StringUtils.isEmpty(workFlow)) {
@@ -416,55 +432,7 @@ public class MonerSystemPrompt {
             
             ====
             
-            TECHNICAL DOCUMENTATION GENERATION
             
-            如果用户请求生成技术文档，请按照以下步骤操作：
-            
-            1. 首先自行阅读整个项目的代码，理解项目的结构、功能和设计模式
-            2. 使用下面提供的技术文档模板作为文档模板
-            3. 严格按照模板的格式生成文档，包括但不限于：
-               - 项目概述
-               - 系统架构设计
-               - 模块设计
-               - 数据库设计
-               - API设计
-               - 对象设计
-               - 关键流程设计
-               - 安全设计
-               - 性能设计
-               - 扩展性设计
-            4. 确保生成的文档内容完整、准确，并且符合技术文档的专业标准
-            5. 对于数据库表设计，使用数据库表设计模板
-            6. 对于API接口设计，使用API接口设计模板
-            7. 对于对象设计，使用对象设计模板
-            8. 对于最后生成的技术文档（一定是最后生成的技术文档，而不是模板），需要放到指定的目录：${hiveCwd}，指定的文件名是：tech_doc.md
-            
-            生成技术文档时，需要注意：
-            - 文档结构必须严格遵循模板格式
-            - 内容应该基于对代码的深入分析
-            - 使用专业、准确的技术术语
-            - 提供必要的图表说明（如架构图、流程图、ER图等）
-            - 确保文档的可读性和可理解性
-            
-            ## 技术文档模板
-            ```
-            ${technicalDocTemplate}
-            ```
-            
-            ## 数据库表设计模板
-            ```
-            ${dbTableTemplate}
-            ```
-            
-            ## API接口设计模板
-            ```
-            ${apiTemplate}
-            ```
-            
-            ## 对象设计模板
-            ```
-            ${objectTemplate}
-            ```
             
             <% if(enableTaskProgress) { %>
             ====
