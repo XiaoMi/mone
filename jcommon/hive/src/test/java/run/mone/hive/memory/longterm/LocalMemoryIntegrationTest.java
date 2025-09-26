@@ -56,7 +56,7 @@ public class LocalMemoryIntegrationTest {
     
     @Test
     @Order(1)
-    @DisplayName("测试向量存储 - 添加记忆")
+    @DisplayName("测试 - 添加记忆")
     void testVectorStoreAdd() {
         log.info("=== 测试向量存储添加功能 ===");
         
@@ -75,7 +75,7 @@ public class LocalMemoryIntegrationTest {
     
     @Test
     @Order(2)
-    @DisplayName("测试向量存储 - 搜索记忆")
+    @DisplayName("测试 - 搜索记忆")
     void testVectorStoreSearch() {
         log.info("=== 测试向量存储搜索功能 ===");
         
@@ -84,7 +84,7 @@ public class LocalMemoryIntegrationTest {
                 TEST_USER_ID + "的饮品偏好", TEST_USER_ID, null, null, 5, null, 0.7);
             
             assertNotNull(searchResult, "搜索结果不应为null");
-            log.info("向量存储搜索成功: {}", searchResult);
+            log.info("记忆存储搜索成功: {}", searchResult);
             
         } catch (Exception e) {
             log.warn("向量存储搜索测试跳过: {}", e.getMessage());
@@ -93,7 +93,7 @@ public class LocalMemoryIntegrationTest {
     
     @Test
     @Order(3)
-    @DisplayName("测试图存储 - 实体关系")
+    @DisplayName("测试 - 实体关系")
     void testGraphStoreEntities() {
         log.info("=== 测试图存储实体关系功能 ===");
         
