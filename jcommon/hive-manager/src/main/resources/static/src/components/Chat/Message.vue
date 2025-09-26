@@ -15,7 +15,7 @@
       </slot>
       <div class="sc-message--content">
         <div class="sc-message--user-content" :class="{'sc-message--user-content-audio': message.type === 'audio'}">
-          <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message">
+          <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message" @pidAction="handlePidAction">
             <template v-slot:default="scopedProps">
               <slot
                 name="text-message-body"
@@ -249,6 +249,10 @@ export default {
       } else {
         this.onMessageCmd(cmd, message);
       }
+    },
+    handlePidAction(data: { pid: string; action: string }) {
+      // 向上传递 pidAction 事件
+      this.$emit('pidAction', data);
     },
   },
 };

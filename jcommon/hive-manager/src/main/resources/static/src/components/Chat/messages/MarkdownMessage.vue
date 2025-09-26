@@ -132,6 +132,8 @@ export default {
     this.addBoltToggleEvents();
     this.addToolResultToggleEvents();
     this.addFileUrlLinkEvents();
+    this.addPidButtonEvents();
+    this.addTerminalAppendEvents();
   },
   updated() {
     this.addApply();
@@ -143,6 +145,8 @@ export default {
     this.addBoltToggleEvents();
     this.addToolResultToggleEvents();
     this.addFileUrlLinkEvents();
+    this.addPidButtonEvents();
+    this.addTerminalAppendEvents();
   },
   unmounted() {
     this.removeEvents();
@@ -405,6 +409,176 @@ export default {
         });
       }
     },
+    async callPidAction(pid: string, action: string) {
+      // 通过事件向父组件发送PID动作请求
+      this.$emit('pidAction', { pid, action });
+    },
+    addPidButtonEvents() {
+      const textRef = this.$refs.textRef as HTMLDivElement;
+      if (textRef) {
+        // 处理杀死进程按钮
+        const killButtons = textRef.querySelectorAll('.pid-kill-button');
+        killButtons.forEach((button: Element) => {
+          const htmlButton = button as HTMLButtonElement;
+          const clickHandler = (htmlButton as any)._clickHandler || (async (e: Event) => {
+            e.preventDefault();
+            const pid = htmlButton.getAttribute('data-pid');
+            if (pid) {
+              try {
+                // 添加加载状态
+                htmlButton.classList.add('loading');
+                htmlButton.disabled = true;
+                
+                // 调用杀死进程的API
+                await this.callPidAction(pid, '/kill');
+                
+                // 成功状态
+                htmlButton.classList.remove('loading');
+                htmlButton.classList.add('success');
+                
+                setTimeout(() => {
+                  htmlButton.classList.remove('success');
+                }, 2000);
+              } catch (error) {
+                console.error('杀死进程失败:', error);
+                
+                // 错误状态
+                htmlButton.classList.remove('loading');
+                htmlButton.classList.add('error');
+                
+                setTimeout(() => {
+                  htmlButton.classList.remove('error');
+                }, 2000);
+              } finally {
+                htmlButton.disabled = false;
+              }
+            }
+          });
+
+          htmlButton.removeEventListener('click', (htmlButton as any)._clickHandler);
+          htmlButton.addEventListener('click', clickHandler);
+          (htmlButton as any)._clickHandler = clickHandler;
+        });
+
+        // 处理后台运行按钮
+        const detachButtons = textRef.querySelectorAll('.pid-detach-button');
+        detachButtons.forEach((button: Element) => {
+          const htmlButton = button as HTMLButtonElement;
+          const clickHandler = (htmlButton as any)._clickHandler || (async (e: Event) => {
+            e.preventDefault();
+            const pid = htmlButton.getAttribute('data-pid');
+            if (pid) {
+              try {
+                // 添加加载状态
+                htmlButton.classList.add('loading');
+                htmlButton.disabled = true;
+                
+                // 调用后台运行的API
+                await this.callPidAction(pid, '/detach');
+                
+                // 成功状态
+                htmlButton.classList.remove('loading');
+                htmlButton.classList.add('success');
+                
+                setTimeout(() => {
+                  htmlButton.classList.remove('success');
+                }, 2000);
+              } catch (error) {
+                console.error('后台运行失败:', error);
+                
+                // 错误状态
+                htmlButton.classList.remove('loading');
+                htmlButton.classList.add('error');
+                
+                setTimeout(() => {
+                  htmlButton.classList.remove('error');
+                }, 2000);
+              } finally {
+                htmlButton.disabled = false;
+              }
+            }
+          });
+
+          htmlButton.removeEventListener('click', (htmlButton as any)._clickHandler);
+          htmlButton.addEventListener('click', clickHandler);
+          (htmlButton as any)._clickHandler = clickHandler;
+        });
+      }
+    },
+    addTerminalAppendEvents() {
+      const textRef = this.$refs.textRef as HTMLDivElement;
+      if (textRef) {
+        // 处理追加更新标记
+        const appendUpdates = textRef.querySelectorAll('.terminal-append-update');
+        appendUpdates.forEach((update: Element) => {
+          const htmlUpdate = update as HTMLElement;
+          const pid = htmlUpdate.getAttribute('data-pid');
+          const content = htmlUpdate.getAttribute('data-content');
+          
+          if (pid && content) {
+            // 查找对应的终端组件
+            const targetTerminal = textRef.querySelector(`.terminal-process-block[data-pid="${pid}"]`) as HTMLElement;
+            if (targetTerminal) {
+              const contentElement = targetTerminal.querySelector('.terminal-process-content pre') as HTMLElement;
+              if (contentElement) {
+                // 将新内容追加到现有内容后面
+                const currentText = contentElement.textContent || '';
+                const newText = currentText + '\n' + content;
+                contentElement.textContent = newText;
+                
+                // 添加滚动到底部的效果
+                contentElement.scrollTop = contentElement.scrollHeight;
+                
+                // 添加闪烁效果表示有新内容
+                targetTerminal.classList.add('terminal-updated');
+                setTimeout(() => {
+                  targetTerminal.classList.remove('terminal-updated');
+                }, 1000);
+              }
+            }
+            
+            // 移除处理过的更新标记
+            htmlUpdate.remove();
+          }
+        });
+        
+        // 为所有终端组件设置更新处理器（用于动态更新）
+        const terminalBlocks = textRef.querySelectorAll('.terminal-process-block');
+        terminalBlocks.forEach((block: Element) => {
+          const htmlBlock = block as HTMLElement;
+          const pid = htmlBlock.getAttribute('data-pid');
+          
+          if (pid) {
+            const updateHandler = (htmlBlock as any)._updateHandler || ((newContent: string) => {
+              const contentElement = htmlBlock.querySelector('.terminal-process-content pre') as HTMLElement;
+              if (contentElement) {
+                // 将新内容追加到现有内容后面
+                const currentText = contentElement.textContent || '';
+                const updatedText = currentText + '\n' + newContent;
+                contentElement.textContent = updatedText;
+                
+                // 滚动到底部
+                contentElement.scrollTop = contentElement.scrollHeight;
+                
+                // 添加更新效果
+                htmlBlock.classList.add('terminal-updated');
+                setTimeout(() => {
+                  htmlBlock.classList.remove('terminal-updated');
+                }, 1000);
+              }
+            });
+            
+            // 将更新处理器绑定到全局对象，以便其他组件可以调用
+            if (!(window as any).terminalUpdaters) {
+              (window as any).terminalUpdaters = {};
+            }
+            (window as any).terminalUpdaters[pid] = updateHandler;
+            
+            (htmlBlock as any)._updateHandler = updateHandler;
+          }
+        });
+      }
+    },
     removeEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;
       if (textRef) {
@@ -467,6 +641,36 @@ export default {
           if (link._clickHandler) {
             link.removeEventListener('click', link._clickHandler);
             delete link._clickHandler;
+          }
+        });
+        
+        // 移除pid按钮事件
+        const killButtons = textRef.querySelectorAll('.pid-kill-button');
+        killButtons.forEach((button: any) => {
+          if (button._clickHandler) {
+            button.removeEventListener('click', button._clickHandler);
+            delete button._clickHandler;
+          }
+        });
+        
+        const detachButtons = textRef.querySelectorAll('.pid-detach-button');
+        detachButtons.forEach((button: any) => {
+          if (button._clickHandler) {
+            button.removeEventListener('click', button._clickHandler);
+            delete button._clickHandler;
+          }
+        });
+        
+        // 移除terminal-append事件
+        const terminalBlocks = textRef.querySelectorAll('.terminal-process-block');
+        terminalBlocks.forEach((block: Element) => {
+          const htmlBlock = block as HTMLElement;
+          const pid = htmlBlock.getAttribute('data-pid');
+          if (pid && (window as any).terminalUpdaters) {
+            delete (window as any).terminalUpdaters[pid];
+          }
+          if ((htmlBlock as any)._updateHandler) {
+            delete (htmlBlock as any)._updateHandler;
           }
         });
       }

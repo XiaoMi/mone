@@ -2,6 +2,9 @@ import MarkdownIt from "markdown-it";
 // import * as htmlparser2 from "htmlparser2";
 import { SimpleHtmlParser } from "./simple-html-parser";
 
+// 全局存储已存在的 PID 组件
+const existingPidComponents = new Map<string, string>();
+
 export function markdownItMcp(md: MarkdownIt) {
   if (!md.block || !md.block.ruler) {
     console.warn("markdown-it-mcp: block ruler not found");
@@ -43,7 +46,9 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<write_to_file>") ||
         mcpContent.includes("<list_files>") ||
         mcpContent.includes("<list_code_definition_names>") ||
-        mcpContent.includes("<tool_result>")
+        mcpContent.includes("<tool_result>") ||
+        mcpContent.includes("<pid>") ||
+        mcpContent.includes("<terminal_append>")
       )
     ) {
       return false;
@@ -54,6 +59,11 @@ export function markdownItMcp(md: MarkdownIt) {
     let html = "";
     let isDownloadFile = false;
     const tagStack: string[] = []; // 标签栈，用于跟踪当前正在处理的标签
+
+    // 用于 terminal_append 功能的变量
+    let currentPid = "";
+    let currentContent = "";
+    let isInTerminalAppend = false;
 
     // 辅助函数：获取当前标签栈顶的标签
     const getCurrentTag = () => tagStack[tagStack.length - 1];
@@ -268,6 +278,15 @@ export function markdownItMcp(md: MarkdownIt) {
                 <i class="toggle-icon fa-solid fa-chevron-down"></i>
               </div>
               <div class="tool-result-content">`;
+        } else if (name === "pid") {
+          html += `<span class="pid-buttons-container" data-pid="">`;
+        } else if (name === "terminal_append") {
+          // terminal_append 标签开始，准备处理进程追加
+          html += `<!-- terminal_append_start -->`;
+        } else if (name === "process_pid") {
+          // process_pid 标签，暂时不输出内容，等待获取 PID 值
+        } else if (name === "process_content") {
+          // process_content 标签，暂时不输出内容，等待获取内容
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
           html += `<div class="${name}-section">`;
         } else if (name === "download_file") {
@@ -303,6 +322,27 @@ export function markdownItMcp(md: MarkdownIt) {
           //   console.warn("tool_result 解析 JSON 失败，作为普通文本处理", e);
           //   html += `${md.utils.escapeHtml(text)}`;
           // }
+          return;
+        } else if (tagName === "pid") {
+          // 处理 pid 标签内容，生成两个按钮
+          const pidValue = text.trim();
+          html = html.replace('data-pid=""', `data-pid="${md.utils.escapeHtml(pidValue)}"`);
+          html += `
+            <button class="pid-kill-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="kill">
+              <i class="fa-solid fa-times"></i> 杀死进程 ${md.utils.escapeHtml(pidValue)}
+            </button>
+            <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach">
+              <i class="fa-solid fa-play"></i> 后台运行 ${md.utils.escapeHtml(pidValue)}
+            </button>
+          `;
+          return;
+        } else if (tagName === "process_pid") {
+          // 获取进程 PID
+          currentPid = text.trim();
+          return;
+        } else if (tagName === "process_content") {
+          // 获取进程内容
+          currentContent = text.trim();
           return;
         } else if (tagName === "task_progress") {
           // 处理任务进度内容，转换为列表
@@ -417,6 +457,38 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "tool_result") {
           html += `</div></div>`;
+        } else if (tagname === "pid") {
+          html += `</span>`;
+        } else if (tagname === "terminal_append") {
+          // 处理 terminal_append 标签关闭，生成或更新进程终端组件
+          if (currentPid && currentContent) {
+            if (existingPidComponents.has(currentPid)) {
+              // 已存在组件，生成用于追加内容的标记
+              html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-content="${md.utils.escapeHtml(currentContent)}"><!-- append to existing terminal --></div>`;
+            } else {
+              // 创建新的终端组件
+              const componentHtml = `
+              <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
+                <div class="terminal-process-header">
+                  <i class="fa-solid fa-terminal"></i>
+                  <span>进程 ${md.utils.escapeHtml(currentPid)}</span>
+                </div>
+                <div class="terminal-process-content">
+                  <pre>${md.utils.escapeHtml(currentContent)}</pre>
+                </div>
+              </div>`;
+              html += componentHtml;
+              existingPidComponents.set(currentPid, componentHtml);
+            }
+            // 重置变量
+            currentPid = "";
+            currentContent = "";
+          }
+          html += `<!-- terminal_append_end -->`;
+        } else if (tagname === "process_pid") {
+          // process_pid 标签关闭，不需要额外处理
+        } else if (tagname === "process_content") {
+          // process_content 标签关闭，不需要额外处理
         } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
         } else if (tagname === "download_file") {
