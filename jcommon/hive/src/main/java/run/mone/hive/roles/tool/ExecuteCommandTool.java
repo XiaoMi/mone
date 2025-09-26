@@ -13,10 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author goodjava@qq.com
@@ -41,9 +39,8 @@ public class ExecuteCommandTool implements ITool {
     private static volatile long lastEnvCacheTime = 0;
     private static final long ENV_CACHE_TIMEOUT = 300_000; // 5分钟缓存超时
     
-    // 后台进程管理
-    private static final Map<String, Process> backgroundProcesses = new ConcurrentHashMap<>();
-    private static final AtomicLong processIdCounter = new AtomicLong(1);
+    // 进程管理器实例
+    private static final ProcessManager processManager = ProcessManager.getInstance();
 
     @Override
     public boolean needExecute() {
@@ -423,11 +420,8 @@ public class ExecuteCommandTool implements ITool {
             process = processBuilder.start();
             final Process finalProcess = process; // 创建 final 引用供 lambda 使用
             
-            // 生成进程ID
-            String processId = "bg_" + processIdCounter.getAndIncrement();
-            
-            // 保存到后台进程管理器
-            backgroundProcesses.put(processId, process);
+            // 注册到进程管理器
+            String processId = processManager.registerProcess(process, command, workingDirectory, true);
             
             // 读取启动阶段的输出（限时读取）
             final List<String> startupOutput = new CopyOnWriteArrayList<>();
@@ -479,7 +473,7 @@ public class ExecuteCommandTool implements ITool {
             if (!isRunning) {
                 // 进程已经退出，可能启动失败
                 int exitCode = process.exitValue();
-                backgroundProcesses.remove(processId);
+                // 进程管理器会自动更新状态，这里不需要手动移除
                 
                 result.addProperty("success", false);
                 result.addProperty("error", "进程启动后立即退出，退出代码: " + exitCode);
@@ -558,41 +552,7 @@ public class ExecuteCommandTool implements ITool {
      * @return 停止是否成功
      */
     public static boolean stopBackgroundProcess(String processId) {
-        Process process = backgroundProcesses.get(processId);
-        if (process == null) {
-            log.warn("未找到进程ID: {}", processId);
-            return false;
-        }
-
-        try {
-            if (process.isAlive()) {
-                // 先尝试优雅关闭
-                process.destroy();
-                
-                // 等待3秒，如果还没退出就强制关闭
-                boolean terminated = process.waitFor(3, TimeUnit.SECONDS);
-                if (!terminated) {
-                    log.warn("进程 {} 未在3秒内优雅退出，强制终止", processId);
-                    process.destroyForcibly();
-                }
-                
-                backgroundProcesses.remove(processId);
-                log.info("成功停止后台进程: {}", processId);
-                return true;
-            } else {
-                // 进程已经不存在了
-                backgroundProcesses.remove(processId);
-                log.info("进程 {} 已经不存在，从管理器中移除", processId);
-                return true;
-            }
-        } catch (InterruptedException e) {
-            log.error("停止进程时被中断: {}", processId, e);
-            Thread.currentThread().interrupt();
-            return false;
-        } catch (Exception e) {
-            log.error("停止进程时发生异常: {}", processId, e);
-            return false;
-        }
+        return processManager.stopProcess(processId);
     }
 
     /**
@@ -601,34 +561,7 @@ public class ExecuteCommandTool implements ITool {
      * @return 进程状态信息的JsonObject
      */
     public static JsonObject getBackgroundProcessesStatus() {
-        JsonObject result = new JsonObject();
-        JsonObject processes = new JsonObject();
-        
-        // 清理已经退出的进程
-        backgroundProcesses.entrySet().removeIf(entry -> {
-            if (!entry.getValue().isAlive()) {
-                log.debug("清理已退出的后台进程: {}", entry.getKey());
-                return true;
-            }
-            return false;
-        });
-        
-        // 获取活跃进程信息
-        for (Map.Entry<String, Process> entry : backgroundProcesses.entrySet()) {
-            String processId = entry.getKey();
-            Process process = entry.getValue();
-            
-            JsonObject processInfo = new JsonObject();
-            processInfo.addProperty("running", process.isAlive());
-            processInfo.addProperty("pid", process.pid());
-            
-            processes.add(processId, processInfo);
-        }
-        
-        result.add("processes", processes);
-        result.addProperty("total_count", backgroundProcesses.size());
-        
-        return result;
+        return processManager.getBackgroundProcessesStatus();
     }
 
     /**
@@ -637,16 +570,7 @@ public class ExecuteCommandTool implements ITool {
      * @return 停止的进程数量
      */
     public static int stopAllBackgroundProcesses() {
-        int stoppedCount = 0;
-        
-        for (String processId : new ArrayList<>(backgroundProcesses.keySet())) {
-            if (stopBackgroundProcess(processId)) {
-                stoppedCount++;
-            }
-        }
-        
-        log.info("已停止 {} 个后台进程", stoppedCount);
-        return stoppedCount;
+        return processManager.stopAllBackgroundProcesses();
     }
 
     /**
@@ -656,18 +580,101 @@ public class ExecuteCommandTool implements ITool {
      * @return 是否在运行
      */
     public static boolean isBackgroundProcessRunning(String processId) {
-        Process process = backgroundProcesses.get(processId);
-        if (process == null) {
-            return false;
-        }
-        
-        boolean isAlive = process.isAlive();
-        if (!isAlive) {
-            // 如果进程已经退出，从管理器中移除
-            backgroundProcesses.remove(processId);
-        }
-        
-        return isAlive;
+        return processManager.isProcessRunning(processId);
+    }
+    
+    // ============ 新增的便捷进程管理方法 ============
+    
+    /**
+     * 获取进程管理器实例
+     * 
+     * @return ProcessManager实例
+     */
+    public static ProcessManager getProcessManager() {
+        return processManager;
+    }
+    
+    /**
+     * 获取所有进程的状态
+     * 
+     * @return 包含所有进程状态的JsonObject
+     */
+    public static JsonObject getAllProcessesStatus() {
+        return processManager.getAllProcessesStatus();
+    }
+    
+    /**
+     * 强制终止指定进程
+     * 
+     * @param processId 进程ID
+     * @return 是否成功终止
+     */
+    public static boolean killProcess(String processId) {
+        return processManager.killProcess(processId);
+    }
+    
+    /**
+     * 停止所有进程（包括前台和后台）
+     * 
+     * @return 停止的进程数量
+     */
+    public static int stopAllProcesses() {
+        return processManager.stopAllProcesses();
+    }
+    
+    /**
+     * 强制终止所有进程
+     * 
+     * @return 终止的进程数量
+     */
+    public static int killAllProcesses() {
+        return processManager.stopAllProcesses(true);
+    }
+    
+    /**
+     * 根据命令查找进程
+     * 
+     * @param command 命令字符串（支持部分匹配）
+     * @return 匹配的进程ID列表
+     */
+    public static List<String> findProcessesByCommand(String command) {
+        return processManager.findProcessesByCommand(command);
+    }
+    
+    /**
+     * 获取运行中的进程数量
+     * 
+     * @return 运行中的进程数量
+     */
+    public static int getRunningProcessCount() {
+        return processManager.getRunningProcessCount();
+    }
+    
+    /**
+     * 获取后台进程数量
+     * 
+     * @return 后台进程数量
+     */
+    public static int getBackgroundProcessCount() {
+        return processManager.getBackgroundProcessCount();
+    }
+    
+    /**
+     * 清理已停止的进程记录
+     * 
+     * @return 清理的进程数量
+     */
+    public static int cleanupStoppedProcesses() {
+        return processManager.cleanupStoppedProcesses();
+    }
+    
+    /**
+     * 自动清理已完成的进程记录
+     * 
+     * @return 清理的进程数量
+     */
+    public static int autoCleanupCompletedProcesses() {
+        return processManager.autoCleanupCompletedProcesses();
     }
 
     /**
@@ -708,6 +715,7 @@ public class ExecuteCommandTool implements ITool {
     private JsonObject executeCommand(String command, int timeout, String workingDirectory) {
         JsonObject result = new JsonObject();
         Process process = null;
+        String processId = null; // 声明在方法级别，确保异常处理时能访问到
 
         try {
             log.info("执行命令: {}, 工作目录: {}, 超时: {}秒", command, workingDirectory, timeout);
@@ -758,6 +766,9 @@ public class ExecuteCommandTool implements ITool {
 
             // 启动进程
             process = processBuilder.start();
+            
+            // 注册到进程管理器（前台进程）
+            processId = processManager.registerProcess(process, command, workingDirectory, false);
 
             // 读取输出
             List<String> outputLines = new ArrayList<>();
@@ -776,6 +787,16 @@ public class ExecuteCommandTool implements ITool {
                 process.destroyForcibly();
                 log.warn("命令执行超时 ({}秒): {}", timeout, command);
                 result.addProperty("error", "命令执行超时 (" + timeout + "秒)");
+                result.addProperty("timeout", true);
+                
+                // 进程超时被终止，更新进程管理器中的状态
+                if (processId != null) {
+                    ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                    if (processInfo != null) {
+                        processInfo.setStatus("timeout");
+                    }
+                }
+                
                 return result;
             }
 
@@ -800,16 +821,40 @@ public class ExecuteCommandTool implements ITool {
                 log.warn("命令执行完成，但退出代码非零: {}", exitCode);
                 result.addProperty("success", false);
             }
+            
+            // 更新进程管理器中的状态
+            if (processId != null) {
+                ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                if (processInfo != null) {
+                    processInfo.setStatus(exitCode == 0 ? "completed" : "failed");
+                }
+            }
 
         } catch (IOException e) {
             log.error("执行命令IO异常", e);
             result.addProperty("error", "执行命令IO异常: " + e.getMessage());
             result.addProperty("success", false);
+            
+            // 更新进程状态为错误
+            if (processId != null) {
+                ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                if (processInfo != null) {
+                    processInfo.setStatus("error");
+                }
+            }
         } catch (InterruptedException e) {
             log.error("命令执行被中断", e);
             result.addProperty("error", "命令执行被中断: " + e.getMessage());
             result.addProperty("success", false);
             Thread.currentThread().interrupt();
+            
+            // 更新进程状态为中断
+            if (processId != null) {
+                ProcessManager.ProcessInfo processInfo = processManager.getProcessInfo(processId);
+                if (processInfo != null) {
+                    processInfo.setStatus("interrupted");
+                }
+            }
         } finally {
             // 确保进程被销毁
             if (process != null && process.isAlive()) {
