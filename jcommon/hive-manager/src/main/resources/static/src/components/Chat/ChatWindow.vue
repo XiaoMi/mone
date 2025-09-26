@@ -8,6 +8,7 @@
       :onMessageClick="onMessageClick"
       @scrollToTop="$emit('scrollToTop')"
       :onPlayAudio="onPlayAudio"
+      @pidAction="handlePidAction"
     >
       <template v-slot:user-avatar="scopedProps">
         <slot
@@ -176,6 +177,10 @@ export default {
         this.enableEdit();
         this.setShowApprove(false);
       }
+    },
+    handlePidAction(data: { pid: string; action: string }) {
+      // 向上传递 pidAction 事件到 Chat.vue
+      this.$emit('pidAction', data);
     },
   },
 };

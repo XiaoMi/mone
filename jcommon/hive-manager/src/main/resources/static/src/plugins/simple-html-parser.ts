@@ -39,7 +39,11 @@ type SupportedTag =
   | 'working_directory'
   | 'timeout'
   | 'tool_result'
-  | 'list_code_definition_names';
+  | 'list_code_definition_names'
+  | 'pid'
+  | 'terminal_append'
+  | 'process_pid'
+  | 'process_content';
 
 interface Position {
   line: number;    // 行号
@@ -112,7 +116,11 @@ export class SimpleHtmlParser {
       'working_directory',
       'timeout',
       'tool_result',
-      'list_code_definition_names'
+      'list_code_definition_names',
+      'pid',
+      'terminal_append',
+      'process_pid',
+      'process_content'
     ]);
   }
 

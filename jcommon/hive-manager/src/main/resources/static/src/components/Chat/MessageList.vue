@@ -11,6 +11,7 @@
         :onMessageClick="onMessageClick"
         :onMessageCmd="onMessageCmd"
         :onPlayAudio="onPlayAudio"
+        @pidAction="handlePidAction"
       >
         <template v-slot:user-avatar="scopedProps">
           <slot
@@ -190,6 +191,10 @@ export default {
       });
 
       resizeObserver.observe(this.$refs.scrollList1);
+    },
+    handlePidAction(data: { pid: string; action: string }) {
+      // 向上传递 pidAction 事件
+      this.$emit('pidAction', data);
     },
   },
 };

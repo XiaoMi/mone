@@ -16,6 +16,7 @@
       :onClearHistory="onClearHistory"
       :onOffline="onOfflineAgent"
       :onStopMsg="onStopMsg"
+      @pidAction="onPidAction"
     />
   </div>
 </template>
@@ -111,6 +112,25 @@ const toggleSendMethod = (val: string) => {
       __owner_id__: user?.username,
     }
     offlineAgent({
+      mapData: {
+        outerTag: "use_mcp_tool",
+        server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
+        tool_name: getAgentName(),
+        arguments: JSON.stringify(params)
+      },
+      conversationId: route.query.conversationId,
+      agentId: route.query.serverAgentId,
+      agentInstance: getSelectedInstance(),
+    });
+  }
+
+  const onPidAction = (data: { pid: string; action: string }) => {
+    const agent = getAgent();
+    let params = {
+      message: `${data.action} ${data.pid}`,
+      __owner_id__: user?.username,
+    }
+    clearHistory({
       mapData: {
         outerTag: "use_mcp_tool",
         server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${getSelectedInstance().port}`,
