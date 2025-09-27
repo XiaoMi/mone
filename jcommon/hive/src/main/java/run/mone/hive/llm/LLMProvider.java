@@ -10,6 +10,7 @@ public enum LLMProvider {
     //ali 也可以调用deepseek 模型名使用:deepseek-v3 deepseek-r1  base url:https://dashscope.aliyuncs.com/compatible-mode/v1
     QWEN("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "QWEN_MODEL_KEY", "qwen3-max", null),
     MOONSHOT("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "moonshot-v1-auto", null),
+    KIMI_K2_TURBO_PREVIEW("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "kimi-k2-turbo-preview", null),
     STEPFUN_ASR("https://api.stepfun.com/v1/audio/transcriptions", "STEPFUN_API_KEY", "step-asr", null),
     STEPFUN_TTS("https://api.stepfun.com/v1/audio/speech", "STEPFUN_API_KEY", "step-tts-mini", null),
     GOOGLE("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GOOGLE_API_KEY", "gemini-2.0-flash-exp", null),
