@@ -612,23 +612,67 @@ public class ProcessManager {
      */
     public boolean waitWithDetachment(Process process, AtomicBoolean detached, long timeout) {
         long startTime = System.currentTimeMillis();
+        ProcessHandle mainProcessHandle = process.toHandle();
         
+        // 第一阶段：等待主进程完成
         while (!detached.get() && System.currentTimeMillis() - startTime < timeout * 1000) {
             try {
                 if (process.waitFor(1, TimeUnit.SECONDS)) {
-                    return true; // 进程完成
+                    log.info("主进程已完成，开始等待所有子进程完成...");
+                    break; // 主进程完成，跳出循环进入子进程等待阶段
                 }
             } catch (InterruptedException e) {
-                log.warn("等待进程时被中断");
+                log.warn("等待主进程时被中断");
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        
+        // 如果在等待主进程时就被分离或超时，直接返回
+        if (detached.get()) {
+            log.info("进程等待被分离，进程将继续在后台运行");
+            return false;
+        }
+        
+        if (System.currentTimeMillis() - startTime >= timeout * 1000) {
+            log.warn("等待主进程时超时 ({}秒)", timeout);
+            return false;
+        }
+        
+        // 第二阶段：等待所有子进程和后代进程完成
+        long childWaitStartTime = System.currentTimeMillis();
+        long remainingTimeout = timeout * 1000 - (childWaitStartTime - startTime);
+        
+        if (remainingTimeout <= 0) {
+            log.warn("等待子进程时已超时");
+            return false;
+        }
+        
+        while (!detached.get() && System.currentTimeMillis() - childWaitStartTime < remainingTimeout) {
+            try {
+                // 检查是否还有活着的子进程或后代进程
+                boolean hasAliveDescendants = mainProcessHandle.descendants()
+                    .anyMatch(ProcessHandle::isAlive);
+                
+                if (!hasAliveDescendants) {
+                    log.info("所有子进程和后代进程都已完成");
+                    return true; // 所有进程都完成了
+                }
+                
+                // 等待1秒后再次检查
+                Thread.sleep(1000);
+                
+            } catch (InterruptedException e) {
+                log.warn("等待子进程时被中断");
                 Thread.currentThread().interrupt();
                 return false;
             }
         }
         
         if (detached.get()) {
-            log.info("进程等待被分离，进程将继续在后台运行");
+            log.info("等待子进程时被分离，进程将继续在后台运行");
         } else {
-            log.warn("进程等待超时 ({}秒)", timeout);
+            log.warn("等待子进程时超时，剩余超时时间: {}毫秒", remainingTimeout);
         }
         
         return false; // 超时或被分离
