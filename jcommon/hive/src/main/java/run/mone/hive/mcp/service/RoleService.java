@@ -271,6 +271,12 @@ public class RoleService {
                 return;
             }
 
+            // 检查是否是刷新配置命令
+            if (isRefreshConfigCommand(content)) {
+                handleRefreshConfigCommand(rr, message, sink, from);
+                return;
+            }
+
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
             if (rr.isInterrupted() && !isInterruptCommand(content)) {
                 log.info("Agent {} 收到新的非中断命令，自动重置中断状态", from);
@@ -305,6 +311,20 @@ public class RoleService {
     }
 
     /**
+     * 检查是否是刷新配置命令
+     */
+    private boolean isRefreshConfigCommand(String content) {
+        if (content == null) {
+            return false;
+        }
+        String trimmed = content.trim().toLowerCase();
+        return trimmed.equals("/refresh") ||
+                trimmed.equals("/reload") ||
+                trimmed.contains("刷新配置") ||
+                trimmed.contains("重新加载");
+    }
+
+    /**
      * 处理中断命令
      */
     private void handleInterruptCommand(ReactorRole role, reactor.core.publisher.FluxSink<String> sink, String from) {
@@ -320,6 +340,41 @@ public class RoleService {
             sink.next("💡 发送任何新命令将自动重置中断状态并继续执行\n");
         }
         sink.complete();
+    }
+
+    /**
+     * 处理刷新配置命令
+     */
+    private void handleRefreshConfigCommand(ReactorRole role, Message message, reactor.core.publisher.FluxSink<String> sink, String from) {
+        try {
+            sink.next("🔄 开始刷新Agent配置...\n");
+            
+            // 执行刷新配置
+            refreshConfig(message);
+            
+            sink.next("✅ Agent " + from + " 配置刷新完成！\n");
+            sink.next("📋 已更新MCP连接和角色设置\n");
+            
+            // 构建一个特殊的消息，用于通知ReactorRole配置已刷新
+            Message refreshMessage = Message.builder()
+                    .sentFrom(message.getSentFrom())
+                    .clientId(message.getClientId())
+                    .userId(message.getUserId())
+                    .agentId(message.getAgentId())
+                    .role("system")
+                    .content("配置已刷新")
+                    .data(Const.REFRESH_CONFIG)
+                    .sink(sink)
+                    .build();
+            
+            // 发送给ReactorRole，让它知道配置已刷新
+            role.putMessage(refreshMessage);
+            
+        } catch (Exception e) {
+            log.error("刷新配置失败: {}", e.getMessage(), e);
+            sink.next("❌ 配置刷新失败: " + e.getMessage() + "\n");
+            sink.complete();
+        }
     }
 
     //下线某个Agent
@@ -382,6 +437,34 @@ public class RoleService {
             return Mono.just("Agent " + from + " 状态: " + status);
         } else {
             return Mono.just("未找到Agent: " + from);
+        }
+    }
+
+    //刷新某个Agent的配置
+    public void refreshConfig(Message message) {
+        String from = message.getSentFrom().toString();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            log.info("开始刷新Agent {} 的配置", from);
+            
+            // 重新加载配置和MCP连接
+            String clientId = role.getClientId();
+            String userId = message.getUserId();
+            String agentId = message.getAgentId();
+            
+            // 如果没有从消息中获取到userId和agentId，尝试从role中获取
+            if (StringUtils.isEmpty(userId)) {
+                userId = role.getRoleConfig().getOrDefault("userId", "");
+            }
+            if (StringUtils.isEmpty(agentId)) {
+                agentId = role.getRoleConfig().getOrDefault("agentId", "");
+            }
+            
+            updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
+            
+            log.info("Agent {} 配置刷新完成", from);
+        } else {
+            log.warn("未找到要刷新配置的Agent: {}", from);
         }
     }
 

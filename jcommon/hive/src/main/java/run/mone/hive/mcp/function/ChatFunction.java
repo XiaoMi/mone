@@ -73,7 +73,6 @@ public class ChatFunction implements McpFunction {
         //用户id
         String userId = arguments.getOrDefault(Const.USER_ID, "").toString();
 
-
         TokenRes res = tokenFunc.apply(TokenReq.builder().userId(userId).arguments(arguments).build());
         if (!res.isSuccess()) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("账号有问题")), true));
@@ -113,6 +112,16 @@ public class ChatFunction implements McpFunction {
         //分离进程 - 格式: /detach <processId>
         if (message.trim().toLowerCase().startsWith("/detach")) {
             return handleDetachProcess(message.trim());
+        }
+
+        //刷新配置 - 格式: /refresh 或 /reload
+        if (message.trim().toLowerCase().startsWith("/refresh") || message.trim().toLowerCase().startsWith("/reload")) {
+            return handleRefreshConfig(ownerId);
+        }
+
+        //取消/中断执行 - 格式: /cancel
+        if (message.trim().toLowerCase().startsWith("/cancel")) {
+            return handleCancelCommand(ownerId);
         }
 
         try {
@@ -297,6 +306,77 @@ public class ChatFunction implements McpFunction {
                             false
                     ));
                 }
+        }
+    }
+
+    /**
+     * 处理刷新配置命令
+     * 支持的格式：
+     * - /refresh - 刷新agent配置
+     * - /reload - 刷新agent配置
+     */
+    @NotNull
+    private Flux<McpSchema.CallToolResult> handleRefreshConfig(String ownerId) {
+        // 构建刷新配置的消息，使用特殊的data标识
+        Message refreshMessage = Message.builder()
+                .sentFrom(ownerId)
+                .role("system")
+                .content("刷新配置")
+                .data(Const.REFRESH_CONFIG)
+                .build();
+        
+        // 通过roleService刷新配置
+        try {
+            roleService.refreshConfig(refreshMessage);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("🔄 配置已刷新，包括MCP连接和角色设置")),
+                    false
+            ));
+        } catch (Exception e) {
+            log.error("刷新配置失败: {}", e.getMessage(), e);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("❌ 配置刷新失败: " + e.getMessage())),
+                    false
+            ));
+        }
+    }
+
+    /**
+     * 处理取消/中断命令
+     * 支持的格式：
+     * - /cancel - 取消当前执行
+     */
+    @NotNull
+    private Flux<McpSchema.CallToolResult> handleCancelCommand(String ownerId) {
+        // 构建取消命令的消息
+        Message cancelMessage = Message.builder()
+                .sentFrom(ownerId)
+                .role("user")
+                .content("/cancel")
+                .build();
+        
+        // 通过roleService发送取消命令，让RoleService处理中断逻辑
+        try {
+            // 直接发送取消消息到RoleService，它会自动处理中断逻辑
+            Flux<String> resultFlux = roleService.receiveMsg(cancelMessage);
+            
+            // 订阅结果但不阻塞，让中断逻辑异步执行
+            resultFlux.subscribe(
+                    result -> log.debug("取消命令执行结果: {}", result),
+                    error -> log.error("取消命令执行失败: {}", error.getMessage(), error),
+                    () -> log.debug("取消命令处理完成")
+            );
+            
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("🛑 已发送取消指令")),
+                    false
+            ));
+        } catch (Exception e) {
+            log.error("发送取消指令失败: {}", e.getMessage(), e);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("❌ 取消指令发送失败: " + e.getMessage())),
+                    false
+            ));
         }
     }
 

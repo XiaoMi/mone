@@ -108,6 +108,12 @@ public class ReactorRole extends Role {
 
     private FocusChainManager focusChainManager;
 
+    /**
+     * -- GETTER --
+     *  获取当前工作区路径
+     *
+     * @return 工作区根目录路径
+     */
     //工作区根目录路径，用于路径解析
     private String workspacePath = System.getProperty("user.dir");
 
@@ -352,6 +358,16 @@ public class ReactorRole extends Role {
         //清空历史记录(不会退出)
         if (null != msg.getData() && msg.getData().equals(Const.CLEAR_HISTORY)) {
             this.rc.getMemory().clear();
+            return -1;
+        }
+
+        //刷新配置(不会退出)
+        if (null != msg.getData() && msg.getData().equals(Const.REFRESH_CONFIG)) {
+            log.info("ReactorRole {} 收到配置刷新通知", this.name);
+            // 完成当前流式输出
+            if (null != msg.getSink()) {
+                msg.getSink().complete();
+            }
             return -1;
         }
 
@@ -780,15 +796,6 @@ public class ReactorRole extends Role {
             this.workspacePath = workspacePath;
             log.info("ReactorRole '{}' workspace path set to: {}", this.name, workspacePath);
         }
-    }
-
-    /**
-     * 获取当前工作区路径
-     *
-     * @return 工作区根目录路径
-     */
-    public String getWorkspacePath() {
-        return this.workspacePath;
     }
 
     /**
