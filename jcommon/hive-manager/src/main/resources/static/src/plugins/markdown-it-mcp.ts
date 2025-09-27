@@ -279,7 +279,7 @@ export function markdownItMcp(md: MarkdownIt) {
               </div>
               <div class="tool-result-content">`;
         } else if (name === "pid") {
-          html += `<span class="pid-buttons-container" data-pid="">`;
+          html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
         } else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
           html += `<!-- terminal_append_start -->`;
@@ -328,11 +328,15 @@ export function markdownItMcp(md: MarkdownIt) {
           const pidValue = text.trim();
           html = html.replace('data-pid=""', `data-pid="${md.utils.escapeHtml(pidValue)}"`);
           html += `
-            <button class="pid-kill-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="kill">
-              <i class="fa-solid fa-times"></i> 杀死进程 ${md.utils.escapeHtml(pidValue)}
+            <button class="pid-kill-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="kill" title="终止进程 PID: ${md.utils.escapeHtml(pidValue)}">
+              <i class="fa-solid fa-power-off"></i>
+              <span>杀死进程</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
             </button>
-            <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach">
-              <i class="fa-solid fa-play"></i> 后台运行 ${md.utils.escapeHtml(pidValue)}
+            <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach" title="将进程 PID: ${md.utils.escapeHtml(pidValue)} 转为后台运行">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <span>后台运行</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
             </button>
           `;
           return;
