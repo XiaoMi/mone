@@ -1578,6 +1578,9 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     background: linear-gradient(135deg, rgba($accent-green, 0.1), rgba($accent-teal, 0.1));
     color: $accent-green;
     font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     i {
       margin-right: 10px;
@@ -1588,6 +1591,35 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     span {
       font-family: $font-mono;
       letter-spacing: 0.5px;
+      flex: 1;
+    }
+    
+    .terminal-toggle-btn {
+      background: rgba($accent-green, 0.1);
+      border: 1px solid rgba($accent-green, 0.3);
+      color: $accent-green;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      &:hover {
+        background: rgba($accent-green, 0.2);
+        border-color: rgba($accent-green, 0.5);
+      }
+      
+      &:active {
+        transform: translateY(1px);
+      }
+      
+      i {
+        margin: 0;
+        font-size: 0.9em;
+      }
     }
   }
 
