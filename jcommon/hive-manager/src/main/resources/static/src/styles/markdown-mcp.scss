@@ -1722,3 +1722,119 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
 
   position: relative;
 }
+
+// ===== PID 日志弹框样式 =====
+.pid-log-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+
+  .pid-log-modal-content {
+    background: $background-primary;
+    border-radius: $block-border-radius;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .pid-log-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: $background-secondary;
+      border-bottom: 1px solid $border-color;
+
+      h3 {
+        margin: 0;
+        color: $text-primary;
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+
+      .pid-log-modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: $text-secondary;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: $text-primary;
+        }
+      }
+    }
+
+    .pid-log-modal-body {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+
+      .pid-log-content {
+        margin: 0;
+        padding: 20px;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-family: $font-mono;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+    }
+
+    .pid-log-modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: $background-secondary;
+      border-top: 1px solid $border-color;
+
+      .pid-log-count {
+        color: $text-secondary;
+        font-size: 0.9em;
+      }
+
+      .pid-log-modal-close-btn {
+        background: $accent-blue;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: $button-border-radius;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: darken($accent-blue, 10%);
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+}
+
+// ===== PID 查看日志按钮样式 =====
+.pid-view-logs-button {
+  @include pid-button-base($accent-cyan, #4ecdc4);
+
+  &:hover {
+    background: linear-gradient(135deg, #4ecdc4 0%, darken(#4ecdc4, 10%) 100%);
+  }
+}

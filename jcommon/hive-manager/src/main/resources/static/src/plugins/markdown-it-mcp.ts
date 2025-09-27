@@ -322,7 +322,7 @@ export function markdownItMcp(md: MarkdownIt) {
           // }
           return;
         } else if (tagName === "pid") {
-          // 处理 pid 标签内容，生成两个按钮
+          // 处理 pid 标签内容，生成三个按钮
           const pidValue = text.trim();
           html = html.replace('data-pid=""', `data-pid="${md.utils.escapeHtml(pidValue)}"`);
           html += `
@@ -334,6 +334,11 @@ export function markdownItMcp(md: MarkdownIt) {
             <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach" title="将进程 PID: ${md.utils.escapeHtml(pidValue)} 转为后台运行">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
               <span>后台运行</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
+            </button>
+            <button class="pid-view-logs-button" data-pid="${md.utils.escapeHtml(pidValue)}" onclick="showPidLogs('${md.utils.escapeHtml(pidValue)}')" title="查看进程 PID: ${md.utils.escapeHtml(pidValue)} 的日志">
+              <i class="fa-solid fa-file-lines"></i>
+              <span>查看日志</span>
               <small>${md.utils.escapeHtml(pidValue)}</small>
             </button>
           `;
@@ -578,5 +583,40 @@ export function markdownItMcp(md: MarkdownIt) {
     const count = existingPidComponents.get(pid)?.length || 0;
     console.log('updateTerminalLineCount for pid:', pid, 'count:', count);
     return count;
+  };
+
+  (window as any).showPidLogs = (pid: string) => {
+    const lines = existingPidComponents.get(pid) || [];
+    
+    // 创建弹框
+    const modal = document.createElement('div');
+    modal.className = 'pid-log-modal';
+    modal.innerHTML = `
+      <div class="pid-log-modal-content">
+        <div class="pid-log-modal-header">
+          <h3>PID ${pid} 日志内容</h3>
+          <button class="pid-log-modal-close" onclick="this.closest('.pid-log-modal').remove()">&times;</button>
+        </div>
+        <div class="pid-log-modal-body">
+          <pre class="pid-log-content">${lines.length > 0 ? lines.join('\n') : '暂无日志内容'}</pre>
+        </div>
+        <div class="pid-log-modal-footer">
+          <span class="pid-log-count">共 ${lines.length} 条日志</span>
+          <button class="pid-log-modal-close-btn" onclick="this.closest('.pid-log-modal').remove()">关闭</button>
+        </div>
+      </div>
+    `;
+    
+    // 添加点击背景关闭功能
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+    
+    // 添加到页面
+    document.body.appendChild(modal);
+    
+    console.log('Showing logs for PID:', pid, 'lines:', lines.length);
   };
 }
