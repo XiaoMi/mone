@@ -2,8 +2,10 @@ import MarkdownIt from "markdown-it";
 // import * as htmlparser2 from "htmlparser2";
 import { SimpleHtmlParser } from "./simple-html-parser";
 
-// 全局存储已存在的 PID 组件
-const existingPidComponents = new Map<string, string>();
+// 全局存储已存在的 PID 组件内容（只存储内容，不直接渲染）
+const existingPidComponents = new Map<string, string[]>();
+
+
 
 export function markdownItMcp(md: MarkdownIt) {
   if (!md.block || !md.block.ruler) {
@@ -59,18 +61,14 @@ export function markdownItMcp(md: MarkdownIt) {
     let html = "";
     let isDownloadFile = false;
     const tagStack: string[] = []; // 标签栈，用于跟踪当前正在处理的标签
+    const processedPidsInThisParse = new Set<string>(); // 跟踪当前解析中已处理的PID
 
     // 用于 terminal_append 功能的变量
     let currentPid = "";
     let currentContent = "";
-    let isInTerminalAppend = false;
 
     // 辅助函数：获取当前标签栈顶的标签
     const getCurrentTag = () => tagStack[tagStack.length - 1];
-    // // 辅助函数：获取父级标签
-    // const getParentTag = () => tagStack[tagStack.length - 2];
-    // // 辅助函数：检查是否在指定标签内
-    // const isInsideTag = (tagName: string) => tagStack.includes(tagName);
     let toolResult: string = "" 
 
     const parser = new SimpleHtmlParser({
@@ -279,10 +277,10 @@ export function markdownItMcp(md: MarkdownIt) {
               </div>
               <div class="tool-result-content">`;
         } else if (name === "pid") {
-          html += `<span class="pid-buttons-container" data-pid="">`;
+          html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
         } else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
-          html += `<!-- terminal_append_start -->`;
+          // html += `<!-- terminal_append_start -->`;
         } else if (name === "process_pid") {
           // process_pid 标签，暂时不输出内容，等待获取 PID 值
         } else if (name === "process_content") {
@@ -324,15 +322,24 @@ export function markdownItMcp(md: MarkdownIt) {
           // }
           return;
         } else if (tagName === "pid") {
-          // 处理 pid 标签内容，生成两个按钮
+          // 处理 pid 标签内容，生成三个按钮
           const pidValue = text.trim();
           html = html.replace('data-pid=""', `data-pid="${md.utils.escapeHtml(pidValue)}"`);
           html += `
-            <button class="pid-kill-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="kill">
-              <i class="fa-solid fa-times"></i> 杀死进程 ${md.utils.escapeHtml(pidValue)}
+            <button class="pid-kill-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="kill" title="终止进程 PID: ${md.utils.escapeHtml(pidValue)}">
+              <i class="fa-solid fa-power-off"></i>
+              <span>杀死进程</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
             </button>
-            <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach">
-              <i class="fa-solid fa-play"></i> 后台运行 ${md.utils.escapeHtml(pidValue)}
+            <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach" title="将进程 PID: ${md.utils.escapeHtml(pidValue)} 转为后台运行">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <span>后台运行</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
+            </button>
+            <button class="pid-view-logs-button" data-pid="${md.utils.escapeHtml(pidValue)}" onclick="showPidLogs('${md.utils.escapeHtml(pidValue)}')" title="查看进程 PID: ${md.utils.escapeHtml(pidValue)} 的日志">
+              <i class="fa-solid fa-file-lines"></i>
+              <span>查看日志</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
             </button>
           `;
           return;
@@ -460,33 +467,66 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "pid") {
           html += `</span>`;
         } else if (tagname === "terminal_append") {
-          // 处理 terminal_append 标签关闭
+          // 处理 terminal_append 标签关闭 - 只存储内容，不直接渲染
           if (currentPid && currentContent) {
+            const contentLines = currentContent.split('\n');
+            
+            // 检查当前解析过程中是否已经处理过这个PID
+            const pidAlreadyProcessedInThisParse = processedPidsInThisParse.has(currentPid);
+            
             if (existingPidComponents.has(currentPid)) {
-              // 已存在组件，输出更新指令
-              const existingContent = existingPidComponents.get(currentPid);
-              if (existingContent) {
-                // 合并内容
-                const updatedContent = existingContent + '\n' + currentContent;
-                existingPidComponents.set(currentPid, updatedContent);
-                // 输出更新指令
-                html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-content="${md.utils.escapeHtml(currentContent)}"></div>`;
+              // 已存在组件，追加新内容
+              const existingLines = existingPidComponents.get(currentPid) || [];
+              const allLines = [...existingLines, ...contentLines];
+              // 只保留最新的100条
+              const limitedLines = allLines.slice(-100);
+              // console.log('Updating existing PID:', currentPid, 'with lines:', limitedLines);
+              existingPidComponents.set(currentPid, limitedLines);
+              
+              if (!pidAlreadyProcessedInThisParse) {
+                // // 如果当前解析中还没有输出过这个PID的组件，输出完整组件
+                // const componentHtml = `
+                // <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
+                //   <div class="terminal-process-header">
+                //     <i class="fa-solid fa-terminal"></i>
+                //     <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
+                //     <button class="terminal-toggle-btn" type="button" title="查看日志">
+                //       <i class="fa-solid fa-eye"></i>
+                //       查看日志
+                //     </button>
+                //   </div>
+                //   <div class="terminal-process-content" style="display: none;">
+                //     <!-- 内容将在点击时动态加载 -->
+                //   </div>
+                // </div>`;
+                // html += componentHtml;
+                processedPidsInThisParse.add(currentPid);
+              } else {
+                // 输出更新指令（不包含实际内容）
+                // html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-new-lines="${contentLines.length}"></div>`;
               }
             } else {
-              // 第一次遇到此PID，立即在当前位置输出终端组件
-              const componentHtml = `
-              <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
-                <div class="terminal-process-header">
-                  <i class="fa-solid fa-terminal"></i>
-                  <span>进程 ${md.utils.escapeHtml(currentPid)}</span>
-                </div>
-                <div class="terminal-process-content">
-                  <pre>${md.utils.escapeHtml(currentContent)}</pre>
-                </div>
-              </div>`;
-              html += componentHtml;
-              // 存储内容，供后续追加使用
-              existingPidComponents.set(currentPid, currentContent);
+              // 第一次遇到此PID，只输出占位组件
+              const limitedLines = contentLines.slice(-100);
+              console.log('Creating new PID:', currentPid, 'with lines:', limitedLines);
+              existingPidComponents.set(currentPid, limitedLines);
+              
+              // const componentHtml = `
+              // <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
+              //   <div class="terminal-process-header">
+              //     <i class="fa-solid fa-terminal"></i>
+              //     <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
+              //     <button class="terminal-toggle-btn" type="button" title="查看日志">
+              //       <i class="fa-solid fa-eye"></i>
+              //       查看日志
+              //     </button>
+              //   </div>
+              //   <div class="terminal-process-content" style="display: none;">
+              //     <!-- 内容将在点击时动态加载 -->
+              //   </div>
+              // </div>`;
+              // html += componentHtml;
+              processedPidsInThisParse.add(currentPid);
             }
             
             // 重置变量
@@ -515,9 +555,7 @@ export function markdownItMcp(md: MarkdownIt) {
     parser.write(mcpContent);
     parser.end();
 
-    // 清空映射，为下次解析做准备
-    existingPidComponents.clear();
-
+    // 不再清空映射，保持内容在内存中
     // console.log("Generated HTML:", html);
 
     const token = state.push("html_block", "", 0);
@@ -531,4 +569,54 @@ export function markdownItMcp(md: MarkdownIt) {
   md.block.ruler.before("html_block", "mcp", parseMcpBlock, {
     alt: ["paragraph", "reference", "blockquote"],
   });
+  
+  // 暴露获取PID内容的全局函数
+  (window as any).getTerminalContent = (pid: string): string[] => {
+    console.log('getTerminalContent called with pid:', pid);
+    console.log('existingPidComponents:', existingPidComponents);
+    const content = existingPidComponents.get(pid) || [];
+    console.log('returning content:', content);
+    return content;
+  };
+  
+  (window as any).updateTerminalLineCount = (pid: string): number => {
+    const count = existingPidComponents.get(pid)?.length || 0;
+    console.log('updateTerminalLineCount for pid:', pid, 'count:', count);
+    return count;
+  };
+
+  (window as any).showPidLogs = (pid: string) => {
+    const lines = existingPidComponents.get(pid) || [];
+    
+    // 创建弹框
+    const modal = document.createElement('div');
+    modal.className = 'pid-log-modal';
+    modal.innerHTML = `
+      <div class="pid-log-modal-content">
+        <div class="pid-log-modal-header">
+          <h3>PID ${pid} 日志内容</h3>
+          <button class="pid-log-modal-close" onclick="this.closest('.pid-log-modal').remove()">&times;</button>
+        </div>
+        <div class="pid-log-modal-body">
+          <pre class="pid-log-content">${lines.length > 0 ? lines.join('\n') : '暂无日志内容'}</pre>
+        </div>
+        <div class="pid-log-modal-footer">
+          <span class="pid-log-count">共 ${lines.length} 条日志</span>
+          <button class="pid-log-modal-close-btn" onclick="this.closest('.pid-log-modal').remove()">关闭</button>
+        </div>
+      </div>
+    `;
+    
+    // 添加点击背景关闭功能
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+    
+    // 添加到页面
+    document.body.appendChild(modal);
+    
+    console.log('Showing logs for PID:', pid, 'lines:', lines.length);
+  };
 }

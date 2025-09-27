@@ -508,35 +508,47 @@ export default {
     addTerminalAppendEvents() {
       const textRef = this.$refs.textRef as HTMLDivElement;
       if (textRef) {
-        // 处理终端追加更新指令
+        // 处理终端追加更新指令（只更新计数，不更新DOM内容）
         const updateElements = textRef.querySelectorAll('.terminal-append-update');
         updateElements.forEach((updateEl: Element) => {
           const htmlUpdate = updateEl as HTMLElement;
           const pid = htmlUpdate.getAttribute('data-pid');
-          const content = htmlUpdate.getAttribute('data-content');
+          const newLines = htmlUpdate.getAttribute('data-new-lines');
           
-          if (pid && content) {
-            // 查找对应的终端组件
+          if (pid && newLines) {
+            // 查找对应的终端组件，更新计数显示
             const targetTerminal = textRef.querySelector(`.terminal-process-block[data-pid="${pid}"]`) as HTMLElement;
             if (targetTerminal) {
-              const contentElement = targetTerminal.querySelector('.terminal-process-content pre') as HTMLElement;
-              if (contentElement) {
-                // 将新内容追加到现有内容后面
-                const currentText = contentElement.textContent || '';
-                const newText = currentText + '\n' + content;
-                contentElement.textContent = newText;
+              const headerSpan = targetTerminal.querySelector('.terminal-process-header span') as HTMLElement;
+              if (headerSpan && (window as any).updateTerminalLineCount) {
+                const totalLines = (window as any).updateTerminalLineCount(pid);
+                headerSpan.textContent = `进程 ${pid} (${totalLines}条日志)`;
                 
-                // 滚动到底部
+                // 如果当前终端内容是可见的，重新加载内容
                 const contentContainer = targetTerminal.querySelector('.terminal-process-content') as HTMLElement;
-                if (contentContainer) {
-                  contentContainer.scrollTop = contentContainer.scrollHeight;
+                if (contentContainer && contentContainer.style.display !== 'none') {
+                  const lines = (window as any).getTerminalContent(pid);
+                  const preElement = contentContainer.querySelector('pre');
+                  if (preElement && lines.length > 0) {
+                    preElement.textContent = lines.join('\n');
+                    contentContainer.scrollTop = contentContainer.scrollHeight;
+                  }
                 }
-                
-                // 添加闪烁效果表示有新内容
-                targetTerminal.classList.add('terminal-updated');
-                setTimeout(() => {
-                  targetTerminal.classList.remove('terminal-updated');
-                }, 1000);
+              }
+              
+              // 如果当前终端内容是可见的，重新加载内容
+              const contentContainer = targetTerminal.querySelector('.terminal-process-content') as HTMLElement;
+              if (contentContainer && contentContainer.style.display !== 'none') {
+                // 只有在内容可见时才重新加载并滚动
+                const pid = targetTerminal.getAttribute('data-pid');
+                if (pid && (window as any).getTerminalContent) {
+                  const lines = (window as any).getTerminalContent(pid);
+                  const preElement = contentContainer.querySelector('pre');
+                  if (preElement && lines.length > 0) {
+                    preElement.textContent = lines.join('\n');
+                    contentContainer.scrollTop = contentContainer.scrollHeight;
+                  }
+                }
               }
             }
             
@@ -545,14 +557,69 @@ export default {
           }
         });
 
-        // 为所有终端组件设置滚动到底部的行为
+        // 为所有终端组件设置滚动到底部的行为和切换按钮事件
         const terminalBlocks = textRef.querySelectorAll('.terminal-process-block');
         terminalBlocks.forEach((block: Element) => {
           const htmlBlock = block as HTMLElement;
           const contentContainer = htmlBlock.querySelector('.terminal-process-content') as HTMLElement;
+          const toggleBtn = htmlBlock.querySelector('.terminal-toggle-btn') as HTMLElement;
+          
           if (contentContainer) {
             // 确保新内容显示时滚动到底部（滚动条在容器上）
             contentContainer.scrollTop = contentContainer.scrollHeight;
+          }
+          
+          // 添加切换按钮事件（点击时动态加载内容）
+          if (toggleBtn && !(toggleBtn as any)._toggleHandler) {
+            const toggleHandler = () => {
+              const content = htmlBlock.querySelector('.terminal-process-content') as HTMLElement;
+              const icon = toggleBtn.querySelector('i');
+              const text = toggleBtn.childNodes[toggleBtn.childNodes.length - 1];
+              const pid = htmlBlock.getAttribute('data-pid');
+              
+              if (content.style.display === 'none') {
+                // 显示内容时，从内存中加载实际内容
+                if (pid && (window as any).getTerminalContent) {
+                  const lines = (window as any).getTerminalContent(pid);
+                  let preElement = content.querySelector('pre');
+                  
+                  // 如果没有pre元素，创建一个
+                  if (!preElement) {
+                    preElement = document.createElement('pre');
+                    content.innerHTML = ''; // 清空占位内容
+                    content.appendChild(preElement);
+                  }
+                  
+                  if (lines.length > 0) {
+                    preElement.textContent = lines.join('\n');
+                    console.log('Loading content for PID:', pid, 'lines:', lines.length);
+                  } else {
+                    preElement.textContent = '暂无日志内容';
+                    console.log('No content found for PID:', pid);
+                  }
+                }
+                
+                content.style.display = 'block';
+                if (icon) icon.className = 'fa-solid fa-eye-slash';
+                if (text) text.textContent = ' 隐藏日志';
+                // 显示时滚动到底部
+                setTimeout(() => {
+                  content.scrollTop = content.scrollHeight;
+                }, 50);
+              } else {
+                content.style.display = 'none';
+                if (icon) icon.className = 'fa-solid fa-eye';
+                if (text) text.textContent = ' 查看日志';
+                // 隐藏时清空内容节省内存
+                const preElement = content.querySelector('pre');
+                if (preElement) {
+                  preElement.textContent = '';
+                }
+              }
+            };
+            
+            toggleBtn.addEventListener('click', toggleHandler);
+            (toggleBtn as any)._toggleHandler = toggleHandler;
           }
         });
       }
@@ -639,7 +706,15 @@ export default {
           }
         });
         
-        // 终端组件不需要特殊的清理逻辑，因为内容已经在解析器层面处理
+        // 移除terminal toggle按钮事件
+        const terminalToggleBtns = textRef.querySelectorAll('.terminal-toggle-btn');
+        terminalToggleBtns.forEach((btn: Element) => {
+          const button = btn as HTMLElement;
+          if ((button as any)._toggleHandler) {
+            button.removeEventListener('click', (button as any)._toggleHandler);
+            delete (button as any)._toggleHandler;
+          }
+        });
       }
     },
     removeColapseEvents() {

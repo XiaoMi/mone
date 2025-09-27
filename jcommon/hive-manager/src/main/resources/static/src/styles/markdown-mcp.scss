@@ -1171,129 +1171,390 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
 // PID 按钮容器样式
 .pid-buttons-container {
   display: inline-flex;
-  gap: 8px;
-  margin: 0 4px;
+  gap: 10px;
+  margin: 8px 6px;
   align-items: center;
+  padding: 6px 10px;
+  background: rgba($background-secondary, 0.5);
+  border-radius: 10px;
+  border: 1px solid rgba($border-color, 0.3);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  position: relative;
+
+  // PID 状态指示器
+  &::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 20px;
+    background: linear-gradient(180deg, $accent-green 0%, $accent-blue 100%);
+    border-radius: 3px;
+    opacity: 0.8;
+    animation: pidStatusPulse 2s infinite ease-in-out;
+  }
+
+  &:hover {
+    background: rgba($background-secondary, 0.8);
+    border-color: rgba($border-color, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    &::before {
+      opacity: 1;
+      width: 8px;
+    }
+  }
+
+  // 进程运行状态样式
+  &.process-running::before {
+    background: linear-gradient(180deg, $accent-green 0%, lighten($accent-green, 10%) 100%);
+    animation: pidRunningPulse 1.5s infinite ease-in-out;
+  }
+
+  &.process-stopped::before {
+    background: linear-gradient(180deg, $accent-red 0%, lighten($accent-red, 10%) 100%);
+    animation: none;
+    opacity: 0.6;
+  }
+
+  &.process-background::before {
+    background: linear-gradient(180deg, $accent-blue 0%, lighten($accent-blue, 10%) 100%);
+    animation: pidBackgroundPulse 2.5s infinite ease-in-out;
+  }
+}
+
+// PID 按钮共用样式
+@mixin pid-button-base($primary-color, $hover-color: null) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 15%) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  box-shadow: 
+    0 2px 8px rgba($primary-color, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+
+  // 添加光泽效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(white, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover {
+    $hover-bg: if($hover-color, $hover-color, lighten($primary-color, 8%));
+    background: linear-gradient(135deg, $hover-bg 0%, darken($hover-bg, 10%) 100%);
+    box-shadow: 
+      0 4px 16px rgba($primary-color, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(1);
+    box-shadow: 
+      0 2px 8px rgba($primary-color, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &.loading {
+    opacity: 0.8;
+    cursor: not-allowed;
+    animation: pidPulse 2s infinite ease-in-out;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border: 2px solid rgba(white, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: pidSpin 1s infinite linear;
+    }
+  }
+
+  &.success {
+    background: linear-gradient(135deg, $accent-green 0%, darken($accent-green, 15%) 100%);
+    box-shadow: 
+      0 2px 8px rgba($accent-green, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+    animation: pidSuccessPulse 0.6s ease-out;
+  }
+
+  &.error {
+    background: linear-gradient(135deg, #e74c3c 0%, darken(#e74c3c, 15%) 100%);
+    box-shadow: 
+      0 2px 8px rgba(#e74c3c, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+    animation: pidErrorShake 0.6s ease-in-out;
+  }
+
+  i {
+    font-size: 1em;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  small {
+    font-size: 0.75em;
+    opacity: 0.8;
+    font-weight: 500;
+    background: rgba(white, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+  }
+
+  &:hover i {
+    transform: scale(1.15) rotate(5deg);
+  }
+
+  &:hover small {
+    opacity: 1;
+    background: rgba(white, 0.25);
+  }
+
+  // 禁用状态
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 }
 
 // PID 杀死进程按钮样式
 .pid-kill-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, $accent-red 0%, darken($accent-red, 10%) 100%);
-  color: white;
-  border: none;
-  border-radius: $button-border-radius;
-  padding: 6px 12px;
-  font-size: 0.8em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  box-shadow: 0 2px 4px rgba($accent-red, 0.3);
+  @include pid-button-base($accent-red, #ff6b6b);
 
   &:hover {
-    background: linear-gradient(135deg, lighten($accent-red, 5%) 0%, $accent-red 100%);
-    box-shadow: 0 4px 8px rgba($accent-red, 0.4);
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #ff6b6b 0%, darken(#ff6b6b, 10%) 100%);
   }
 
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba($accent-red, 0.3);
-  }
-
-  &.loading {
-    opacity: 0.7;
-    cursor: not-allowed;
-    animation: pidPulse 1.5s infinite;
-  }
-
-  &.success {
-    background: linear-gradient(135deg, $accent-green 0%, darken($accent-green, 10%) 100%);
-    box-shadow: 0 2px 4px rgba($accent-green, 0.3);
-  }
-
-  &.error {
-    background: linear-gradient(135deg, #e74c3c 0%, darken(#e74c3c, 10%) 100%);
-    box-shadow: 0 2px 4px rgba(#e74c3c, 0.3);
-    animation: shake 0.5s ease-in-out;
-  }
-
-  i {
-    font-size: 0.9em;
+  // 危险操作的额外警告效果
+  &:hover {
+    animation: pidDangerPulse 1.5s infinite ease-in-out;
   }
 }
 
 // PID 后台运行按钮样式
 .pid-detach-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, $accent-blue 0%, darken($accent-blue, 10%) 100%);
-  color: white;
-  border: none;
-  border-radius: $button-border-radius;
-  padding: 6px 12px;
-  font-size: 0.8em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  box-shadow: 0 2px 4px rgba($accent-blue, 0.3);
+  @include pid-button-base($accent-blue, #4dabf7);
 
   &:hover {
-    background: linear-gradient(135deg, lighten($accent-blue, 5%) 0%, $accent-blue 100%);
-    box-shadow: 0 4px 8px rgba($accent-blue, 0.4);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba($accent-blue, 0.3);
-  }
-
-  &.loading {
-    opacity: 0.7;
-    cursor: not-allowed;
-    animation: pidPulse 1.5s infinite;
-  }
-
-  &.success {
-    background: linear-gradient(135deg, $accent-green 0%, darken($accent-green, 10%) 100%);
-    box-shadow: 0 2px 4px rgba($accent-green, 0.3);
-  }
-
-  &.error {
-    background: linear-gradient(135deg, #e74c3c 0%, darken(#e74c3c, 10%) 100%);
-    box-shadow: 0 2px 4px rgba(#e74c3c, 0.3);
-    animation: shake 0.5s ease-in-out;
-  }
-
-  i {
-    font-size: 0.9em;
+    background: linear-gradient(135deg, #4dabf7 0%, darken(#4dabf7, 10%) 100%);
   }
 }
 
+// 响应式设计
+@media (max-width: 768px) {
+  .pid-buttons-container {
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    
+    .pid-kill-button,
+    .pid-detach-button {
+      justify-content: center;
+      padding: 10px 12px;
+      font-size: 0.9em;
+      
+      small {
+        margin-left: 6px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .pid-buttons-container {
+    margin: 6px 0;
+    
+    .pid-kill-button,
+    .pid-detach-button {
+      padding: 8px 10px;
+      font-size: 0.85em;
+      
+      span {
+        display: none; // 在小屏幕上只显示图标和 PID
+      }
+      
+      small {
+        margin-left: 8px;
+      }
+    }
+  }
+}
+
+// 暗色主题优化
+@media (prefers-color-scheme: dark) {
+  .pid-buttons-container {
+    background: rgba($background-primary, 0.8);
+    border-color: rgba($border-color, 0.5);
+  }
+}
+
+// 高对比度模式
+@media (prefers-contrast: high) {
+  .pid-kill-button,
+  .pid-detach-button {
+    border: 2px solid currentColor;
+    font-weight: 700;
+  }
+}
+
+// 减少动画偏好
+@media (prefers-reduced-motion: reduce) {
+  .pid-kill-button,
+  .pid-detach-button {
+    transition: none;
+    animation: none !important;
+    
+    &::before {
+      display: none;
+    }
+    
+    &:hover {
+      transform: none;
+    }
+  }
+  
+  .pid-buttons-container {
+    transition: none;
+    
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// PID 相关动画
 @keyframes pidPulse {
   0%, 100% {
-    opacity: 0.7;
+    opacity: 0.8;
+    transform: scale(1);
   }
   50% {
     opacity: 1;
+    transform: scale(1.02);
   }
 }
 
-@keyframes shake {
+@keyframes pidSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pidSuccessPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba($accent-green, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba($accent-green, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba($accent-green, 0.4);
+  }
+}
+
+@keyframes pidErrorShake {
   0%, 100% {
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
   }
-  25% {
-    transform: translateX(-2px);
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-3px) scale(1.02);
   }
-  75% {
-    transform: translateX(2px);
+  20%, 40%, 60%, 80% {
+    transform: translateX(3px) scale(1.02);
+  }
+}
+
+@keyframes pidDangerPulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 16px rgba($accent-red, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 4px 16px rgba($accent-red, 0.8),
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba($accent-red, 0.4);
+  }
+}
+
+@keyframes pidStatusPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateY(-50%) scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1.2);
+  }
+}
+
+@keyframes pidRunningPulse {
+  0%, 100% {
+    opacity: 0.8;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes pidBackgroundPulse {
+  0%, 100% {
+    opacity: 0.7;
+    transform: translateY(-50%) scaleX(1);
+  }
+  33% {
+    opacity: 0.9;
+    transform: translateY(-50%) scaleX(1.3);
+  }
+  66% {
+    opacity: 0.8;
+    transform: translateY(-50%) scaleX(0.8);
   }
 }
 
@@ -1317,6 +1578,9 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     background: linear-gradient(135deg, rgba($accent-green, 0.1), rgba($accent-teal, 0.1));
     color: $accent-green;
     font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     i {
       margin-right: 10px;
@@ -1327,6 +1591,35 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     span {
       font-family: $font-mono;
       letter-spacing: 0.5px;
+      flex: 1;
+    }
+    
+    .terminal-toggle-btn {
+      background: rgba($accent-green, 0.1);
+      border: 1px solid rgba($accent-green, 0.3);
+      color: $accent-green;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      &:hover {
+        background: rgba($accent-green, 0.2);
+        border-color: rgba($accent-green, 0.5);
+      }
+      
+      &:active {
+        transform: translateY(1px);
+      }
+      
+      i {
+        margin: 0;
+        font-size: 0.9em;
+      }
     }
   }
 
@@ -1428,4 +1721,120 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
   }
 
   position: relative;
+}
+
+// ===== PID 日志弹框样式 =====
+.pid-log-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+
+  .pid-log-modal-content {
+    background: $background-primary;
+    border-radius: $block-border-radius;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .pid-log-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: $background-secondary;
+      border-bottom: 1px solid $border-color;
+
+      h3 {
+        margin: 0;
+        color: $text-primary;
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+
+      .pid-log-modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: $text-secondary;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: $text-primary;
+        }
+      }
+    }
+
+    .pid-log-modal-body {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+
+      .pid-log-content {
+        margin: 0;
+        padding: 20px;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-family: $font-mono;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+    }
+
+    .pid-log-modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: $background-secondary;
+      border-top: 1px solid $border-color;
+
+      .pid-log-count {
+        color: $text-secondary;
+        font-size: 0.9em;
+      }
+
+      .pid-log-modal-close-btn {
+        background: $accent-blue;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: $button-border-radius;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: darken($accent-blue, 10%);
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+}
+
+// ===== PID 查看日志按钮样式 =====
+.pid-view-logs-button {
+  @include pid-button-base($accent-cyan, #4ecdc4);
+
+  &:hover {
+    background: linear-gradient(135deg, #4ecdc4 0%, darken(#4ecdc4, 10%) 100%);
+  }
 }
