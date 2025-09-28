@@ -421,6 +421,8 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "chat") {
           html += `</div></div>`;
+        } else if (tagname === "memory") {
+          html += `</div></div>`;
         } else if (tagname === "message") {
         } else if (tagname === "terminal") {
           html += `</div>`;
