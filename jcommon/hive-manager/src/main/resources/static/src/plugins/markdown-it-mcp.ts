@@ -69,7 +69,7 @@ export function markdownItMcp(md: MarkdownIt) {
 
     // 辅助函数：获取当前标签栈顶的标签
     const getCurrentTag = () => tagStack[tagStack.length - 1];
-    let toolResult: string = "" 
+    let toolResult: string = ""
 
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
@@ -97,7 +97,21 @@ export function markdownItMcp(md: MarkdownIt) {
               <span>聊天</span>
             </div>
             <div class="thinking-content is-active">`;
+        } else if (name === "memory") {
+          html += `
+          <div class="thinking-block">
+            <div class="thinking-header">
+              <i class="fa-solid fa-lightbulb"></i>
+              <span>记忆过程</span>
+            </div>
+            <div class="thinking-content is-active">`;
         } else if (name === "message") {
+        } else if (name === "action") {
+          html+= `<div style="display:none;">`;
+        } else if (name === "query") {
+          html+= `<div>`;
+        } else if (name === "metadata") {
+          html+= `<div style="display:none;">`;
         } else if (name === "terminal") {
           html += `
             <div class="terminal">`;
@@ -412,7 +426,13 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div>`;
         } else if (tagname === "use_mcp_tool") {
           html += `</div>`;
-        } else if (tagname === "server_name") {
+        } else if (tagname === "action") {
+           html += `</div>`;
+        } else if (tagname === "metadata") {
+           html += `</div>`;
+        } else if (tagname === "query") {
+           html += `</div>`;
+        }else if (tagname === "server_name") {
           html += `</span>`;
         } else if (tagname === "tool_name") {
           html += `</span></div>`;
@@ -470,10 +490,10 @@ export function markdownItMcp(md: MarkdownIt) {
           // 处理 terminal_append 标签关闭 - 只存储内容，不直接渲染
           if (currentPid && currentContent) {
             const contentLines = currentContent.split('\n');
-            
+
             // 检查当前解析过程中是否已经处理过这个PID
             const pidAlreadyProcessedInThisParse = processedPidsInThisParse.has(currentPid);
-            
+
             if (existingPidComponents.has(currentPid)) {
               // 已存在组件，追加新内容
               const existingLines = existingPidComponents.get(currentPid) || [];
@@ -482,7 +502,7 @@ export function markdownItMcp(md: MarkdownIt) {
               const limitedLines = allLines.slice(-100);
               // console.log('Updating existing PID:', currentPid, 'with lines:', limitedLines);
               existingPidComponents.set(currentPid, limitedLines);
-              
+
               if (!pidAlreadyProcessedInThisParse) {
                 // // 如果当前解析中还没有输出过这个PID的组件，输出完整组件
                 // const componentHtml = `
@@ -510,7 +530,7 @@ export function markdownItMcp(md: MarkdownIt) {
               const limitedLines = contentLines.slice(-100);
               console.log('Creating new PID:', currentPid, 'with lines:', limitedLines);
               existingPidComponents.set(currentPid, limitedLines);
-              
+
               // const componentHtml = `
               // <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
               //   <div class="terminal-process-header">
@@ -528,7 +548,7 @@ export function markdownItMcp(md: MarkdownIt) {
               // html += componentHtml;
               processedPidsInThisParse.add(currentPid);
             }
-            
+
             // 重置变量
             currentPid = "";
             currentContent = "";
@@ -569,7 +589,7 @@ export function markdownItMcp(md: MarkdownIt) {
   md.block.ruler.before("html_block", "mcp", parseMcpBlock, {
     alt: ["paragraph", "reference", "blockquote"],
   });
-  
+
   // 暴露获取PID内容的全局函数
   (window as any).getTerminalContent = (pid: string): string[] => {
     console.log('getTerminalContent called with pid:', pid);
@@ -578,7 +598,7 @@ export function markdownItMcp(md: MarkdownIt) {
     console.log('returning content:', content);
     return content;
   };
-  
+
   (window as any).updateTerminalLineCount = (pid: string): number => {
     const count = existingPidComponents.get(pid)?.length || 0;
     console.log('updateTerminalLineCount for pid:', pid, 'count:', count);
@@ -587,7 +607,7 @@ export function markdownItMcp(md: MarkdownIt) {
 
   (window as any).showPidLogs = (pid: string) => {
     const lines = existingPidComponents.get(pid) || [];
-    
+
     // 创建弹框
     const modal = document.createElement('div');
     modal.className = 'pid-log-modal';
@@ -606,17 +626,17 @@ export function markdownItMcp(md: MarkdownIt) {
         </div>
       </div>
     `;
-    
+
     // 添加点击背景关闭功能
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-    
+
     // 添加到页面
     document.body.appendChild(modal);
-    
+
     console.log('Showing logs for PID:', pid, 'lines:', lines.length);
   };
 }

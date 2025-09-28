@@ -533,8 +533,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background:
-    linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
+  background: linear-gradient(var(--el-color-chat-grid-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--el-color-chat-grid-color) 1px, transparent 1px);
   background-size: 30px 30px;
   animation: gridMove 20s linear infinite;
