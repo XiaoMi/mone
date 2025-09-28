@@ -1,9 +1,9 @@
 package run.mone.hive.memory;
 
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.memory.longterm.core.Memory;
 import run.mone.hive.memory.longterm.config.MemoryConfig;
 import run.mone.hive.memory.longterm.config.YamlConfigLoader;
+import run.mone.hive.memory.longterm.core.Memory;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 /**
  * 长期记忆管理器
  * 负责管理ReactorRole的长期记忆功能
- * 
  */
 @Slf4j
 public class LongTermMemoryManager {
@@ -25,11 +24,6 @@ public class LongTermMemoryManager {
         initializeLongTermMemory();
     }
 
-    public LongTermMemoryManager(String roleName, MemoryConfig config) {
-        this.roleName = roleName;
-        this.memoryConfig = config;
-        initializeLongTermMemory();
-    }
 
     /**
      * 初始化长期记忆系统

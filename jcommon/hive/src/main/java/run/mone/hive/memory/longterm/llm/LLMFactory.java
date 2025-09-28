@@ -1,7 +1,6 @@
 package run.mone.hive.memory.longterm.llm;
 
 import run.mone.hive.memory.longterm.config.LlmConfig;
-import run.mone.hive.memory.longterm.llm.impl.*;
 
 /**
  * LLM工厂类
@@ -19,31 +18,7 @@ public class LLMFactory {
         if (config == null) {
             throw new IllegalArgumentException("LLM config cannot be null");
         }
-        
-        switch (config.getProvider()) {
-            case OPENAI:
-                return new OpenAiLLM(config);
-            case CLAUDE:
-                return new ClaudeLLM(config);
-            case GEMINI:
-                return new GeminiLLM(config);
-            case OLLAMA:
-                return new OllamaLLM(config);
-            case GROQ:
-                return new GroqLLM(config);
-            case AZURE_OPENAI:
-                return new AzureOpenAiLLM(config);
-            case BEDROCK:
-                return new BedrockLLM(config);
-            case TOGETHER:
-                return new TogetherLLM(config);
-            case DEEPSEEK:
-                return new DeepSeekLLM(config);
-            case XAI:
-                return new XaiLLM(config);
-            default:
-                throw new IllegalArgumentException("Unsupported LLM provider: " + config.getProvider());
-        }
+        return null;
     }
     
     /**

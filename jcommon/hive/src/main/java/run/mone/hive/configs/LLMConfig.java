@@ -12,6 +12,8 @@ import java.util.List;
 @Builder
 public class LLMConfig {
 
+    private String providerName;
+
     private String model;
 
     private String version;
