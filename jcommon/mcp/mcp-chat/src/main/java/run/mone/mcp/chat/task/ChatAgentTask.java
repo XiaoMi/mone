@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/4/14 08:49
  */
 @AllArgsConstructor
-public class MinZaiTask implements Runnable{
+public class ChatAgentTask implements Runnable{
 
     private final ReactorRole role;
 
