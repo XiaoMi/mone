@@ -21,9 +21,6 @@ public class MemoryTool implements ITool {
     private static final Logger log = LoggerFactory.getLogger(MemoryTool.class);
     private static LongTermMemoryManager memoryManager;
 
-    public MemoryTool(String roleName) {
-        initializeMemoryManager(roleName);
-    }
 
     /**
      * 初始化长期记忆管理器
@@ -142,6 +139,9 @@ public class MemoryTool implements ITool {
 
             String action = inputJson.get("action").getAsString().toLowerCase();
             log.info("开始记忆操作，操作类型：{}", action);
+
+
+            initializeMemoryManager(role.getClientId());
 
             // 检查记忆管理器是否可用
             if (memoryManager == null) {
