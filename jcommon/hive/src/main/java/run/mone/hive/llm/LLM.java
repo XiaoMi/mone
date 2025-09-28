@@ -868,7 +868,15 @@ public class LLM {
     }
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
-        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model, messageHandler, lineConsumer, systemPrompt, sink, u -> {});
+        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
+                messageHandler, lineConsumer, systemPrompt, sink,
+                u -> {
+                    sink.next(llmUsageContent(u));
+                });
+    }
+
+    private String llmUsageContent(LLMUsage usage) {
+        return "\n<chat>\n<usage>\n" + gson.toJson(usage) + "\n</usage>\n</chat>\n";
     }
 
     public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
@@ -1064,13 +1072,41 @@ public class LLM {
                                     if (null != sink) {
                                         sink.complete();
                                     }
-
                                 }
                             }
                         } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
                             if (line.startsWith("data: ")) {
                                 String data = line.substring(6);
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+
+                                if ("message_start".equals(jsonResponse.get("type").getAsString())) {
+                                    JsonObject msg = jsonResponse.get("message").getAsJsonObject();
+                                    if (msg.has("usage")) {
+                                        JsonObject usageJson = msg.getAsJsonObject("usage");
+                                        LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+
+                                        // Common fields
+                                        int inputTokens = usageJson.has("input_tokens") ? usageJson.get("input_tokens").getAsInt() : 0;
+                                        int outputTokens = usageJson.has("output_tokens") ? usageJson.get("output_tokens").getAsInt() : 0;
+                                        usageBuilder.inputTokens(inputTokens).outputTokens(outputTokens);
+                                        Integer cacheReadTokens = usageJson.has("cache_read_input_tokens") ? usageJson.get("cache_read_input_tokens").getAsInt() : null;
+                                        Integer cacheWriteTokens = usageJson.has("cache_creation_input_tokens") ? usageJson.get("cache_creation_input_tokens").getAsInt() : null;
+                                        usageBuilder.cacheReadTokens(cacheReadTokens);
+                                        usageBuilder.cacheWriteTokens(cacheWriteTokens);
+                                        usageBuilder.totalCost(null);
+                                        usageBuilder.thoughtsTokenCount(null);
+                                        Integer tokenLimit = ModelInfoUtils.getModelInfo(llmProvider, model)
+                                                .map(ModelInfoUtils.ModelInfo::getTokenLimit)
+                                                .orElse(null);
+                                        usageBuilder.tokenLimit(tokenLimit);
+
+                                        LLMUsage usage = usageBuilder.build();
+                                        if (null != usageConsumer) {
+                                            usageConsumer.accept(usage);
+                                        }
+                                    }
+                                }
+
                                 if ("message_start".equals(jsonResponse.get("type").getAsString())
                                         || "ping".equals(jsonResponse.get("type").getAsString())
                                         || "content_block_start".equals(jsonResponse.get("type").getAsString())) {
@@ -1078,6 +1114,18 @@ public class LLM {
                                 }
 
                                 if ("message_delta".equals(jsonResponse.get("type").getAsString())) {
+                                    if (jsonResponse.has("usage")) {
+                                        JsonObject usageJson = jsonResponse.getAsJsonObject("usage");
+                                        LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+                                        int inputTokens = usageJson.has("input_tokens") ? usageJson.get("input_tokens").getAsInt() : 0;
+                                        int outputTokens = usageJson.has("output_tokens") ? usageJson.get("output_tokens").getAsInt() : 0;
+                                        usageBuilder.inputTokens(inputTokens).outputTokens(outputTokens);
+                                        LLMUsage usage = usageBuilder.build();
+                                        if (null != usageConsumer) {
+                                            usageConsumer.accept(usage);
+                                        }
+                                    }
+
                                     JsonObject jsonRes = new JsonObject();
                                     jsonRes.addProperty("type", "finish");
                                     jsonRes.addProperty("content", jsonResponse.get("delta").getAsJsonObject().get("stop_reason").getAsString());
