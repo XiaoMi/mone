@@ -22,11 +22,8 @@ public class GraphStoreConfig {
      * 图存储提供商类型
      */
     public enum Provider {
-        LOCAL("local"),
         NEO4J("neo4j"),
-        KUZU("kuzu"),
-        MEMGRAPH("memgraph"),
-        NEPTUNE("neptune");
+       ;
         
         private final String value;
         
@@ -105,11 +102,7 @@ public class GraphStoreConfig {
      */
     private double threshold;
 
-    /**
-     * @param configMap
-     * @return
-     */
-    
+
     /**
      * 从Map创建配置
      */
@@ -170,17 +163,7 @@ public class GraphStoreConfig {
         return builder.build();
     }
     
-    /**
-     * 获取本地图存储默认配置
-     */
-    public static GraphStoreConfig localDefault() {
-        return GraphStoreConfig.builder()
-                .provider(Provider.LOCAL)
-                .url("./data/graph")
-                .enabled(true)
-                .build();
-    }
-    
+
     /**
      * 获取Neo4j默认配置
      */
@@ -197,53 +180,5 @@ public class GraphStoreConfig {
     }
     
     
-    /**
-     * 创建默认的Memgraph配置
-     */
-    public static GraphStoreConfig memgraphDefault() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.MEMGRAPH)
-            .url("bolt://localhost:7687")
-            .username("memgraph")
-            .password("memgraph")
-            .enabled(false)
-            .threshold(0.7)
-            .build();
-    }
-    
-    /**
-     * 创建默认的Neptune配置
-     */
-    public static GraphStoreConfig neptuneDefault() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.NEPTUNE)
-            .url("neptune-graph://your-graph-id")
-            .enabled(false)
-            .threshold(0.7)
-            .build();
-    }
-    
-    /**
-     * 创建默认的Kuzu配置（本地嵌入式）
-     */
-    public static GraphStoreConfig kuzuDefault() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.KUZU)
-            .url("./data/kuzu")
-            .enabled(true)
-            .threshold(0.7)
-            .build();
-    }
 
-    /**
-     * 创建本地嵌入式Kuzu配置（测试用）
-     */
-    public static GraphStoreConfig kuzuEmbedded() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.KUZU)
-            .url("./data/kuzu_embedded")
-            .enabled(true)
-            .threshold(0.7)
-            .build();
-    }
 }

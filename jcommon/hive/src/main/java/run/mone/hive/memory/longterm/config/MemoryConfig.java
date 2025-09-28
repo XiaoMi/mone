@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
 
 import java.util.Map;
 import java.io.File;
@@ -27,8 +29,7 @@ public class MemoryConfig {
     /**
      * LLM配置
      */
-    @Builder.Default
-    private LlmConfig llm = LlmConfig.builder().build();
+    private LlmConfig llm;
     
     /**
      * 嵌入模型配置
@@ -76,6 +77,12 @@ public class MemoryConfig {
      */
     public static MemoryConfig fromMap(Map<String, Object> configMap) {
         MemoryConfig.MemoryConfigBuilder builder = MemoryConfig.builder();
+
+        if (configMap.containsKey("llm")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> llmMap = (Map<String, Object>) configMap.get("llm");
+            builder.llm(LlmConfig.fromMap(llmMap));
+        }
         
         if (configMap.containsKey("vectorStore")) {
             @SuppressWarnings("unchecked")
@@ -83,12 +90,7 @@ public class MemoryConfig {
             builder.vectorStore(VectorStoreConfig.fromMap(vectorStoreMap));
         }
         
-        if (configMap.containsKey("llm")) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> llmMap = (Map<String, Object>) configMap.get("llm");
-            builder.llm(LlmConfig.fromMap(llmMap));
-        }
-        
+
         if (configMap.containsKey("embedder")) {
             @SuppressWarnings("unchecked")
             Map<String, Object> embedderMap = (Map<String, Object>) configMap.get("embedder");
