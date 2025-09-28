@@ -244,36 +244,17 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 解析结果并转换为兼容格式
             List<Map<String, Object>> entities = new ArrayList<>();
-            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
-
-                for (Map<String, Object> toolCall : toolCalls) {
-                    if ("establish_relationships".equals(toolCall.get("name"))) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
-                        if (arguments != null && arguments.get("entities") instanceof List) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) arguments.get("entities");
-                            entities.addAll(extractedRelations);
-                        }
-                    }
-                }
-            } else {
-                // json format
-                try {
+            // json format
+            try {
+                Map<String, Object> jsonResponse = response;
+                if (jsonResponse != null && jsonResponse.get("entities") != null) {
                     @SuppressWarnings("unchecked")
-                    Map<String, Object> jsonResponse = response;
-                    if (jsonResponse != null && jsonResponse.get("entities") != null) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                        entities.addAll(extractedEntities);
-                    }
-                } catch (Exception jsonEx) {
-                    log.error("Failed to parse JSON response from LLM establishNodesRelationsFromData: {}", jsonEx.getMessage());
+                    List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                    entities.addAll(extractedEntities);
                 }
+            } catch (Exception jsonEx) {
+                log.error("Failed to parse JSON response from LLM establishNodesRelationsFromData: {}", jsonEx.getMessage());
             }
-
             // 清理实体格式，对应Python中的_remove_spaces_from_entities
             entities = removeSpacesFromEntities(entities);
             log.info("Extracted {} relations from data", entities.size());
@@ -484,7 +465,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
                 // 搜索现有节点 (阈值0.9，高相似度匹配)
                 List<Map<String, Object>> sourceNodeSearchResult = searchSourceNode(sourceEmbedding, filters, 0.9);
-                List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 0.9);
+                List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 1);
 
                 String cypher;
                 Map<String, Object> params = new HashMap<>();
@@ -1084,38 +1065,21 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 解析工具调用结果
             List<Map<String, Object>> entities = new ArrayList<>();
-            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
-
-                for (Map<String, Object> toolCall : toolCalls) {
-                    if ("extract_entities".equals(toolCall.get("name"))) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
-                        if (arguments != null && arguments.get("entities") instanceof List) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) arguments.get("entities");
-                            entities.addAll(extractedEntities);
+            try {
+                Map<String, Object> jsonResponse = response;
+                if (jsonResponse != null && jsonResponse.get("entities") != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                    for (Map<String, Object> entity : extractedEntities) {
+                        String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
+                        String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
+                        if (!entityName.isEmpty()) {
+                            entities.add(Map.of("entity", GraphUtils.normalizeEntityName(entityName), "entity_type", GraphUtils.normalizeEntityName(entityType)));
                         }
                     }
                 }
-            } else {
-                try {
-                    Map<String, Object> jsonResponse = response;
-                    if (jsonResponse != null && jsonResponse.get("entities") != null) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                        for (Map<String, Object> entity : extractedEntities) {
-                            String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
-                            String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
-                            if (!entityName.isEmpty()) {
-                                entities.add(Map.of("entity", GraphUtils.normalizeEntityName(entityName), "entity_type", GraphUtils.normalizeEntityName(entityType)));
-                            }
-                        }
-                    }
-                } catch (Exception jsonEx) {
-                    log.error("Failed to parse JSON response from LLM extractEntities: {}", jsonEx.getMessage());
-                }
+            } catch (Exception jsonEx) {
+                log.error("Failed to parse JSON response from LLM extractEntities: {}", jsonEx.getMessage());
             }
 
             log.info("Extracted {} entities from text", entities.size());
@@ -1233,63 +1197,29 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 解析工具调用结果
             List<GraphEntity> relations = new ArrayList<>();
-            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
-
-                for (Map<String, Object> toolCall : toolCalls) {
-                    if ("establish_relations".equals(toolCall.get("name"))) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
-                        if (arguments != null && arguments.get("entities") instanceof List) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) arguments.get("entities");
-
-                            for (Map<String, Object> rel : extractedRelations) {
-                                String source = (String) rel.get("source");
-                                String destination = (String) rel.get("destination");
-                                String relationship = (String) rel.get("relationship");
-
-                                if (GraphUtils.validateGraphEntity(source, destination, relationship)) {
-                                    GraphEntity entity = new GraphEntity(
-                                            GraphUtils.cleanEntityName(source),
-                                            GraphUtils.cleanEntityName(destination),
-                                            GraphUtils.cleanRelationshipName(relationship),
-                                            "Entity",  // 默认源节点类型
-                                            "Entity"   // 默认目标节点类型
-                                    );
-                                    relations.add(entity);
-                                }
-                            }
+            try {
+                Map<String, Object> jsonResponse = response;
+                if (jsonResponse != null && jsonResponse.get("entities") != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                    for (Map<String, Object> entity : jsonEntities) {
+                        String source = entity.get("source") != null ? entity.get("source").toString() : "";
+                        String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
+                        String destination = entity.get("destination") != null ? entity.get("destination").toString() : "general";
+                        if (!source.isEmpty() && !relationship.isEmpty() && !destination.isEmpty()) {
+                            GraphEntity graphEntity = new GraphEntity(
+                                    GraphUtils.cleanEntityName(source),
+                                    GraphUtils.cleanEntityName(destination),
+                                    GraphUtils.cleanRelationshipName(relationship),
+                                    "Entity",  // 默认源节点类型
+                                    "Entity"   // 默认目标节点类型
+                            );
+                            relations.add(graphEntity);
                         }
                     }
                 }
-            } else {
-                try {
-                    Map<String, Object> jsonResponse = response;
-                    if (jsonResponse != null && jsonResponse.get("entities") != null) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                        for (Map<String, Object> entity : jsonEntities) {
-                            String source = entity.get("source") != null ? entity.get("source").toString() : "";
-                            String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
-                            String destination = entity.get("destination") != null ? entity.get("destination").toString() : "general";
-                            if (!source.isEmpty() && !relationship.isEmpty() && !destination.isEmpty()) {
-                                GraphEntity graphEntity = new GraphEntity(
-                                        GraphUtils.cleanEntityName(source),
-                                        GraphUtils.cleanEntityName(destination),
-                                        GraphUtils.cleanRelationshipName(relationship),
-                                        "Entity",  // 默认源节点类型
-                                        "Entity"   // 默认目标节点类型
-                                );
-                                relations.add(graphEntity);
-                            }
-                        }
-                    }
-                } catch (Exception jsonEx) {
-                    log.error("Failed to parse JSON response from LLM establishRelations: {}", jsonEx.getMessage());
-                    // 如果JSON解析失败，可以在这里添加额外的处理逻辑
-                }
+            } catch (Exception jsonEx) {
+                log.error("Failed to parse JSON response from LLM establishRelations: {}", jsonEx.getMessage());
             }
 
             log.info("Extracted {} relations from text", relations.size());
