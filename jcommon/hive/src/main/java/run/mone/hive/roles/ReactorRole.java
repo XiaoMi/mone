@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
+
 /**
  * @author wangyingjie
  * @author goodjava@qq.com
@@ -657,7 +659,9 @@ public class ReactorRole extends Role {
                                 });
                                 return; // 停止处理后续响应
                             }
-                            sb.append(it);
+                            if (it != null && !it.startsWith(TOKEN_USAGE_LABEL_START)) {
+                                sb.append(it);
+                            }
                             Optional.ofNullable(sink).ifPresent(s -> s.next(it));
                         })
                         .doOnError(error -> {

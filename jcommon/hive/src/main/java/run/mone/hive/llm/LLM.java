@@ -44,6 +44,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
 
@@ -879,12 +881,12 @@ public class LLM {
         chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
                 messageHandler, lineConsumer, systemPrompt, sink,
                 u -> {
-//                    sink.next(llmUsageContent(u));
+                    sink.next(llmUsageContent(u));
                 });
     }
 
     private String llmUsageContent(LLMUsage usage) {
-        return "\n<chat>\n<usage>\n" + gson.toJson(usage) + "\n</usage>\n</chat>\n";
+        return TOKEN_USAGE_LABEL_START + gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
     public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
