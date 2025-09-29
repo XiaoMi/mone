@@ -557,17 +557,48 @@ public class ReactorRole extends Role {
     private void callMcp(ToolDataInfo it, FluxSink sink) {
         String toolName = it.getKeyValuePairs().get("tool_name");
         it.setRole(this);
-        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+
+        // 提前创建Message以获得ID
+        Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
+
+        // 执行mcpCall，但不让它直接写sink，以便我们控制输出
+        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, null, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+
         McpSchema.Content content = result.getContent();
+        String contentForLlm;
+        String contentForUser = "";
+
         if (content instanceof McpSchema.TextContent textContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());
+            contentForUser = textContent.text();
+            contentForLlm = "调用Tool:" + toolName + "\n结果:\n" + contentForUser;
         } else if (content instanceof McpSchema.ImageContent imageContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n").build());
+            contentForUser = "[图片]";
+            contentForLlm = "图片占位符" + "\n";
+            assistantMessage.setImages(List.of(imageContent.data()));
+        } else {
+            contentForUser = "执行完成";
+            contentForLlm = "调用Tool:" + toolName + " 完成";
         }
+
+        // 发送给前端
+        if (StringUtils.isNotEmpty(contentForUser)) {
+            sendToSink(contentForUser, assistantMessage, true);
+        }
+
+        // 存档
+        assistantMessage.setData(contentForLlm);
+        assistantMessage.setContent(contentForLlm);
+        this.putMessage(assistantMessage);
     }
 
     private void callTool(String name, ToolDataInfo it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
+
+        // 提前创建Message以获得ID
+        Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
+
+        String contentForLlm;
+
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
@@ -577,25 +608,47 @@ public class ReactorRole extends Role {
 
             ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(this, params);
+
+            String contentForUser;
             if (toolRes.has("toolMsgType")) {
                 // 说明需要调用方做特殊处理
-                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
-                if (null != sink && tool.show()) {
-                    sink.next(toolRes.toString());
-                }
+                contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
+                contentForUser = toolRes.toString();
             } else {
-                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
-                if (null != sink && tool.show()) {
-                    sink.next(tool.formatResult(toolRes));
-                }
+                contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
+                contentForUser = tool.formatResult(toolRes);
             }
+
+            if (tool.show()) {
+                sendToSink(contentForUser, assistantMessage, true);
+            }
+
+        } else {
+            contentForLlm = res;
         }
+
+        assistantMessage.setData(contentForLlm);
+        assistantMessage.setContent(contentForLlm);
+
         if (tool.completed()) {
             if (null != sink) {
                 sink.complete();
             }
         }
-        this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
+        this.putMessage(assistantMessage);
+    }
+
+    private void sendToSink(String content, Message contextMessage, boolean addId) {
+        if (this.fluxSink != null) {
+            // 先发送内容
+            if (StringUtils.isNotEmpty(content)) {
+                this.fluxSink.next(content);
+            }
+            // 如果需要，再单独发送ID
+            if (addId && contextMessage != null) {
+                this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");
+            }
+        }
     }
 
     private String callLLM(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
@@ -613,18 +666,15 @@ public class ReactorRole extends Role {
             if (this.interrupted.get()) {
                 log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
                 hasError.set(true);
-                Optional.ofNullable(sink).ifPresent(s -> {
-                    s.next("⚠️ 执行已被中断\n");
-                    s.complete();
-                });
+                sendToSink("⚠️ 执行已被中断\n", null, false);
+                Optional.ofNullable(sink).ifPresent(FluxSink::complete);
                 break;
             }
 
             try {
                 if (retryCount > 0) {
                     log.info("LLM调用重试第{}次", retryCount);
-                    int tmpRetries = retryCount;
-                    Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
+                    sendToSink("LLM调用超时，正在重试第" + retryCount + "次...\n", null, false);
                 }
 
                 sb.setLength(0); // 清空之前的结果
@@ -635,14 +685,12 @@ public class ReactorRole extends Role {
                             if (this.interrupted.get()) {
                                 log.info("Role '{}' 在LLM流式响应中被中断", this.name);
                                 hasError.set(true);
-                                Optional.ofNullable(sink).ifPresent(s -> {
-                                    s.next("⚠️ 执行已被中断\n");
-                                    s.complete();
-                                });
+                                sendToSink("⚠️ 执行已被中断\n", null, false);
+                                Optional.ofNullable(sink).ifPresent(FluxSink::complete);
                                 return; // 停止处理后续响应
                             }
                             sb.append(it);
-                            Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                            sendToSink(it, null, false);
                         })
                         .doOnError(error -> {
                             throw new RuntimeException(error);
@@ -657,11 +705,8 @@ public class ReactorRole extends Role {
 
                 if (retryCount >= maxRetries) {
                     // 所有重试都失败了
-                    final int finalRetryCount = retryCount;
-                    Optional.ofNullable(sink).ifPresent(s -> {
-                        s.next("LLM调用失败，已重试" + finalRetryCount + "次，无法完成请求。\n");
-                        s.error(error);
-                    });
+                    sendToSink("LLM调用失败，已重试" + retryCount + "次，无法完成请求。\n", null, false);
+                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
                     sb.append("LLM调用失败: ").append(error.getMessage());
                     hasError.set(true);
                 }
@@ -826,6 +871,56 @@ public class ReactorRole extends Role {
      */
     public boolean isInterrupted() {
         return this.interrupted.get();
+    }
+
+    /**
+     * 回滚记忆，移除最后一次交互或回滚到指定消息
+     * @param messageId 如果提供，则回滚到此消息之前（包含此消息）
+     * @return 如果成功回滚则返回true，否则返回false
+     */
+    public boolean rollbackMemory(String messageId) {
+        List<Message> history = this.rc.getMemory().getStorage();
+        if (history == null || history.isEmpty()) {
+            log.warn("无法回滚，历史记录为空");
+            return false;
+        }
+
+        // 如果没有提供messageId，则回滚最后一次交互
+        if (StringUtils.isEmpty(messageId)) {
+            log.info("回滚最后一次交互");
+            // 通常一次交互包含用户消息和AI助理消息，所以我们移除最后两条
+            int messagesToRemove = 2;
+            if (history.size() < messagesToRemove) {
+                messagesToRemove = history.size();
+            }
+            for (int i = 0; i < messagesToRemove; i++) {
+                if (!history.isEmpty()) {
+                    history.remove(history.size() - 1);
+                }
+            }
+            return true;
+        }
+
+        // 如果提供了messageId，则找到该消息并移除之后的所有内容
+        int targetIndex = -1;
+        for (int i = 0; i < history.size(); i++) {
+            if (history.get(i).getId().equals(messageId)) {
+                targetIndex = i;
+                break;
+            }
+        }
+
+        if (targetIndex != -1) {
+            log.info("回滚到消息ID: {} (索引: {})", messageId, targetIndex);
+            int originalSize = history.size();
+            // 移除从targetIndex到列表末尾的所有元素
+            history.subList(targetIndex, originalSize).clear();
+            log.info("成功移除 {} 条消息", originalSize - targetIndex);
+            return true;
+        } else {
+            log.warn("无法回滚，未找到消息ID: {}", messageId);
+            return false;
+        }
     }
 
     /**

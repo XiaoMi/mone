@@ -21,6 +21,7 @@ public enum LLMProvider {
     OPENROUTER_OPENAI_CODEX("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/codex-mini", null),
     OPENROUTER_GROK_CODE_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-code-fast-1", null),
     OPENAICOMPATIBLE("", "", "", null),
+    OPENAI_MULTIMODAL_COMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
     DOUBAO_VISION("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_VISION_MODEL_KEY"),
     DOUBAO_UI_TARS("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_UI_TARS_MODEL_KEY"),

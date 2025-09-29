@@ -100,6 +100,11 @@ public class ChatFunction implements McpFunction {
             return clear(ownerId);
         }
 
+        //上下文回滚
+        if (message.trim().toLowerCase().startsWith("/rollback")) {
+            return handleRollback(ownerId, message.trim());
+        }
+
         //退出agent
         if ("/exit".equalsIgnoreCase(message.trim())) {
             return exit(ownerId);
@@ -126,20 +131,31 @@ public class ChatFunction implements McpFunction {
 
     @NotNull
     private Flux<McpSchema.CallToolResult> sendMsgToAgent(String clientId, String userId, String agentId, String ownerId, String message, List<String> images, String voiceBase64, long timeout) {
-        return roleService.receiveMsg(Message.builder()
-                        .clientId(clientId)
-                        .userId(userId)
-                        .agentId(agentId)
-                        .role("user")
-                        .sentFrom(ownerId)
-                        .content(message)
-                        .data(message)
-                        .images(images)
-                        .voiceBase64(voiceBase64)
-                        .build())
-//                .timeout(Duration.ofSeconds(timeout))
+        Message userMessage = Message.builder()
+                .clientId(clientId)
+                .userId(userId)
+                .agentId(agentId)
+                .role("user")
+                .sentFrom(ownerId)
+                .content(message)
+                .data(message)
+                .images(images)
+                .voiceBase64(voiceBase64)
+                .build();
+
+
+        // 1. 创建一个只包含消息ID的Flux
+        String idTag = "<hive-msg-id>" + userMessage.getId() + "</hive-msg-id>";
+        McpSchema.CallToolResult idResult = new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(idTag)), false);
+        Flux<McpSchema.CallToolResult> idFlux = Flux.just(idResult);
+
+        // 2. 创建处理Agent响应的Flux
+        Flux<McpSchema.CallToolResult> agentResponseFlux = roleService.receiveMsg(userMessage)
                 .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
                 .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+
+        // 依次串联2个Flux
+        return Flux.concat(idFlux, agentResponseFlux);
     }
 
     @NotNull
@@ -156,6 +172,32 @@ public class ChatFunction implements McpFunction {
         roleService.clearHistory(Message.builder().sentFrom(ownerId).build());
         return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("聊天历史已清空")),
+                false
+        ));
+    }
+
+    @NotNull
+    private Flux<McpSchema.CallToolResult> handleRollback(String ownerId, String message) {
+        String[] parts = message.split("\\s+");
+        String messageId = null;
+        if (parts.length > 1) {
+            messageId = parts[1];
+        }
+
+        boolean success = roleService.rollbackHistory(Message.builder().sentFrom(ownerId).id(messageId).build());
+        String resultMessage;
+        if (success) {
+            if (messageId != null) {
+                resultMessage = "上下文已回滚到消息 " + messageId + " 之前";
+            } else {
+                resultMessage = "上下文已回滚上一轮对话";
+            }
+        } else {
+            resultMessage = "回滚失败，没有找到指定消息或历史记录为空";
+        }
+
+        return Flux.just(new McpSchema.CallToolResult(
+                List.of(new McpSchema.TextContent(resultMessage)),
                 false
         ));
     }
