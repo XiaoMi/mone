@@ -292,7 +292,7 @@ public class GraphUtils {
         String cleaned = relationshipName.trim()
             .toLowerCase()
             .replaceAll("\\s+", "_")
-            .replaceAll("[^a-zA-Z0-9_]", "");
+            .replaceAll("[\"'`]", "");
         
         return cleaned;
     }

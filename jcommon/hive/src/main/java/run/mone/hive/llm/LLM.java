@@ -879,7 +879,7 @@ public class LLM {
         chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
                 messageHandler, lineConsumer, systemPrompt, sink,
                 u -> {
-                    sink.next(llmUsageContent(u));
+//                    sink.next(llmUsageContent(u));
                 });
     }
 
