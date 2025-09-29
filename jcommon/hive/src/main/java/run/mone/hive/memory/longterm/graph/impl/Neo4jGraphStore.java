@@ -377,17 +377,30 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 String sourcePropsStr = String.join(", ", sourceProps);
                 String destPropsStr = String.join(", ", destProps);
 
-                // 执行删除
+                // 执行删除关系，并检查节点是否还有其他关系，如果没有则删除节点
                 String cypher = String.format("""
                         MATCH (n %s {%s})
                         -[r:%s]->
                         (m %s {%s})
+                        WITH n, m, r, n.name AS source_name, m.name AS target_name
                         DELETE r
+                        WITH n, m, source_name, target_name
+                        // 检查源节点是否还有其他关系
+                        OPTIONAL MATCH (n)-[other_r]-()
+                        WITH n, m, source_name, target_name, other_r
+                        // 如果源节点没有其他关系，删除它
+                        FOREACH (x IN CASE WHEN other_r IS NULL THEN [n] ELSE [] END | DELETE x)
+                        WITH m, source_name, target_name
+                        // 检查目标节点是否还有其他关系
+                        OPTIONAL MATCH (m)-[other_r2]-()
+                        WITH m, source_name, target_name, other_r2
+                        // 如果目标节点没有其他关系，删除它
+                        FOREACH (x IN CASE WHEN other_r2 IS NULL THEN [m] ELSE [] END | DELETE x)
                         RETURN 
-                            n.name AS source,
-                            m.name AS target,
-                            type(r) AS relationship
-                        """, nodeLabel, sourcePropsStr, relationship, nodeLabel, destPropsStr);
+                            source_name AS source,
+                            target_name AS target,
+                            '%s' AS relationship
+                        """, nodeLabel, sourcePropsStr, relationship, nodeLabel, destPropsStr, relationship);
 
                 Result result = session.run(cypher, params);
                 if (result.hasNext()) {
