@@ -1297,6 +1297,54 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     @Override
+    public void reset(final String userId) {
+        String finalUserId = (userId == null || userId.trim().isEmpty()) ? "default_user" : userId;
+        
+        try (Session session = driver.session()) {
+            // 使用事务确保操作的原子性
+            session.executeWrite(tx -> {
+                // 首先删除所有关系
+                tx.run("MATCH (n {user_id: $user_id})-[r]-() DELETE r", 
+                       Map.of("user_id", finalUserId));
+                
+                // 然后删除所有节点
+                tx.run("MATCH (n {user_id: $user_id}) DELETE n", 
+                       Map.of("user_id", finalUserId));
+                
+                return null;
+            });
+            
+            log.info("Reset completed - cleared all vertices and edges for user {} from Neo4j", finalUserId);
+
+        } catch (Exception e) {
+            log.error("Error resetting graph database for user {}", finalUserId, e);
+            throw new RuntimeException("Failed to reset graph database", e);
+        }
+    }
+
+    @Override
+    public void resetAll() {
+        try (Session session = driver.session()) {
+            // 使用事务确保操作的原子性
+            session.executeWrite(tx -> {
+                // 首先删除所有带有user_id属性的关系
+                tx.run("MATCH (n)-[r]-(m) WHERE n.user_id IS NOT NULL AND m.user_id IS NOT NULL DELETE r");
+                
+                // 然后删除所有带有user_id属性的节点
+                tx.run("MATCH (n) WHERE n.user_id IS NOT NULL DELETE n");
+                
+                return null;
+            });
+            
+            log.info("ResetAll completed - cleared all vertices and edges with user_id property from Neo4j");
+
+        } catch (Exception e) {
+            log.error("Error resetting entire graph database", e);
+            throw new RuntimeException("Failed to reset entire graph database", e);
+        }
+    }
+
+    @Override
     public GraphStoreConfig getConfig() {
         return config;
     }

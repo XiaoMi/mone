@@ -437,13 +437,11 @@ public class Memory implements MemoryBase {
         try {
             vectorStore.reset();
             historyManager.reset();
-
+            graphStore.resetAll();
             log.warn("All memories have been reset");
-
             Map<String, Object> result = new HashMap<>();
             result.put("message", "Memory store reset successfully!");
             return result;
-
         } catch (Exception e) {
             log.error("Error resetting memory store", e);
             throw new RuntimeException("Failed to reset memory store", e);
