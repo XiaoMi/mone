@@ -41,8 +41,8 @@ public class AgentService {
     private final AgentInstanceRepository agentInstanceRepository;
     private final FavoriteRepository favoriteRepository;
 
-    private static final long HEARTBEAT_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
-    private static final long HEARTBEAT_DELETE_TIMEOUT = TimeUnit.MINUTES.toMillis(10);
+    private static final long HEARTBEAT_TIMEOUT = TimeUnit.MINUTES.toMillis(2);
+    private static final long HEARTBEAT_DELETE_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
 
     private static LLM llm = new LLM(LLMConfig.builder()
             .llmProvider(LLMProvider.CLAUDE_COMPANY)
@@ -374,7 +374,7 @@ public class AgentService {
                 .then();
     }
 
-    @Scheduled(fixedRate = 60000) // 每分钟检查一次
+    @Scheduled(fixedRate = 30000) // 每30s检查一次
     public void checkHeartbeats() {
         try {
             long currentTime = System.currentTimeMillis();
@@ -385,7 +385,7 @@ public class AgentService {
             agentInstanceRepository.findAll()
                     .filter(instance -> instance.getLastHeartbeatTime() < cutoffTime)
                     .flatMap(instance -> {
-                        // 如果超过10分钟没有心跳，直接删除
+                        // 如果超过3分钟没有心跳，直接删除
                         if (instance.getLastHeartbeatTime() < deleteTime) {
                             return agentInstanceRepository.deleteById(instance.getId())
                                     .then(agentInstanceRepository.findByAgentId(instance.getAgentId()).count()
@@ -398,7 +398,7 @@ public class AgentService {
                                                 return Mono.empty();
                                             }));
                         } else {
-                            // 如果只是超过3分钟但不到10分钟，标记为非活跃
+                            // 如果只是超过2分钟但不到3分钟，标记为非活跃
                             instance.setIsActive(false);
                             instance.setUtime(currentTime);
                             return agentInstanceRepository.save(instance);
