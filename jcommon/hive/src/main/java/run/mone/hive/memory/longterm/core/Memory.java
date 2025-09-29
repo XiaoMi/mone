@@ -1,5 +1,6 @@
 package run.mone.hive.memory.longterm.core;
 
+import com.google.api.client.util.Lists;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Data;
 
@@ -53,6 +54,9 @@ public class Memory implements MemoryBase {
     private GraphStoreBase graphStore;
     private HistoryManager historyManager;
     private boolean enableGraph;
+
+    private boolean enableVector = true;
+
     private String collectionName;
     private String apiVersion;
     private ThreadPoolExecutor executor;
@@ -72,6 +76,8 @@ public class Memory implements MemoryBase {
         this.apiVersion = config.getVersion();
         this.collectionName = config.getVectorStore().getCollectionName();
         this.enableGraph = config.getGraphStore().isEnabled();
+        //查询的时候是否走向量库
+        this.enableVector = config.getVectorStore().isEnable();
 
         // 初始化组件
         this.llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName())).build());
@@ -270,9 +276,11 @@ public class Memory implements MemoryBase {
         try {
             // 并行执行向量搜索和图搜索
             CompletableFuture<List<MemoryItem>> vectorFuture = CompletableFuture.supplyAsync(() -> {
+                if (!enableVector) {
+                    return Lists.newArrayList();
+                }
                 List<Double> queryEmbedding = embeddingModel.embed(query, "search");
                 List<MemoryItem> memories = vectorStore.search(query, queryEmbedding, limit, effectiveFilters);
-
                 if (threshold != null) {
                     return memories.stream()
                             .filter(m -> m.getScore() == null || m.getScore() >= threshold)

@@ -450,7 +450,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 List<Double> sourceEmbedding = embeddingModel.embed(source, "add");
                 List<Double> destEmbedding = embeddingModel.embed(destination, "add");
 
-                // 搜索现有节点 (阈值0.95，高相似度匹配)
+                // 搜索现有节点 (阈值0.9，高相似度匹配)
                 List<Map<String, Object>> sourceNodeSearchResult = searchSourceNode(sourceEmbedding, filters, 0.9);
                 List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 0.9);
 
