@@ -25,7 +25,7 @@ import java.util.Map;
 @Slf4j
 public class MemoryTool implements ITool {
 
-    private static LongTermMemoryManager memoryManager;
+    public static LongTermMemoryManager memoryManager;
 
     /**
      * 初始化长期记忆管理器

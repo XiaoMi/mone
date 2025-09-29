@@ -20,6 +20,8 @@ public class GraphUtils {
             2. Establish relationships among the entities provided.
             3. Use "USER_ID" as the source entity for any self-references (e.g., "I," "me," "my," etc.) in user messages.
             CUSTOM_PROMPT
+            
+            uid=USER_ID
 
             Relationships:
             - Identify clear, explicit relationships between entities
@@ -43,7 +45,7 @@ public class GraphUtils {
                 ]
             }
 
-            source: the source entity of the relationship
+            source: the source entity of the relationship(如果uid不为空,则source必须是uid)
             relationship: the relationship between the source and destination entities
             destination: the destination entity of the relationship
             """;
