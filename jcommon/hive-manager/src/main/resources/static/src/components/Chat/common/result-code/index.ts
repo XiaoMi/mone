@@ -160,7 +160,7 @@ export function resultCodeHandler(res: string) {
           },
           {
             // chat和thinking标签格式处理
-            match: (text: string) => 
+            match: (text: string) =>
               (text.includes("<") && (text.includes("chat") || text.includes("thinking"))),
             replace: (text: string) => {
               return text
@@ -211,7 +211,7 @@ export function resultCodeHandler(res: string) {
 const formatHandlers = [
   {
     // chat和thinking标签格式处理
-    match: (text: string) => 
+    match: (text: string) =>
       (text.includes("<") && (text.includes("chat") || text.includes("thinking") || text.includes("use_mcp_tool") || text.includes("boltArtifact") || text.includes("command"))),
     replace: (text: string) => {
       return text
@@ -367,7 +367,7 @@ export function fluxCodeHandler(res: string, uuid: string) {
     existData.data.origin = existData.data.origin + res;
     existData.data.text = `${separators}${existData.data.origin}${separators}`;
     // 处理特殊格式
-    
+
     for (const handler of formatHandlers) {
       if (handler.match(existData.data.text)) {
         existData.data.text = handler.replace(existData.data.text);

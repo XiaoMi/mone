@@ -18,6 +18,14 @@ export interface ChatContext {
   module: string;
 }
 
+export interface TokenUsage {
+  usedTokens: number;
+  totalTokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  lastUpdate: Date;
+}
+
 export type MessageMeta = {
   ask?: {
     prompt: string;
@@ -130,6 +138,16 @@ export const useChatContextStore = defineStore("chat-context", () => {
   const discardIds = ref<string[]>([]);
   const showDiscardBtn = ref<boolean>(false);
   const scrollToBottom = ref<boolean>(true);
+
+  // Token使用量状态
+  const tokenUsage = ref<TokenUsage>({
+    usedTokens: 0,
+    totalTokens: 100000, // 默认总量
+    inputTokens: 0,
+    outputTokens: 0,
+    lastUpdate: new Date()
+  });
+
   if (!legalMaxNums.find((it) => it == chatContext.value.maxNum)) {
     chatContext.value.maxNum = 10;
   }
@@ -228,7 +246,7 @@ export const useChatContextStore = defineStore("chat-context", () => {
   }
 
   function removeInputingId(id: string): boolean {
-    if (inputingIds.value?.length > 0) {  
+    if (inputingIds.value?.length > 0) {
       inputingIds.value = inputingIds.value.filter((it) => it !== id);
     }
     return inputingIds.value?.length === 0;
@@ -247,6 +265,32 @@ export const useChatContextStore = defineStore("chat-context", () => {
 
   function setScrollToBottom(bool: boolean) {
     scrollToBottom.value = bool;
+  }
+
+  // Token使用量相关方法
+  function updateTokenUsage(inputTokens: number, outputTokens: number) {
+    tokenUsage.value.inputTokens += inputTokens;
+    tokenUsage.value.outputTokens += outputTokens;
+    tokenUsage.value.usedTokens = tokenUsage.value.inputTokens + tokenUsage.value.outputTokens;
+    tokenUsage.value.lastUpdate = new Date();
+  }
+
+  function setTotalTokens(total: number) {
+    tokenUsage.value.totalTokens = total;
+  }
+
+  function resetTokenUsage() {
+    Object.assign(tokenUsage.value, {
+      usedTokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      lastUpdate: new Date()
+    });
+  }
+
+  function getTokenUsagePercentage(): number {
+    if (tokenUsage.value.totalTokens === 0) return 0;
+    return Math.min((tokenUsage.value.usedTokens / tokenUsage.value.totalTokens) * 100, 100);
   }
 
   return {
@@ -276,5 +320,11 @@ export const useChatContextStore = defineStore("chat-context", () => {
     setShowDiscardBtn,
     scrollToBottom,
     setScrollToBottom,
+    // Token使用量相关
+    tokenUsage,
+    updateTokenUsage,
+    setTotalTokens,
+    resetTokenUsage,
+    getTokenUsagePercentage,
   };
 });

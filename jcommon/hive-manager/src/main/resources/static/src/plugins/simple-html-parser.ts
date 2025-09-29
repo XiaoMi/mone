@@ -76,6 +76,10 @@ export class SimpleHtmlParser {
   constructor(callbacks: ParserCallbacks) {
     this.callbacks = callbacks;
     this.supportedTags = new Set([
+      'query',
+      'action',
+      'memory',
+      'metadata',
       'terminal',
       'download_file',
       'use_mcp_tool',
