@@ -298,35 +298,20 @@ public class Neo4jGraphStore implements GraphStoreBase {
             // 调用LLM进行关系提取
             String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
             str = MemoryUtils.removeCodeBlocks(str.trim());
+            @SuppressWarnings("unchecked")
             Map<String, Object> response = new Gson().fromJson(str, Map.class);
 
             // 解析结果
             List<Map<String, Object>> toBeDeleted = new ArrayList<>();
-            if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
-
-                for (Map<String, Object> toolCall : toolCalls) {
-                    if ("delete_graph_memory".equals(toolCall.get("name"))) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> arguments = (Map<String, Object>) toolCall.get("arguments");
-                        if (arguments != null) {
-                            toBeDeleted.add(arguments);
-                        }
-                    }
-                }
-            } else {
-                try {
+            try {
+                Map<String, Object> jsonResponse = response;
+                if (jsonResponse != null && jsonResponse.get("toBeDeleted") != null) {
                     @SuppressWarnings("unchecked")
-                    Map<String, Object> jsonResponse = response;
-                    if (jsonResponse != null && jsonResponse.get("toBeDeleted") != null) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) jsonResponse.get("toBeDeleted");
-                        toBeDeleted.addAll(extractedRelations);
-                    }
-                } catch (Exception jsonEx) {
-                    log.error("Failed to parse JSON response from LLM getDeleteEntitiesFromSearchOutput: {}", jsonEx.getMessage());
+                    List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) jsonResponse.get("toBeDeleted");
+                    toBeDeleted.addAll(extractedRelations);
                 }
+            } catch (Exception jsonEx) {
+                log.error("Failed to parse JSON response from LLM getDeleteEntitiesFromSearchOutput: {}", jsonEx.getMessage());
             }
 
             // 清理实体格式
@@ -445,6 +430,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 String destination = (String) item.get("destination");
                 String relationship = (String) item.get("relationship");
 
+                log.info("{} {} {}", source, relationship, destination);
+
                 if (source == null || destination == null || relationship == null) {
                     continue;
                 }
@@ -464,7 +451,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 List<Double> destEmbedding = embeddingModel.embed(destination, "add");
 
                 // 搜索现有节点 (阈值0.9，高相似度匹配)
-                List<Map<String, Object>> sourceNodeSearchResult = searchSourceNode(sourceEmbedding, filters, 0.9);
+                List<Map<String, Object>> sourceNodeSearchResult = searchSourceNode(sourceEmbedding, filters, 0.95);
                 List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 0.95);
 
                 String cypher;
