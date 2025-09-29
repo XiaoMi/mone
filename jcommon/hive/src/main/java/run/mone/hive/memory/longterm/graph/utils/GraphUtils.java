@@ -14,7 +14,6 @@ public class GraphUtils {
      * Matches Python EXTRACT_RELATIONS_PROMPT
      */
     public static final String EXTRACT_RELATIONS_PROMPT = """
-
             You are an advanced algorithm designed to extract structured information from text to construct knowledge graphs. Your goal is to capture comprehensive and accurate information. Follow these key principles:
 
             1. Extract only explicitly stated information from the text.
@@ -33,7 +32,7 @@ public class GraphUtils {
             - Normalize entity names (lowercase, underscore-separated)
             - Map self-references to USER_ID
 
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format, and return json only!!!:
+            You can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -164,7 +163,7 @@ public class GraphUtils {
                 - Consider temporal aspects - newer information may supersede older information
                 - Focus on factual contradictions, not subjective differences
 
-                If you cannot response with tool_calls, you can response with the relationships to be deleted in the text with following JSON format, and return json only!!!:
+                You can response with the relationships to be deleted in the text with following JSON format, and return json only!!!:
                 {
                     "toBeDeleted": [
                         {

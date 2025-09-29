@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -178,13 +179,13 @@ public class Neo4jGraphStore implements GraphStoreBase {
         List<Map<String, Object>> searchOutput = searchGraphDB(session,
                 new ArrayList<>(entityTypeMap.keySet()), filters, 100);
 
-        // 4. 获取需要删除的实体
+        // 4. 获取需要删除的实体(会调用大模型)
         List<Map<String, Object>> toBeDeleted = getDeleteEntitiesFromSearchOutput(searchOutput, data, filters);
 
-        // 5. 删除冲突的实体
+        // 5. 删除冲突的实体(调用图数据库)
         List<Map<String, Object>> deletedEntities = deleteEntities(session, toBeDeleted, filters);
 
-        // 6. 添加新的实体
+        // 6. 添加新的实体(调用图数据库,这里会计算源和目标两个节点的相似度)
         List<Map<String, Object>> addedEntities = addEntities(session, toBeAdded, filters, entityTypeMap);
 
         // 构建返回结果
@@ -240,11 +241,10 @@ public class Neo4jGraphStore implements GraphStoreBase {
             String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
             str = MemoryUtils.removeCodeBlocks(str.trim());
 
-            Map<String, Object> response = new Gson().fromJson(str, Map.class);
+            Map<String, Object> response = GsonUtils.gson.fromJson(str, Map.class);
 
             // 解析结果并转换为兼容格式
             List<Map<String, Object>> entities = new ArrayList<>();
-            // json format
             try {
                 Map<String, Object> jsonResponse = response;
                 if (jsonResponse != null && jsonResponse.get("entities") != null) {
