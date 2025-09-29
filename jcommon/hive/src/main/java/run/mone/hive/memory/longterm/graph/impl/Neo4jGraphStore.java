@@ -465,7 +465,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
                 // 搜索现有节点 (阈值0.9，高相似度匹配)
                 List<Map<String, Object>> sourceNodeSearchResult = searchSourceNode(sourceEmbedding, filters, 0.9);
-                List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 1);
+                List<Map<String, Object>> destinationNodeSearchResult = searchDestinationNode(destEmbedding, filters, 0.95);
 
                 String cypher;
                 Map<String, Object> params = new HashMap<>();
