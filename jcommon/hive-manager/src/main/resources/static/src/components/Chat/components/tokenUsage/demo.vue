@@ -7,7 +7,10 @@
     <!-- 基础用法 -->
     <div class="demo-section">
       <!-- <h3>基础用法</h3> -->
-      <TokenUsage :used-tokens="usedTokens1" :total-tokens="totalTokens1" />
+      <TokenUsage
+        :used-tokens="chatStore.tokenUsage.inputTokens + chatStore.tokenUsage.outputTokens || 0"
+        :total-tokens="100000"
+      />
     </div>
 
     <!-- 显示详细信息 -->
@@ -47,13 +50,13 @@
 
     <!-- 动态更新演示 -->
     <!-- <div class="demo-section"> -->
-      <!-- <h3>动态更新演示</h3> -->
-      <!-- <TokenUsage
+    <!-- <h3>动态更新演示</h3> -->
+    <!-- <TokenUsage
         :used-tokens="dynamicUsedTokens"
         :total-tokens="dynamicTotalTokens"
         :show-details="true"
       /> -->
-      <!-- <div class="controls">
+    <!-- <div class="controls">
         <el-button @click="increaseTokens">增加使用量</el-button>
         <el-button @click="resetTokens">重置</el-button>
         <el-button @click="simulateUsage">模拟使用</el-button>
@@ -63,10 +66,13 @@
 </template>
 
 <script setup lang="ts">
+import { useChatContextStore } from '@/stores/chat-context'
+
 import { ref, onMounted } from 'vue'
 import TokenUsage from './index.vue'
 let interval: ReturnType<typeof setInterval> | undefined
 // 示例数据
+const chatStore = useChatContextStore()
 const usedTokens1 = ref(25000)
 const totalTokens1 = ref(100000)
 
@@ -123,7 +129,6 @@ onMounted(() => {
 
 .demo-section {
   margin-bottom: 20px;
-
 
   h3 {
     margin-bottom: 16px;

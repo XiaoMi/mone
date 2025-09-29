@@ -1,7 +1,6 @@
 <template>
   <div ref="scrollList" class="sc-message-list" @scroll="handleScroll">
     <div ref="scrollList1">
-      <Demo></Demo>
       <Message
         v-for="(message, idx) in messages"
         v-memo="[(message as TypeMessage).data.text]"
@@ -75,7 +74,6 @@ import { useChatContextStore } from "@/stores/chat-context"
 import { useIdeaInfoStore } from "@/stores/idea-info";
 import { mapState } from "pinia";
 import util from "@/libs/util";
-import Demo from '@/components/Chat/components/tokenUsage/demo.vue'
 
 const { addDiscardId, setScrollToBottom, setShowDiscardBtn } = useChatContextStore();
 
@@ -84,7 +82,6 @@ let resizeObserver: ResizeObserver;
 export default {
   components: {
     Message,
-    Demo,
   },
   props: {
     messages: {

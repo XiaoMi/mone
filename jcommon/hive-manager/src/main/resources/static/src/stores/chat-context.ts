@@ -280,13 +280,12 @@ export const useChatContextStore = defineStore("chat-context", () => {
   }
 
   function resetTokenUsage() {
-    tokenUsage.value = {
+    Object.assign(tokenUsage.value, {
       usedTokens: 0,
-      totalTokens: tokenUsage.value.totalTokens,
       inputTokens: 0,
       outputTokens: 0,
       lastUpdate: new Date()
-    };
+    });
   }
 
   function getTokenUsagePercentage(): number {
