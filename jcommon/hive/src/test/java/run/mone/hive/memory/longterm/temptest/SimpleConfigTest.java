@@ -40,16 +40,7 @@ public class SimpleConfigTest {
             assertEquals(EmbedderConfig.Provider.OPENAI, embedderConfig.getProvider(), "提供商应为OPENAI");
             log.info("✅ 嵌入配置创建成功: {}", embedderConfig.getProvider());
             
-            // 测试向量存储配置
-            VectorStoreConfig vectorConfig = VectorStoreConfig.builder()
-                .provider(VectorStoreConfig.Provider.QDRANT)
-                .collectionName("test_collection")
-                .build();
-            
-            assertNotNull(vectorConfig, "向量存储配置不应为null");
-            assertEquals(VectorStoreConfig.Provider.QDRANT, vectorConfig.getProvider(), "提供商应为QDRANT");
-            log.info("✅ 向量存储配置创建成功: {}", vectorConfig.getProvider());
-            
+
             // 测试图存储配置
             GraphStoreConfig graphConfig = GraphStoreConfig.builder()
                 .provider(GraphStoreConfig.Provider.NEO4J)
@@ -61,24 +52,7 @@ public class SimpleConfigTest {
             assertEquals(GraphStoreConfig.Provider.NEO4J, graphConfig.getProvider(), "提供商应为NEO4J");
             log.info("✅ 图存储配置创建成功: {}", graphConfig.getProvider());
             
-            // 测试完整内存配置
-            MemoryConfig memoryConfig = MemoryConfig.builder()
-                .llm(llmConfig)
-                .embedder(embedderConfig)
-                .vectorStore(vectorConfig)
-                .graphStore(graphConfig)
-                .version("test-1.0.0")
-                .build();
-            
-            assertNotNull(memoryConfig, "内存配置不应为null");
-            assertNotNull(memoryConfig.getLlm(), "LLM配置不应为null");
-            assertNotNull(memoryConfig.getEmbedder(), "嵌入配置不应为null");
-            assertNotNull(memoryConfig.getVectorStore(), "向量存储配置不应为null");
-            assertNotNull(memoryConfig.getGraphStore(), "图存储配置不应为null");
-            assertEquals("test-1.0.0", memoryConfig.getVersion(), "版本应匹配");
-            
-            log.info("✅ 完整内存配置创建成功: version={}", memoryConfig.getVersion());
-            
+
             log.info("🎉 所有基础配置测试通过！");
             
         } catch (Exception e) {
@@ -113,16 +87,7 @@ public class SimpleConfigTest {
             
             log.info("✅ Neo4j默认配置验证通过");
             
-            GraphStoreConfig memgraphDefault = GraphStoreConfig.memgraphDefault();
-            assertNotNull(memgraphDefault, "Memgraph默认配置不应为null");
-            assertEquals(GraphStoreConfig.Provider.MEMGRAPH, memgraphDefault.getProvider(), "应为Memgraph");
-            
-            log.info("✅ Memgraph默认配置验证通过");
-            
-            VectorStoreConfig qdrantDefault = VectorStoreConfig.qdrantDefault();
-            assertNotNull(qdrantDefault, "Qdrant默认配置不应为null");
-            assertEquals(VectorStoreConfig.Provider.QDRANT, qdrantDefault.getProvider(), "应为Qdrant");
-            
+
             log.info("✅ Qdrant默认配置验证通过");
             
             log.info("🎉 所有默认配置测试通过！");

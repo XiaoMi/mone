@@ -61,6 +61,8 @@ public class VectorStoreConfig {
      */
     @Builder.Default
     private int embeddingModelDims = 1536;
+
+    private String model;
     
     /**
      * 连接配置
@@ -110,6 +112,10 @@ public class VectorStoreConfig {
      */
     public static VectorStoreConfig fromMap(Map<String, Object> configMap) {
         var builder = VectorStoreConfig.builder();
+
+        if (configMap.containsKey("model")) {
+            builder.model(configMap.get("model").toString());
+        }
         
         if (configMap.containsKey("provider")) {
             String providerStr = (String) configMap.get("provider");

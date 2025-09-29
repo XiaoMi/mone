@@ -81,10 +81,11 @@ public class ChromaVectorStore implements VectorStoreBase {
 
     private Collection createOrGetCollection() {
         try {
+            String model = config.getModel();
             String collectionName = config.getCollectionName();
             EmbeddingFunction ef = config.getEmbeddingFunction() != null && config.getEmbeddingFunction().equals(OPENAI_EMBEDDING_FUNCTION)
             ? new OpenAIEmbeddingFunction(WithParam.apiKey(config.getApiKey()), WithParam.model("text-embedding-3-small"), WithParam.baseAPI(config.getBaseUrl()))
-            : new OllamaEmbeddingFunction(WithParam.defaultModel("embeddinggemma"));
+            : new OllamaEmbeddingFunction(WithParam.defaultModel(model));
             try {
                 return chromaClient.getCollection(collectionName, ef);
             } catch (ApiException e) {
