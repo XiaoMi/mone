@@ -73,7 +73,9 @@ const toggleSendMethod = (val: string) => {
         } catch (e) {
           //
         }
-        fluxCodeHandler(data, messageId.value)
+        nextTick(() => {
+          fluxCodeHandler(data, messageId.value)
+        })
       }
     )
   } else {

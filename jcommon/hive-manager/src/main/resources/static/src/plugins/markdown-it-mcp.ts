@@ -294,7 +294,7 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
         } else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
-          // html += `<!-- terminal_append_start -->`;
+          html += `<!-- terminal_append_start -->`;
         } else if (name === "process_pid") {
           // process_pid 标签，暂时不输出内容，等待获取 PID 值
         } else if (name === "process_content") {
@@ -507,25 +507,25 @@ export function markdownItMcp(md: MarkdownIt) {
 
               if (!pidAlreadyProcessedInThisParse) {
                 // // 如果当前解析中还没有输出过这个PID的组件，输出完整组件
-                // const componentHtml = `
-                // <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
-                //   <div class="terminal-process-header">
-                //     <i class="fa-solid fa-terminal"></i>
-                //     <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
-                //     <button class="terminal-toggle-btn" type="button" title="查看日志">
-                //       <i class="fa-solid fa-eye"></i>
-                //       查看日志
-                //     </button>
-                //   </div>
-                //   <div class="terminal-process-content" style="display: none;">
-                //     <!-- 内容将在点击时动态加载 -->
-                //   </div>
-                // </div>`;
-                // html += componentHtml;
+                const componentHtml = `
+                <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
+                  <div class="terminal-process-header">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
+                    <button class="terminal-toggle-btn" type="button" title="查看日志">
+                      <i class="fa-solid fa-eye"></i>
+                      查看日志
+                    </button>
+                  </div>
+                  <div class="terminal-process-content" style="display: none;">
+                    <!-- 内容将在点击时动态加载 -->
+                  </div>
+                </div>`;
+                html += componentHtml;
                 processedPidsInThisParse.add(currentPid);
               } else {
                 // 输出更新指令（不包含实际内容）
-                // html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-new-lines="${contentLines.length}"></div>`;
+                html += `<div class="terminal-append-update" data-pid="${md.utils.escapeHtml(currentPid)}" data-new-lines="${contentLines.length}"></div>`;
               }
             } else {
               // 第一次遇到此PID，只输出占位组件
@@ -533,21 +533,21 @@ export function markdownItMcp(md: MarkdownIt) {
               console.log('Creating new PID:', currentPid, 'with lines:', limitedLines);
               existingPidComponents.set(currentPid, limitedLines);
 
-              // const componentHtml = `
-              // <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
-              //   <div class="terminal-process-header">
-              //     <i class="fa-solid fa-terminal"></i>
-              //     <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
-              //     <button class="terminal-toggle-btn" type="button" title="查看日志">
-              //       <i class="fa-solid fa-eye"></i>
-              //       查看日志
-              //     </button>
-              //   </div>
-              //   <div class="terminal-process-content" style="display: none;">
-              //     <!-- 内容将在点击时动态加载 -->
-              //   </div>
-              // </div>`;
-              // html += componentHtml;
+              const componentHtml = `
+              <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
+                <div class="terminal-process-header">
+                  <i class="fa-solid fa-terminal"></i>
+                  <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
+                  <button class="terminal-toggle-btn" type="button" title="查看日志">
+                    <i class="fa-solid fa-eye"></i>
+                    查看日志
+                  </button>
+                </div>
+                <div class="terminal-process-content" style="display: none;">
+                  <!-- 内容将在点击时动态加载 -->
+                </div>
+              </div>`;
+              html += componentHtml;
               processedPidsInThisParse.add(currentPid);
             }
 
