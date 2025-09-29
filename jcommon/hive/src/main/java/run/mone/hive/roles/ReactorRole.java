@@ -16,6 +16,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -120,6 +121,9 @@ public class ReactorRole extends Role {
 
     // 意图分类服务
     private IntentClassificationService classificationService;
+
+    // 文件检查点管理器
+    private FileCheckpointManager fileCheckpointManager;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -230,6 +234,13 @@ public class ReactorRole extends Role {
 
         // 初始化意图分类服务
         this.classificationService = new IntentClassificationService();
+
+        try {
+            this.fileCheckpointManager = new FileCheckpointManager(this.workspacePath);
+        } catch (Exception e) {
+            log.error("Failed to initialize FileCheckpointManager", e);
+            // 如果检查点管理器初始化失败，可能需要抛出异常或禁用相关功能
+        }
 
     }
 
@@ -357,6 +368,13 @@ public class ReactorRole extends Role {
 
         //放到记忆中
         this.putMemory(msg);
+
+        // 为用户消息创建文件检查点
+        Safe.run(() -> {
+            if (fileCheckpointManager != null) {
+                fileCheckpointManager.createCheckpoint(msg.getId());
+            }
+        });
 
         // 处理上下文压缩
         processContextCompression(msg);
@@ -561,6 +579,13 @@ public class ReactorRole extends Role {
         // 提前创建Message以获得ID
         Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
 
+        // 为工具消息创建文件检查点
+        Safe.run(() -> {
+            if (fileCheckpointManager != null) {
+                fileCheckpointManager.createCheckpoint(assistantMessage.getId());
+            }
+        });
+
         // 执行mcpCall，但不让它直接写sink，以便我们控制输出
         McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, null, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
 
@@ -596,6 +621,13 @@ public class ReactorRole extends Role {
 
         // 提前创建Message以获得ID
         Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
+
+        // 为工具消息创建文件检查点
+        Safe.run(() -> {
+            if (fileCheckpointManager != null) {
+                fileCheckpointManager.createCheckpoint(assistantMessage.getId());
+            }
+        });
 
         String contentForLlm;
 
@@ -885,9 +917,13 @@ public class ReactorRole extends Role {
             return false;
         }
 
+        String checkpointIdToRevert = messageId;
+
         // 如果没有提供messageId，则回滚最后一次交互
         if (StringUtils.isEmpty(messageId)) {
             log.info("回滚最后一次交互");
+            // 获取最后一条消息的ID作为回滚点
+            checkpointIdToRevert = history.get(history.size() - 1).getId();
             // 通常一次交互包含用户消息和AI助理消息，所以我们移除最后两条
             int messagesToRemove = 2;
             if (history.size() < messagesToRemove) {
@@ -898,29 +934,42 @@ public class ReactorRole extends Role {
                     history.remove(history.size() - 1);
                 }
             }
-            return true;
-        }
+        } else {
+            // 如果提供了messageId，则找到该消息并移除之后的所有内容
+            int targetIndex = -1;
+            for (int i = 0; i < history.size(); i++) {
+                if (history.get(i).getId().equals(messageId)) {
+                    targetIndex = i;
+                    break;
+                }
+            }
 
-        // 如果提供了messageId，则找到该消息并移除之后的所有内容
-        int targetIndex = -1;
-        for (int i = 0; i < history.size(); i++) {
-            if (history.get(i).getId().equals(messageId)) {
-                targetIndex = i;
-                break;
+            if (targetIndex != -1) {
+                log.info("回滚到消息ID: {} (索引: {})", messageId, targetIndex);
+                int originalSize = history.size();
+                // 移除从targetIndex到列表末尾的所有元素
+                history.subList(targetIndex, originalSize).clear();
+                log.info("成功移除 {} 条消息", originalSize - targetIndex);
+            } else {
+                log.warn("无法回滚上下文，未找到消息ID: {}", messageId);
+                return false; // 上下文回滚失败，直接返回
             }
         }
 
-        if (targetIndex != -1) {
-            log.info("回滚到消息ID: {} (索引: {})", messageId, targetIndex);
-            int originalSize = history.size();
-            // 移除从targetIndex到列表末尾的所有元素
-            history.subList(targetIndex, originalSize).clear();
-            log.info("成功移除 {} 条消息", originalSize - targetIndex);
-            return true;
-        } else {
-            log.warn("无法回滚，未找到消息ID: {}", messageId);
-            return false;
+        // 上下文回滚成功后，执行文件回滚
+        try {
+            if (fileCheckpointManager != null && checkpointIdToRevert != null) {
+                log.info("开始回滚文件系统到检查点: {}", checkpointIdToRevert);
+                fileCheckpointManager.revert(checkpointIdToRevert);
+                log.info("文件系统成功回滚到检查点: {}", checkpointIdToRevert);
+            }
+        } catch (Exception e) {
+            log.error("文件系统回滚失败，检查点ID: " + checkpointIdToRevert, e);
+            // 注意：这里可以选择是否向上抛出异常或返回false
+            // 当前实现为只记录错误，即使文件回滚失败，上下文回滚依然算成功
         }
+
+        return true;
     }
 
     /**

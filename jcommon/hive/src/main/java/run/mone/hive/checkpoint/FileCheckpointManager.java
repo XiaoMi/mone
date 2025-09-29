@@ -12,7 +12,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,7 +38,33 @@ public class FileCheckpointManager {
         this.gitDir = Paths.get(this.projectPath, shadowRepoSubDir).toFile().getCanonicalPath();
         this.checkpointsFile = new File(this.gitDir, "checkpoints.json");
         this.checkpointMap = loadCheckpoints();
+        addHiveToGitignore();
         initRepository();
+    }
+
+    private void addHiveToGitignore() {
+        Path gitignorePath = Paths.get(this.projectPath, ".gitignore");
+        String hiveDir = ".hive/";
+
+        try {
+            if (!Files.exists(gitignorePath)) {
+                Files.writeString(gitignorePath, hiveDir + "\n", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                log.info(".gitignore not found, created a new one and added '{}'", hiveDir);
+                return;
+            }
+
+            List<String> lines = Files.readAllLines(gitignorePath);
+            boolean alreadyExists = lines.stream().anyMatch(line -> line.trim().equals(hiveDir.trim()) || line.trim().equals(".hive"));
+
+            if (!alreadyExists) {
+                Files.writeString(gitignorePath, "\n" + hiveDir + "\n", StandardOpenOption.APPEND);
+                log.info("Added '{}' to .gitignore", hiveDir);
+            } else {
+                log.debug("'{}' already exists in .gitignore", hiveDir);
+            }
+        } catch (IOException e) {
+            log.error("Failed to read or write .gitignore file at: " + gitignorePath, e);
+        }
     }
 
     private void initRepository() throws IOException, InterruptedException {
