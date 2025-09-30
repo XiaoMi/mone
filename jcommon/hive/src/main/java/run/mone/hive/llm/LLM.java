@@ -1950,6 +1950,7 @@ public class LLM {
     public static class LLMUsage {
         private int inputTokens;
         private int outputTokens;
+        private int compressedTokens;
         // 下面的都有可能会是null，不同模型提供的不一样
         private Integer cacheWriteTokens;
         private Integer cacheReadTokens;

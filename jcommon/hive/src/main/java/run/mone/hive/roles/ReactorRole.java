@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
 import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
 
 /**
@@ -903,6 +904,7 @@ public class ReactorRole extends Role {
         try {
             // 获取当前的消息历史
             List<Message> currentMessages = getCurrentMessageHistory();
+            FluxSink sink = getFluxSink(newMessage);
 
             // 异步处理上下文压缩
             this.contextManager.processNewMessage(
@@ -920,10 +922,12 @@ public class ReactorRole extends Role {
 
                     // 标记任务状态
                     this.taskState.setDidCompleteContextCompression(true);
+                    sink.next(getTokenUsageLabel(result));
 
                 } else if (result.wasOptimized()) {
                     log.info("应用了上下文规则优化");
                     updateMessageHistory(result.getProcessedMessages());
+                    sink.next(getTokenUsageLabel(result));
                 }
 
                 if (result.hasError()) {
@@ -937,6 +941,11 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             log.error("处理上下文压缩时发生异常", e);
         }
+    }
+
+    private String getTokenUsageLabel(ConversationContextManager.ContextProcessingResult result) {
+        LLM.LLMUsage usage =  LLM.LLMUsage.builder().compressedTokens(result.getCompressedTokenNum()).build();
+        return TOKEN_USAGE_LABEL_START + GsonUtils.gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
     /**
