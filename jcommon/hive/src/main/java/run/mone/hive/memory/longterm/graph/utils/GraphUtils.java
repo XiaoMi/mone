@@ -14,13 +14,14 @@ public class GraphUtils {
      * Matches Python EXTRACT_RELATIONS_PROMPT
      */
     public static final String EXTRACT_RELATIONS_PROMPT = """
-
             You are an advanced algorithm designed to extract structured information from text to construct knowledge graphs. Your goal is to capture comprehensive and accurate information. Follow these key principles:
 
             1. Extract only explicitly stated information from the text.
             2. Establish relationships among the entities provided.
             3. Use "USER_ID" as the source entity for any self-references (e.g., "I," "me," "my," etc.) in user messages.
             CUSTOM_PROMPT
+            
+            uid=USER_ID
 
             Relationships:
             - Identify clear, explicit relationships between entities
@@ -33,7 +34,7 @@ public class GraphUtils {
             - Normalize entity names (lowercase, underscore-separated)
             - Map self-references to USER_ID
 
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format, and return json only!!!:
+            You can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -44,7 +45,7 @@ public class GraphUtils {
                 ]
             }
 
-            source: the source entity of the relationship
+            source: the source entity of the relationship(如果uid不为空,则source必须是uid)
             relationship: the relationship between the source and destination entities
             destination: the destination entity of the relationship
             """;
@@ -57,8 +58,8 @@ public class GraphUtils {
             You are a smart assistant who understands entities and their types in a given text.
             If user message contains self reference such as 'I', 'me', 'my' etc. then use USER_ID as the source entity.
             Extract all the entities from the text. ***DO NOT*** answer the question itself if the given text is a question.
-
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format, and return json only!!!:
+            
+            You can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -164,7 +165,7 @@ public class GraphUtils {
                 - Consider temporal aspects - newer information may supersede older information
                 - Focus on factual contradictions, not subjective differences
 
-                If you cannot response with tool_calls, you can response with the relationships to be deleted in the text with following JSON format, and return json only!!!:
+                You can response with the relationships to be deleted in the text with following JSON format, and return json only!!!:
                 {
                     "toBeDeleted": [
                         {
@@ -293,7 +294,7 @@ public class GraphUtils {
         String cleaned = relationshipName.trim()
             .toLowerCase()
             .replaceAll("\\s+", "_")
-            .replaceAll("[^a-zA-Z0-9_]", "");
+            .replaceAll("[\"'`]", "");
         
         return cleaned;
     }

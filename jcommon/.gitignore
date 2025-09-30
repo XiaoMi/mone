@@ -23,3 +23,4 @@ nohup*
 .sbtserver*
 .vscode/settings.json
 selector_config.json
+history.db

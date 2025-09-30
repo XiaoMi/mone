@@ -357,6 +357,26 @@ public interface GraphStoreBase {
     }
     
     /**
+     * 重置图数据库 - 清除所有顶点和边
+     * 
+     * @param userId 用户ID
+     */
+    void reset(String userId);
+
+    /**
+     * 重置图数据库 - 清除所有顶点和边（兼容性方法，使用默认用户ID）
+     */
+    default void reset() {
+        reset("default_user");
+    }
+
+    /**
+     * 重置整个图数据库 - 清除所有带有user_id属性的顶点和边
+     * 这会删除所有用户的数据，请谨慎使用
+     */
+    void resetAll();
+    
+    /**
      * 关闭连接
      */
     default void close() {

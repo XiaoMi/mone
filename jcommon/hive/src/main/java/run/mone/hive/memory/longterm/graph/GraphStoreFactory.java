@@ -27,8 +27,8 @@ public class GraphStoreFactory {
         
         switch (config.getProvider()) {
             case NEO4J:
-                config.setUsername("neo4j");
-                config.setPassword(System.getenv("NEO4J_PASSWORD"));
+                config.setUsername(config.getUsername() != null ? config.getUsername() : "neo4j");
+                config.setPassword(config.getPassword() != null ? config.getPassword() : System.getenv("NEO4J_PASSWORD"));
                 return new Neo4jGraphStore(config);
             default:
                 throw new IllegalArgumentException("Unsupported graph store provider: " + config.getProvider());

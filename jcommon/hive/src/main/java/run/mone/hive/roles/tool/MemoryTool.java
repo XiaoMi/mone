@@ -1,11 +1,14 @@
 package run.mone.hive.roles.tool;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.memory.LongTermMemoryManager;
 import run.mone.hive.roles.ReactorRole;
@@ -22,7 +25,7 @@ import java.util.Map;
 @Slf4j
 public class MemoryTool implements ITool {
 
-    private static LongTermMemoryManager memoryManager;
+    public static LongTermMemoryManager memoryManager;
 
     /**
      * 初始化长期记忆管理器
@@ -201,7 +204,7 @@ public class MemoryTool implements ITool {
             // 使用带超时的异步调用处理
             Map<String, Object> searchMap;
             try {
-                searchMap = searchResult.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                searchMap = searchResult.get(60, java.util.concurrent.TimeUnit.SECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
                 log.warn("记忆搜索超时: {}", e.getMessage());
                 result.addProperty("error", "搜索超时，请稍后重试");
@@ -394,6 +397,10 @@ public class MemoryTool implements ITool {
                     errorObj.addProperty("type", "error");
                     memories.add(errorObj);
                     return;
+                }
+
+                if (resultMap.containsKey("relations")) {
+                    memories.add(GsonUtils.gson.toJsonTree(resultMap.get("relations")));
                 }
 
                 // 处理搜索结果

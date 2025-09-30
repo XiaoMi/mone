@@ -7,9 +7,11 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import run.mone.hive.bo.TokenReq;
 import run.mone.hive.bo.TokenRes;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.tool.MemoryTool;
 import run.mone.hive.roles.tool.ProcessManager;
 import run.mone.hive.schema.Message;
 
@@ -162,6 +164,11 @@ public class ChatFunction implements McpFunction {
 
     @NotNull
     private Flux<McpSchema.CallToolResult> clear(String ownerId) {
+        Safe.run(()->{
+            if (null != MemoryTool.memoryManager) {
+                MemoryTool.memoryManager.getLongTermMemory().getHistoryManager().reset();
+            }
+        });
         roleService.clearHistory(Message.builder().sentFrom(ownerId).build());
         return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("聊天历史已清空")),

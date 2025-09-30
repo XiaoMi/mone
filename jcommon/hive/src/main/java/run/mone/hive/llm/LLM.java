@@ -44,6 +44,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
 
@@ -346,15 +348,15 @@ public class LLM {
     }
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, getModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
+        return chatCompletion(getToken(), msgList, getModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, getModel(), "", config);
     }
 
     public String getApiUrl(String apiKey, boolean stream) {
@@ -411,7 +413,7 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
-        return chatCompletion(apiKey, CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
+        return chatCompletion(apiKey, clientConfig.getCustomConfig() != null ? clientConfig.getCustomConfig() : CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
     }
 
 
@@ -422,7 +424,7 @@ public class LLM {
     }
 
     public LLMChatCompletionResult chatCompletionWithUsage(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
-        return chatCompletionWithUsage(apiKey, CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
+        return chatCompletionWithUsage(apiKey, clientConfig.getCustomConfig() != null ? clientConfig.getCustomConfig() : CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
     }
 
     @SneakyThrows
@@ -884,7 +886,7 @@ public class LLM {
     }
 
     private String llmUsageContent(LLMUsage usage) {
-        return "\n<chat>\n<usage>\n" + gson.toJson(usage) + "\n</usage>\n</chat>\n";
+        return TOKEN_USAGE_LABEL_START + gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
     public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
@@ -949,6 +951,7 @@ public class LLM {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
                     this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
