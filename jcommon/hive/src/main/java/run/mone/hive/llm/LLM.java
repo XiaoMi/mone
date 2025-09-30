@@ -752,7 +752,6 @@ public class LLM {
         if (null != am.getJsonContent()) {
             return am.getJsonContent();
         }
-
         JsonObject message = new JsonObject();
         message.addProperty("role", role);
         JsonArray array = new JsonArray();
@@ -947,11 +946,20 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        //关闭思维链
+        if (llmProvider == LLMProvider.GLM_45_AIR) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", "disabled");
+            requestBody.add("thinking", obj);
+        }
+
         for (AiMessage message : messages) {
-            //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.GLM_45_AIR ||
                     this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX_MINI ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX ||
                     this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
