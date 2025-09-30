@@ -89,7 +89,7 @@
     </div>
     <TokenUsage
       :used-tokens="tokenUsage.inputTokens + tokenUsage.outputTokens"
-      :total-tokens="100000"
+      :total-tokens="tokenUsage.totalTokens"
     />
   </div>
 </template>
@@ -109,7 +109,7 @@ import {
 } from '@/api/agent'
 
 const { getInstance, setSelectedInstance } = useUserStore()
-const { setMessageList, tokenUsage } = useChatContextStore()
+const { setMessageList, tokenUsage, resetTokenUsage } = useChatContextStore()
 const selectedIp = ref('')
 const props = defineProps({
   onClearHistory: {
@@ -164,6 +164,7 @@ const handleStopMsg = () => {
 
 const handleClearHistory = () => {
   setMessageList([])
+  resetTokenUsage()
   props.onClearHistory?.()
 }
 

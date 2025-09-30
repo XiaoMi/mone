@@ -6,7 +6,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import run.mone.hive.memory.longterm.config.*;
 import run.mone.hive.memory.longterm.core.Memory;
-import run.mone.hive.memory.longterm.vectorstore.impl.ChromaVectorStore;
 
 import java.nio.file.Path;
 import java.util.*;

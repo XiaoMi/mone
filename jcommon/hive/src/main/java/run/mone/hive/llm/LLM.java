@@ -983,7 +983,7 @@ public class LLM {
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
 
         // openai 系列的应该都可以
-        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK) {
+        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN) {
             JsonObject usage = new JsonObject();
             usage.addProperty("include_usage", true);
             requestBody.add("stream_options", usage);

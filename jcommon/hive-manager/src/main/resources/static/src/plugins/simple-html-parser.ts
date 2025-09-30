@@ -76,6 +76,7 @@ export class SimpleHtmlParser {
   constructor(callbacks: ParserCallbacks) {
     this.callbacks = callbacks;
     this.supportedTags = new Set([
+      'usage',
       'query',
       'action',
       'memory',
