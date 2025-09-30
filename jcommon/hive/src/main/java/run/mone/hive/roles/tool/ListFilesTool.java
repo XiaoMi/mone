@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.RemoteFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +38,16 @@ import java.util.stream.Stream;
 public class ListFilesTool implements ITool {
 
     public static final String name = "list_files";
+
+    private final boolean isRemote;
+
+    public ListFilesTool() {
+        this(false);
+    }
+
+    public ListFilesTool(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
 
     // Default directories to ignore during recursive listing
     private static final Set<String> DEFAULT_IGNORE_DIRECTORIES = Set.of(
@@ -181,99 +192,126 @@ public class ListFilesTool implements ITool {
     private JsonObject performListFiles(String path, boolean recursive) {
         JsonObject result = new JsonObject();
 
-        try {
-            Path dirPath = Paths.get(path);
-            File directory = dirPath.toFile();
+        if (!isRemote) {
+            try {
+                Path dirPath = Paths.get(path);
+                File directory = dirPath.toFile();
 
-            // Check if directory exists
-            if (!directory.exists()) {
-                log.error("Directory not found: {}", path);
-                result.addProperty("error", "Directory not found: " + path);
-                return result;
-            }
-
-            // Check if path points to a file instead of directory
-            if (!directory.isDirectory()) {
-                log.error("Path points to a file, not a directory: {}", path);
-                result.addProperty("error", "Path points to a file, not a directory: " + path + 
-                                           ". Use this tool only on directories.");
-                return result;
-            }
-
-            // Check directory permissions
-            if (!directory.canRead()) {
-                log.error("Directory is not readable: {}", path);
-                result.addProperty("error", "Directory is not readable: " + path);
-                return result;
-            }
-
-            // Check for restricted paths (root, home directory)
-            if (isRestrictedPath(dirPath)) {
-                log.error("Access to restricted path denied: {}", path);
-                result.addProperty("error", "Access to restricted path denied: " + path);
-                return result;
-            }
-
-            // List files based on recursive flag
-            List<FileInfo> files = recursive ? 
-                listFilesRecursive(dirPath) : 
-                listFilesTopLevel(dirPath);
-
-            // Sort files for consistent output
-            files.sort(Comparator.comparing(f -> f.relativePath));
-
-            // Build result
-            JsonArray fileArray = new JsonArray();
-            for (FileInfo fileInfo : files) {
-                JsonObject fileObj = new JsonObject();
-                fileObj.addProperty("name", fileInfo.name);
-                fileObj.addProperty("path", fileInfo.relativePath);
-                fileObj.addProperty("type", fileInfo.isDirectory ? "directory" : "file");
-                fileObj.addProperty("size", fileInfo.size);
-                fileObj.addProperty("lastModified", fileInfo.lastModified);
-                fileObj.addProperty("isDirectory", fileInfo.isDirectory);
-                fileObj.addProperty("isHidden", fileInfo.isHidden);
-                if (!fileInfo.isDirectory) {
-                    fileObj.addProperty("extension", getFileExtension(fileInfo.name));
+                // Check if directory exists
+                if (!directory.exists()) {
+                    log.error("Directory not found: {}", path);
+                    result.addProperty("error", "Directory not found: " + path);
+                    return result;
                 }
-                fileArray.add(fileObj);
+
+                // Check if path points to a file instead of directory
+                if (!directory.isDirectory()) {
+                    log.error("Path points to a file, not a directory: {}", path);
+                    result.addProperty("error", "Path points to a file, not a directory: " + path +
+                            ". Use this tool only on directories.");
+                    return result;
+                }
+
+                // Check directory permissions
+                if (!directory.canRead()) {
+                    log.error("Directory is not readable: {}", path);
+                    result.addProperty("error", "Directory is not readable: " + path);
+                    return result;
+                }
+
+                // Check for restricted paths (root, home directory)
+                if (isRestrictedPath(dirPath)) {
+                    log.error("Access to restricted path denied: {}", path);
+                    result.addProperty("error", "Access to restricted path denied: " + path);
+                    return result;
+                }
+
+                // List files based on recursive flag
+                List<FileInfo> files = recursive ?
+                        listFilesRecursive(dirPath) :
+                        listFilesTopLevel(dirPath);
+
+                // Sort files for consistent output
+                files.sort(Comparator.comparing(f -> f.relativePath));
+
+                // Build result
+                JsonArray fileArray = new JsonArray();
+                for (FileInfo fileInfo : files) {
+                    JsonObject fileObj = new JsonObject();
+                    fileObj.addProperty("name", fileInfo.name);
+                    fileObj.addProperty("path", fileInfo.relativePath);
+                    fileObj.addProperty("type", fileInfo.isDirectory ? "directory" : "file");
+                    fileObj.addProperty("size", fileInfo.size);
+                    fileObj.addProperty("lastModified", fileInfo.lastModified);
+                    fileObj.addProperty("isDirectory", fileInfo.isDirectory);
+                    fileObj.addProperty("isHidden", fileInfo.isHidden);
+                    if (!fileInfo.isDirectory) {
+                        fileObj.addProperty("extension", getFileExtension(fileInfo.name));
+                    }
+                    fileArray.add(fileObj);
+                }
+
+                result.add("files", fileArray);
+                result.addProperty("totalCount", files.size());
+                result.addProperty("directoryPath", path);
+                result.addProperty("recursive", recursive);
+                result.addProperty("wasLimited", files.size() >= DEFAULT_LIMIT);
+
+                // Add summary statistics
+                long totalSize = files.stream().mapToLong(f -> f.size).sum();
+                long fileCount = files.stream().mapToLong(f -> f.isDirectory ? 0 : 1).sum();
+                long dirCount = files.stream().mapToLong(f -> f.isDirectory ? 1 : 0).sum();
+
+                JsonObject summary = new JsonObject();
+                summary.addProperty("totalFiles", fileCount);
+                summary.addProperty("totalDirectories", dirCount);
+                summary.addProperty("totalSize", totalSize);
+                summary.addProperty("totalSizeFormatted", formatFileSize(totalSize));
+                result.add("summary", summary);
+
+                // Generate formatted output for display
+                String formattedOutput = formatFileList(files, path, recursive);
+                result.addProperty("result", formattedOutput);
+
+                log.info("Successfully listed {} items in directory: {}, recursive: {}",
+                        files.size(), path, recursive);
+
+                return result;
+
+            } catch (IOException e) {
+                log.error("IO exception while listing directory: {}", path, e);
+                result.addProperty("error", "Failed to list directory: " + e.getMessage());
+            } catch (Exception e) {
+                log.error("Exception while listing directory: {}", path, e);
+                result.addProperty("error", "Error listing directory: " + e.getMessage());
             }
-
-            result.add("files", fileArray);
-            result.addProperty("totalCount", files.size());
-            result.addProperty("directoryPath", path);
-            result.addProperty("recursive", recursive);
-            result.addProperty("wasLimited", files.size() >= DEFAULT_LIMIT);
-
-            // Add summary statistics
-            long totalSize = files.stream().mapToLong(f -> f.size).sum();
-            long fileCount = files.stream().mapToLong(f -> f.isDirectory ? 0 : 1).sum();
-            long dirCount = files.stream().mapToLong(f -> f.isDirectory ? 1 : 0).sum();
-
-            JsonObject summary = new JsonObject();
-            summary.addProperty("totalFiles", fileCount);
-            summary.addProperty("totalDirectories", dirCount);
-            summary.addProperty("totalSize", totalSize);
-            summary.addProperty("totalSizeFormatted", formatFileSize(totalSize));
-            result.add("summary", summary);
-
-            // Generate formatted output for display
-            String formattedOutput = formatFileList(files, path, recursive);
-            result.addProperty("result", formattedOutput);
-
-            log.info("Successfully listed {} items in directory: {}, recursive: {}", 
-                    files.size(), path, recursive);
 
             return result;
-
-        } catch (IOException e) {
-            log.error("IO exception while listing directory: {}", path, e);
-            result.addProperty("error", "Failed to list directory: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Exception while listing directory: {}", path, e);
-            result.addProperty("error", "Error listing directory: " + e.getMessage());
         }
 
+        if (isRemote) {
+            try {
+                String response = RemoteFileUtils.listFiles(path);
+                
+                // 解析响应并构建结果
+                result.addProperty("result", response);
+                result.addProperty("directoryPath", path);
+                result.addProperty("recursive", recursive);
+                
+                log.info("Successfully listed remote files in directory: {}, recursive: {}", path, recursive);
+                
+                return result;
+            } catch (IOException e) {
+                log.error("IO exception while listing remote directory: {}", path, e);
+                result.addProperty("error", "Failed to list remote directory: " + e.getMessage());
+                return result;
+            } catch (Exception e) {
+                log.error("Exception while listing remote directory: {}", path, e);
+                result.addProperty("error", "Error listing remote directory: " + e.getMessage());
+                return result;
+            }
+        }
+        
         return result;
     }
 
