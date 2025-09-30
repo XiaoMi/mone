@@ -33,7 +33,6 @@
         <module>mcp-excel</module>
         <module>mcp-song</module>
         <module>mcp-sequentialthinking</module>
-        <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
         <module>mcp-nacosconfig</module>
         <module>mcp-terminal</module>
@@ -43,7 +42,6 @@
         <module>mcp-chaos</module>
         <module>mcp-nacosservice</module>
         <module>mcp-ali-email</module>
-        <module>mcp-pty4j</module>
         <module>mcp-linux-agent</module>
         <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>

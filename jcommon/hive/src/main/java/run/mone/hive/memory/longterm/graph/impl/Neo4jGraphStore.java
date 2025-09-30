@@ -1,23 +1,24 @@
 package run.mone.hive.memory.longterm.graph.impl;
 
-import lombok.extern.slf4j.Slf4j;
+import com.google.gson.Gson;
 import lombok.Data;
-import run.mone.hive.memory.longterm.config.GraphStoreConfig;
-import run.mone.hive.memory.longterm.config.LlmConfig;
-import run.mone.hive.memory.longterm.config.EmbedderConfig;
-import run.mone.hive.memory.longterm.graph.GraphStoreBase;
-import run.mone.hive.memory.longterm.graph.tools.GraphTools;
-import run.mone.hive.memory.longterm.graph.utils.GraphUtils;
-import run.mone.hive.memory.longterm.graph.utils.BM25Ranker;
-import run.mone.hive.memory.longterm.llm.LLMBase;
-import run.mone.hive.memory.longterm.llm.LLMFactory;
-import run.mone.hive.memory.longterm.utils.MemoryUtils;
-import run.mone.hive.memory.longterm.embeddings.EmbeddingBase;
-import run.mone.hive.memory.longterm.embeddings.EmbeddingFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
+import run.mone.hive.memory.longterm.config.EmbedderConfig;
+import run.mone.hive.memory.longterm.config.GraphStoreConfig;
+import run.mone.hive.memory.longterm.config.LlmConfig;
+import run.mone.hive.memory.longterm.embeddings.EmbeddingBase;
+import run.mone.hive.memory.longterm.embeddings.EmbeddingFactory;
+import run.mone.hive.memory.longterm.graph.GraphStoreBase;
+import run.mone.hive.memory.longterm.graph.utils.BM25Ranker;
+import run.mone.hive.memory.longterm.graph.utils.GraphUtils;
+import run.mone.hive.memory.longterm.utils.MemoryUtils;
+import run.mone.hive.schema.AiMessage;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +34,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     private final GraphStoreConfig config;
     private Driver driver;
-    private LLMBase llm;
+    private LLM llm;
     private EmbeddingBase embeddingModel;
     private String nodeLabel;
     private double threshold = 0.7;
@@ -42,8 +43,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
         this.config = config;
         this.threshold = config.getThreshold();
         this.nodeLabel = config.getConfig().containsKey("base_label") &&
-                        (Boolean) config.getConfig().get("base_label") ?
-                        ":`__Entity__`" : "";
+                (Boolean) config.getConfig().get("base_label") ?
+                ":`__Entity__`" : "";
 
         initializeConnection();
         initializeLLM();
@@ -56,17 +57,17 @@ public class Neo4jGraphStore implements GraphStoreBase {
     private void initializeConnection() {
         try {
             Config.ConfigBuilder configBuilder = Config.builder()
-                .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
-                .withMaxConnectionPoolSize(50)
-                .withConnectionAcquisitionTimeout(2, TimeUnit.MINUTES);
+                    .withMaxConnectionLifetime(30, TimeUnit.MINUTES)
+                    .withMaxConnectionPoolSize(50)
+                    .withConnectionAcquisitionTimeout(2, TimeUnit.MINUTES);
 
             // 禁用通知以减少日志噪音
             configBuilder.withNotificationConfig(NotificationConfig.defaultConfig());
 
             this.driver = GraphDatabase.driver(
-                config.getUrl(),
-                AuthTokens.basic(config.getUsername(), config.getPassword()),
-                configBuilder.build()
+                    config.getUrl(),
+                    AuthTokens.basic(config.getUsername(), config.getPassword()),
+                    configBuilder.build()
             );
 
             // 测试连接
@@ -85,11 +86,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
     private void initializeLLM() {
         try {
             LlmConfig llmConfig = config.getLlm();
-            if (llmConfig == null) {
-                // 使用默认配置
-                llmConfig = LlmConfig.deepseekDefault();
-            }
-            this.llm = LLMFactory.create(llmConfig);
+            this.llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmConfig.getProviderName())).build());
             log.info("LLM initialized with provider: {}", llmConfig.getProvider());
         } catch (Exception e) {
             log.error("Failed to initialize LLM", e);
@@ -133,7 +130,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     @Override
     public Map<String, Object> addMemory(String source, String destination, String relationship,
-                                        String sourceType, String destinationType, String userId) {
+                                         String sourceType, String destinationType, String userId) {
         if (!GraphUtils.validateGraphEntity(source, destination, relationship)) {
             throw new IllegalArgumentException("Invalid graph entity parameters");
         }
@@ -147,8 +144,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
             filters.put("user_id", userId);
 
             // 按照mem0的add方法流程实现
-            return addMemoryWithFlow(session, source, destination, relationship, 
-                                   sourceType, destinationType, filters);
+            return addMemoryWithFlow(session, source, destination, relationship,
+                    sourceType, destinationType, filters);
 
         } catch (Exception e) {
             log.error("Error adding graph memory to Neo4j", e);
@@ -159,34 +156,34 @@ public class Neo4jGraphStore implements GraphStoreBase {
     /**
      * 按照mem0流程实现的添加内存方法
      * 1. 提取实体类型映射 (_retrieve_nodes_from_data)
-     * 2. 建立节点关系 (_establish_nodes_relations_from_data) 
+     * 2. 建立节点关系 (_establish_nodes_relations_from_data)
      * 3. 搜索图数据库 (_search_graph_db)
      * 4. 获取需要删除的实体 (_get_delete_entities_from_search_output)
      * 5. 删除实体 (_delete_entities)
      * 6. 添加实体 (_add_entities)
      */
-    private Map<String, Object> addMemoryWithFlow(Session session, String source, String destination, 
-                                                String relationship, String sourceType, String destinationType,
-                                                Map<String, Object> filters) {
+    private Map<String, Object> addMemoryWithFlow(Session session, String source, String destination,
+                                                  String relationship, String sourceType, String destinationType,
+                                                  Map<String, Object> filters) {
         // 构建输入数据文本，模拟传入add方法的data参数
         String data = String.format("%s %s %s", source, relationship, destination);
-        
+
         // 1. 提取实体类型映射 (复用现有方法)
         Map<String, String> entityTypeMap = retrieveNodesFromData(data, filters);
-        
+
         // 2. 建立节点关系数据 (使用establishRelations方法并转换为兼容格式)
         List<Map<String, Object>> toBeAdded = establishNodesRelationsFromData(data, filters, entityTypeMap);
-        
+
         // 3. 搜索图数据库中的相似节点
-        List<Map<String, Object>> searchOutput = searchGraphDB(session, 
-            new ArrayList<>(entityTypeMap.keySet()), filters, 100);
-        
+        List<Map<String, Object>> searchOutput = searchGraphDB(session,
+                new ArrayList<>(entityTypeMap.keySet()), filters, 100);
+
         // 4. 获取需要删除的实体
         List<Map<String, Object>> toBeDeleted = getDeleteEntitiesFromSearchOutput(searchOutput, data, filters);
-        
+
         // 5. 删除冲突的实体
         List<Map<String, Object>> deletedEntities = deleteEntities(session, toBeDeleted, filters);
-        
+
         // 6. 添加新的实体
         List<Map<String, Object>> addedEntities = addEntities(session, toBeAdded, filters, entityTypeMap);
 
@@ -197,23 +194,23 @@ public class Neo4jGraphStore implements GraphStoreBase {
         result.put("operation", "add_with_flow");
         result.put("success", true);
 
-        log.info("Added graph memory with flow for user {}: {} --[{}]-> {}, deleted: {}, added: {}", 
-                filters.get("user_id"), source, relationship, destination, 
+        log.info("Added graph memory with flow for user {}: {} --[{}]-> {}, deleted: {}, added: {}",
+                filters.get("user_id"), source, relationship, destination,
                 deletedEntities.size(), addedEntities.size());
-        
+
         return result;
     }
 
     /**
      * 建立节点关系数据，对应Python中的_establish_nodes_relations_from_data方法
-     * 
-     * @param data 输入数据文本
-     * @param filters 过滤器
+     *
+     * @param data          输入数据文本
+     * @param filters       过滤器
      * @param entityTypeMap 实体类型映射
      * @return 需要添加的关系列表
      */
     private List<Map<String, Object>> establishNodesRelationsFromData(String data, Map<String, Object> filters,
-                                                                     Map<String, String> entityTypeMap) {
+                                                                      Map<String, String> entityTypeMap) {
         try {
             // 构建用户身份
             String userIdentity = GraphUtils.buildUserIdentity(filters);
@@ -233,22 +230,17 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, null);
                 messages.add(Map.of("role", "system", "content", systemPrompt));
                 String userContent = String.format("List of entities: %s. \n\nText: %s",
-                    new ArrayList<>(entityTypeMap.keySet()), data);
+                        new ArrayList<>(entityTypeMap.keySet()), data);
                 messages.add(Map.of("role", "user", "content", userContent));
             }
 
-            // 准备工具
-            List<Map<String, Object>> tools = new ArrayList<>();
-            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
-
-            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
-                tools.add(Map.of("tool", GraphTools.RELATIONS_STRUCT_TOOL));
-            } else {
-                tools.add(Map.of("tool", GraphTools.RELATIONS_TOOL));
-            }
+            List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
             // 调用LLM进行关系提取
-            Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
+            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            str = MemoryUtils.removeCodeBlocks(str.trim());
+
+            Map<String, Object> response = new Gson().fromJson(str, Map.class);
 
             // 解析结果并转换为兼容格式
             List<Map<String, Object>> entities = new ArrayList<>();
@@ -269,20 +261,16 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 }
             } else {
                 // json format
-                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
-                if (!content.isEmpty()) {
-                    try {
-                        content = MemoryUtils.removeCodeBlocks(content);
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> jsonResponse = response;
+                    if (jsonResponse != null && jsonResponse.get("entities") != null) {
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
-                        if (jsonResponse != null && jsonResponse.get("entities") != null) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                            entities.addAll(extractedEntities);
-                        }
-                    } catch (Exception jsonEx) {
-                        log.error("Failed to parse JSON response from LLM establishNodesRelationsFromData: {}, content: {}", jsonEx.getMessage(), content);
+                        List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                        entities.addAll(extractedEntities);
                     }
+                } catch (Exception jsonEx) {
+                    log.error("Failed to parse JSON response from LLM establishNodesRelationsFromData: {}", jsonEx.getMessage());
                 }
             }
 
@@ -299,14 +287,14 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     /**
      * 获取需要删除的实体，对应Python中的_get_delete_entities_from_search_output方法
-     * 
+     *
      * @param searchOutput 搜索输出结果
-     * @param data 新数据
-     * @param filters 过滤器
+     * @param data         新数据
+     * @param filters      过滤器
      * @return 需要删除的实体列表
      */
     private List<Map<String, Object>> getDeleteEntitiesFromSearchOutput(List<Map<String, Object>> searchOutput,
-                                                                       String data, Map<String, Object> filters) {
+                                                                        String data, Map<String, Object> filters) {
         try {
             String searchOutputString = GraphUtils.formatEntities(searchOutput);
 
@@ -318,31 +306,25 @@ public class Neo4jGraphStore implements GraphStoreBase {
             String systemPrompt = deleteMessages[0];
             String userPrompt = deleteMessages[1];
 
-            // 准备工具
-            List<Map<String, Object>> tools = new ArrayList<>();
-            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
 
-            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
-                tools.add(Map.of("tool", GraphTools.DELETE_MEMORY_STRUCT_TOOL_GRAPH));
-            } else {
-                tools.add(Map.of("tool", GraphTools.DELETE_MEMORY_TOOL_GRAPH));
-            }
-
-            // 调用LLM进行删除决策
-            Map<String, Object> response = llm.generateResponseWithTools(
-                Arrays.asList(
+            List<Map<String, String>> messages = Arrays.asList(
                     Map.of("role", "system", "content", systemPrompt),
                     Map.of("role", "user", "content", userPrompt)
-                ),
-                tools
             );
+
+            List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
+
+            // 调用LLM进行关系提取
+            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            str = MemoryUtils.removeCodeBlocks(str.trim());
+            Map<String, Object> response = new Gson().fromJson(str, Map.class);
 
             // 解析结果
             List<Map<String, Object>> toBeDeleted = new ArrayList<>();
             if (response != null && response.get("tool_calls") instanceof List && !((List<?>) response.get("tool_calls")).isEmpty()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> toolCalls = (List<Map<String, Object>>) response.get("tool_calls");
-                
+
                 for (Map<String, Object> toolCall : toolCalls) {
                     if ("delete_graph_memory".equals(toolCall.get("name"))) {
                         @SuppressWarnings("unchecked")
@@ -353,21 +335,16 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     }
                 }
             } else {
-                // json format
-                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
-                if (!content.isEmpty()) {
-                    try {
-                        content = MemoryUtils.removeCodeBlocks(content);
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> jsonResponse = response;
+                    if (jsonResponse != null && jsonResponse.get("toBeDeleted") != null) {
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
-                        if (jsonResponse != null && jsonResponse.get("toBeDeleted") != null) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) jsonResponse.get("toBeDeleted");
-                            toBeDeleted.addAll(extractedRelations);
-                        }
-                    } catch (Exception jsonEx) {
-                        log.error("Failed to parse JSON response from LLM getDeleteEntitiesFromSearchOutput: {}, content: {}", jsonEx.getMessage(), content);
+                        List<Map<String, Object>> extractedRelations = (List<Map<String, Object>>) jsonResponse.get("toBeDeleted");
+                        toBeDeleted.addAll(extractedRelations);
                     }
+                } catch (Exception jsonEx) {
+                    log.error("Failed to parse JSON response from LLM getDeleteEntitiesFromSearchOutput: {}", jsonEx.getMessage());
                 }
             }
 
@@ -384,14 +361,14 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     /**
      * 删除实体，对应Python中的_delete_entities方法
-     * 
-     * @param session Neo4j会话
+     *
+     * @param session     Neo4j会话
      * @param toBeDeleted 需要删除的实体列表
-     * @param filters 过滤器
+     * @param filters     过滤器
      * @return 删除操作结果列表
      */
     private List<Map<String, Object>> deleteEntities(Session session, List<Map<String, Object>> toBeDeleted,
-                                                    Map<String, Object> filters) {
+                                                     Map<String, Object> filters) {
         List<Map<String, Object>> results = new ArrayList<>();
         String userId = (String) filters.get("user_id");
         String agentId = (String) filters.get("agent_id");
@@ -436,15 +413,15 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
                 // 执行删除
                 String cypher = String.format("""
-                    MATCH (n %s {%s})
-                    -[r:%s]->
-                    (m %s {%s})
-                    DELETE r
-                    RETURN 
-                        n.name AS source,
-                        m.name AS target,
-                        type(r) AS relationship
-                    """, nodeLabel, sourcePropsStr, relationship, nodeLabel, destPropsStr);
+                        MATCH (n %s {%s})
+                        -[r:%s]->
+                        (m %s {%s})
+                        DELETE r
+                        RETURN 
+                            n.name AS source,
+                            m.name AS target,
+                            type(r) AS relationship
+                        """, nodeLabel, sourcePropsStr, relationship, nodeLabel, destPropsStr);
 
                 Result result = session.run(cypher, params);
                 if (result.hasNext()) {
@@ -467,15 +444,15 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     /**
      * 添加实体，对应Python中的_add_entities方法
-     * 
-     * @param session Neo4j会话
-     * @param toBeAdded 需要添加的实体列表
-     * @param filters 过滤器
+     *
+     * @param session       Neo4j会话
+     * @param toBeAdded     需要添加的实体列表
+     * @param filters       过滤器
      * @param entityTypeMap 实体类型映射
      * @return 添加操作结果列表
      */
     private List<Map<String, Object>> addEntities(Session session, List<Map<String, Object>> toBeAdded,
-                                                 Map<String, Object> filters, Map<String, String> entityTypeMap) {
+                                                  Map<String, Object> filters, Map<String, String> entityTypeMap) {
         List<Map<String, Object>> results = new ArrayList<>();
         String userId = (String) filters.get("user_id");
         String agentId = (String) filters.get("agent_id");
@@ -532,27 +509,27 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     String destPropsStr = String.join(", ", destProps);
 
                     cypher = String.format("""
-                        MERGE (source %s {%s})
-                        ON CREATE SET source.created = timestamp(),
-                                    source.mentions = 1
-                                    %s
-                        ON MATCH SET source.mentions = coalesce(source.mentions, 0) + 1
-                        WITH source
-                        CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
-                        WITH source
-                        MERGE (destination %s {%s})
-                        ON CREATE SET destination.created = timestamp(),
-                                    destination.mentions = 1
-                                    %s
-                        ON MATCH SET destination.mentions = coalesce(destination.mentions, 0) + 1
-                        WITH source, destination
-                        CALL db.create.setNodeVectorProperty(destination, 'embedding', $dest_embedding)
-                        WITH source, destination
-                        MERGE (source)-[rel:%s]->(destination)
-                        ON CREATE SET rel.created = timestamp(), rel.mentions = 1
-                        ON MATCH SET rel.mentions = coalesce(rel.mentions, 0) + 1
-                        RETURN source.name AS source, type(rel) AS relationship, destination.name AS target
-                        """, sourceLabel, sourcePropsStr, sourceExtraSet,
+                                    MERGE (source %s {%s})
+                                    ON CREATE SET source.created = timestamp(),
+                                                source.mentions = 1
+                                                %s
+                                    ON MATCH SET source.mentions = coalesce(source.mentions, 0) + 1
+                                    WITH source
+                                    CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
+                                    WITH source
+                                    MERGE (destination %s {%s})
+                                    ON CREATE SET destination.created = timestamp(),
+                                                destination.mentions = 1
+                                                %s
+                                    ON MATCH SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                                    WITH source, destination
+                                    CALL db.create.setNodeVectorProperty(destination, 'embedding', $dest_embedding)
+                                    WITH source, destination
+                                    MERGE (source)-[rel:%s]->(destination)
+                                    ON CREATE SET rel.created = timestamp(), rel.mentions = 1
+                                    ON MATCH SET rel.mentions = coalesce(rel.mentions, 0) + 1
+                                    RETURN source.name AS source, type(rel) AS relationship, destination.name AS target
+                                    """, sourceLabel, sourcePropsStr, sourceExtraSet,
                             destLabel, destPropsStr, destExtraSet, relationship);
 
                     params.put("source_name", source);
@@ -568,28 +545,28 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     String mergePropsStr = String.join(", ", mergeProps);
 
                     cypher = String.format("""
-                        MATCH (source)
-                        WHERE elementId(source) = $source_id
-                        SET source.mentions = coalesce(source.mentions, 0) + 1
-                        WITH source
-                        MERGE (destination %s {%s})
-                        ON CREATE SET
-                            destination.created = timestamp(),
-                            destination.mentions = 1
-                            %s
-                        ON MATCH SET
-                            destination.mentions = coalesce(destination.mentions, 0) + 1
-                        WITH source, destination
-                        CALL db.create.setNodeVectorProperty(destination, 'embedding', $destination_embedding)
-                        WITH source, destination
-                        MERGE (source)-[r:%s]->(destination)
-                        ON CREATE SET 
-                            r.created = timestamp(),
-                            r.mentions = 1
-                        ON MATCH SET
-                            r.mentions = coalesce(r.mentions, 0) + 1
-                        RETURN source.name AS source, type(r) AS relationship, destination.name AS target
-                        """, destLabel, mergePropsStr, destExtraSet, relationship);
+                            MATCH (source)
+                            WHERE elementId(source) = $source_id
+                            SET source.mentions = coalesce(source.mentions, 0) + 1
+                            WITH source
+                            MERGE (destination %s {%s})
+                            ON CREATE SET
+                                destination.created = timestamp(),
+                                destination.mentions = 1
+                                %s
+                            ON MATCH SET
+                                destination.mentions = coalesce(destination.mentions, 0) + 1
+                            WITH source, destination
+                            CALL db.create.setNodeVectorProperty(destination, 'embedding', $destination_embedding)
+                            WITH source, destination
+                            MERGE (source)-[r:%s]->(destination)
+                            ON CREATE SET 
+                                r.created = timestamp(),
+                                r.mentions = 1
+                            ON MATCH SET
+                                r.mentions = coalesce(r.mentions, 0) + 1
+                            RETURN source.name AS source, type(r) AS relationship, destination.name AS target
+                            """, destLabel, mergePropsStr, destExtraSet, relationship);
 
                     params.put("source_id", sourceNodeSearchResult.get(0).get("elementId"));
                     params.put("destination_name", destination);
@@ -603,28 +580,28 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     String mergePropsStr = String.join(", ", mergeProps);
 
                     cypher = String.format("""
-                        MATCH (destination)
-                        WHERE elementId(destination) = $destination_id
-                        SET destination.mentions = coalesce(destination.mentions, 0) + 1
-                        WITH destination
-                        MERGE (source %s {%s})
-                        ON CREATE SET
-                            source.created = timestamp(),
-                            source.mentions = 1
-                            %s
-                        ON MATCH SET
-                            source.mentions = coalesce(source.mentions, 0) + 1
-                        WITH source, destination
-                        CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
-                        WITH source, destination
-                        MERGE (source)-[r:%s]->(destination)
-                        ON CREATE SET 
-                            r.created = timestamp(),
-                            r.mentions = 1
-                        ON MATCH SET
-                            r.mentions = coalesce(r.mentions, 0) + 1
-                        RETURN source.name AS source, type(r) AS relationship, destination.name AS target
-                        """, sourceLabel, mergePropsStr, sourceExtraSet, relationship);
+                            MATCH (destination)
+                            WHERE elementId(destination) = $destination_id
+                            SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                            WITH destination
+                            MERGE (source %s {%s})
+                            ON CREATE SET
+                                source.created = timestamp(),
+                                source.mentions = 1
+                                %s
+                            ON MATCH SET
+                                source.mentions = coalesce(source.mentions, 0) + 1
+                            WITH source, destination
+                            CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
+                            WITH source, destination
+                            MERGE (source)-[r:%s]->(destination)
+                            ON CREATE SET 
+                                r.created = timestamp(),
+                                r.mentions = 1
+                            ON MATCH SET
+                                r.mentions = coalesce(r.mentions, 0) + 1
+                            RETURN source.name AS source, type(r) AS relationship, destination.name AS target
+                            """, sourceLabel, mergePropsStr, sourceExtraSet, relationship);
 
                     params.put("destination_id", destinationNodeSearchResult.get(0).get("elementId"));
                     params.put("source_name", source);
@@ -633,21 +610,21 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 } else {
                     // 两个节点都存在
                     cypher = String.format("""
-                        MATCH (source)
-                        WHERE elementId(source) = $source_id
-                        SET source.mentions = coalesce(source.mentions, 0) + 1
-                        WITH source
-                        MATCH (destination)
-                        WHERE elementId(destination) = $destination_id
-                        SET destination.mentions = coalesce(destination.mentions, 0) + 1
-                        MERGE (source)-[r:%s]->(destination)
-                        ON CREATE SET 
-                            r.created_at = timestamp(),
-                            r.updated_at = timestamp(),
-                            r.mentions = 1
-                        ON MATCH SET r.mentions = coalesce(r.mentions, 0) + 1
-                        RETURN source.name AS source, type(r) AS relationship, destination.name AS target
-                        """, relationship);
+                            MATCH (source)
+                            WHERE elementId(source) = $source_id
+                            SET source.mentions = coalesce(source.mentions, 0) + 1
+                            WITH source
+                            MATCH (destination)
+                            WHERE elementId(destination) = $destination_id
+                            SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                            MERGE (source)-[r:%s]->(destination)
+                            ON CREATE SET 
+                                r.created_at = timestamp(),
+                                r.updated_at = timestamp(),
+                                r.mentions = 1
+                            ON MATCH SET r.mentions = coalesce(r.mentions, 0) + 1
+                            RETURN source.name AS source, type(r) AS relationship, destination.name AS target
+                            """, relationship);
 
                     params.put("source_id", sourceNodeSearchResult.get(0).get("elementId"));
                     params.put("destination_id", destinationNodeSearchResult.get(0).get("elementId"));
@@ -674,7 +651,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     /**
      * 清理实体格式，对应Python中的_remove_spaces_from_entities方法
-     * 
+     *
      * @param entityList 实体列表
      * @return 清理后的实体列表
      */
@@ -700,8 +677,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
         try (Session session = driver.session()) {
             // 构建WHERE条件
             List<String> whereConditions = Arrays.asList(
-                "source_candidate.embedding IS NOT NULL", 
-                "source_candidate.user_id = $user_id"
+                    "source_candidate.embedding IS NOT NULL",
+                    "source_candidate.user_id = $user_id"
             );
             if (filters.get("agent_id") != null) {
                 whereConditions.add("source_candidate.agent_id = $agent_id");
@@ -712,16 +689,16 @@ public class Neo4jGraphStore implements GraphStoreBase {
             String whereClause = String.join(" AND ", whereConditions);
 
             String cypher = String.format("""
-                MATCH (source_candidate %s)
-                WHERE %s
-                WITH source_candidate,
-                round(2 * vector.similarity.cosine(source_candidate.embedding, $source_embedding) - 1, 4) AS source_similarity
-                WHERE source_similarity >= $threshold
-                WITH source_candidate, source_similarity
-                ORDER BY source_similarity DESC
-                LIMIT 1
-                RETURN elementId(source_candidate) as elementId
-                """, nodeLabel, whereClause);
+                    MATCH (source_candidate %s)
+                    WHERE %s
+                    WITH source_candidate,
+                    round(2 * vector.similarity.cosine(source_candidate.embedding, $source_embedding) - 1, 4) AS source_similarity
+                    WHERE source_similarity >= $threshold
+                    WITH source_candidate, source_similarity
+                    ORDER BY source_similarity DESC
+                    LIMIT 1
+                    RETURN elementId(source_candidate) as elementId
+                    """, nodeLabel, whereClause);
 
             Map<String, Object> params = new HashMap<>();
             params.put("source_embedding", sourceEmbedding);
@@ -741,7 +718,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 node.put("elementId", record.get("elementId").asString());
                 results.add(node);
             });
-            
+
             return results;
         } catch (Exception e) {
             log.warn("Failed to search source node", e);
@@ -756,8 +733,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
         try (Session session = driver.session()) {
             // 构建WHERE条件
             List<String> whereConditions = Arrays.asList(
-                "destination_candidate.embedding IS NOT NULL", 
-                "destination_candidate.user_id = $user_id"
+                    "destination_candidate.embedding IS NOT NULL",
+                    "destination_candidate.user_id = $user_id"
             );
             if (filters.get("agent_id") != null) {
                 whereConditions.add("destination_candidate.agent_id = $agent_id");
@@ -768,16 +745,16 @@ public class Neo4jGraphStore implements GraphStoreBase {
             String whereClause = String.join(" AND ", whereConditions);
 
             String cypher = String.format("""
-                MATCH (destination_candidate %s)
-                WHERE %s
-                WITH destination_candidate,
-                round(2 * vector.similarity.cosine(destination_candidate.embedding, $destination_embedding) - 1, 4) AS destination_similarity
-                WHERE destination_similarity >= $threshold
-                WITH destination_candidate, destination_similarity
-                ORDER BY destination_similarity DESC
-                LIMIT 1
-                RETURN elementId(destination_candidate) as elementId
-                """, nodeLabel, whereClause);
+                    MATCH (destination_candidate %s)
+                    WHERE %s
+                    WITH destination_candidate,
+                    round(2 * vector.similarity.cosine(destination_candidate.embedding, $destination_embedding) - 1, 4) AS destination_similarity
+                    WHERE destination_similarity >= $threshold
+                    WITH destination_candidate, destination_similarity
+                    ORDER BY destination_similarity DESC
+                    LIMIT 1
+                    RETURN elementId(destination_candidate) as elementId
+                    """, nodeLabel, whereClause);
 
             Map<String, Object> params = new HashMap<>();
             params.put("destination_embedding", destEmbedding);
@@ -797,7 +774,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 node.put("elementId", record.get("elementId").asString());
                 results.add(node);
             });
-            
+
             return results;
         } catch (Exception e) {
             log.warn("Failed to search destination node", e);
@@ -806,8 +783,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     private Map<String, Object> addEntity(Session session, String source, String destination,
-                                         String relationship, String sourceType, String destinationType,
-                                         Map<String, Object> filters) {
+                                          String relationship, String sourceType, String destinationType,
+                                          Map<String, Object> filters) {
 
         // 生成嵌入向量
         List<Double> sourceEmbedding = embeddingModel.embed(source, "add");
@@ -819,25 +796,25 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         // 构建Cypher查询
         String cypher = String.format("""
-            MERGE (source %s {name: $source_name, user_id: $user_id})
-            ON CREATE SET source.created = timestamp(),
-                        source.mentions = 1
-            ON MATCH SET source.mentions = coalesce(source.mentions, 0) + 1
-            WITH source
-            CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
-            WITH source
-            MERGE (destination %s {name: $dest_name, user_id: $user_id})
-            ON CREATE SET destination.created = timestamp(),
-                        destination.mentions = 1
-            ON MATCH SET destination.mentions = coalesce(destination.mentions, 0) + 1
-            WITH source, destination
-            CALL db.create.setNodeVectorProperty(destination, 'embedding', $dest_embedding)
-            WITH source, destination
-            MERGE (source)-[rel:%s]->(destination)
-            ON CREATE SET rel.created = timestamp(), rel.mentions = 1
-            ON MATCH SET rel.mentions = coalesce(rel.mentions, 0) + 1
-            RETURN source.name AS source, type(rel) AS relationship, destination.name AS target
-            """, sourceLabel, destLabel, relationship);
+                MERGE (source %s {name: $source_name, user_id: $user_id})
+                ON CREATE SET source.created = timestamp(),
+                            source.mentions = 1
+                ON MATCH SET source.mentions = coalesce(source.mentions, 0) + 1
+                WITH source
+                CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
+                WITH source
+                MERGE (destination %s {name: $dest_name, user_id: $user_id})
+                ON CREATE SET destination.created = timestamp(),
+                            destination.mentions = 1
+                ON MATCH SET destination.mentions = coalesce(destination.mentions, 0) + 1
+                WITH source, destination
+                CALL db.create.setNodeVectorProperty(destination, 'embedding', $dest_embedding)
+                WITH source, destination
+                MERGE (source)-[rel:%s]->(destination)
+                ON CREATE SET rel.created = timestamp(), rel.mentions = 1
+                ON MATCH SET rel.mentions = coalesce(rel.mentions, 0) + 1
+                RETURN source.name AS source, type(rel) AS relationship, destination.name AS target
+                """, sourceLabel, destLabel, relationship);
 
         Map<String, Object> params = new HashMap<>();
         params.put("source_name", source);
@@ -873,11 +850,11 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         try (Session session = driver.session()) {
             String cypher = String.format("""
-                MATCH (source {name: $source_name, user_id: $user_id})-[r]->(dest {name: $dest_name, user_id: $user_id})
-                DELETE r
-                CREATE (source)-[:%s]->(dest)
-                RETURN source.name AS source, dest.name AS destination
-                """, relationship);
+                    MATCH (source {name: $source_name, user_id: $user_id})-[r]->(dest {name: $dest_name, user_id: $user_id})
+                    DELETE r
+                    CREATE (source)-[:%s]->(dest)
+                    RETURN source.name AS source, dest.name AS destination
+                    """, relationship);
 
             Map<String, Object> params = new HashMap<>();
             params.put("source_name", source);
@@ -915,12 +892,12 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         try (Session session = driver.session()) {
             String cypher = String.format("""
-                MATCH (source {name: $source_name, user_id: $user_id})
-                -[r:%s]->
-                (dest {name: $dest_name, user_id: $user_id})
-                DELETE r
-                RETURN source.name AS source, dest.name AS destination
-                """, relationship);
+                    MATCH (source {name: $source_name, user_id: $user_id})
+                    -[r:%s]->
+                    (dest {name: $dest_name, user_id: $user_id})
+                    DELETE r
+                    RETURN source.name AS source, dest.name AS destination
+                    """, relationship);
 
             Map<String, Object> params = new HashMap<>();
             params.put("source_name", source);
@@ -972,8 +949,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
             List<Integer> topIndices = bm25.getTopN(queryTokens, Math.min(5, searchOutput.size()));
 
             List<Map<String, Object>> searchResults = topIndices.stream()
-                .map(searchOutput::get)
-                .collect(Collectors.toList());
+                    .map(searchOutput::get)
+                    .collect(Collectors.toList());
 
             log.info("Returned {} search results for user {}", searchResults.size(), userId);
             return searchResults;
@@ -985,33 +962,33 @@ public class Neo4jGraphStore implements GraphStoreBase {
     }
 
     private List<Map<String, Object>> searchGraphDB(Session session, List<String> nodeList,
-                                                   Map<String, Object> filters, int limit) {
+                                                    Map<String, Object> filters, int limit) {
         List<Map<String, Object>> resultRelations = new ArrayList<>();
 
         for (String node : nodeList) {
             List<Double> nEmbedding = embeddingModel.embed(node, "search");
 
             String cypher = String.format("""
-                MATCH (n %s {user_id: $user_id})
-                WHERE n.embedding IS NOT NULL
-                WITH n, round(2 * vector.similarity.cosine(n.embedding, $n_embedding) - 1, 4) AS similarity
-                WHERE similarity >= $threshold
-                CALL {
-                    WITH n
-                    MATCH (n)-[r]->(m %s {user_id: $user_id})
-                    RETURN n.name AS source, elementId(n) AS source_id, type(r) AS relationship,
-                           elementId(r) AS relation_id, m.name AS destination, elementId(m) AS destination_id
-                    UNION
-                    WITH n
-                    MATCH (n)<-[r]-(m %s {user_id: $user_id})
-                    RETURN m.name AS source, elementId(m) AS source_id, type(r) AS relationship,
-                           elementId(r) AS relation_id, n.name AS destination, elementId(n) AS destination_id
-                }
-                WITH distinct source, source_id, relationship, relation_id, destination, destination_id, similarity
-                RETURN source, source_id, relationship, relation_id, destination, destination_id, similarity
-                ORDER BY similarity DESC
-                LIMIT $limit
-                """, nodeLabel, nodeLabel, nodeLabel);
+                    MATCH (n %s {user_id: $user_id})
+                    WHERE n.embedding IS NOT NULL
+                    WITH n, round(2 * vector.similarity.cosine(n.embedding, $n_embedding) - 1, 4) AS similarity
+                    WHERE similarity >= $threshold
+                    CALL {
+                        WITH n
+                        MATCH (n)-[r]->(m %s {user_id: $user_id})
+                        RETURN n.name AS source, elementId(n) AS source_id, type(r) AS relationship,
+                               elementId(r) AS relation_id, m.name AS destination, elementId(m) AS destination_id
+                        UNION
+                        WITH n
+                        MATCH (n)<-[r]-(m %s {user_id: $user_id})
+                        RETURN m.name AS source, elementId(m) AS source_id, type(r) AS relationship,
+                               elementId(r) AS relation_id, n.name AS destination, elementId(n) AS destination_id
+                    }
+                    WITH distinct source, source_id, relationship, relation_id, destination, destination_id, similarity
+                    RETURN source, source_id, relationship, relation_id, destination, destination_id, similarity
+                    ORDER BY similarity DESC
+                    LIMIT $limit
+                    """, nodeLabel, nodeLabel, nodeLabel);
 
             Map<String, Object> params = new HashMap<>();
             params.put("n_embedding", nEmbedding);
@@ -1041,10 +1018,10 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         try (Session session = driver.session()) {
             String cypher = String.format("""
-                MATCH (n %s {user_id: $user_id})-[r]->(m %s {user_id: $user_id})
-                RETURN n.name AS source, type(r) AS relationship, m.name AS target
-                LIMIT $limit
-                """, nodeLabel, nodeLabel);
+                    MATCH (n %s {user_id: $user_id})-[r]->(m %s {user_id: $user_id})
+                    RETURN n.name AS source, type(r) AS relationship, m.name AS target
+                    LIMIT $limit
+                    """, nodeLabel, nodeLabel);
 
             Map<String, Object> params = new HashMap<>();
             params.put("user_id", userId);
@@ -1077,8 +1054,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     /**
      * 从文本中提取实体，支持过滤器
-     * 
-     * @param text 输入文本
+     *
+     * @param text    输入文本
      * @param filters 过滤器，包含用户身份信息
      * @return 实体列表
      */
@@ -1086,21 +1063,24 @@ public class Neo4jGraphStore implements GraphStoreBase {
         try {
             // 构建用户身份
             String userIdentity = GraphUtils.buildUserIdentity(filters);
-            
+
             // 处理系统prompt，替换USER_ID占位符
             String systemPrompt = GraphUtils.EXTRACT_ENTITIES_PROMPT.replace("USER_ID", userIdentity);
-            
+
             // 构建提取实体的提示词
             List<Map<String, Object>> messages = Arrays.asList(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", text)
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", text)
             );
 
-            // 获取对应的工具定义
-            List<Map<String, Object>> tools = Arrays.asList(Map.of("tool", GraphTools.EXTRACT_ENTITIES_TOOL));
 
             // 调用LLM进行实体提取
-            Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
+            List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
+
+            // 调用LLM进行关系提取
+            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            str = MemoryUtils.removeCodeBlocks(str.trim());
+            Map<String, Object> response = new Gson().fromJson(str, Map.class);
 
             // 解析工具调用结果
             List<Map<String, Object>> entities = new ArrayList<>();
@@ -1120,30 +1100,22 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     }
                 }
             } else {
-                // when tool calls is empty, use json extraction
-                String content = response != null && response.get("content") != null ? response.get("content").toString() : "";
-                if (!content.isEmpty()) {
-                    try {
-                        content = MemoryUtils.removeCodeBlocks(content); 
+                try {
+                    Map<String, Object> jsonResponse = response;
+                    if (jsonResponse != null && jsonResponse.get("entities") != null) {
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
-                        if (jsonResponse != null && jsonResponse.get("entities") != null) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                            for (Map<String, Object> entity : extractedEntities) {
-                                String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
-                                String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
-                                if (!entityName.isEmpty()) {
-                                    entities.add(Map.of("entity", GraphUtils.normalizeEntityName(entityName), "entity_type", GraphUtils.normalizeEntityName(entityType)));
-                                }
+                        List<Map<String, Object>> extractedEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                        for (Map<String, Object> entity : extractedEntities) {
+                            String entityName = entity.get("entity") != null ? entity.get("entity").toString() : "";
+                            String entityType = entity.get("entity_type") != null ? entity.get("entity_type").toString() : "general";
+                            if (!entityName.isEmpty()) {
+                                entities.add(Map.of("entity", GraphUtils.normalizeEntityName(entityName), "entity_type", GraphUtils.normalizeEntityName(entityType)));
                             }
                         }
-                    } catch (Exception jsonEx) {
-                        log.error("Failed to parse JSON response from LLM extractEntities: {}, content: {}", jsonEx.getMessage(), content);
-                        // 如果JSON解析失败，可以在这里添加额外的处理逻辑
                     }
+                } catch (Exception jsonEx) {
+                    log.error("Failed to parse JSON response from LLM extractEntities: {}", jsonEx.getMessage());
                 }
- 
             }
 
             log.info("Extracted {} entities from text", entities.size());
@@ -1211,8 +1183,8 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
     /**
      * 从文本中建立实体关系，支持指定用户ID
-     * 
-     * @param text 输入文本
+     *
+     * @param text   输入文本
      * @param userId 用户ID
      * @return 关系列表
      */
@@ -1248,22 +1220,16 @@ public class Neo4jGraphStore implements GraphStoreBase {
                 systemPrompt = GraphUtils.processPrompt(GraphUtils.EXTRACT_RELATIONS_PROMPT, userIdentity, null);
                 messages.add(Map.of("role", "system", "content", systemPrompt));
                 String userContent = String.format("List of entities: %s. \n\nText: %s",
-                    new ArrayList<>(entityTypeMap.keySet()), text);
+                        new ArrayList<>(entityTypeMap.keySet()), text);
                 messages.add(Map.of("role", "user", "content", userContent));
             }
 
-            // 准备工具 - 根据LLM提供商选择结构化工具
-            List<Map<String, Object>> tools = new ArrayList<>();
-            String llmProvider = config.getLlm() != null ? config.getLlm().getProvider().getValue() : "openai";
-
-            if ("azure_openai_structured".equals(llmProvider) || "openai_structured".equals(llmProvider)) {
-                tools.add(Map.of("tool", GraphTools.RELATIONS_STRUCT_TOOL));
-            } else {
-                tools.add(Map.of("tool", GraphTools.RELATIONS_TOOL));
-            }
-
             // 调用LLM进行关系提取
-            Map<String, Object> response = llm.generateResponseWithTools(messages, tools);
+            List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
+            // 调用LLM进行关系提取
+            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            str = MemoryUtils.removeCodeBlocks(str.trim());
+            Map<String, Object> response = new Gson().fromJson(str, Map.class);
 
             // 解析工具调用结果
             List<GraphEntity> relations = new ArrayList<>();
@@ -1286,11 +1252,11 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
                                 if (GraphUtils.validateGraphEntity(source, destination, relationship)) {
                                     GraphEntity entity = new GraphEntity(
-                                        GraphUtils.cleanEntityName(source),
-                                        GraphUtils.cleanEntityName(destination),
-                                        GraphUtils.cleanRelationshipName(relationship),
-                                        "Entity",  // 默认源节点类型
-                                        "Entity"   // 默认目标节点类型
+                                            GraphUtils.cleanEntityName(source),
+                                            GraphUtils.cleanEntityName(destination),
+                                            GraphUtils.cleanRelationshipName(relationship),
+                                            "Entity",  // 默认源节点类型
+                                            "Entity"   // 默认目标节点类型
                                     );
                                     relations.add(entity);
                                 }
@@ -1299,37 +1265,30 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     }
                 }
             } else {
-                // when tool calls is empty, use json extraction
-                String content = MemoryUtils.removeCodeBlocks(response != null && response.get("content") != null ? response.get("content").toString() : "");
-                if (!content.isEmpty()) {
-                    try {
+                try {
+                    Map<String, Object> jsonResponse = response;
+                    if (jsonResponse != null && jsonResponse.get("entities") != null) {
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> jsonResponse = (Map<String, Object>) new com.google.gson.Gson().fromJson(content, Map.class);
-                        if (jsonResponse != null && jsonResponse.get("entities") != null) {
-                            @SuppressWarnings("unchecked")
-                            List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
-                            for (Map<String, Object> entity : jsonEntities) {
-                                String source = entity.get("source") != null ? entity.get("source").toString() : "";
-                                String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
-                                String destination = entity.get("destination") != null ? entity.get("destination").toString() : "general";
-                                if (!source.isEmpty() && !relationship.isEmpty() && !destination.isEmpty()) {
-                                    GraphEntity graphEntity = new GraphEntity(
+                        List<Map<String, Object>> jsonEntities = (List<Map<String, Object>>) jsonResponse.get("entities");
+                        for (Map<String, Object> entity : jsonEntities) {
+                            String source = entity.get("source") != null ? entity.get("source").toString() : "";
+                            String relationship = entity.get("relationship") != null ? entity.get("relationship").toString() : "general";
+                            String destination = entity.get("destination") != null ? entity.get("destination").toString() : "general";
+                            if (!source.isEmpty() && !relationship.isEmpty() && !destination.isEmpty()) {
+                                GraphEntity graphEntity = new GraphEntity(
                                         GraphUtils.cleanEntityName(source),
                                         GraphUtils.cleanEntityName(destination),
                                         GraphUtils.cleanRelationshipName(relationship),
                                         "Entity",  // 默认源节点类型
                                         "Entity"   // 默认目标节点类型
-                                    );
-                                    relations.add(graphEntity);
-                                }
+                                );
+                                relations.add(graphEntity);
                             }
-                        }   
-                    } catch (Exception jsonEx) {
-                        log.error("Failed to parse JSON response from LLM establishRelations: {}, content: {}", jsonEx.getMessage(), content);
-                        // 如果JSON解析失败，可以在这里添加额外的处理逻辑
+                        }
                     }
-                } else {
-                    log.warn("Empty content from LLM response!");
+                } catch (Exception jsonEx) {
+                    log.error("Failed to parse JSON response from LLM establishRelations: {}", jsonEx.getMessage());
+                    // 如果JSON解析失败，可以在这里添加额外的处理逻辑
                 }
             }
 
@@ -1350,9 +1309,9 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         try (Session session = driver.session()) {
             String cypher = String.format("""
-                MATCH (n {name: $source_name, user_id: $user_id})-[r:%s]->(m {name: $dest_name, user_id: $user_id})
-                RETURN count(r) as count
-                """, relationship);
+                    MATCH (n {name: $source_name, user_id: $user_id})-[r:%s]->(m {name: $dest_name, user_id: $user_id})
+                    RETURN count(r) as count
+                    """, relationship);
 
             Map<String, Object> params = new HashMap<>();
             params.put("source_name", source);
@@ -1376,9 +1335,9 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         try (Session session = driver.session()) {
             String cypher = String.format("""
-                MATCH (n {name: $node_name, user_id: $user_id})-[r]-(m {user_id: $user_id})
-                RETURN n.name as source, type(r) as relationship, m.name as destination
-                """);
+                    MATCH (n {name: $node_name, user_id: $user_id})-[r]-(m {user_id: $user_id})
+                    RETURN n.name as source, type(r) as relationship, m.name as destination
+                    """);
 
             Map<String, Object> params = new HashMap<>();
             params.put("node_name", nodeName);
@@ -1411,7 +1370,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
         try (Session session = driver.session()) {
             session.run("MATCH (n {user_id: $user_id}) DETACH DELETE n",
-                       Map.of("user_id", userId));
+                    Map.of("user_id", userId));
             log.info("Deleted all graph data for user {} from Neo4j", userId);
 
         } catch (Exception e) {
@@ -1430,9 +1389,6 @@ public class Neo4jGraphStore implements GraphStoreBase {
         try {
             if (driver != null) {
                 driver.close();
-            }
-            if (llm != null) {
-                llm.close();
             }
             if (embeddingModel != null) {
                 embeddingModel.close();

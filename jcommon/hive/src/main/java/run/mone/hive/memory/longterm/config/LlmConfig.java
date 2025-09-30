@@ -17,6 +17,9 @@ import java.util.HashMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LlmConfig {
+
+
+    private String providerName;
     
     /**
      * LLM提供商类型
@@ -30,7 +33,7 @@ public class LlmConfig {
         AZURE_OPENAI("azure_openai"),
         BEDROCK("bedrock"),
         TOGETHER("together"),
-        DEEPSEEK("deepseek"),
+        DEEPSEEK("doubao_deepseek_v3"),
         XAI("xai");
         
         private final String value;
@@ -58,7 +61,7 @@ public class LlmConfig {
      */
     @Builder.Default
     private Provider provider = Provider.OPENAI;
-    
+
     /**
      * 模型名称
      */
@@ -126,6 +129,11 @@ public class LlmConfig {
         if (configMap.containsKey("provider")) {
             String providerStr = (String) configMap.get("provider");
             builder.provider(Provider.fromString(providerStr));
+        }
+
+        if (configMap.containsKey("providerName")) {
+            String providerName = configMap.get("providerName").toString();
+            builder.providerName(providerName);
         }
         
         if (configMap.containsKey("model")) {

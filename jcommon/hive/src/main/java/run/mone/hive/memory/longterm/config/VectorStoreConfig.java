@@ -22,17 +22,8 @@ public class VectorStoreConfig {
      * 向量存储提供商类型
      */
     public enum Provider {
-        LOCAL("local"),
-        QDRANT("qdrant"),
-        CHROMA("chroma"),
-        WEAVIATE("weaviate"),
-        PINECONE("pinecone"),
-        FAISS("faiss"),
-        ELASTICSEARCH("elasticsearch"),
-        REDIS("redis"),
-        PGVECTOR("pgvector"),
-        MILVUS("milvus");
-        
+        CHROMA("chroma");
+
         private final String value;
         
         Provider(String value) {
@@ -57,13 +48,13 @@ public class VectorStoreConfig {
      * 提供商
      */
     @Builder.Default
-    private Provider provider = Provider.QDRANT;
+    private Provider provider = Provider.CHROMA;
     
     /**
      * 集合名称
      */
     @Builder.Default
-    private String collectionName = "mem0";
+    private String collectionName = "mem1";
     
     /**
      * 嵌入向量维度
@@ -170,31 +161,8 @@ public class VectorStoreConfig {
         return builder.build();
     }
     
-    /**
-     * 获取本地存储默认配置
-     */
-    public static VectorStoreConfig localDefault() {
-        return VectorStoreConfig.builder()
-                .provider(Provider.LOCAL)
-                .path("./data/memory")
-                .collectionName("mem0")
-                .embeddingModelDims(1536)
-                .build();
-    }
-    
-    /**
-     * 获取Qdrant默认配置
-     */
-    public static VectorStoreConfig qdrantDefault() {
-        return VectorStoreConfig.builder()
-                .provider(Provider.QDRANT)
-                .host("localhost")
-                .port(6333)
-                .collectionName("mem0")
-                .embeddingModelDims(1536)
-                .build();
-    }
-    
+
+
     /**
      * 获取Chroma默认配置（本地嵌入式）
      */
