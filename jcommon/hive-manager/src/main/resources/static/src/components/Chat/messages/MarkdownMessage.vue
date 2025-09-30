@@ -31,7 +31,11 @@ import "@/styles/markdown-mcp.scss";
 import { markdownItBolt } from '@/plugins/markdown-it-bolt'
 import { markdownItMcp } from '@/plugins/markdown-it-mcp'
 import { markdownItStock } from '@/plugins/markdown-it-stock'
+import { useChatContextStore } from '@/stores/chat-context'
+
 import { nextTick } from "vue";
+
+const { clearMessageAfterId } = useChatContextStore()
 const mdi = new MarkdownIt({
   html: false,
   linkify: true,
@@ -135,6 +139,17 @@ export default {
     this.addFileUrlLinkEvents();
     this.addPidButtonEvents();
     this.addTerminalAppendEvents();
+    const textRef = this.$refs.textRef as HTMLDivElement
+      textRef.querySelectorAll('.hive-btn').forEach((ele) => {
+        ele?.removeEventListener('click', () => {
+          const id = ele?.id
+          clearMessageAfterId(id)
+        })
+        ele?.addEventListener('click', () => {
+          const id = ele?.id
+          clearMessageAfterId(id)
+        })
+      })
   },
   updated() {
     this.addApply();
@@ -148,6 +163,18 @@ export default {
     this.addFileUrlLinkEvents();
     this.addPidButtonEvents();
     this.addTerminalAppendEvents();
+    const textRef = this.$refs.textRef as HTMLDivElement
+      textRef.querySelectorAll('.hive-btn').forEach((ele) => {
+        ele?.removeEventListener('click', () => {
+          const id = ele?.id
+          clearMessageAfterId(id)
+        })
+        ele?.addEventListener('click', () => {
+          const id = ele?.id
+          clearMessageAfterId(id)
+        })
+      })
+
   },
   unmounted() {
     this.removeEvents();
@@ -791,7 +818,7 @@ export default {
   }
 
   code {
-    font-family: "Courier New", Courier, monospace !important;
+    font-family: 'Courier New', Courier, monospace !important;
   }
 }
 
@@ -811,6 +838,4 @@ export default {
 a.chatLink {
   color: inherit !important;
 }
-
-
 </style>

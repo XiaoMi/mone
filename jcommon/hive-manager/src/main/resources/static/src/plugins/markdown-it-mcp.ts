@@ -28,6 +28,7 @@ export function markdownItMcp(md: MarkdownIt) {
     // 检查当前行是否包含<thinking>等标签
     if (
       !(
+        mcpContent.includes("<hive-msg-id>") ||
         mcpContent.includes("<terminal>") ||
         mcpContent.includes("<download_file") ||
         mcpContent.includes("<use_mcp_tool>") ||
@@ -295,7 +296,9 @@ export function markdownItMcp(md: MarkdownIt) {
               <div class="tool-result-content">`;
         } else if (name === "pid") {
           html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
-        } else if (name === "terminal_append") {
+        } else if (name === 'hive-msg-id') {
+          html += `<div class="hive-msg-btn">`;
+        }else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
           html += `<!-- terminal_append_start -->`;
         } else if (name === "process_pid") {
@@ -372,7 +375,10 @@ export function markdownItMcp(md: MarkdownIt) {
           // 处理任务进度内容，转换为列表
           html += md.render(text);
           return;
-        } else if (tagName === "usage") {
+        } else if (tagName === "hive-msg-id") {
+          html += `<div class="hive-btn" id="${text.trim()}">${text.trim()}</div>`;
+          return;
+        }  else if (tagName === "usage") {
           // 处理任务进度内容，转换为列表
           html += '';
           return;
@@ -463,6 +469,8 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "file") {
           html += `</div></div>`;
+        } else if (tagname === 'hive-msg-id') {
+          html += `</div>`;
         } else if (tagname === "file_operation") {
           html += `</div></div>`;
         } else if (tagname === "execute") {
