@@ -275,6 +275,7 @@ const getUsageRateClass = () => {
     color: #ffffff;
   }
 }
+
 .cyberpunk {
   .token-usage-container {
     background: rgba(20, 20, 50, 0.5);
@@ -286,4 +287,5 @@ const getUsageRateClass = () => {
     color: #ffffff;
   }
 }
+
 </style>
