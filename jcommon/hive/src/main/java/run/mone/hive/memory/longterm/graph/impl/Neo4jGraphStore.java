@@ -3,11 +3,14 @@ package run.mone.hive.memory.longterm.graph.impl;
 import com.google.gson.Gson;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.memory.longterm.config.EmbedderConfig;
@@ -87,7 +90,24 @@ public class Neo4jGraphStore implements GraphStoreBase {
     private void initializeLLM() {
         try {
             LlmConfig llmConfig = config.getLlm();
-            this.llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmConfig.getProviderName())).build());
+            this.llm = new LLM(LLMConfig.builder()
+                .customConfig(CustomConfig.builder()
+                    .customHeaders(config.getLlm().getCustomHeaders())
+                    .model(config.getLlm().getModel())
+                    .build())
+                .llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName()))
+                .url(MemoryUtils.validateUrl(LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl()) ? LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl() : config.getLlm().getBaseUrl()) 
+                .model(config.getLlm().getModel() != null ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
+                .json(StringUtils.isNotBlank(config.getLlm().getResponseJsonFormat()) ? Boolean.parseBoolean(config.getLlm().getResponseJsonFormat()) : false)
+                .build());
+            // 如果apiKey不为空，则设置apiKey, 否则从环境变量中获取
+            if (StringUtils.isNotBlank(config.getLlm().getApiKey())) {
+                this.llm.setConfigFunction(
+                    (provider) -> Optional.of(LLMConfig.builder()
+                        .token(config.getLlm().getApiKey())
+                        .build())
+                );
+            }
             log.info("LLM initialized with provider: {}", llmConfig.getProvider());
         } catch (Exception e) {
             log.error("Failed to initialize LLM", e);
@@ -238,7 +258,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
             // 调用LLM进行关系提取
-            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
 
             Map<String, Object> response = GsonUtils.gson.fromJson(str, Map.class);
@@ -296,7 +316,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
             // 调用LLM进行关系提取
-            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
             @SuppressWarnings("unchecked")
             Map<String, Object> response = new Gson().fromJson(str, Map.class);
@@ -1111,7 +1131,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
             // 调用LLM进行关系提取
-            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
             Map<String, Object> response = new Gson().fromJson(str, Map.class);
 
@@ -1243,7 +1263,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
             // 调用LLM进行关系提取
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
             // 调用LLM进行关系提取
-            String str = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
             Map<String, Object> response = new Gson().fromJson(str, Map.class);
 

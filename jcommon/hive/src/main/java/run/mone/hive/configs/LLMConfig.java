@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLMProvider;
 import java.util.List;
 
@@ -41,6 +42,8 @@ public class LLMConfig {
     private String token2;
 
     private String systemPrompt;
+
+    private CustomConfig customConfig;
 
     // 在思考模型下，是否返回思考内容，默认返回
     private boolean reasoningOutPut = true;
