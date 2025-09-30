@@ -289,7 +289,7 @@ export const useChatContextStore = defineStore("chat-context", () => {
     tokenUsage.value.inputTokens += inputTokens;
     tokenUsage.value.outputTokens += outputTokens;
     tokenUsage.value.compressedTokens += compressedTokens;
-    tokenUsage.value.usedTokens = tokenUsage.value.inputTokens - tokenUsage.value.outputTokens-compressedTokens;
+    tokenUsage.value.usedTokens = tokenUsage.value.inputTokens + tokenUsage.value.outputTokens - tokenUsage.value.compressedTokens;
     tokenUsage.value.lastUpdate = new Date();
   }
 
