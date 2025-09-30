@@ -185,19 +185,21 @@ public class ChatFunction implements McpFunction {
         }
 
         boolean success = roleService.rollbackHistory(Message.builder().sentFrom(ownerId).id(messageId).build());
-        String resultMessage;
+        String resultText;
         if (success) {
             if (messageId != null) {
-                resultMessage = "上下文已回滚到消息 " + messageId + " 之前";
+                resultText = "上下文已回滚到消息 " + messageId + " 之前";
             } else {
-                resultMessage = "上下文已回滚上一轮对话";
+                resultText = "上下文已回滚上一轮对话";
             }
         } else {
-            resultMessage = "回滚失败，没有找到指定消息或历史记录为空";
+            resultText = "回滚失败，没有找到指定消息或历史记录为空";
         }
 
+        String finalMessage = String.format("<rollback-result success=\"%s\">%s</rollback-result>", success, resultText);
+
         return Flux.just(new McpSchema.CallToolResult(
-                List.of(new McpSchema.TextContent(resultMessage)),
+                List.of(new McpSchema.TextContent(finalMessage)),
                 false
         ));
     }

@@ -73,6 +73,16 @@ public class FileCheckpointManager {
             log.info("start init git dir:{}", this.gitDir);
             gitDirFile.mkdirs();
             executeGitRepoCommand("init", "--bare");
+
+            // 在 .hive 目录下也添加一个 .gitignore 来忽略 checkpoint 目录，作为双重保险
+            Path hiveGitignorePath = Paths.get(this.projectPath, ".hive", ".gitignore");
+            String checkpointDir = "checkpoint/";
+            try {
+                Files.writeString(hiveGitignorePath, checkpointDir + "\n", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                log.info("Created .gitignore in .hive directory to ignore '{}'", checkpointDir);
+            } catch (IOException e) {
+                log.error("Failed to create .gitignore in .hive directory", e);
+            }
         }
     }
 
