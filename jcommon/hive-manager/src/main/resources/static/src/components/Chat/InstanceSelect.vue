@@ -87,10 +87,7 @@
         </template>
       </el-dialog>
     </div>
-    <TokenUsage
-      :used-tokens="tokenUsage.inputTokens + tokenUsage.outputTokens"
-      :total-tokens="tokenUsage.totalTokens"
-    />
+    <TokenUsage :used-tokens="calToken" :total-tokens="tokenUsage.totalTokens" />
   </div>
 </template>
 
@@ -111,6 +108,10 @@ import {
 const { getInstance, setSelectedInstance } = useUserStore()
 const { setMessageList, tokenUsage, resetTokenUsage } = useChatContextStore()
 const selectedIp = ref('')
+const  calToken = computed(() => {
+  if (tokenUsage.inputTokens + tokenUsage.outputTokens - tokenUsage.compressedTokens <= 0) return 0
+  return tokenUsage.inputTokens + tokenUsage.outputTokens - tokenUsage.compressedTokens
+})
 const props = defineProps({
   onClearHistory: {
     type: Function,

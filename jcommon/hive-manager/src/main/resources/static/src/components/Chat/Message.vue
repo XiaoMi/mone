@@ -15,7 +15,9 @@
       </slot>
       <div class="sc-message--content">
         <div class="sc-message--user-content" :class="{'sc-message--user-content-audio': message.type === 'audio'}">
-          <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message" @pidAction="handlePidAction">
+          <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message" @pidAction="handlePidAction" @onClick2Conversion="(id) => {
+            $emit('onClick2Conversion', id)
+          }">
             <template v-slot:default="scopedProps">
               <slot
                 name="text-message-body"

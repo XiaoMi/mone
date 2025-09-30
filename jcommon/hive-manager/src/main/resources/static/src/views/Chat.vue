@@ -17,6 +17,7 @@
       :onOffline="onOfflineAgent"
       :onStopMsg="onStopMsg"
       @pidAction="onPidAction"
+      @onClick2Conversion="onClick2Conversion"
     />
   </div>
 </template>
@@ -106,6 +107,27 @@ const getAgentName = () => {
   }
   return name
 }
+const onClick2Conversion = ({ id }) => {
+  const agent = getAgent()
+  let params = {
+    message: `/rollback  ${id}`,
+    __owner_id__: user?.username,
+  }
+  clearHistory({
+    mapData: {
+      outerTag: 'use_mcp_tool',
+      server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${
+        getSelectedInstance().port
+      }`,
+      tool_name: getAgentName(),
+      arguments: JSON.stringify(params),
+    },
+    conversationId: route.query.conversationId,
+    agentId: route.query.serverAgentId,
+    agentInstance: getSelectedInstance(),
+  })
+}
+
 const onClearHistory = () => {
   const agent = getAgent()
   let params = {

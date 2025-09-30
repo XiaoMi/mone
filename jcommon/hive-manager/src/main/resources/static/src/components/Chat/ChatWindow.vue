@@ -13,6 +13,9 @@
       @scrollToTop="$emit('scrollToTop')"
       :onPlayAudio="onPlayAudio"
       @pidAction="handlePidAction"
+      @onClick2Conversion="(id) => {
+            $emit('onClick2Conversion', id)
+          }"
     >
       <template #user-avatar="scopedProps">
         <slot name="user-avatar" :user="scopedProps.user" :message="scopedProps.message"> </slot>

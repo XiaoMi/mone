@@ -76,6 +76,7 @@ export class SimpleHtmlParser {
   constructor(callbacks: ParserCallbacks) {
     this.callbacks = callbacks;
     this.supportedTags = new Set([
+      'hive-msg-id',
       'usage',
       'query',
       'action',
