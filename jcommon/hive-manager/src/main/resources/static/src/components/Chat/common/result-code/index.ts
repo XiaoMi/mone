@@ -309,37 +309,37 @@ export function imageHandler(text: string, uuid: string) {
     messageList,
     setMessageList,
   } = useChatContextStore();
-    try {
-      const image = JSON.parse(text);
-      let list:any[] = []
-      image.predictions.forEach((item: any) => {
-        list.push({
-          mimeType: item.mimeType,
-          data: item.bytesBase64Encoded,
-          type: "image"
-        })
+  try {
+    const image = JSON.parse(text);
+    let list: any[] = []
+    image.predictions.forEach((item: any) => {
+      list.push({
+        mimeType: item.mimeType,
+        data: item.bytesBase64Encoded,
+        type: "image"
       })
+    })
 
-      const existData = {
-        id: uuid,
-        type: "images",
-        author: getUserRole("idea", user),
-        meta: {
-          role: getUserRole("idea", user).role,
-          separators: "",
-          serverId: uuid || undefined,
-        },
-        data: {
-          origin: "",
-          text: JSON.stringify(list),
-          content: ""
-        },
-      }
-      setMessageList([...messageList, existData]);
-    }catch(e){
-      console.error(e);
-      return;
+    const existData = {
+      id: uuid,
+      type: "images",
+      author: getUserRole("idea", user),
+      meta: {
+        role: getUserRole("idea", user).role,
+        separators: "",
+        serverId: uuid || undefined,
+      },
+      data: {
+        origin: "",
+        text: JSON.stringify(list),
+        content: ""
+      },
     }
+    setMessageList([...messageList, existData]);
+  } catch (e) {
+    console.error(e);
+    return;
+  }
 }
 
 export function fluxCodeHandler(res: string, uuid: string) {
