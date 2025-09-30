@@ -144,10 +144,12 @@ export default {
         ele?.removeEventListener('click', () => {
           const id = ele?.id
           clearMessageAfterId(id)
+          this.$emit('onClick2Conversion', { id })
         })
         ele?.addEventListener('click', () => {
           const id = ele?.id
           clearMessageAfterId(id)
+          this.$emit('onClick2Conversion', { id })
         })
       })
   },
@@ -168,10 +170,12 @@ export default {
         ele?.removeEventListener('click', () => {
           const id = ele?.id
           clearMessageAfterId(id)
+         this.$emit('onClick2Conversion', { id })
         })
         ele?.addEventListener('click', () => {
           const id = ele?.id
           clearMessageAfterId(id)
+         this.$emit('onClick2Conversion', { id })
         })
       })
 
