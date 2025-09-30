@@ -73,6 +73,7 @@ export function markdownItMcp(md: MarkdownIt) {
 
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
+        console.log('namenamenamename', name);
         // console.log("onopentag", name, attributes);
         tagStack.push(name); // 将标签推入栈中
         /*
@@ -107,6 +108,8 @@ export function markdownItMcp(md: MarkdownIt) {
             <div class="thinking-content is-active">`;
         } else if (name === "message") {
         } else if (name === "action") {
+          html+= `<div style="display:none;">`;
+        } else if (name === "usage") {
           html+= `<div style="display:none;">`;
         } else if (name === "query") {
           html+= `<div>`;
@@ -369,6 +372,10 @@ export function markdownItMcp(md: MarkdownIt) {
           // 处理任务进度内容，转换为列表
           html += md.render(text);
           return;
+        } else if (tagName === "usage") {
+          // 处理任务进度内容，转换为列表
+          html += '';
+          return;
         }
         if (isDownloadFile) {
           return;
@@ -433,6 +440,8 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "metadata") {
            html += `</div>`;
         } else if (tagname === "query") {
+           html += `</div>`;
+        }else if (tagname === "usage") {
            html += `</div>`;
         }else if (tagname === "server_name") {
           html += `</span>`;
@@ -559,7 +568,10 @@ export function markdownItMcp(md: MarkdownIt) {
           // process_pid 标签关闭，不需要额外处理
         } else if (tagname === "process_content") {
           // process_content 标签关闭，不需要额外处理
-        } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
+        } else if (tagname === "usage") {
+          html += `</div>`;
+          // process_content 标签关闭，不需要额外处理
+        }else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
         } else if (tagname === "download_file") {
           isDownloadFile = false;
