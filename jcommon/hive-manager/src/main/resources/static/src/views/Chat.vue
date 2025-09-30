@@ -33,6 +33,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { fluxCodeHandler } from '@/components/Chat/common/result-code'
 import { useTheme } from '@/styles/theme/useTheme'
 import { useFunctionPanelStore } from '@/stores/function-panel'
+import { useEditStore } from '@/stores/edit'
 const route = useRoute()
 const {
   getChatContext,
@@ -47,7 +48,7 @@ const {
 } = useChatContextStore()
 const { user, setAgent, setInstance, getSelectedInstance, getAgent } = useUserStore()
 const functionPanelStore = useFunctionPanelStore()
-
+const { setShowFollow } = useEditStore()
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string)
 const messageId = ref<string>('')
@@ -225,6 +226,7 @@ const onPlayAudio = (text: string) => {
   }
 }
 const sendMessage = async (message: Message) => {
+  setShowFollow(true);
   addMessage(message)
   let text = message.data.text
   let image = null

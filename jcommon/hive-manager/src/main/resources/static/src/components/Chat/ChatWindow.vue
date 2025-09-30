@@ -48,6 +48,11 @@
         <el-button type="danger" size="small" @click="cancel">取消</el-button>
       </div>
     </div>
+    <div class="follow-box" v-if="showFollow">
+      <div class="follow-box-btn">
+        <el-button type="warning" size="small" @click="setIsFollow(!isFollow)">{{ isFollow ? '取消跟随' : '跟随输出' }}</el-button>
+      </div>
+    </div>
     <UserInput
       :on-submit="onUserInputSubmit"
       :placeholder="placeholder"
@@ -135,7 +140,7 @@ export default {
   },
   computed: {
     ...mapState(useIdeaInfoStore, ['isShowFile']),
-    ...mapState(useEditStore, ['showApprove', 'setShowApprove', 'disableEdit', 'enableEdit']),
+    ...mapState(useEditStore, ['showApprove', 'setShowApprove', 'disableEdit', 'enableEdit', 'isFollow', 'showFollow', 'setShowFollow', 'setIsFollow']),
     messages() {
       // console.log("messageList", this.messageList);
       // 将最后一条个属性isLast:true, 否则是false
@@ -253,7 +258,7 @@ export default {
   text-align: left;
 }
 
-.approve-box {
+.approve-box, .follow-box {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -266,7 +271,7 @@ export default {
   margin-bottom: 10px;
 }
 
-.approve-box-btn {
+.approve-box-btn, .follow-box-btn {
   display: flex;
 }
 </style>

@@ -605,8 +605,13 @@ public class Memory implements MemoryBase {
                     .role(it.get("role").toString())
                     .content(it.get("content").toString())
                     .build()).toList();
-
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+            
             String response = llm.chat(msgList);
+            
             log.info("Fact extraction LLM response: {}", response);
 
             return parseFactsFromJsonResponse(response);
@@ -701,7 +706,13 @@ public class Memory implements MemoryBase {
             List<AiMessage> msgList = messages.stream().map(it ->
                     AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+
             String response = llm.chat(msgList);
+
             log.info("Memory decision LLM response: {}", response);
 
             return parseMemoryActionsFromJsonResponse(response);
@@ -1059,6 +1070,11 @@ public class Memory implements MemoryBase {
 
             List<AiMessage> msgList = parsedMessages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+            
             String proceduralMemory = llm.chat(msgList);
 
             metadata.put("memory_type", "procedural_memory");
