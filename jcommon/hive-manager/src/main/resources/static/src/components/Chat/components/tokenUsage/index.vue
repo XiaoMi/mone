@@ -258,7 +258,6 @@ const getUsageRateClass = () => {
 }
 
 // 暗色主题支持
-<<<<<<< HEAD
 .dark {
   .token-usage-container {
     background: rgba(20, 20, 50, 0.5);
@@ -276,6 +275,7 @@ const getUsageRateClass = () => {
     color: #ffffff;
   }
 }
+
 .cyberpunk {
   .token-usage-container {
     background: rgba(20, 20, 50, 0.5);
@@ -285,11 +285,7 @@ const getUsageRateClass = () => {
   .progress-text,
   .token-value {
     color: #ffffff;
-=======
-@media (prefers-color-scheme: dark) {
-  .token-usage-container {
-    background: var(--el-bg-color-page);
->>>>>>> master
   }
 }
+
 </style>
