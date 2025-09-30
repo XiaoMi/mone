@@ -13,6 +13,6 @@ public class Constants {
 
     public static final String WORKSPACE_PATH = "workspacePath";
 
-    public static final String TOKEN_USAGE_LABEL_START = "\n<chat>\n<usage>\n";
-    public static final String TOKEN_USAGE_LABEL_END = "\n</usage>\n</chat>\n";
+    public static final String TOKEN_USAGE_LABEL_START = "\n<usage>\n";
+    public static final String TOKEN_USAGE_LABEL_END = "\n</usage>\n";
 } 
