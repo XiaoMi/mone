@@ -97,7 +97,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     .build())
                 .llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName()))
                 .url(MemoryUtils.validateUrl(LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl()) ? LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl() : config.getLlm().getBaseUrl()) 
-                .model(config.getLlm().getModel() != null ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
+                .model(StringUtils.isNotBlank(config.getLlm().getModel()) ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
                 .json(StringUtils.isNotBlank(config.getLlm().getResponseJsonFormat()) ? Boolean.parseBoolean(config.getLlm().getResponseJsonFormat()) : false)
                 .build());
             // 如果apiKey不为空，则设置apiKey, 否则从环境变量中获取
