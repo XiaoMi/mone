@@ -1,6 +1,10 @@
 <template>
   <div class="sc-chat-window" :class="{ opened: isOpen, closed: !isOpen }">
-    <InstanceSelect :onClearHistory="onClearHistory" :onOffline="onOffline" :onStopMsg="onStopMsg" />
+    <InstanceSelect
+      :onClearHistory="onClearHistory"
+      :onOffline="onOffline"
+      :onStopMsg="onStopMsg"
+    />
     <MessageList
       :messages="messages"
       :always-scroll-to-bottom="alwaysScrollToBottom"
@@ -10,13 +14,8 @@
       :onPlayAudio="onPlayAudio"
       @pidAction="handlePidAction"
     >
-      <template v-slot:user-avatar="scopedProps">
-        <slot
-          name="user-avatar"
-          :user="scopedProps.user"
-          :message="scopedProps.message"
-        >
-        </slot>
+      <template #user-avatar="scopedProps">
+        <slot name="user-avatar" :user="scopedProps.user" :message="scopedProps.message"> </slot>
       </template>
       <template v-slot:text-message-body="scopedProps">
         <slot
@@ -32,21 +31,26 @@
         <slot name="system-message-body" :message="scopedProps.message"> </slot>
       </template>
       <template v-slot:text-message-toolbox="scopedProps">
-        <slot
-          name="text-message-toolbox"
-          :message="scopedProps.message"
-          :me="scopedProps.me"
-        >
+        <slot name="text-message-toolbox" :message="scopedProps.message" :me="scopedProps.me">
         </slot>
       </template>
     </MessageList>
     <div v-if="showApprove" class="approve-box">
       <div class="approve-box-title">
-        <el-tag type="warning"><font-awesome-icon :icon="['fas', 'clipboard-question']" /><span style="margin-left: 6px;">您是否要继续往下执行</span></el-tag>
+        <el-tag type="warning"
+          ><font-awesome-icon :icon="['fas', 'clipboard-question']" /><span style="margin-left: 6px"
+            >您是否要继续往下执行</span
+          ></el-tag
+        >
       </div>
       <div class="approve-box-btn">
         <el-button type="primary" size="small" @click="approve">继续</el-button>
         <el-button type="danger" size="small" @click="cancel">取消</el-button>
+      </div>
+    </div>
+    <div class="follow-box" v-if="showFollow">
+      <div class="follow-box-btn">
+        <el-button type="warning" size="small" @click="setIsFollow(!isFollow)">{{ isFollow ? '取消跟随' : '跟随输出' }}</el-button>
       </div>
     </div>
     <UserInput
@@ -61,21 +65,21 @@
 </template>
 
 <script lang="ts">
-import MessageList from "./MessageList.vue";
+import MessageList from './MessageList.vue'
 // 202408261版本之后使用
-import UserInput from "./UserInput.vue";
+import UserInput from './UserInput.vue'
 // 202408261版本之前使用
-import { useIdeaInfoStore } from "@/stores/idea-info";
-import { mapState } from "pinia";
-import { useEditStore } from "@/stores/edit";
-import util from "@/libs/util";
-import InstanceSelect from "./InstanceSelect.vue";
+import { useIdeaInfoStore } from '@/stores/idea-info'
+import { mapState } from 'pinia'
+import { useEditStore } from '@/stores/edit'
+import util from '@/libs/util'
+import InstanceSelect from './InstanceSelect.vue'
 
 export default {
   components: {
     MessageList,
     UserInput,
-    InstanceSelect
+    InstanceSelect,
   },
   props: {
     onUserInputSubmit: {
@@ -132,11 +136,11 @@ export default {
     },
   },
   data() {
-    return {};
+    return {}
   },
   computed: {
-    ...mapState(useIdeaInfoStore, ["isShowFile"]),
-    ...mapState(useEditStore, ["showApprove", "setShowApprove", "disableEdit", "enableEdit"]),
+    ...mapState(useIdeaInfoStore, ['isShowFile']),
+    ...mapState(useEditStore, ['showApprove', 'setShowApprove', 'disableEdit', 'enableEdit', 'isFollow', 'showFollow', 'setShowFollow', 'setIsFollow']),
     messages() {
       // console.log("messageList", this.messageList);
       // 将最后一条个属性isLast:true, 否则是false
@@ -147,10 +151,10 @@ export default {
             ...it.data,
             isLast: index == this.messageList.length - 1,
           },
-        };
-      });
-      console.log("messages>>", messages);
-      return messages;
+        }
+      })
+      console.log('messages>>', messages)
+      return messages
     },
   },
   methods: {
@@ -158,32 +162,32 @@ export default {
       try {
         util.approve({
           message: 'approve',
-        });
+        })
       } catch (error) {
-        console.error(error);
+        console.error(error)
       } finally {
-        this.enableEdit();
-        this.setShowApprove(false);
+        this.enableEdit()
+        this.setShowApprove(false)
       }
     },
     cancel() {
       try {
         util.approve({
           message: 'cancel',
-        });
+        })
       } catch (error) {
-        console.error(error);
+        console.error(error)
       } finally {
-        this.enableEdit();
-        this.setShowApprove(false);
+        this.enableEdit()
+        this.setShowApprove(false)
       }
     },
     handlePidAction(data: { pid: string; action: string }) {
       // 向上传递 pidAction 事件到 Chat.vue
-      this.$emit('pidAction', data);
+      this.$emit('pidAction', data)
     },
   },
-};
+}
 </script>
 
 <style lang="scss">
@@ -218,9 +222,15 @@ export default {
 }
 
 @keyframes glowing-border {
-  0% { background-position: 0 0; }
-  50% { background-position: 400% 0; }
-  100% { background-position: 0 0; }
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
 }
 
 .sc-chat-window.closed {
@@ -248,7 +258,7 @@ export default {
   text-align: left;
 }
 
-.approve-box {
+.approve-box, .follow-box {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -261,7 +271,7 @@ export default {
   margin-bottom: 10px;
 }
 
-.approve-box-btn {
+.approve-box-btn, .follow-box-btn {
   display: flex;
 }
 </style>

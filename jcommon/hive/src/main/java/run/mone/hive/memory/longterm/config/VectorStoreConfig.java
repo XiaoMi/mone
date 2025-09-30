@@ -49,18 +49,24 @@ public class VectorStoreConfig {
      */
     @Builder.Default
     private Provider provider = Provider.CHROMA;
+
+
+    @Builder.Default
+    private boolean enable = true;
     
     /**
      * 集合名称
      */
     @Builder.Default
-    private String collectionName = "mem1";
+    private String collectionName = "mem0";
     
     /**
      * 嵌入向量维度
      */
     @Builder.Default
     private int embeddingModelDims = 1536;
+
+    private String model;
     
     /**
      * 连接配置
@@ -110,6 +116,14 @@ public class VectorStoreConfig {
      */
     public static VectorStoreConfig fromMap(Map<String, Object> configMap) {
         var builder = VectorStoreConfig.builder();
+
+        if (configMap.containsKey("model")) {
+            builder.model(configMap.get("model").toString());
+        }
+
+        if (configMap.containsKey("enable")) {
+            builder.enable(Boolean.parseBoolean(configMap.get("enable").toString()));
+        }
         
         if (configMap.containsKey("provider")) {
             String providerStr = (String) configMap.get("provider");

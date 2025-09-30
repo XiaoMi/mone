@@ -348,15 +348,15 @@ public class LLM {
     }
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, getModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
+        return chatCompletion(getToken(), msgList, getModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, getModel(), "", config);
     }
 
     public String getApiUrl(String apiKey, boolean stream) {
@@ -413,7 +413,7 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
-        return chatCompletion(apiKey, CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
+        return chatCompletion(apiKey, clientConfig.getCustomConfig() != null ? clientConfig.getCustomConfig() : CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
     }
 
 
@@ -424,7 +424,7 @@ public class LLM {
     }
 
     public LLMChatCompletionResult chatCompletionWithUsage(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
-        return chatCompletionWithUsage(apiKey, CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
+        return chatCompletionWithUsage(apiKey, clientConfig.getCustomConfig() != null ? clientConfig.getCustomConfig() : CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
     }
 
     @SneakyThrows
@@ -752,7 +752,6 @@ public class LLM {
         if (null != am.getJsonContent()) {
             return am.getJsonContent();
         }
-
         JsonObject message = new JsonObject();
         message.addProperty("role", role);
         JsonArray array = new JsonArray();
@@ -947,10 +946,20 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        //关闭思维链
+        if (llmProvider == LLMProvider.GLM_45_AIR) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", "disabled");
+            requestBody.add("thinking", obj);
+        }
+
         for (AiMessage message : messages) {
-            //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.GLM_45_AIR ||
+                    this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX_MINI ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX ||
                     this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
@@ -976,7 +985,7 @@ public class LLM {
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
 
         // openai 系列的应该都可以
-        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK) {
+        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN) {
             JsonObject usage = new JsonObject();
             usage.addProperty("include_usage", true);
             requestBody.add("stream_options", usage);

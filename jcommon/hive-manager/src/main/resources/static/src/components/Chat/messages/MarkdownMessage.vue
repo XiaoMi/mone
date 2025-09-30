@@ -31,6 +31,7 @@ import "@/styles/markdown-mcp.scss";
 import { markdownItBolt } from '@/plugins/markdown-it-bolt'
 import { markdownItMcp } from '@/plugins/markdown-it-mcp'
 import { markdownItStock } from '@/plugins/markdown-it-stock'
+import { nextTick } from "vue";
 const mdi = new MarkdownIt({
   html: false,
   linkify: true,
@@ -343,7 +344,7 @@ export default {
           const toggleHandler = header._toggleHandler || (() => {
             const content = header.parentElement.querySelector('.tool-result-content');
             const toggleIcon = header.querySelector('.toggle-icon');
-            
+
             if (content.classList.contains('is-active')) {
               content.classList.remove('is-active');
               toggleIcon.classList.remove('expanded');
@@ -375,14 +376,14 @@ export default {
               // 解析URL和参数
               const urlObj = new URL(url);
               const params = new URLSearchParams(urlObj.search);
-              
+
               // 创建表单
               const form = document.createElement('form');
               form.method = 'GET';
               form.action = urlObj.origin + urlObj.pathname;
               form.target = '_blank';
               form.style.display = 'none';
-              
+
               // 添加所有参数作为隐藏的input
               params.forEach((value, key) => {
                 const input = document.createElement('input');
@@ -391,11 +392,11 @@ export default {
                 input.value = value;
                 form.appendChild(input);
               });
-              
+
               // 添加到文档并提交
               document.body.appendChild(form);
               form.submit();
-              
+
               // 清理DOM
               setTimeout(() => {
                 document.body.removeChild(form);
@@ -428,24 +429,24 @@ export default {
                 // 添加加载状态
                 htmlButton.classList.add('loading');
                 htmlButton.disabled = true;
-                
+
                 // 调用杀死进程的API
                 await this.callPidAction(pid, '/kill');
-                
+
                 // 成功状态
                 htmlButton.classList.remove('loading');
                 htmlButton.classList.add('success');
-                
+
                 setTimeout(() => {
                   htmlButton.classList.remove('success');
                 }, 2000);
               } catch (error) {
                 console.error('杀死进程失败:', error);
-                
+
                 // 错误状态
                 htmlButton.classList.remove('loading');
                 htmlButton.classList.add('error');
-                
+
                 setTimeout(() => {
                   htmlButton.classList.remove('error');
                 }, 2000);
@@ -472,24 +473,24 @@ export default {
                 // 添加加载状态
                 htmlButton.classList.add('loading');
                 htmlButton.disabled = true;
-                
+
                 // 调用后台运行的API
                 await this.callPidAction(pid, '/detach');
-                
+
                 // 成功状态
                 htmlButton.classList.remove('loading');
                 htmlButton.classList.add('success');
-                
+
                 setTimeout(() => {
                   htmlButton.classList.remove('success');
                 }, 2000);
               } catch (error) {
                 console.error('后台运行失败:', error);
-                
+
                 // 错误状态
                 htmlButton.classList.remove('loading');
                 htmlButton.classList.add('error');
-                
+
                 setTimeout(() => {
                   htmlButton.classList.remove('error');
                 }, 2000);
@@ -514,7 +515,7 @@ export default {
           const htmlUpdate = updateEl as HTMLElement;
           const pid = htmlUpdate.getAttribute('data-pid');
           const newLines = htmlUpdate.getAttribute('data-new-lines');
-          
+
           if (pid && newLines) {
             // 查找对应的终端组件，更新计数显示
             const targetTerminal = textRef.querySelector(`.terminal-process-block[data-pid="${pid}"]`) as HTMLElement;
@@ -523,7 +524,7 @@ export default {
               if (headerSpan && (window as any).updateTerminalLineCount) {
                 const totalLines = (window as any).updateTerminalLineCount(pid);
                 headerSpan.textContent = `进程 ${pid} (${totalLines}条日志)`;
-                
+
                 // 如果当前终端内容是可见的，重新加载内容
                 const contentContainer = targetTerminal.querySelector('.terminal-process-content') as HTMLElement;
                 if (contentContainer && contentContainer.style.display !== 'none') {
@@ -535,7 +536,7 @@ export default {
                   }
                 }
               }
-              
+
               // 如果当前终端内容是可见的，重新加载内容
               const contentContainer = targetTerminal.querySelector('.terminal-process-content') as HTMLElement;
               if (contentContainer && contentContainer.style.display !== 'none') {
@@ -551,7 +552,7 @@ export default {
                 }
               }
             }
-            
+
             // 移除处理过的更新指令
             htmlUpdate.remove();
           }
@@ -563,12 +564,12 @@ export default {
           const htmlBlock = block as HTMLElement;
           const contentContainer = htmlBlock.querySelector('.terminal-process-content') as HTMLElement;
           const toggleBtn = htmlBlock.querySelector('.terminal-toggle-btn') as HTMLElement;
-          
+
           if (contentContainer) {
             // 确保新内容显示时滚动到底部（滚动条在容器上）
             contentContainer.scrollTop = contentContainer.scrollHeight;
           }
-          
+
           // 添加切换按钮事件（点击时动态加载内容）
           if (toggleBtn && !(toggleBtn as any)._toggleHandler) {
             const toggleHandler = () => {
@@ -576,20 +577,20 @@ export default {
               const icon = toggleBtn.querySelector('i');
               const text = toggleBtn.childNodes[toggleBtn.childNodes.length - 1];
               const pid = htmlBlock.getAttribute('data-pid');
-              
+
               if (content.style.display === 'none') {
                 // 显示内容时，从内存中加载实际内容
                 if (pid && (window as any).getTerminalContent) {
                   const lines = (window as any).getTerminalContent(pid);
                   let preElement = content.querySelector('pre');
-                  
+
                   // 如果没有pre元素，创建一个
                   if (!preElement) {
                     preElement = document.createElement('pre');
                     content.innerHTML = ''; // 清空占位内容
                     content.appendChild(preElement);
                   }
-                  
+
                   if (lines.length > 0) {
                     preElement.textContent = lines.join('\n');
                     console.log('Loading content for PID:', pid, 'lines:', lines.length);
@@ -598,7 +599,7 @@ export default {
                     console.log('No content found for PID:', pid);
                   }
                 }
-                
+
                 content.style.display = 'block';
                 if (icon) icon.className = 'fa-solid fa-eye-slash';
                 if (text) text.textContent = ' 隐藏日志';
@@ -617,8 +618,12 @@ export default {
                 }
               }
             };
-            
-            toggleBtn.addEventListener('click', toggleHandler);
+
+            toggleBtn.addEventListener('click', () => {
+              nextTick(() => {
+                toggleHandler();
+              });
+            });
             (toggleBtn as any)._toggleHandler = toggleHandler;
           }
         });
@@ -679,7 +684,7 @@ export default {
             delete header._toggleHandler;
           }
         });
-        
+
         // 移除file-url-link事件
         const fileLinks = textRef.querySelectorAll('.file-url-link');
         fileLinks.forEach((link: any) => {
@@ -688,7 +693,7 @@ export default {
             delete link._clickHandler;
           }
         });
-        
+
         // 移除pid按钮事件
         const killButtons = textRef.querySelectorAll('.pid-kill-button');
         killButtons.forEach((button: any) => {
@@ -697,7 +702,7 @@ export default {
             delete button._clickHandler;
           }
         });
-        
+
         const detachButtons = textRef.querySelectorAll('.pid-detach-button');
         detachButtons.forEach((button: any) => {
           if (button._clickHandler) {
@@ -705,7 +710,7 @@ export default {
             delete button._clickHandler;
           }
         });
-        
+
         // 移除terminal toggle按钮事件
         const terminalToggleBtns = textRef.querySelectorAll('.terminal-toggle-btn');
         terminalToggleBtns.forEach((btn: Element) => {

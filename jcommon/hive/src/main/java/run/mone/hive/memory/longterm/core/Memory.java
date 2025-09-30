@@ -1,9 +1,11 @@
 package run.mone.hive.memory.longterm.core;
 
+import com.google.api.client.util.Lists;
 import lombok.extern.slf4j.Slf4j;
 import lombok.Data;
 
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.memory.longterm.config.MemoryConfig;
@@ -31,11 +33,14 @@ import run.mone.hive.schema.AiMessage;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.Executors;
 import java.time.LocalDateTime;
 import java.security.MessageDigest;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -53,6 +58,9 @@ public class Memory implements MemoryBase {
     private GraphStoreBase graphStore;
     private HistoryManager historyManager;
     private boolean enableGraph;
+
+    private boolean enableVector = true;
+
     private String collectionName;
     private String apiVersion;
     private ThreadPoolExecutor executor;
@@ -72,9 +80,28 @@ public class Memory implements MemoryBase {
         this.apiVersion = config.getVersion();
         this.collectionName = config.getVectorStore().getCollectionName();
         this.enableGraph = config.getGraphStore().isEnabled();
+        //查询的时候是否走向量库
+        this.enableVector = config.getVectorStore().isEnable();
 
         // 初始化组件
-        this.llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName())).build());
+        this.llm = new LLM(LLMConfig.builder()
+            .customConfig(CustomConfig.builder()
+                .customHeaders(config.getLlm().getCustomHeaders())
+                .model(config.getLlm().getModel())
+                .build())
+            .llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName()))
+            .url(MemoryUtils.validateUrl(LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl()) ? LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl() : config.getLlm().getBaseUrl()) 
+            .model(config.getLlm().getModel() != null ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
+            .json(StringUtils.isNotBlank(config.getLlm().getResponseJsonFormat()) ? Boolean.parseBoolean(config.getLlm().getResponseJsonFormat()) : false)
+            .build());
+        // 如果apiKey不为空，则设置apiKey, 否则从环境变量中获取
+        if (StringUtils.isNotBlank(config.getLlm().getApiKey())) {
+            this.llm.setConfigFunction(
+                (provider) -> Optional.of(LLMConfig.builder()
+                    .token(config.getLlm().getApiKey())
+                    .build())
+            );
+        }
         this.embeddingModel = EmbeddingFactory.create(config.getEmbedder());
         this.vectorStore = VectorStoreFactory.create(config.getVectorStore());
         this.graphStore = GraphStoreFactory.create(config.getGraphStore());
@@ -270,9 +297,11 @@ public class Memory implements MemoryBase {
         try {
             // 并行执行向量搜索和图搜索
             CompletableFuture<List<MemoryItem>> vectorFuture = CompletableFuture.supplyAsync(() -> {
+                if (!enableVector) {
+                    return Lists.newArrayList();
+                }
                 List<Double> queryEmbedding = embeddingModel.embed(query, "search");
                 List<MemoryItem> memories = vectorStore.search(query, queryEmbedding, limit, effectiveFilters);
-
                 if (threshold != null) {
                     return memories.stream()
                             .filter(m -> m.getScore() == null || m.getScore() >= threshold)
@@ -437,13 +466,11 @@ public class Memory implements MemoryBase {
         try {
             vectorStore.reset();
             historyManager.reset();
-
+            graphStore.resetAll();
             log.warn("All memories have been reset");
-
             Map<String, Object> result = new HashMap<>();
             result.put("message", "Memory store reset successfully!");
             return result;
-
         } catch (Exception e) {
             log.error("Error resetting memory store", e);
             throw new RuntimeException("Failed to reset memory store", e);
@@ -579,7 +606,7 @@ public class Memory implements MemoryBase {
                     .content(it.get("content").toString())
                     .build()).toList();
 
-            String response = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            String response = llm.chat(msgList);
             log.info("Fact extraction LLM response: {}", response);
 
             return parseFactsFromJsonResponse(response);
@@ -674,7 +701,7 @@ public class Memory implements MemoryBase {
             List<AiMessage> msgList = messages.stream().map(it ->
                     AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
-            String response = llm.chat(msgList, LLMConfig.builder().json(true).build());
+            String response = llm.chat(msgList);
             log.info("Memory decision LLM response: {}", response);
 
             return parseMemoryActionsFromJsonResponse(response);
@@ -1032,7 +1059,7 @@ public class Memory implements MemoryBase {
 
             List<AiMessage> msgList = parsedMessages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
-            String proceduralMemory = llm.chat(msgList, LLMConfig.builder().build());
+            String proceduralMemory = llm.chat(msgList);
 
             metadata.put("memory_type", "procedural_memory");
             List<Double> embeddings = embeddingModel.embed(proceduralMemory, "add");

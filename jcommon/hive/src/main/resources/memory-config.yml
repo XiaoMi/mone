@@ -6,16 +6,21 @@ memory:
   # Embedder Configuration
   embedder:
     provider: ollama
-    model: embeddinggemma
-    embeddingDims: 768
+#    model: embeddinggemma
+    model: qwen3-embedding:4b
+#    embeddingDims: 768
+    embeddingDims: 2560
 
   # Vector Store Configuration
   vectorStore:
     provider: chroma
     port: 8000
     collectionName: test_collection1
-    embeddingModelDims: 768
+#    embeddingModelDims: 768
+    embeddingModelDims: 2560
     embeddingFunction: ollama
+    model: qwen3-embedding:4b
+    enable: false
 
   # Graph Store Configuration
   graphStore:
@@ -27,8 +32,10 @@ memory:
       providerName: QWEN
     embedder:
       provider: ollama
-      model: embeddinggemma
-      embeddingDims: 768
+#      model: embeddinggemma
+      model: qwen3-embedding:4b
+#      embeddingDims: 768
+      embeddingDims: 2560
 
   # History Database Path
   historyDbPath: ./temp/history.db
