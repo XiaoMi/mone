@@ -951,6 +951,7 @@ public class LLM {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
                     this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
