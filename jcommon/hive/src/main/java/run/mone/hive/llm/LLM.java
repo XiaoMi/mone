@@ -698,6 +698,9 @@ public class LLM {
                 return optional.get().getToken();
             }
         }
+        if (StringUtils.isEmpty(llmProvider.getEnvName()) && StringUtils.isNotEmpty(this.config.getToken())){
+            return this.config.getToken();
+        }
         //从环境变量里获取
         String token = System.getProperty(llmProvider.getEnvName());
         if (StringUtils.isEmpty(token)) {
@@ -975,7 +978,13 @@ public class LLM {
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
             } else {
-                msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+                if (StringUtils.isNotEmpty(message.getContent())){
+                    msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+                }else if (message.getJsonContent()!=null){
+                    msgArray.add(message.getJsonContent());
+                }else{
+                    msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+                }
             }
         }
 
@@ -2195,6 +2204,7 @@ public class LLM {
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
                 || llm.getConfig().getLlmProvider() == LLMProvider.MIFY
                 || llm.getConfig().getLlmProvider() == LLMProvider.MIFY_GATEWAY
+                || llm.getConfig().getLlmProvider() == LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE
         ) {
             req.addProperty("role", ROLE_USER);
             JsonArray array = new JsonArray();

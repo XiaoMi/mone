@@ -399,6 +399,17 @@ public class RoleService {
         }
     }
 
+    //回滚某个Agent的记录
+    public boolean rollbackHistory(Message message) {
+        String from = message.getSentFrom().toString();
+        String messageId = message.getId();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            return role.rollbackMemory(messageId);
+        }
+        return false;
+    }
+
     //中断某个Agent的执行
     public Mono<String> interruptAgent(Message message) {
         String from = message.getSentFrom().toString();
