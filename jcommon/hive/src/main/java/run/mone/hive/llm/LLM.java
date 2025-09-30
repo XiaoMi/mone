@@ -958,6 +958,8 @@ public class LLM {
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.GLM_45_AIR ||
                     this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX_MINI ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX ||
                     this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
