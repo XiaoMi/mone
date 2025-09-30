@@ -1,9 +1,10 @@
 package run.mone.hive.memory;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.memory.longterm.core.Memory;
 import run.mone.hive.memory.longterm.config.MemoryConfig;
 import run.mone.hive.memory.longterm.config.YamlConfigLoader;
+import run.mone.hive.memory.longterm.core.Memory;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -11,9 +12,9 @@ import java.util.concurrent.CompletableFuture;
 /**
  * 长期记忆管理器
  * 负责管理ReactorRole的长期记忆功能
- * 
  */
 @Slf4j
+@Data
 public class LongTermMemoryManager {
 
     private Memory longTermMemory;
@@ -25,11 +26,18 @@ public class LongTermMemoryManager {
         initializeLongTermMemory();
     }
 
-    public LongTermMemoryManager(String roleName, MemoryConfig config) {
+    /**
+     * 使用指定的配置创建长期记忆管理器
+     * 
+     * @param roleName 角色名称
+     * @param memoryConfig 记忆配置
+     */
+    public LongTermMemoryManager(String roleName, MemoryConfig memoryConfig) {
         this.roleName = roleName;
-        this.memoryConfig = config;
+        this.memoryConfig = memoryConfig;
         initializeLongTermMemory();
     }
+
 
     /**
      * 初始化长期记忆系统
@@ -40,7 +48,6 @@ public class LongTermMemoryManager {
             if (this.memoryConfig == null) {
                 this.memoryConfig = loadMemoryConfig();
             }
-
             // 使用配置创建Memory实例
             if (this.memoryConfig != null) {
                 this.longTermMemory = new Memory(this.memoryConfig);

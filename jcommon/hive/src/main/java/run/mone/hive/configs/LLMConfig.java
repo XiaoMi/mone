@@ -4,13 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLMProvider;
 import java.util.List;
+
+import org.springframework.beans.BeanUtils;
 
 @Data
 @AllArgsConstructor
 @Builder
 public class LLMConfig {
+
+    private String providerName;
 
     private String model;
 
@@ -39,6 +44,8 @@ public class LLMConfig {
     private String token2;
 
     private String systemPrompt;
+
+    private CustomConfig customConfig;
 
     // 在思考模型下，是否返回思考内容，默认返回
     private boolean reasoningOutPut = true;
@@ -80,5 +87,12 @@ public class LLMConfig {
     public static class Source {
         // TODO: 补充其他字段，目前可只配置类型
         private String type; //web,x,news,rss
+    }
+
+    public static LLMConfig copy(LLMConfig original) {
+        // 使用BeanUtils.copyProperties方法复制对象
+        LLMConfig target = new LLMConfig();
+        BeanUtils.copyProperties(original, target);
+        return target;
     }
 } 

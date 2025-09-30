@@ -24,7 +24,6 @@
         <module>mcp-applescript</module>
         <module>mcp-multimodal</module>
         <module>mcp-memory</module>
-        <module>mcp-solution-assessor</module>
         <module>mcp-filesystem</module>
         <module>mcp-prettier</module>
         <module>mcp-writer</module>
@@ -34,21 +33,14 @@
         <module>mcp-excel</module>
         <module>mcp-song</module>
         <module>mcp-sequentialthinking</module>
-        <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
         <module>mcp-nacosconfig</module>
         <module>mcp-terminal</module>
         <module>mcp-feishu</module>
         <module>mcp-chrome</module>
-        <module>mcp-docparsing</module>
-        <module>mcp-email</module>
-        <module>mcp-time</module>
-        <module>mcp-xmind</module>
         <module>mcp-hera-log</module>
         <module>mcp-chaos</module>
         <module>mcp-nacosservice</module>
-        <module>mcp-ali-email</module>
-        <module>mcp-pty4j</module>
         <module>mcp-linux-agent</module>
         <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>

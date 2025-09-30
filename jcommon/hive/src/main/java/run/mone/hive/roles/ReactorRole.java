@@ -45,6 +45,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
+
 /**
  * @author wangyingjie
  * @author goodjava@qq.com
@@ -109,6 +112,12 @@ public class ReactorRole extends Role {
 
     private FocusChainManager focusChainManager;
 
+    /**
+     * -- GETTER --
+     *  获取当前工作区路径
+     *
+     * @return 工作区根目录路径
+     */
     //工作区根目录路径，用于路径解析
     private String workspacePath = System.getProperty("user.dir");
 
@@ -363,6 +372,16 @@ public class ReactorRole extends Role {
         //清空历史记录(不会退出)
         if (null != msg.getData() && msg.getData().equals(Const.CLEAR_HISTORY)) {
             this.rc.getMemory().clear();
+            return -1;
+        }
+
+        //刷新配置(不会退出)
+        if (null != msg.getData() && msg.getData().equals(Const.REFRESH_CONFIG)) {
+            log.info("ReactorRole {} 收到配置刷新通知", this.name);
+            // 完成当前流式输出
+            if (null != msg.getSink()) {
+                msg.getSink().complete();
+            }
             return -1;
         }
 
@@ -721,7 +740,9 @@ public class ReactorRole extends Role {
                                 Optional.ofNullable(sink).ifPresent(FluxSink::complete);
                                 return; // 停止处理后续响应
                             }
-                            sb.append(it);
+                            if (it != null && !it.startsWith(TOKEN_USAGE_LABEL_START)) {
+                                sb.append(it);
+                            }
                             sendToSink(it, null, false);
                         })
                         .doOnError(error -> {
@@ -857,15 +878,6 @@ public class ReactorRole extends Role {
             this.workspacePath = workspacePath;
             log.info("ReactorRole '{}' workspace path set to: {}", this.name, workspacePath);
         }
-    }
-
-    /**
-     * 获取当前工作区路径
-     *
-     * @return 工作区根目录路径
-     */
-    public String getWorkspacePath() {
-        return this.workspacePath;
     }
 
     /**
@@ -1036,6 +1048,7 @@ public class ReactorRole extends Role {
         try {
             // 获取当前的消息历史
             List<Message> currentMessages = getCurrentMessageHistory();
+            FluxSink sink = getFluxSink(newMessage);
 
             // 异步处理上下文压缩
             this.contextManager.processNewMessage(
@@ -1053,10 +1066,12 @@ public class ReactorRole extends Role {
 
                     // 标记任务状态
                     this.taskState.setDidCompleteContextCompression(true);
+                    sink.next(getTokenUsageLabel(result));
 
                 } else if (result.wasOptimized()) {
                     log.info("应用了上下文规则优化");
                     updateMessageHistory(result.getProcessedMessages());
+                    sink.next(getTokenUsageLabel(result));
                 }
 
                 if (result.hasError()) {
@@ -1070,6 +1085,11 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             log.error("处理上下文压缩时发生异常", e);
         }
+    }
+
+    private String getTokenUsageLabel(ConversationContextManager.ContextProcessingResult result) {
+        LLM.LLMUsage usage =  LLM.LLMUsage.builder().compressedTokens(result.getCompressedTokenNum()).build();
+        return TOKEN_USAGE_LABEL_START + GsonUtils.gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
     /**

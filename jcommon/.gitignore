@@ -23,3 +23,5 @@ nohup*
 .sbtserver*
 .vscode/settings.json
 selector_config.json
+history.db
+memory-config-local.yml

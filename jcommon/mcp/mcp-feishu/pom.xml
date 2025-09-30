@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.larksuite.oapi</groupId>
             <artifactId>oapi-sdk</artifactId>
-            <version>2.0.27</version>
+            <version>2.4.24</version>
         </dependency>
 
         <!-- Spring Boot Starter -->

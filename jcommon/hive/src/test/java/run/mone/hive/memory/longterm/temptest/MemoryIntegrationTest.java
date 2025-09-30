@@ -45,13 +45,6 @@ public class MemoryIntegrationTest {
 
         // 创建真实配置
         MemoryConfig config = MemoryConfig.builder()
-                .llm(LlmConfig.builder()
-                        .provider(LlmConfig.Provider.DEEPSEEK)
-                        .model("deepseek-chat")
-                        .apiKey(System.getenv("DEEPSEEK_API_KEY"))
-                        .temperature(0.1)
-                        .maxTokens(1000)
-                        .build())
                 .embedder(embedderConfig)
                 .vectorStore(VectorStoreConfig.builder()
                         .provider(VectorStoreConfig.Provider.CHROMA)

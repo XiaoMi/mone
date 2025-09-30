@@ -1,7 +1,7 @@
 package run.mone.hive.memory.longterm.graph;
 
 import run.mone.hive.memory.longterm.config.GraphStoreConfig;
-import run.mone.hive.memory.longterm.graph.impl.*;
+import run.mone.hive.memory.longterm.graph.impl.Neo4jGraphStore;
 
 /**
  * 图数据库工厂类
@@ -27,9 +27,9 @@ public class GraphStoreFactory {
         
         switch (config.getProvider()) {
             case NEO4J:
+                config.setUsername(config.getUsername() != null ? config.getUsername() : "neo4j");
+                config.setPassword(config.getPassword() != null ? config.getPassword() : System.getenv("NEO4J_PASSWORD"));
                 return new Neo4jGraphStore(config);
-            case KUZU:
-                return new KuzuGraphStore(config);
             default:
                 throw new IllegalArgumentException("Unsupported graph store provider: " + config.getProvider());
         }
@@ -41,23 +41,11 @@ public class GraphStoreFactory {
      * @return 本地图数据库实例
      */
     public static GraphStoreBase createDefault() {
-        GraphStoreConfig config = GraphStoreConfig.kuzuDefault();
+        GraphStoreConfig config = GraphStoreConfig.neo4jDefault();
         return create(config);
     }
 
-    /**
-     * 为测试创建本地图数据库实例
-     *
-     * @return 本地Kuzu图数据库实例
-     */
-    public static GraphStoreBase createLocalForTesting() {
-        return create(GraphStoreConfig.builder()
-                .provider(GraphStoreConfig.Provider.KUZU)
-                .enabled(true)
-                .url("./data/test/kuzu")
-                .build());
-    }
-    
+
     /**
      * 重置图数据库
      * 
@@ -90,20 +78,6 @@ public class GraphStoreFactory {
         } catch (IllegalArgumentException e) {
             return false;
         }
-    }
-    
-    /**
-     * 获取所有支持的提供商列表
-     * 
-     * @return 支持的提供商列表
-     */
-    public static java.util.List<GraphStoreConfig.Provider> getSupportedProviders() {
-        return java.util.Arrays.asList(
-            GraphStoreConfig.Provider.NEO4J,
-            GraphStoreConfig.Provider.MEMGRAPH,
-            GraphStoreConfig.Provider.NEPTUNE,
-            GraphStoreConfig.Provider.KUZU
-        );
     }
     
     /**

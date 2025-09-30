@@ -2,10 +2,12 @@ package run.mone.hive.roles.tool;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.memory.LongTermMemoryManager;
+import run.mone.hive.memory.config.MemoryConfigConverter;
+import run.mone.hive.mcp.service.RoleMemoryConfig;
 import run.mone.hive.roles.ReactorRole;
 
 import java.util.List;
@@ -14,15 +16,51 @@ import java.util.Map;
 /**
  * 记忆工具
  * 用于查询、保存和管理长期记忆
+ *
  * @author wangmin
  */
+@Slf4j
 public class MemoryTool implements ITool {
 
-    private static final Logger log = LoggerFactory.getLogger(MemoryTool.class);
-    private static LongTermMemoryManager memoryManager;
+    public static LongTermMemoryManager memoryManager;
+    private static RoleMemoryConfig customMemoryConfig;
 
-    public MemoryTool(String roleName) {
-        initializeMemoryManager(roleName);
+    /**
+     * 默认构造函数
+     */
+    public MemoryTool() {
+    }
+
+    /**
+     * 使用指定配置的构造函数
+     * 
+     * @param memoryConfig 记忆配置
+     */
+    public MemoryTool(RoleMemoryConfig memoryConfig) {
+        setMemoryConfig(memoryConfig);
+    }
+
+    /**
+     * 设置自定义记忆配置
+     * 
+     * @param memoryConfig 记忆配置
+     */
+    public static void setMemoryConfig(RoleMemoryConfig memoryConfig) {
+        customMemoryConfig = memoryConfig;
+        // 如果已经有实例，需要重新初始化
+        if (memoryManager != null) {
+            log.info("检测到新的记忆配置，将在下次初始化时应用");
+            memoryManager = null;
+        }
+    }
+
+    /**
+     * 获取当前的记忆配置
+     * 
+     * @return 当前的记忆配置，如果没有设置则返回null
+     */
+    public static RoleMemoryConfig getMemoryConfig() {
+        return customMemoryConfig;
     }
 
     /**
@@ -31,8 +69,17 @@ public class MemoryTool implements ITool {
     private synchronized void initializeMemoryManager(String roleName) {
         if (memoryManager == null) {
             try {
-                memoryManager = new LongTermMemoryManager(roleName);
-                log.info("记忆管理器初始化成功: {}", roleName);
+                if (customMemoryConfig != null) {
+                    // 使用自定义配置
+                    run.mone.hive.memory.longterm.config.MemoryConfig longtermConfig = 
+                        MemoryConfigConverter.convert(customMemoryConfig);
+                    memoryManager = new LongTermMemoryManager(roleName, longtermConfig);
+                    log.info("记忆管理器初始化成功（使用自定义配置）: {}", roleName);
+                } else {
+                    // 使用默认配置
+                    memoryManager = new LongTermMemoryManager(roleName);
+                    log.info("记忆管理器初始化成功（使用默认配置）: {}", roleName);
+                }
             } catch (Exception e) {
                 log.error("记忆管理器初始化失败", e);
             }
@@ -60,6 +107,9 @@ public class MemoryTool implements ITool {
                 A comprehensive memory tool that supports searching, saving, and managing long-term memory information.
                 Use this tool when you need to retrieve relevant information from previous conversations,
                 store new knowledge, or manage user context that might be helpful for current and future tasks.
+                
+                **Configuration:** This tool supports custom configuration through MemoryConfig, which allows you to
+                configure LLM providers, embedding models, vector stores, and graph stores according to your needs.
                 
                 **When to use:** Choose this tool when you need to access historical information,
                 save important context, user preferences, or manage memory from previous interactions.
@@ -143,6 +193,9 @@ public class MemoryTool implements ITool {
             String action = inputJson.get("action").getAsString().toLowerCase();
             log.info("开始记忆操作，操作类型：{}", action);
 
+
+            initializeMemoryManager(role.getOwner());
+
             // 检查记忆管理器是否可用
             if (memoryManager == null) {
                 log.warn("长期记忆管理器未初始化");
@@ -151,9 +204,9 @@ public class MemoryTool implements ITool {
             }
 
             // 从环境变量获取配置参数？？
-            String userId = System.getenv("MEMORY_USER_ID");
-            String agentId = System.getenv("MEMORY_AGENT_ID");
-            String sessionId = System.getenv("MEMORY_SESSION_ID");
+            String userId = role.getOwner();
+            String agentId = "agentId";
+            String sessionId = "sessionId";
 
             // 根据操作类型执行不同的功能
             switch (action) {
@@ -179,7 +232,7 @@ public class MemoryTool implements ITool {
 
     private JsonObject executeSearch(JsonObject inputJson, String userId, String agentId, String sessionId) {
         JsonObject result = new JsonObject();
-        
+
         if (!inputJson.has("query") || StringUtils.isBlank(inputJson.get("query").getAsString())) {
             result.addProperty("error", "search操作缺少必需的query参数");
             return result;
@@ -195,11 +248,11 @@ public class MemoryTool implements ITool {
 
         try {
             var searchResult = memoryManager.searchMemory(query, userId, agentId, sessionId, maxResults, threshold);
-            
+
             // 使用带超时的异步调用处理
             Map<String, Object> searchMap;
             try {
-                searchMap = searchResult.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                searchMap = searchResult.get(60, java.util.concurrent.TimeUnit.SECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
                 log.warn("记忆搜索超时: {}", e.getMessage());
                 result.addProperty("error", "搜索超时，请稍后重试");
@@ -209,29 +262,29 @@ public class MemoryTool implements ITool {
                 result.addProperty("error", "搜索执行失败: " + e.getCause().getMessage());
                 return result;
             }
-            
+
             JsonArray memories = new JsonArray();
             addMemoriesToResult(memories, searchMap, "search");
-            
+
             result.add("memories", memories);
             result.addProperty("action", "search");
             result.addProperty("query", query);
             result.addProperty("total_results", memories.size());
             result.addProperty("threshold_used", threshold);
-            
+
             log.info("记忆搜索完成，返回{}条结果", memories.size());
-            
+
         } catch (Exception e) {
             log.error("执行记忆搜索时发生异常", e);
             result.addProperty("error", "搜索失败: " + e.getMessage());
         }
-        
+
         return result;
     }
 
     private JsonObject executeSave(JsonObject inputJson, String userId, String agentId, String sessionId) {
         JsonObject result = new JsonObject();
-        
+
         if (!inputJson.has("content") || StringUtils.isBlank(inputJson.get("content").getAsString())) {
             result.addProperty("error", "save操作缺少必需的content参数");
             return result;
@@ -239,7 +292,7 @@ public class MemoryTool implements ITool {
 
         String content = inputJson.get("content").getAsString();
         Map<String, Object> metadata = new java.util.HashMap<>();
-        
+
         // 处理可选的元数据
         if (inputJson.has("metadata")) {
             try {
@@ -250,13 +303,13 @@ public class MemoryTool implements ITool {
                 log.warn("解析元数据失败，使用默认值: {}", e.getMessage());
             }
         }
-        
+
         metadata.put("saved_by", "MemoryTool");
         metadata.put("timestamp", System.currentTimeMillis());
 
         try {
             var saveResult = memoryManager.addMemory(content, userId, agentId, sessionId, metadata);
-            
+
             // 使用带超时的异步调用处理
             Map<String, Object> saveMap;
             try {
@@ -272,11 +325,11 @@ public class MemoryTool implements ITool {
                 result.addProperty("success", false);
                 return result;
             }
-            
+
             result.addProperty("action", "save");
             result.addProperty("content", content);
             result.addProperty("success", !saveMap.containsKey("error"));
-            
+
             if (saveMap.containsKey("error")) {
                 result.addProperty("error", saveMap.get("error").toString());
             } else {
@@ -285,24 +338,24 @@ public class MemoryTool implements ITool {
                     result.addProperty("memory_id", saveMap.get("memory_id").toString());
                 }
             }
-            
+
             log.info("记忆保存完成");
-            
+
         } catch (Exception e) {
             log.error("执行记忆保存时发生异常", e);
             result.addProperty("error", "保存失败: " + e.getMessage());
             result.addProperty("success", false);
         }
-        
+
         return result;
     }
 
     private JsonObject executeReset() {
         JsonObject result = new JsonObject();
-        
+
         try {
             var resetResult = memoryManager.resetMemory();
-            
+
             // 使用带超时的异步调用处理
             boolean success;
             try {
@@ -318,31 +371,31 @@ public class MemoryTool implements ITool {
                 result.addProperty("success", false);
                 return result;
             }
-            
+
             result.addProperty("action", "reset");
             result.addProperty("success", success);
             result.addProperty("message", success ? "记忆重置成功" : "记忆重置失败");
-            
+
             log.info("记忆重置操作完成，结果: {}", success);
-            
+
         } catch (Exception e) {
             log.error("执行记忆重置时发生异常", e);
             result.addProperty("error", "重置失败: " + e.getMessage());
             result.addProperty("success", false);
         }
-        
+
         return result;
     }
 
     private JsonObject executeGetAll(JsonObject inputJson, String userId, String agentId, String sessionId) {
         JsonObject result = new JsonObject();
-        
+
         int maxResults = inputJson.has("max_results") ? inputJson.get("max_results").getAsInt() : 50;
         maxResults = Math.min(Math.max(maxResults, 1), 100); // 限制范围1-100
 
         try {
             var getAllResult = memoryManager.getAllMemories(userId, agentId, sessionId, maxResults);
-            
+
             // 使用带超时的异步调用处理
             Map<String, Object> getAllMap;
             try {
@@ -356,22 +409,22 @@ public class MemoryTool implements ITool {
                 result.addProperty("error", "获取执行失败: " + e.getCause().getMessage());
                 return result;
             }
-            
+
             JsonArray memories = new JsonArray();
             addMemoriesToResult(memories, getAllMap, "get_all");
-            
+
             result.add("memories", memories);
             result.addProperty("action", "get_all");
             result.addProperty("total_results", memories.size());
             result.addProperty("max_results", maxResults);
-            
+
             log.info("获取所有记忆完成，返回{}条结果", memories.size());
-            
+
         } catch (Exception e) {
             log.error("执行获取所有记忆时发生异常", e);
             result.addProperty("error", "获取失败: " + e.getMessage());
         }
-        
+
         return result;
     }
 
@@ -379,12 +432,12 @@ public class MemoryTool implements ITool {
         if (memoryResults == null) {
             return;
         }
-        
+
         try {
             if (memoryResults instanceof Map) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> resultMap = (Map<String, Object>) memoryResults;
-                
+
                 // 检查是否有错误
                 if (resultMap.containsKey("error")) {
                     JsonObject errorObj = new JsonObject();
@@ -393,33 +446,37 @@ public class MemoryTool implements ITool {
                     memories.add(errorObj);
                     return;
                 }
-                
+
+                if (resultMap.containsKey("relations")) {
+                    memories.add(GsonUtils.gson.toJsonTree(resultMap.get("relations")));
+                }
+
                 // 处理搜索结果
                 if (resultMap.containsKey("results")) {
                     Object resultsObj = resultMap.get("results");
-                    
+
                     // 处理List<MemoryItem>的情况
                     if (resultsObj instanceof List) {
                         @SuppressWarnings("unchecked")
                         List<Object> results = (List<Object>) resultsObj;
-                        
+
                         for (Object resultObj : results) {
                             JsonObject memoryObj = new JsonObject();
-                            
+
                             if (resultObj instanceof Map) {
                                 @SuppressWarnings("unchecked")
                                 Map<String, Object> result = (Map<String, Object>) resultObj;
-                                
+
                                 // 提取记忆ID
                                 if (result.containsKey("id")) {
                                     memoryObj.addProperty("id", result.get("id").toString());
                                 }
-                                
+
                                 // 提取分数
                                 if (result.containsKey("score")) {
                                     memoryObj.addProperty("score", result.get("score").toString());
                                 }
-                                
+
                                 // 提取记忆内容 - 从metadata.data获取
                                 String content = extractMemoryContent(result);
                                 if (content != null && !content.trim().isEmpty()) {
@@ -427,7 +484,7 @@ public class MemoryTool implements ITool {
                                 } else if (result.containsKey("memory")) {
                                     memoryObj.addProperty("content", result.get("memory").toString());
                                 }
-                                
+
                                 // 提取用户标识信息
                                 if (result.containsKey("userId")) {
                                     memoryObj.addProperty("userId", result.get("userId").toString());
@@ -438,7 +495,7 @@ public class MemoryTool implements ITool {
                                 if (result.containsKey("runId")) {
                                     memoryObj.addProperty("sessionId", result.get("runId").toString());
                                 }
-                                
+
                                 // 提取时间信息
                                 if (result.containsKey("createdAt")) {
                                     memoryObj.addProperty("createdAt", result.get("createdAt").toString());
@@ -446,19 +503,19 @@ public class MemoryTool implements ITool {
                                 if (result.containsKey("updatedAt")) {
                                     memoryObj.addProperty("updatedAt", result.get("updatedAt").toString());
                                 }
-                                
+
                                 // 提取元数据
                                 if (result.containsKey("metadata")) {
                                     memoryObj.addProperty("metadata", result.get("metadata").toString());
                                 }
-                                
+
                             } else {
                                 // 如果是MemoryItem对象，直接转换为字符串
                                 String itemStr = resultObj.toString();
                                 memoryObj.addProperty("content", extractContentFromMemoryItemString(itemStr));
                                 memoryObj.addProperty("raw", itemStr);
                             }
-                            
+
                             memoryObj.addProperty("type", type);
                             memoryObj.addProperty("timestamp", System.currentTimeMillis());
                             memories.add(memoryObj);
@@ -491,7 +548,7 @@ public class MemoryTool implements ITool {
                     }
                 }
             }
-            
+
             // 如果metadata.data不存在，尝试从memory字段获取
             if (result.containsKey("memory")) {
                 String memory = result.get("memory").toString();
@@ -499,7 +556,7 @@ public class MemoryTool implements ITool {
                     return memory;
                 }
             }
-            
+
             return null;
         } catch (Exception e) {
             log.warn("提取记忆内容时发生异常: {}", e.getMessage());
@@ -528,7 +585,7 @@ public class MemoryTool implements ITool {
                     return itemStr.substring(startIndex).trim();
                 }
             }
-            
+
             // 如果找不到data字段，返回原始字符串的摘要
             return "记忆项: " + (itemStr.length() > 100 ? itemStr.substring(0, 100) + "..." : itemStr);
         } catch (Exception e) {

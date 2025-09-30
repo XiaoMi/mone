@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.RemoteFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,16 @@ import java.util.List;
 public class ReadFileTool implements ITool {
 
     public static final String name = "read_file";
+
+    private final boolean isRemote;
+
+    public ReadFileTool() {
+        this(false);
+    }
+
+    public ReadFileTool(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
 
     // Common text file extensions
     private static final List<String> TEXT_EXTENSIONS = Arrays.asList(
@@ -178,50 +189,79 @@ public class ReadFileTool implements ITool {
     private JsonObject performReadFile(String path) {
         JsonObject result = new JsonObject();
 
-        try {
-            Path filePath = Paths.get(path);
-            File file = filePath.toFile();
+        if (!isRemote) {
+            try {
+                Path filePath = Paths.get(path);
+                File file = filePath.toFile();
 
-            // Check if file exists
-            if (!file.exists()) {
-                log.error("File not found: {}", path);
-                result.addProperty("error", "File not found: " + path);
+                // Check if file exists
+                if (!file.exists()) {
+                    log.error("File not found: {}", path);
+                    result.addProperty("error", "File not found: " + path);
+                    return result;
+                }
+
+                // Check if path points to a directory
+                if (file.isDirectory()) {
+                    log.error("Path points to a directory, not a file: {}", path);
+                    result.addProperty("error", "Path points to a directory, not a file: " + path +
+                            ". Use this tool only on files, not directories.");
+                    return result;
+                }
+
+                // Check file permissions
+                if (!file.canRead()) {
+                    log.error("File is not readable: {}", path);
+                    result.addProperty("error", "File is not readable: " + path);
+                    return result;
+                }
+
+                // Get file information
+                long fileSize = file.length();
+                String fileExtension = getFileExtension(path);
+                String fileType = determineFileType(fileExtension);
+
+                // Handle different file types
+                if (isBinaryFile(fileExtension)) {
+                    return handleBinaryFile(filePath, fileSize, fileType, result);
+                } else {
+                    return handleTextFile(filePath, fileSize, fileType, result);
+                }
+
+
+            } catch (IOException e) {
+                log.error("IO exception while reading file: {}", path, e);
+                result.addProperty("error", "Failed to read file: " + e.getMessage());
+            } catch (Exception e) {
+                log.error("Exception while reading file: {}", path, e);
+                result.addProperty("error", "Error reading file: " + e.getMessage());
+            }
+        }
+
+        if (isRemote) {
+            try {
+                log.info("Reading remote file: {}", path);
+
+                // 获取远程文件内容
+                String content = RemoteFileUtils.getRemoteFileContent(path);
+
+                // 确定文件类型
+                String fileExtension = getFileExtension(path);
+                String fileType = determineFileType(fileExtension);
+
+                // 设置响应结果
+                result.addProperty("result", content);
+                result.addProperty("fileType", fileType);
+                result.addProperty("encoding", "UTF-8");
+
+                log.info("Successfully read remote file: {}, type: {}", path, fileType);
+
+                return result;
+            } catch (IOException e) {
+                log.error("Failed to read remote file: {}", path, e);
+                result.addProperty("error", "Failed to read remote file: " + e.getMessage());
                 return result;
             }
-
-            // Check if path points to a directory
-            if (file.isDirectory()) {
-                log.error("Path points to a directory, not a file: {}", path);
-                result.addProperty("error", "Path points to a directory, not a file: " + path + 
-                                           ". Use this tool only on files, not directories.");
-                return result;
-            }
-
-            // Check file permissions
-            if (!file.canRead()) {
-                log.error("File is not readable: {}", path);
-                result.addProperty("error", "File is not readable: " + path);
-                return result;
-            }
-
-            // Get file information
-            long fileSize = file.length();
-            String fileExtension = getFileExtension(path);
-            String fileType = determineFileType(fileExtension);
-            
-            // Handle different file types
-            if (isBinaryFile(fileExtension)) {
-                return handleBinaryFile(filePath, fileSize, fileType, result);
-            } else {
-                return handleTextFile(filePath, fileSize, fileType, result);
-            }
-
-        } catch (IOException e) {
-            log.error("IO exception while reading file: {}", path, e);
-            result.addProperty("error", "Failed to read file: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("Exception while reading file: {}", path, e);
-            result.addProperty("error", "Error reading file: " + e.getMessage());
         }
 
         return result;

@@ -43,6 +43,9 @@ public class Const {
     //清空agent记忆
     public static final String CLEAR_HISTORY = "___clear_history___";
 
+    //刷新配置
+    public static final String REFRESH_CONFIG = "___refresh_config___";
+
     public static final String DEFAULT = "default";
 
     public static final String INTERNAL_SERVER = "internalServer";

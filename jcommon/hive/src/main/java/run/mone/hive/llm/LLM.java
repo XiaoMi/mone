@@ -44,6 +44,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
 
@@ -346,15 +348,15 @@ public class LLM {
     }
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, getModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
+        return chatCompletion(getToken(), msgList, getModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
-        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, getModel(), "", config);
     }
 
     public String getApiUrl(String apiKey, boolean stream) {
@@ -411,7 +413,7 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
-        return chatCompletion(apiKey, CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
+        return chatCompletion(apiKey, clientConfig.getCustomConfig() != null ? clientConfig.getCustomConfig() : CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
     }
 
 
@@ -422,7 +424,7 @@ public class LLM {
     }
 
     public LLMChatCompletionResult chatCompletionWithUsage(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
-        return chatCompletionWithUsage(apiKey, CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
+        return chatCompletionWithUsage(apiKey, clientConfig.getCustomConfig() != null ? clientConfig.getCustomConfig() : CustomConfig.DUMMY, messages, model, systemPrompt, clientConfig);
     }
 
     @SneakyThrows
@@ -466,23 +468,30 @@ public class LLM {
         if (this.config.isStream()) {
             requestBody.addProperty("stream", true);
         }
+        //使用json格式返回
+        if (clientConfig.isJson()) {
+            JsonObject rf = new JsonObject();
+            rf.addProperty("type", "json_object");
+            requestBody.add("response_format", rf);
+        }
+
         JsonArray msgArray = new JsonArray();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            if (this.config.isJson() || clientConfig.isJson()) {
-                String jsonSystemPrompt = """
-                         返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
-                        """;
-                JsonObject rf = new JsonObject();
-                rf.addProperty("type", "json_object");
-                requestBody.add("response_format", rf);
-                msgArray.add(createMessageObject("system", jsonSystemPrompt));
-            } else {
-                if (StringUtils.isNotEmpty(systemPrompt)) {
-                    msgArray.add(createMessageObject("system", systemPrompt));
-                }
-            }
-        }
+//        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+//            if (this.config.isJson() || clientConfig.isJson()) {
+//                String jsonSystemPrompt = """
+//                         返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
+//                        """;
+//                JsonObject rf = new JsonObject();
+//                rf.addProperty("type", "json_object");
+//                requestBody.add("response_format", rf);
+//                msgArray.add(createMessageObject("system", jsonSystemPrompt));
+//            } else {
+//                if (StringUtils.isNotEmpty(systemPrompt)) {
+//                    msgArray.add(createMessageObject("system", systemPrompt));
+//                }
+//            }
+//        }
 
         //gemini的系统提示词
         if (llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(systemPrompt)) {
@@ -746,7 +755,6 @@ public class LLM {
         if (null != am.getJsonContent()) {
             return am.getJsonContent();
         }
-
         JsonObject message = new JsonObject();
         message.addProperty("role", role);
         JsonArray array = new JsonArray();
@@ -805,7 +813,8 @@ public class LLM {
                 },
                 systemPrompt,
                 null,
-                u -> {}
+                u -> {
+                }
         );
     }
 
@@ -871,11 +880,20 @@ public class LLM {
     }
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
-        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model, messageHandler, lineConsumer, systemPrompt, sink, u -> {});
+        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
+                messageHandler, lineConsumer, systemPrompt, sink,
+                u -> {
+                    sink.next(llmUsageContent(u));
+                });
+    }
+
+    private String llmUsageContent(LLMUsage usage) {
+        return TOKEN_USAGE_LABEL_START + gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
     public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
-        chatCompletionStream(apiKey, customConfig, messages, model, messageHandler, lineConsumer, systemPrompt, sink, u -> {});
+        chatCompletionStream(apiKey, customConfig, messages, model, messageHandler, lineConsumer, systemPrompt, sink, u -> {
+        });
     }
 
     public void chatCompletionStream(String apiKey, CustomConfig customConfig, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink, Consumer<LLMUsage> usageConsumer) {
@@ -931,10 +949,21 @@ public class LLM {
             requestBody.add("system_instruction", system_instruction);
         }
 
+        //关闭思维链
+        if (llmProvider == LLMProvider.GLM_45_AIR) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", "disabled");
+            requestBody.add("thinking", obj);
+        }
+
         for (AiMessage message : messages) {
-            //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
+                    this.llmProvider == LLMProvider.GLM_45_AIR ||
+                    this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX_MINI ||
+                    this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX ||
+                    this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
                     this.llmProvider == LLMProvider.DOUBAO_DEEPSEEK_V3 ||
                     this.llmProvider == LLMProvider.DEEPSEEK ||
                     this.llmProvider == LLMProvider.DOUBAO_UI_TARS ||
@@ -965,7 +994,7 @@ public class LLM {
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
 
         // openai 系列的应该都可以
-        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK) {
+        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN) {
             JsonObject usage = new JsonObject();
             usage.addProperty("include_usage", true);
             requestBody.add("stream_options", usage);
@@ -1072,13 +1101,41 @@ public class LLM {
                                     if (null != sink) {
                                         sink.complete();
                                     }
-
                                 }
                             }
                         } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
                             if (line.startsWith("data: ")) {
                                 String data = line.substring(6);
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+
+                                if ("message_start".equals(jsonResponse.get("type").getAsString())) {
+                                    JsonObject msg = jsonResponse.get("message").getAsJsonObject();
+                                    if (msg.has("usage")) {
+                                        JsonObject usageJson = msg.getAsJsonObject("usage");
+                                        LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+
+                                        // Common fields
+                                        int inputTokens = usageJson.has("input_tokens") ? usageJson.get("input_tokens").getAsInt() : 0;
+                                        int outputTokens = usageJson.has("output_tokens") ? usageJson.get("output_tokens").getAsInt() : 0;
+                                        usageBuilder.inputTokens(inputTokens).outputTokens(outputTokens);
+                                        Integer cacheReadTokens = usageJson.has("cache_read_input_tokens") ? usageJson.get("cache_read_input_tokens").getAsInt() : null;
+                                        Integer cacheWriteTokens = usageJson.has("cache_creation_input_tokens") ? usageJson.get("cache_creation_input_tokens").getAsInt() : null;
+                                        usageBuilder.cacheReadTokens(cacheReadTokens);
+                                        usageBuilder.cacheWriteTokens(cacheWriteTokens);
+                                        usageBuilder.totalCost(null);
+                                        usageBuilder.thoughtsTokenCount(null);
+                                        Integer tokenLimit = ModelInfoUtils.getModelInfo(llmProvider, model)
+                                                .map(ModelInfoUtils.ModelInfo::getTokenLimit)
+                                                .orElse(null);
+                                        usageBuilder.tokenLimit(tokenLimit);
+
+                                        LLMUsage usage = usageBuilder.build();
+                                        if (null != usageConsumer) {
+                                            usageConsumer.accept(usage);
+                                        }
+                                    }
+                                }
+
                                 if ("message_start".equals(jsonResponse.get("type").getAsString())
                                         || "ping".equals(jsonResponse.get("type").getAsString())
                                         || "content_block_start".equals(jsonResponse.get("type").getAsString())) {
@@ -1086,6 +1143,18 @@ public class LLM {
                                 }
 
                                 if ("message_delta".equals(jsonResponse.get("type").getAsString())) {
+                                    if (jsonResponse.has("usage")) {
+                                        JsonObject usageJson = jsonResponse.getAsJsonObject("usage");
+                                        LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+                                        int inputTokens = usageJson.has("input_tokens") ? usageJson.get("input_tokens").getAsInt() : 0;
+                                        int outputTokens = usageJson.has("output_tokens") ? usageJson.get("output_tokens").getAsInt() : 0;
+                                        usageBuilder.inputTokens(inputTokens).outputTokens(outputTokens);
+                                        LLMUsage usage = usageBuilder.build();
+                                        if (null != usageConsumer) {
+                                            usageConsumer.accept(usage);
+                                        }
+                                    }
+
                                     JsonObject jsonRes = new JsonObject();
                                     jsonRes.addProperty("type", "finish");
                                     jsonRes.addProperty("content", jsonResponse.get("delta").getAsJsonObject().get("stop_reason").getAsString());
@@ -1442,8 +1511,8 @@ public class LLM {
     /**
      * 意图识别方法
      * 根据用户输入的prompt和提供的分类列表，让AI判断应该使用哪个分类
-     * 
-     * @param prompt 用户输入的文本
+     *
+     * @param prompt     用户输入的文本
      * @param categories 可选的分类列表
      * @return IntentClassificationResult 包含分类结果的对象
      */
@@ -1458,38 +1527,38 @@ public class LLM {
         try {
             // 构造系统提示词，要求AI返回JSON格式的分类结果
             String systemPrompt = String.format("""
-                你是一个专业的意图识别助手。请根据用户的输入文本，从给定的分类列表中选择最合适的分类。
-                
-                分类列表：%s
-                
-                请严格按照以下JSON格式返回结果：
-                {
-                    "selectedCategory": "选中的分类",
-                    "confidence": 0.95,
-                    "reason": "选择这个分类的原因"
-                }
-                
-                要求：
-                1. selectedCategory 必须是分类列表中的一个
-                2. confidence 是置信度，范围0-1
-                3. reason 简要说明选择理由
-                4. 只返回JSON，不要其他内容
-                """, gson.toJson(categories));
+                    你是一个专业的意图识别助手。请根据用户的输入文本，从给定的分类列表中选择最合适的分类。
+                    
+                    分类列表：%s
+                    
+                    请严格按照以下JSON格式返回结果：
+                    {
+                        "selectedCategory": "选中的分类",
+                        "confidence": 0.95,
+                        "reason": "选择这个分类的原因"
+                    }
+                    
+                    要求：
+                    1. selectedCategory 必须是分类列表中的一个
+                    2. confidence 是置信度，范围0-1
+                    3. reason 简要说明选择理由
+                    4. 只返回JSON，不要其他内容
+                    """, gson.toJson(categories));
 
             // 构造消息
             List<AiMessage> messages = Lists.newArrayList(
-                AiMessage.builder().role(ROLE_USER).content(prompt).build()
+                    AiMessage.builder().role(ROLE_USER).content(prompt).build()
             );
 
             // 调用LLM进行分类
             String response = chatCompletion(getToken(), messages, getModel(), systemPrompt, config);
-            
+
             log.info("意图识别请求 - prompt: {}, categories: {}", prompt, categories);
             log.info("意图识别响应: {}", response);
 
             // 解析JSON响应
             JsonObject jsonResponse = gson.fromJson(response, JsonObject.class);
-            
+
             String selectedCategory = jsonResponse.get("selectedCategory").getAsString();
             double confidence = jsonResponse.has("confidence") ? jsonResponse.get("confidence").getAsDouble() : 0.0;
             String reason = jsonResponse.has("reason") ? jsonResponse.get("reason").getAsString() : "";
@@ -1512,7 +1581,7 @@ public class LLM {
 
         } catch (Exception e) {
             log.error("意图识别失败 - prompt: {}, categories: {}, error: {}", prompt, categories, e.getMessage(), e);
-            
+
             // 返回默认结果
             return IntentClassificationResult.builder()
                     .selectedCategory(categories.get(0))
@@ -1527,7 +1596,7 @@ public class LLM {
     /**
      * 情感AI主动聊天判断方法
      * 根据聊天记录和当前时间，判断AI是否需要主动和用户聊天
-     * 
+     *
      * @param chatHistory 聊天记录列表，按时间顺序排列
      * @param currentTime 当前时间（格式：yyyy-MM-dd HH:mm:ss）
      * @return EmotionalChatDecisionResult 包含判断结果的对象
@@ -1543,67 +1612,67 @@ public class LLM {
         try {
             // 构造系统提示词，让AI作为情感AI来判断是否需要主动聊天
             String systemPrompt = """
-                你是一个具有情感智能的AI助手。请根据用户的聊天记录和当前时间，判断是否需要主动和用户聊天。
-                
-                作为情感AI，你需要考虑以下因素：
-                1. 用户的情绪状态（从聊天记录中分析）
-                2. 聊天的频率和间隔时间
-                3. 用户可能的作息时间和生活规律
-                4. 是否有未完成的话题或关怀需要跟进
-                5. 特殊时间节点（如节假日、生日等）
-                6. 用户是否表现出需要陪伴或支持的迹象
-                
-                判断标准：
-                - 需要主动聊天：用户情绪低落、长时间未聊天、有未完成关怀、特殊时间节点等
-                - 不需要主动聊天：用户状态良好、刚刚聊过、用户可能在休息时间等
-                
-                请严格按照以下JSON格式返回结果：
-                {
-                    "shouldInitiate": true/false,
-                    "confidence": 0.85,
-                    "reason": "判断理由",
-                    "suggestedMessage": "如果需要主动聊天，建议发送的消息内容",
-                    "emotionalAnalysis": "对用户情绪状态的分析",
-                    "timeAnalysis": "对时间因素的分析"
-                }
-                
-                要求：
-                1. shouldInitiate 表示是否需要主动聊天
-                2. confidence 是置信度，范围0-1
-                3. reason 详细说明判断理由
-                4. suggestedMessage 如果需要主动聊天，提供温暖、贴心的消息建议
-                5. emotionalAnalysis 分析用户的情绪状态
-                6. timeAnalysis 分析时间因素的影响
-                7. 只返回JSON，不要其他内容
-                """;
+                    你是一个具有情感智能的AI助手。请根据用户的聊天记录和当前时间，判断是否需要主动和用户聊天。
+                    
+                    作为情感AI，你需要考虑以下因素：
+                    1. 用户的情绪状态（从聊天记录中分析）
+                    2. 聊天的频率和间隔时间
+                    3. 用户可能的作息时间和生活规律
+                    4. 是否有未完成的话题或关怀需要跟进
+                    5. 特殊时间节点（如节假日、生日等）
+                    6. 用户是否表现出需要陪伴或支持的迹象
+                    
+                    判断标准：
+                    - 需要主动聊天：用户情绪低落、长时间未聊天、有未完成关怀、特殊时间节点等
+                    - 不需要主动聊天：用户状态良好、刚刚聊过、用户可能在休息时间等
+                    
+                    请严格按照以下JSON格式返回结果：
+                    {
+                        "shouldInitiate": true/false,
+                        "confidence": 0.85,
+                        "reason": "判断理由",
+                        "suggestedMessage": "如果需要主动聊天，建议发送的消息内容",
+                        "emotionalAnalysis": "对用户情绪状态的分析",
+                        "timeAnalysis": "对时间因素的分析"
+                    }
+                    
+                    要求：
+                    1. shouldInitiate 表示是否需要主动聊天
+                    2. confidence 是置信度，范围0-1
+                    3. reason 详细说明判断理由
+                    4. suggestedMessage 如果需要主动聊天，提供温暖、贴心的消息建议
+                    5. emotionalAnalysis 分析用户的情绪状态
+                    6. timeAnalysis 分析时间因素的影响
+                    7. 只返回JSON，不要其他内容
+                    """;
 
             // 构造用户输入，包含聊天记录和当前时间
             String userInput = String.format("""
-                当前时间：%s
-                
-                聊天记录（按时间顺序）：
-                %s
-                
-                请分析以上信息，判断我是否需要主动和用户聊天。
-                """, 
-                currentTime, 
-                chatHistory.isEmpty() ? "暂无聊天记录" : String.join("\n", chatHistory)
+                            当前时间：%s
+                            
+                            聊天记录（按时间顺序）：
+                            %s
+                            
+                            请分析以上信息，判断我是否需要主动和用户聊天。
+                            """,
+                    currentTime,
+                    chatHistory.isEmpty() ? "暂无聊天记录" : String.join("\n", chatHistory)
             );
 
             // 构造消息
             List<AiMessage> messages = Lists.newArrayList(
-                AiMessage.builder().role(ROLE_USER).content(userInput).build()
+                    AiMessage.builder().role(ROLE_USER).content(userInput).build()
             );
 
             // 调用LLM进行判断
             String response = chatCompletion(getToken(), messages, getModel(), systemPrompt, config);
-            
+
             log.info("情感AI主动聊天判断请求 - 当前时间: {}, 聊天记录条数: {}", currentTime, chatHistory.size());
             log.info("情感AI主动聊天判断响应: {}", response);
 
             // 解析JSON响应
             JsonObject jsonResponse = gson.fromJson(response, JsonObject.class);
-            
+
             boolean shouldInitiate = jsonResponse.has("shouldInitiate") ? jsonResponse.get("shouldInitiate").getAsBoolean() : false;
             double confidence = jsonResponse.has("confidence") ? jsonResponse.get("confidence").getAsDouble() : 0.0;
             String reason = jsonResponse.has("reason") ? jsonResponse.get("reason").getAsString() : "";
@@ -1623,9 +1692,9 @@ public class LLM {
                     .build();
 
         } catch (Exception e) {
-            log.error("情感AI主动聊天判断失败 - 当前时间: {}, 聊天记录条数: {}, error: {}", 
+            log.error("情感AI主动聊天判断失败 - 当前时间: {}, 聊天记录条数: {}, error: {}",
                     currentTime, chatHistory.size(), e.getMessage(), e);
-            
+
             // 返回保守的默认结果（不主动聊天）
             return EmotionalChatDecisionResult.builder()
                     .shouldInitiate(false)
@@ -1656,32 +1725,35 @@ public class LLM {
         private String timeAnalysis;         // 时间分析
         private String currentTime;          // 当前时间
         private int chatHistorySize;         // 聊天记录条数
-        
+
         /**
          * 判断结果是否可信
+         *
          * @param threshold 置信度阈值
          * @return 是否可信
          */
         public boolean isReliable(double threshold) {
             return confidence >= threshold;
         }
-        
+
         /**
          * 获取JSON格式的结果
+         *
          * @return JSON字符串
          */
         public String toJson() {
             return new Gson().toJson(this);
         }
-        
+
         /**
          * 获取简要的决策摘要
+         *
          * @return 决策摘要
          */
         public String getSummary() {
-            return String.format("决策: %s, 置信度: %.2f, 理由: %s", 
-                    shouldInitiate ? "需要主动聊天" : "不需要主动聊天", 
-                    confidence, 
+            return String.format("决策: %s, 置信度: %.2f, 理由: %s",
+                    shouldInitiate ? "需要主动聊天" : "不需要主动聊天",
+                    confidence,
                     reason);
         }
     }
@@ -1689,7 +1761,7 @@ public class LLM {
     /**
      * 模型复杂度分类方法
      * 根据问题的难度和复杂性，自动选择合适的模型类型
-     * 
+     *
      * @param prompt 用户输入的问题或任务描述
      * @return ModelComplexityResult 包含模型选择结果的对象
      */
@@ -1704,60 +1776,60 @@ public class LLM {
         try {
             // 构造系统提示词，要求AI根据问题复杂度选择合适的模型
             String systemPrompt = """
-                你是一个专业的AI模型选择助手。请根据用户的问题或任务描述，分析其复杂度和难度，然后选择最合适的模型类型。
-                
-                模型类型说明：
-                1. 高级模型：适用于复杂推理、创意写作、专业分析、多步骤问题解决、需要深度思考的任务
-                2. 标准模型：适用于一般性问答、常规对话、基础分析、中等复杂度的任务
-                3. 基础模型：适用于简单问答、基础信息查询、格式转换、简单的文本处理任务
-                
-                评估标准：
-                - 问题的逻辑复杂度（是否需要多步推理）
-                - 专业知识要求（是否涉及专业领域）
-                - 创造性要求（是否需要创新思维）
-                - 上下文理解深度（是否需要深度理解）
-                - 任务的综合性（是否涉及多个方面）
-                
-                请严格按照以下JSON格式返回结果：
-                {
-                    "selectedModel": "选中的模型类型",
-                    "confidence": 0.95,
-                    "reason": "选择这个模型的详细理由",
-                    "complexityAnalysis": "对问题复杂度的分析",
-                    "requiredCapabilities": ["需要的能力1", "需要的能力2"],
-                    "difficultyLevel": "简单/中等/困难/极难"
-                }
-                
-                要求：
-                1. selectedModel 必须是：高级模型、标准模型、基础模型 中的一个
-                2. confidence 是置信度，范围0-1
-                3. reason 详细说明选择理由
-                4. complexityAnalysis 分析问题的复杂度特征
-                5. requiredCapabilities 列出解决该问题需要的主要能力
-                6. difficultyLevel 评估问题的整体难度等级
-                7. 只返回JSON，不要其他内容
-                """;
+                    你是一个专业的AI模型选择助手。请根据用户的问题或任务描述，分析其复杂度和难度，然后选择最合适的模型类型。
+                    
+                    模型类型说明：
+                    1. 高级模型：适用于复杂推理、创意写作、专业分析、多步骤问题解决、需要深度思考的任务
+                    2. 标准模型：适用于一般性问答、常规对话、基础分析、中等复杂度的任务
+                    3. 基础模型：适用于简单问答、基础信息查询、格式转换、简单的文本处理任务
+                    
+                    评估标准：
+                    - 问题的逻辑复杂度（是否需要多步推理）
+                    - 专业知识要求（是否涉及专业领域）
+                    - 创造性要求（是否需要创新思维）
+                    - 上下文理解深度（是否需要深度理解）
+                    - 任务的综合性（是否涉及多个方面）
+                    
+                    请严格按照以下JSON格式返回结果：
+                    {
+                        "selectedModel": "选中的模型类型",
+                        "confidence": 0.95,
+                        "reason": "选择这个模型的详细理由",
+                        "complexityAnalysis": "对问题复杂度的分析",
+                        "requiredCapabilities": ["需要的能力1", "需要的能力2"],
+                        "difficultyLevel": "简单/中等/困难/极难"
+                    }
+                    
+                    要求：
+                    1. selectedModel 必须是：高级模型、标准模型、基础模型 中的一个
+                    2. confidence 是置信度，范围0-1
+                    3. reason 详细说明选择理由
+                    4. complexityAnalysis 分析问题的复杂度特征
+                    5. requiredCapabilities 列出解决该问题需要的主要能力
+                    6. difficultyLevel 评估问题的整体难度等级
+                    7. 只返回JSON，不要其他内容
+                    """;
 
             // 构造消息
             List<AiMessage> messages = Lists.newArrayList(
-                AiMessage.builder().role(ROLE_USER).content(prompt).build()
+                    AiMessage.builder().role(ROLE_USER).content(prompt).build()
             );
 
             // 调用LLM进行分类
             String response = chatCompletion(getToken(), messages, getModel(), systemPrompt, config);
-            
+
             log.info("模型复杂度分类请求 - prompt: {}", prompt);
             log.info("模型复杂度分类响应: {}", response);
 
             // 解析JSON响应
             JsonObject jsonResponse = gson.fromJson(response, JsonObject.class);
-            
+
             String selectedModel = jsonResponse.get("selectedModel").getAsString();
             double confidence = jsonResponse.has("confidence") ? jsonResponse.get("confidence").getAsDouble() : 0.0;
             String reason = jsonResponse.has("reason") ? jsonResponse.get("reason").getAsString() : "";
             String complexityAnalysis = jsonResponse.has("complexityAnalysis") ? jsonResponse.get("complexityAnalysis").getAsString() : "";
             String difficultyLevel = jsonResponse.has("difficultyLevel") ? jsonResponse.get("difficultyLevel").getAsString() : "未知";
-            
+
             // 解析所需能力列表
             List<String> requiredCapabilities = new ArrayList<>();
             if (jsonResponse.has("requiredCapabilities") && jsonResponse.get("requiredCapabilities").isJsonArray()) {
@@ -1788,7 +1860,7 @@ public class LLM {
 
         } catch (Exception e) {
             log.error("模型复杂度分类失败 - prompt: {}, error: {}", prompt, e.getMessage(), e);
-            
+
             // 返回默认结果（使用标准模型）
             return ModelComplexityResult.builder()
                     .selectedModel("标准模型")
@@ -1819,26 +1891,29 @@ public class LLM {
         private String difficultyLevel;     // 难度等级
         private String originalPrompt;       // 原始问题
         private List<String> availableModels; // 可用模型列表
-        
+
         /**
          * 判断分类结果是否可信
+         *
          * @param threshold 置信度阈值
          * @return 是否可信
          */
         public boolean isReliable(double threshold) {
             return confidence >= threshold;
         }
-        
+
         /**
          * 获取JSON格式的结果
+         *
          * @return JSON字符串
          */
         public String toJson() {
             return new Gson().toJson(this);
         }
-        
+
         /**
          * 获取模型类型的英文标识
+         *
          * @return 英文标识
          */
         public String getModelTypeCode() {
@@ -1853,29 +1928,32 @@ public class LLM {
                     return "STANDARD";
             }
         }
-        
+
         /**
          * 判断是否为高复杂度任务
+         *
          * @return 是否为高复杂度
          */
         public boolean isHighComplexity() {
             return "高级模型".equals(selectedModel);
         }
-        
+
         /**
          * 判断是否为简单任务
+         *
          * @return 是否为简单任务
          */
         public boolean isSimpleTask() {
             return "基础模型".equals(selectedModel);
         }
-        
+
         /**
          * 获取简要的分类摘要
+         *
          * @return 分类摘要
          */
         public String getSummary() {
-            return String.format("推荐模型: %s, 难度: %s, 置信度: %.2f", 
+            return String.format("推荐模型: %s, 难度: %s, 置信度: %.2f",
                     selectedModel, difficultyLevel, confidence);
         }
     }
@@ -1890,6 +1968,7 @@ public class LLM {
     public static class LLMUsage {
         private int inputTokens;
         private int outputTokens;
+        private int compressedTokens;
         // 下面的都有可能会是null，不同模型提供的不一样
         private Integer cacheWriteTokens;
         private Integer cacheReadTokens;
@@ -1923,18 +2002,20 @@ public class LLM {
         private String reason;               // 选择理由
         private String originalPrompt;       // 原始输入
         private List<String> availableCategories; // 可用分类列表
-        
+
         /**
          * 判断分类结果是否可信
+         *
          * @param threshold 置信度阈值
          * @return 是否可信
          */
         public boolean isReliable(double threshold) {
             return confidence >= threshold;
         }
-        
+
         /**
          * 获取JSON格式的结果
+         *
          * @return JSON字符串
          */
         public String toJson() {

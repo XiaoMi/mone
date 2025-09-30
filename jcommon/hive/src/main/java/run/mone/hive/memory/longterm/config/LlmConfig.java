@@ -17,6 +17,9 @@ import java.util.HashMap;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LlmConfig {
+
+
+    private String providerName;
     
     /**
      * LLM提供商类型
@@ -30,7 +33,7 @@ public class LlmConfig {
         AZURE_OPENAI("azure_openai"),
         BEDROCK("bedrock"),
         TOGETHER("together"),
-        DEEPSEEK("deepseek"),
+        DEEPSEEK("doubao_deepseek_v3"),
         XAI("xai");
         
         private final String value;
@@ -58,12 +61,12 @@ public class LlmConfig {
      */
     @Builder.Default
     private Provider provider = Provider.OPENAI;
-    
+
     /**
      * 模型名称
      */
     @Builder.Default
-    private String model = "gpt-4o-mini";
+    private String model = "";
     
     /**
      * API密钥
@@ -104,6 +107,10 @@ public class LlmConfig {
      */
     @Builder.Default
     private String visionDetails = "low";
+
+    /** */
+    @Builder.Default
+    private String responseJsonFormat = ""; // true or false, 是否指定response_format为json_object
     
     /**
      * 自定义HTTP头
@@ -127,6 +134,17 @@ public class LlmConfig {
             String providerStr = (String) configMap.get("provider");
             builder.provider(Provider.fromString(providerStr));
         }
+
+        if (configMap.containsKey("providerName")) {
+            String providerName = configMap.get("providerName").toString();
+            builder.providerName(providerName);
+        }
+
+        if (configMap.containsKey("responseJsonFormat")) {
+            String responseJsonFormat = configMap.get("responseJsonFormat").toString();
+            builder.responseJsonFormat(responseJsonFormat);
+        }
+
         
         if (configMap.containsKey("model")) {
             builder.model((String) configMap.get("model"));
