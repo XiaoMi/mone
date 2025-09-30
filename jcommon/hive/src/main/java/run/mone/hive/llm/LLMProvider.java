@@ -7,7 +7,6 @@ import lombok.Getter;
 public enum LLMProvider {
 
     STEPFUN("https://api.stepfun.com/v1/chat/completions", "STEPFUN_API_KEY", "step-1-8k", null),
-    //ali 也可以调用deepseek 模型名使用:deepseek-v3 deepseek-r1  base url:https://dashscope.aliyuncs.com/compatible-mode/v1
     QWEN("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "QWEN_MODEL_KEY", "qwen3-max", null),
     MOONSHOT("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "moonshot-v1-auto", null),
     KIMI_K2_TURBO_PREVIEW("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "kimi-k2-turbo-preview", null),
@@ -19,6 +18,7 @@ public enum LLMProvider {
     DEEPSEEK("https://api.deepseek.com/v1/chat/completions", "DEEPSEEK_API_KEY", "deepseek-chat", null),
     //openai/gpt-4o-2024-11-20 anthropic/claude-3.5-sonnet:beta anthropic/claude-3.7-sonnet
     OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-3.7-sonnet", null),
+    OPENROUTER_CLAUDE_SONNET_45("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-sonnet-4.5", null),
     OPENROUTER_OPENAI_CODEX("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/codex-mini", null),
     OPENROUTER_GROK_CODE_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-code-fast-1", null),
     OPENAICOMPATIBLE("", "", "", null),
