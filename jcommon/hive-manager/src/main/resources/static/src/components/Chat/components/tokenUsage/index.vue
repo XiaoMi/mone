@@ -169,6 +169,7 @@ const getUsageRateClass = () => {
   margin-top: 10px;
 }
 
+
 .progress-fill {
   height: 100%;
   border-radius: 4px;
