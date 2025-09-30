@@ -36,11 +36,10 @@ public class AgentConfig {
                         new AskTool(),
                         new TavilySearchTool(),
                         new KnowledgeBaseQueryTool(),
-                        new MemoryTool(),
+                        new MemoryTool(RoleMemoryConfig.builder().build()),
                         new AttemptCompletionTool()
                         ))
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
-                .memoryConfig(RoleMemoryConfig.builder().build())
                 .build();
     }
 
