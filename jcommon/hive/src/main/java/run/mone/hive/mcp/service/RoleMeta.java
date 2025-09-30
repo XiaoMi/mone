@@ -85,4 +85,8 @@ public class RoleMeta {
     @Builder.Default
     private long timeout = 10000;
 
+    //内存配置
+    @Builder.Default
+    private RoleMemoryConfig memoryConfig = RoleMemoryConfig.builder().build();
+
 }
