@@ -2,6 +2,8 @@ memory:
   # LLM Configuration
   llm:
     providerName: QWEN
+    model: qwen3-max
+    responseJsonFormat: true
 
   # Embedder Configuration
   embedder:
@@ -30,6 +32,8 @@ memory:
     # url will be set programmatically to temp directory
     llm:
       providerName: QWEN
+      model: qwen3-max
+      responseJsonFormat: true
     embedder:
       provider: ollama
 #      model: embeddinggemma

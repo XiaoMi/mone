@@ -139,6 +139,12 @@ public class LlmConfig {
             String providerName = configMap.get("providerName").toString();
             builder.providerName(providerName);
         }
+
+        if (configMap.containsKey("responseJsonFormat")) {
+            String responseJsonFormat = configMap.get("responseJsonFormat").toString();
+            builder.responseJsonFormat(responseJsonFormat);
+        }
+
         
         if (configMap.containsKey("model")) {
             builder.model((String) configMap.get("model"));
