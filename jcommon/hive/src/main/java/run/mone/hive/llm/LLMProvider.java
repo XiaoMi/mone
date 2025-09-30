@@ -7,6 +7,7 @@ import lombok.Getter;
 public enum LLMProvider {
 
     STEPFUN("https://api.stepfun.com/v1/chat/completions", "STEPFUN_API_KEY", "step-1-8k", null),
+    GLM_45_AIR("https://open.bigmodel.cn/api/paas/v4/chat/completions", "GLM_API_KEY", "glm-4.5-air", null),
     QWEN("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "QWEN_MODEL_KEY", "qwen3-max", null),
     MOONSHOT("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "moonshot-v1-auto", null),
     KIMI_K2_TURBO_PREVIEW("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "kimi-k2-turbo-preview", null),

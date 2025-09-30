@@ -41,7 +41,6 @@
         <module>mcp-hera-log</module>
         <module>mcp-chaos</module>
         <module>mcp-nacosservice</module>
-        <module>mcp-ali-email</module>
         <module>mcp-linux-agent</module>
         <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>
