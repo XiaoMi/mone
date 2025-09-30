@@ -58,7 +58,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   usedTokens: 0,
-  totalTokens: 100000,
+  totalTokens: 1000000,
   showDetails: false,
   theme: 'default',
 })
@@ -106,7 +106,7 @@ const getUsageRateClass = () => {
 
 <style scoped lang="scss">
 .token-usage-container {
-  border-radius: 8px;
+  // border-radius: 8px;
   box-shadow: -4px 3px 17px 4px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   // padding: 6px;
@@ -258,9 +258,34 @@ const getUsageRateClass = () => {
 }
 
 // 暗色主题支持
-@media (prefers-color-scheme: dark) {
+.dark {
   .token-usage-container {
-    background: var(--el-bg-color-page);
+    background: rgba(20, 20, 50, 0.5);
   }
 }
+
+.light {
+  .token-usage-container {
+    background: rgba(20, 20, 50, 0.5);
+  }
+  .token-label,
+  .token-value,
+  .progress-text,
+  .token-value {
+    color: #ffffff;
+  }
+}
+
+.cyberpunk {
+  .token-usage-container {
+    background: rgba(20, 20, 50, 0.5);
+  }
+   .token-label,
+  .token-value,
+  .progress-text,
+  .token-value {
+    color: #ffffff;
+  }
+}
+
 </style>

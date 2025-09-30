@@ -107,6 +107,10 @@ public class LlmConfig {
      */
     @Builder.Default
     private String visionDetails = "low";
+
+    /** */
+    @Builder.Default
+    private String responseJsonFormat = ""; // true or false, 是否指定response_format为json_object
     
     /**
      * 自定义HTTP头

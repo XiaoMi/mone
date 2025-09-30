@@ -142,7 +142,7 @@ export const useChatContextStore = defineStore("chat-context", () => {
   // Token使用量状态
   const tokenUsage = ref<TokenUsage>({
     usedTokens: 0,
-    totalTokens: 100000, // 默认总量
+    totalTokens: 1000000, // 默认总量
     inputTokens: 0,
     outputTokens: 0,
     lastUpdate: new Date()
