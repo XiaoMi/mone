@@ -23,6 +23,8 @@ public class VectorStoreFactory {
         switch (config.getProvider()) {
             case CHROMA:
                 return new ChromaVectorStore(config);
+            case NEO4J:
+                return new Neo4jVectorStore(config);
             default:
                 throw new IllegalArgumentException("Unsupported vector store provider: " + config.getProvider());
         }
@@ -50,6 +52,24 @@ public class VectorStoreFactory {
                 .path("./data/test/chroma")
                 .embeddingModelDims(384)
                 .build());
+    }
+
+    /**
+     * 创建Neo4j向量存储实例
+     *
+     * @return Neo4j向量存储实例
+     */
+    public static VectorStoreBase createNeo4j() {
+        return create(VectorStoreConfig.neo4jDefault());
+    }
+
+    /**
+     * 为测试创建Neo4j向量存储实例
+     *
+     * @return Neo4j向量存储实例
+     */
+    public static VectorStoreBase createNeo4jForTesting() {
+        return create(VectorStoreConfig.neo4jForTesting());
     }
     
     /**

@@ -22,7 +22,8 @@ public class VectorStoreConfig {
      * 向量存储提供商类型
      */
     public enum Provider {
-        CHROMA("chroma");
+        CHROMA("chroma"),
+        NEO4J("neo4j");
 
         private final String value;
         
@@ -200,6 +201,34 @@ public class VectorStoreConfig {
                 .host("localhost")
                 .path("./data/chroma_embedded")
                 .collectionName("embedded_mem0")
+                .embeddingModelDims(384)
+                .build();
+    }
+
+    /**
+     * 获取Neo4j默认配置
+     */
+    public static VectorStoreConfig neo4jDefault() {
+        return VectorStoreConfig.builder()
+                .provider(Provider.NEO4J)
+                .host("localhost")
+                .port(7687)
+                .database("neo4j")
+                .collectionName("mem0")
+                .embeddingModelDims(1536)
+                .build();
+    }
+
+    /**
+     * 获取Neo4j测试配置
+     */
+    public static VectorStoreConfig neo4jForTesting() {
+        return VectorStoreConfig.builder()
+                .provider(Provider.NEO4J)
+                .host("localhost")
+                .port(7687)
+                .database("neo4j")
+                .collectionName("test_memory_vectors")
                 .embeddingModelDims(384)
                 .build();
     }

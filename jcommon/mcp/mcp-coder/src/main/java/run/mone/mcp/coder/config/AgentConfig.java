@@ -29,8 +29,10 @@ public class AgentConfig {
                 .interruptQuery(InterruptQuery.builder().version("finetune-qwen-20250909-71039c8b").modelType("qwen").autoInterruptQuery(false).releaseServiceName("bert-is-break").build())
                 .tools(Lists.newArrayList(
                         new ListFilesTool(),
+//                        new ListFilesTool(true),
 //                        new ExecuteCommandTool(),
                         new ExecuteCommandToolOptimized(),
+//                        new ReadFileTool(true),
                         new ReadFileTool(),
                         new SearchFilesTool(),
                         new ReplaceInFileTool(),

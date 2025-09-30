@@ -43,7 +43,7 @@ public class RoleMemoryConfig {
         private String providerName = "QWEN";
 
         @Builder.Default
-        private String model = "qwen3-max";
+        private String model = "";
 
         @Builder.Default
         private boolean responseJsonFormat = true;
