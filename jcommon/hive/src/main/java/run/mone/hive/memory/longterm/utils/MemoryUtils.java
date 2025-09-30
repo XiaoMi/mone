@@ -260,4 +260,16 @@ public class MemoryUtils {
         
         return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
     }
+
+
+    /**
+     * 验证url是否有效
+     */
+    public static boolean validateUrl(String url) {
+        try {
+            return url.trim().startsWith("http") || url.trim().startsWith("https");
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
