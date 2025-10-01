@@ -950,7 +950,7 @@ public class LLM {
         }
 
         //关闭思维链
-        if (llmProvider == LLMProvider.GLM_45_AIR) {
+        if (llmProvider == LLMProvider.GLM_45_AIR || llmProvider == LLMProvider.GLM_46) {
             JsonObject obj = new JsonObject();
             obj.addProperty("type", "disabled");
             requestBody.add("thinking", obj);
@@ -960,6 +960,7 @@ public class LLM {
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.GLM_45_AIR ||
+                    this.llmProvider == LLMProvider.GLM_46 ||
                     this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
                     this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX_MINI ||
                     this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX ||
