@@ -1277,6 +1277,11 @@ public class LLM {
                                         if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();
                                         }
+                                        //codex
+                                        rc = delta.get("reasoning");
+                                        if (null != rc && !rc.isJsonNull()) {
+                                            content = rc.getAsString();
+                                        }
                                     } else {
                                         content = c.getAsString();
                                     }
