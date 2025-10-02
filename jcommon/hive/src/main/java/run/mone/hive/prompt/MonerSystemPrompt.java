@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import run.mone.hive.bo.InternalServer;
+import run.mone.hive.bo.MarkdownDocument;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
@@ -16,6 +17,7 @@ import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.schema.Message;
 import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
@@ -56,17 +58,17 @@ public class MonerSystemPrompt {
     public static String hiveCwd(ReactorRole role) {
         String workspacePath = cwd(role);
         return workspacePath
-                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive";
     }
 
     /**
      * 获取自定义指令
-     * 
+     * <p>
      * 首先尝试从工作目录下的.hive/agent.md文件读取自定义指令
      * 如果文件不存在或读取失败，则从角色配置中获取
-     * 
-     * @param role 反应堆角色
+     *
+     * @param role               反应堆角色
      * @param customInstructions 默认指令（如果文件不存在且配置中无指令时使用）
      * @return 自定义指令内容
      */
@@ -76,7 +78,7 @@ public class MonerSystemPrompt {
             log.warn("工作空间路径为空，使用默认指令");
             return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
         }
-        
+
         // 构建.hive/agent.md文件路径
         String mdStr = getAllMdFiles(workspacePath);
         if (mdStr != null) return mdStr;
@@ -87,7 +89,7 @@ public class MonerSystemPrompt {
 
     /**
      * 获取.hive目录下所有md文件的内容并拼接
-     * 
+     *
      * @param workspacePath 工作空间路径
      * @return 拼接后的md内容，如果没有找到任何md文件则返回null
      */
@@ -96,26 +98,26 @@ public class MonerSystemPrompt {
         String hiveDir = workspacePath
                 + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive";
-        
+
         File hiveDirFile = new File(hiveDir);
         if (!hiveDirFile.exists() || !hiveDirFile.isDirectory()) {
             log.debug(".hive目录不存在: {}", hiveDir);
             return null;
         }
-        
+
         // 获取所有.md文件
         File[] mdFiles = hiveDirFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".md"));
         if (mdFiles == null || mdFiles.length == 0) {
             log.debug(".hive目录下没有找到md文件: {}", hiveDir);
             return null;
         }
-        
+
         StringBuilder result = new StringBuilder();
         boolean hasContent = false;
-        
+
         // 按文件名排序，确保输出顺序一致
         Arrays.sort(mdFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));
-        
+
         for (File mdFile : mdFiles) {
             try {
                 String content = FileUtils.readMarkdownFile(mdFile.getAbsolutePath());
@@ -131,13 +133,14 @@ public class MonerSystemPrompt {
                 log.debug("读取md文件失败: {}, 原因: {}", mdFile.getName(), e.getMessage());
             }
         }
-        
+
         return hasContent ? result.toString() : null;
     }
+
     @Nullable
     private static String getAgentMd(String workspacePath) {
         String filePath = workspacePath
-                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive" + File.separator + "agent.md";
 
         try {
@@ -154,14 +157,12 @@ public class MonerSystemPrompt {
     }
 
 
-
-
     // 为了向后兼容，提供不带enableTaskProgress参数的重载方法
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
-        return mcpPrompt(role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
+        return mcpPrompt(message, role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
     }
 
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -170,7 +171,7 @@ public class MonerSystemPrompt {
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", MonerSystemPrompt.cwd(role));
-        data.put("hiveCwd",  MonerSystemPrompt.hiveCwd(role));
+        data.put("hiveCwd", MonerSystemPrompt.hiveCwd(role));
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
@@ -186,6 +187,22 @@ public class MonerSystemPrompt {
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+
+        //markdown文件会根本上重置这些配置
+        if (null != message.getData() && message.getData() instanceof MarkdownDocument md) {
+            String rd = """
+                    \n
+                    profile: %s
+                    goal: %s
+                    constraints: %s
+                    \n
+                    """.formatted(md.getProfile(), md.getGoal(), md.getConstraints());
+
+            data.put("name", md.getName());
+            data.put("roleDescription", rd);
+            data.put("customInstructions",md.getAgentPrompt());
+        }
+
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
                 Lists.newArrayList(
                         //反射执行

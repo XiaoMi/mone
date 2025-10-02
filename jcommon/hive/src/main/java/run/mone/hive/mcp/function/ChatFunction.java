@@ -14,6 +14,12 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.MemoryTool;
 import run.mone.hive.roles.tool.ProcessManager;
 import run.mone.hive.schema.Message;
+import run.mone.hive.service.MarkdownService;
+import run.mone.hive.bo.MarkdownDocument;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +42,8 @@ public class ChatFunction implements McpFunction {
     private final String agentName;
 
     private final long timeout;
+    
+    private final MarkdownService markdownService = new MarkdownService();
 
     //支持权限验证
     private Function<TokenReq, TokenRes> tokenFunc = (req)-> TokenRes.builder().userId(req.getUserId()).success(true).build();
@@ -129,6 +137,11 @@ public class ChatFunction implements McpFunction {
         //取消/中断执行 - 格式: /cancel
         if (message.trim().toLowerCase().startsWith("/cancel")) {
             return handleCancelCommand(ownerId);
+        }
+
+        //加载agent配置 - 格式: /agent/<filename>
+        if (message.trim().toLowerCase().startsWith("/agent/")) {
+            return handleAgentCommand(clientId, userId, agentId, ownerId, message.trim(), timeout);
         }
 
         try {
@@ -393,6 +406,92 @@ public class ChatFunction implements McpFunction {
     }
 
     /**
+     * 处理agent配置加载命令
+     * 支持的格式：
+     * - /agent/<filename> - 加载指定的agent配置文件
+     * - /agent/<filename> <message> - 加载配置文件并发送消息
+     */
+    @NotNull
+    private Flux<McpSchema.CallToolResult> handleAgentCommand(String clientId, String userId, String agentId, String ownerId, String message, long timeout) {
+        try {
+            // 解析命令：/agent/<filename> [message]
+            String commandPart = message.substring("/agent/".length()).trim();
+            if (commandPart.isEmpty()) {
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("❌ 请指定agent配置文件名，格式: /agent/<filename> [message]")),
+                        false
+                ));
+            }
+
+            MarkdownDocument document = new MarkdownDocument();
+            // 分离文件名和消息内容
+            String filename;
+            String userMessageContent = null;
+            
+            int spaceIndex = commandPart.indexOf(' ');
+            if (spaceIndex > 0) {
+                // 有空格，说明后面跟着消息内容
+                filename = commandPart.substring(0, spaceIndex).trim();
+                userMessageContent = commandPart.substring(spaceIndex + 1).trim();
+            } else {
+                // 没有空格，只有文件名
+                filename = commandPart;
+            }
+
+            if (filename.isEmpty()) {
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("❌ 请指定agent配置文件名")),
+                        false
+                ));
+            }
+            document.setFileName(filename);
+
+            // 构建消息内容
+            String finalMessageContent;
+            if (userMessageContent != null && !userMessageContent.isEmpty()) {
+                // 如果有用户消息，组合配置加载信息和用户消息
+                finalMessageContent = userMessageContent;
+            } else {
+                // 如果没有用户消息，只是加载配置
+                finalMessageContent = "加载agent配置: " + filename;
+            }
+
+            // 构建包含MarkdownDocument的消息
+            Message userMessage = Message.builder()
+                    .clientId(clientId)
+                    .userId(userId)
+                    .agentId(agentId)
+                    .role("user")
+                    .sentFrom(ownerId)
+                    .content(finalMessageContent)
+                    .data(document)
+                    .build();
+
+            log.info("加载agent配置文件: {}, 文档名称: {}, 用户消息: {}", filename, document.getName(), finalMessageContent);
+
+            // 1. 创建一个只包含消息ID的Flux
+            String idTag = "<hive-msg-id>" + userMessage.getId() + "</hive-msg-id>";
+            McpSchema.CallToolResult idResult = new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(idTag)), false);
+            Flux<McpSchema.CallToolResult> idFlux = Flux.just(idResult);
+
+            // 2. 创建处理Agent响应的Flux
+            Flux<McpSchema.CallToolResult> agentResponseFlux = roleService.receiveMsg(userMessage)
+                    .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
+                    .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+
+            // 依次串联2个Flux
+            return Flux.concat(idFlux, agentResponseFlux);
+
+        } catch (Exception e) {
+            log.error("处理agent配置加载命令失败: {}", e.getMessage(), e);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("❌ 加载agent配置失败: " + e.getMessage())),
+                    false
+            ));
+        }
+    }
+
+    /**
      * 处理取消/中断命令
      * 支持的格式：
      * - /cancel - 取消当前执行
@@ -436,7 +535,8 @@ public class ChatFunction implements McpFunction {
     }
 
     public String getDesc() {
-        return "和%s聊天，问问%s问题。支持各种形式如：'%s'、'请%s告诉我'、'让%s帮我看看'、'%s你知道吗'等。支持上下文连续对话。"
+        return "和%s聊天，问问%s问题。支持各种形式如：'%s'、'请%s告诉我'、'让%s帮我看看'、'%s你知道吗'等。支持上下文连续对话。" +
+                "特殊命令：/clear(清空历史)、/exit(退出)、/rollback(回滚)、/kill(杀死进程)、/detach(分离进程)、/refresh(刷新配置)、/cancel(取消执行)、/agent/<filename> [message](加载agent配置并可选发送消息)。"
                 .formatted(agentName, agentName, agentName, agentName, agentName, agentName);
     }
 

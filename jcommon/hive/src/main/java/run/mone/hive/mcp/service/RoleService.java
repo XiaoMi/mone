@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.MarkdownDocument;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
@@ -24,9 +25,12 @@ import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
+import run.mone.hive.service.MarkdownService;
 import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,6 +80,8 @@ public class RoleService {
     private String agentIp;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
+
+    private MarkdownService markdownService = new MarkdownService();
 
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
@@ -233,6 +239,31 @@ public class RoleService {
         });
     }
 
+
+    @SneakyThrows
+    public MarkdownDocument getMarkdownDocument(MarkdownDocument document, ReactorRole role) {
+        String filename = document.getFileName();
+
+        // 构建文件路径 - 假设配置文件在 .hive 目录下
+        String baseDir = role.getWorkspacePath() + "/.hive/";
+        Path filePath = Paths.get(baseDir + filename);
+
+        // 检查文件是否存在
+        if (!Files.exists(filePath)) {
+            return null;
+        }
+
+        // 读取并解析markdown文件
+        document = markdownService.readFromFile(filePath.toString());
+
+        // 验证文档有效性
+        if (!document.isValid()) {
+            return null;
+        }
+        return document;
+    }
+
+
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
@@ -284,10 +315,15 @@ public class RoleService {
                 sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
             }
 
+            //把消息下发给Agent
             if (!(rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
+                if (null != message.getData() && message.getData() instanceof MarkdownDocument md) {
+                    MarkdownDocument tmp = getMarkdownDocument(md, rr);
+                    message.setData(tmp);
+                }
                 rr.putMessage(message);
             }
         });
@@ -348,13 +384,13 @@ public class RoleService {
     private void handleRefreshConfigCommand(ReactorRole role, Message message, reactor.core.publisher.FluxSink<String> sink, String from) {
         try {
             sink.next("🔄 开始刷新Agent配置...\n");
-            
+
             // 执行刷新配置
             refreshConfig(message);
-            
+
             sink.next("✅ Agent " + from + " 配置刷新完成！\n");
             sink.next("📋 已更新MCP连接和角色设置\n");
-            
+
             // 构建一个特殊的消息，用于通知ReactorRole配置已刷新
             Message refreshMessage = Message.builder()
                     .sentFrom(message.getSentFrom())
@@ -366,10 +402,10 @@ public class RoleService {
                     .data(Const.REFRESH_CONFIG)
                     .sink(sink)
                     .build();
-            
+
             // 发送给ReactorRole，让它知道配置已刷新
             role.putMessage(refreshMessage);
-            
+
         } catch (Exception e) {
             log.error("刷新配置失败: {}", e.getMessage(), e);
             sink.next("❌ 配置刷新失败: " + e.getMessage() + "\n");
@@ -457,12 +493,12 @@ public class RoleService {
         ReactorRole role = roleMap.get(from);
         if (null != role) {
             log.info("开始刷新Agent {} 的配置", from);
-            
+
             // 重新加载配置和MCP连接
             String clientId = role.getClientId();
             String userId = message.getUserId();
             String agentId = message.getAgentId();
-            
+
             // 如果没有从消息中获取到userId和agentId，尝试从role中获取
             if (StringUtils.isEmpty(userId)) {
                 userId = role.getRoleConfig().getOrDefault("userId", "");
@@ -470,9 +506,9 @@ public class RoleService {
             if (StringUtils.isEmpty(agentId)) {
                 agentId = role.getRoleConfig().getOrDefault("agentId", "");
             }
-            
+
             updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
-            
+
             log.info("Agent {} 配置刷新完成", from);
         } else {
             log.warn("未找到要刷新配置的Agent: {}", from);

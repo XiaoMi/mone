@@ -114,7 +114,7 @@ public class ReactorRole extends Role {
 
     /**
      * -- GETTER --
-     *  获取当前工作区路径
+     * 获取当前工作区路径
      *
      * @return 工作区根目录路径
      */
@@ -515,7 +515,7 @@ public class ReactorRole extends Role {
             AtomicBoolean hasError = new AtomicBoolean(false);
 
             //获取系统提示词
-            String systemPrompt = buildSystemPrompt();
+            String systemPrompt = buildSystemPrompt(msg);
 
             // 在调用LLM前检查中断状态
             if (this.interrupted.get()) {
@@ -525,8 +525,8 @@ public class ReactorRole extends Role {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
 
-            //调用大模型(选用合适的工具)
             focusChainManager.getTaskState().setApiRequestCount(focusChainManager.getTaskState().getApiRequestCount() + 1);
+            //调用大模型(选用合适的工具)
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
             log.info("call llm res:\n{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
@@ -779,7 +779,7 @@ public class ReactorRole extends Role {
     }
 
 
-    private String buildSystemPrompt() {
+    private String buildSystemPrompt(Message message) {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
             roleDescription = """
@@ -791,7 +791,7 @@ public class ReactorRole extends Role {
                     \n
                     """.formatted(this.profile, this.goal, this.constraints, this.outputFormat);
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
+        String prompt = MonerSystemPrompt.mcpPrompt(message, this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
         log.debug("system prompt:{}", prompt);
         return prompt;
     }
@@ -919,6 +919,7 @@ public class ReactorRole extends Role {
 
     /**
      * 回滚记忆，移除最后一次交互或回滚到指定消息
+     *
      * @param messageId 如果提供，则回滚到此消息之前（包含此消息）
      * @return 如果成功回滚则返回true，否则返回false
      */
@@ -1088,7 +1089,7 @@ public class ReactorRole extends Role {
     }
 
     private String getTokenUsageLabel(ConversationContextManager.ContextProcessingResult result) {
-        LLM.LLMUsage usage =  LLM.LLMUsage.builder().compressedTokens(result.getCompressedTokenNum()).build();
+        LLM.LLMUsage usage = LLM.LLMUsage.builder().compressedTokens(result.getCompressedTokenNum()).build();
         return TOKEN_USAGE_LABEL_START + GsonUtils.gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
