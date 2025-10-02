@@ -529,13 +529,13 @@ export function markdownItMcp(md: MarkdownIt) {
                   <div class="terminal-process-header">
                     <i class="fa-solid fa-terminal"></i>
                     <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
-                    <button class="terminal-toggle-btn" type="button" title="查看日志">
-                      <i class="fa-solid fa-eye"></i>
-                      查看日志
+                    <button class="terminal-toggle-btn" type="button" title="隐藏日志">
+                      <i class="fa-solid fa-eye-slash"></i>
+                      隐藏日志
                     </button>
                   </div>
-                  <div class="terminal-process-content" style="display: none;">
-                    <!-- 内容将在点击时动态加载 -->
+                  <div class="terminal-process-content" style="display: block;">
+                    <pre><code>${md.utils.escapeHtml(limitedLines.join('\n'))}</code></pre>
                   </div>
                 </div>`;
                 html += componentHtml;
@@ -555,13 +555,13 @@ export function markdownItMcp(md: MarkdownIt) {
                 <div class="terminal-process-header">
                   <i class="fa-solid fa-terminal"></i>
                   <span>进程 ${md.utils.escapeHtml(currentPid)} (${limitedLines.length}条日志)</span>
-                  <button class="terminal-toggle-btn" type="button" title="查看日志">
-                    <i class="fa-solid fa-eye"></i>
-                    查看日志
+                  <button class="terminal-toggle-btn" type="button" title="隐藏日志">
+                    <i class="fa-solid fa-eye-slash"></i>
+                    隐藏日志
                   </button>
                 </div>
-                <div class="terminal-process-content" style="display: none;">
-                  <!-- 内容将在点击时动态加载 -->
+                <div class="terminal-process-content" style="display: block;">
+                  <pre><code>${md.utils.escapeHtml(limitedLines.join('\n'))}</code></pre>
                 </div>
               </div>`;
               html += componentHtml;
