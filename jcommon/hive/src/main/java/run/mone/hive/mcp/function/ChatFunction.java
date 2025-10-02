@@ -7,12 +7,11 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import run.mone.hive.bo.TokenReq;
 import run.mone.hive.bo.TokenRes;
-import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.command.CommandManager;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.schema.Message;
-import run.mone.hive.mcp.function.command.CommandManager;
 
 import java.util.Arrays;
 import java.util.List;

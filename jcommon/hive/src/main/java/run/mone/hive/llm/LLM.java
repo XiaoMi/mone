@@ -962,6 +962,7 @@ public class LLM {
             if ((this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.GLM_45_AIR ||
+                    this.llmProvider == LLMProvider.GLM_45_V ||
                     this.llmProvider == LLMProvider.GLM_46 ||
                     this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
                     this.llmProvider == LLMProvider.OPENROUTER_GEMINI_25_FLUSH ||
@@ -2211,6 +2212,7 @@ public class LLM {
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
+                || llm.getConfig().getLlmProvider() == LLMProvider.GLM_45_V
                 || llm.getConfig().getLlmProvider() == LLMProvider.MIFY
                 || llm.getConfig().getLlmProvider() == LLMProvider.MIFY_GATEWAY
                 || llm.getConfig().getLlmProvider() == LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE
