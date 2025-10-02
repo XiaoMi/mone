@@ -698,7 +698,7 @@ public class LLM {
                 return optional.get().getToken();
             }
         }
-        if (StringUtils.isEmpty(llmProvider.getEnvName()) && StringUtils.isNotEmpty(this.config.getToken())){
+        if (StringUtils.isEmpty(llmProvider.getEnvName()) && StringUtils.isNotEmpty(this.config.getToken())) {
             return this.config.getToken();
         }
         //从环境变量里获取
@@ -883,7 +883,9 @@ public class LLM {
         chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
                 messageHandler, lineConsumer, systemPrompt, sink,
                 u -> {
-                    sink.next(llmUsageContent(u));
+                    if (null != sink) {
+                        sink.next(llmUsageContent(u));
+                    }
                 });
     }
 
@@ -979,11 +981,11 @@ public class LLM {
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
             } else {
-                if (StringUtils.isNotEmpty(message.getContent())){
+                if (StringUtils.isNotEmpty(message.getContent())) {
                     msgArray.add(createMessageObject(message.getRole(), message.getContent()));
-                }else if (message.getJsonContent()!=null){
+                } else if (message.getJsonContent() != null) {
                     msgArray.add(message.getJsonContent());
-                }else{
+                } else {
                     msgArray.add(createMessageObject(message.getRole(), message.getContent()));
                 }
             }
