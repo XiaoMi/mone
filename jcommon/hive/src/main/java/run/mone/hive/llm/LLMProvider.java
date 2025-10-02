@@ -33,6 +33,7 @@ public enum LLMProvider {
     DOUBAO_UI_TARS("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_UI_TARS_MODEL_KEY"),
     DOUBAO_DEEPSEEK_R1("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_R1_MODEL_KEY"),
     DOUBAO_DEEPSEEK_V3("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_V3_MODEL_KEY"),
+    //claude-3-5-sonnet@20240620
     CLAUDE_COMPANY("CLAUDE_URL", "CLAUDE_TOKEN", "claude-3-5-sonnet@20240620", "CLAUDE35_MODEL_KEY"),
     TENCENT_DEEPSEEK("https://api.lkeap.cloud.tencent.com/v1/chat/completions", "TENCENT_API_KEY", "deepseek-r1", null),
     GROK("https://api.x.ai/v1/chat/completions", "XAI_API_KEY", "grok-3-latest", null),
