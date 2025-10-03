@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.function;
 
+import com.google.gson.JsonObject;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -15,6 +16,10 @@ public interface McpFunction extends Function<Map<String, Object>, Flux<McpSchem
 
     default void setRoleService(RoleService roleService) {
 
+    }
+
+    default String formatResult(String res) {
+        return "<tool_result>" + res + "</tool_result>";
     }
 
     String getName();

@@ -7,9 +7,9 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan("run.mone.mcp.docker")
-public class DockerMcpBootstrap {
+public class DockerAgentBootstrap {
 
     public static void main(String[] args) {
-        SpringApplication.run(DockerMcpBootstrap.class, args);
+        SpringApplication.run(DockerAgentBootstrap.class, args);
     }
 }
