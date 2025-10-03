@@ -11,7 +11,8 @@ public enum LLMProvider {
     GLM_45_V("https://open.bigmodel.cn/api/paas/v4/chat/completions", "GLM_API_KEY", "glm-4.5v", null),
     GLM_46("https://open.bigmodel.cn/api/paas/v4/chat/completions", "GLM_API_KEY", "glm-4.6", null),
     QWEN("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", "QWEN_MODEL_KEY", "qwen3-max", null),
-    MOONSHOT("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "moonshot-v1-auto", null),
+    //kimi-k2-turbo-preview moonshot-v1-auto
+    MOONSHOT("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "kimi-k2-turbo-preview", null),
     KIMI_K2_TURBO_PREVIEW("https://api.moonshot.cn/v1/chat/completions", "MOONSHOT_MODEL_KEY", "kimi-k2-turbo-preview", null),
     STEPFUN_ASR("https://api.stepfun.com/v1/audio/transcriptions", "STEPFUN_API_KEY", "step-asr", null),
     STEPFUN_TTS("https://api.stepfun.com/v1/audio/speech", "STEPFUN_API_KEY", "step-tts-mini", null),

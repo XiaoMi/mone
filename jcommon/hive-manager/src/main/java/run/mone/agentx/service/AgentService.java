@@ -1,6 +1,7 @@
 package run.mone.agentx.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -33,6 +34,7 @@ import java.util.Map;
 
 import static run.mone.hive.llm.ClaudeProxy.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AgentService {
@@ -328,24 +330,25 @@ public class AgentService {
     public Mono<Void> unregister(RegInfoDto regInfoDto) {
         try {
             // 查找Agent是否存在
-            Agent agent = agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
-                    .block();
-
-            // 如果Agent不存在，直接返回
-            if (agent == null) {
-                return Mono.empty();
-            }
-
-            // 查找AgentInstance是否存在
-            AgentInstance instance = agentInstanceRepository.findByAgentIdAndIpAndPort(
-                    agent.getId(), regInfoDto.getIp(), regInfoDto.getPort()).block();
-
-            // 如果AgentInstance存在，删除它
-            if (instance != null) {
-                agentInstanceRepository.deleteById(instance.getId()).block();
-            }
-
-            return Mono.empty();
+            return agentRepository.findByNameAndGroupAndVersion(
+                            regInfoDto.getName(),
+                            regInfoDto.getGroup(),
+                            regInfoDto.getVersion())
+                    .flatMap(agent ->
+                            // Agent存在，继续查找AgentInstance
+                            agentInstanceRepository.findByAgentIdAndIpAndPort(
+                                            agent.getId(),
+                                            regInfoDto.getIp(),
+                                            regInfoDto.getPort())
+                                    .flatMap(instance -> {
+                                                // AgentInstance存在，删除它
+                                                log.info("delete instance:{} {} {}", instance.getId(), instance.getIp(), instance.getPort());
+                                                return agentInstanceRepository.deleteById(instance.getId());
+                                            }
+                                    )
+                                    .switchIfEmpty(Mono.empty()) // AgentInstance不存在，什么都不做
+                    )
+                    .then(); // 转换为 Mono<Void>，表示操作完成
         } catch (Exception e) {
             return Mono.error(e);
         }
