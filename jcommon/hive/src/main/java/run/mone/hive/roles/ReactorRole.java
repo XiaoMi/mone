@@ -127,6 +127,9 @@ public class ReactorRole extends Role {
     // 任务状态 - 用于上下文压缩
     private TaskState taskState;
 
+    // 斜杠命令解析器
+    private SlashCommandParser slashCommandParser;
+
 
     // 意图分类服务
     private IntentClassificationService classificationService;
@@ -178,6 +181,8 @@ public class ReactorRole extends Role {
         this(name, "", "", "", "", "", 0, llm, Lists.newArrayList(), Lists.newArrayList());
         // 初始化意图分类服务
         this.classificationService = new IntentClassificationService();
+        // 初始化斜杠命令解析器
+        this.slashCommandParser = new SlashCommandParser();
     }
 
 
@@ -250,6 +255,9 @@ public class ReactorRole extends Role {
             log.error("Failed to initialize FileCheckpointManager", e);
             // 如果检查点管理器初始化失败，可能需要抛出异常或禁用相关功能
         }
+
+        // 初始化斜杠命令解析器
+        this.slashCommandParser = new SlashCommandParser();
 
     }
 
@@ -797,7 +805,7 @@ public class ReactorRole extends Role {
     }
 
     //构建用户提问的prompt
-    //1.支持从网络获取内容  2.支持从知识库获取内容
+    //1.支持从网络获取内容  2.支持从知识库获取内容  3.支持斜杠命令解析
     public String buildUserPrompt(Message msg, String history, FluxSink sink) {
         String queryInfo = "";
         //支持自动从网络查询信息
@@ -811,6 +819,9 @@ public class ReactorRole extends Role {
             ragInfo = queryKnowledgeBase(msg, sink);
         }
 
+        // 处理斜杠命令
+        String processedContent = processSlashCommands(msg.getContent(), sink);
+
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.<String, String>builder()
                 //聊天记录
                 .put("history", history)
@@ -818,7 +829,7 @@ public class ReactorRole extends Role {
                 .put("web_query_info", queryInfo)
                 //rag上下文
                 .put("rag_info", ragInfo)
-                .put("question", msg.getContent())
+                .put("question", processedContent)
                 .build());
     }
 
@@ -834,6 +845,40 @@ public class ReactorRole extends Role {
             queryInfo = "===========\n" + "网络中查询到的内容:" + "\n" + res + "\n";
         }
         return queryInfo;
+    }
+
+    /**
+     * 处理斜杠命令
+     * @param content 用户输入内容
+     * @param sink 流式输出
+     * @return 处理后的内容
+     */
+    private String processSlashCommands(String content, FluxSink sink) {
+        if (slashCommandParser == null) {
+            return content;
+        }
+
+        try {
+            // 创建FocusChainSettings（如果需要的话）
+            FocusChainSettings focusChainSettings = new FocusChainSettings();
+            if (focusChainManager != null && focusChainManager.getFocusChainSettings() != null) {
+                focusChainSettings = focusChainManager.getFocusChainSettings();
+            }
+
+            // 解析斜杠命令
+            SlashCommandParser.ParseResult parseResult = slashCommandParser.parseSlashCommands(content, focusChainSettings);
+
+            // 如果解析到了命令，记录日志
+            if (!parseResult.getProcessedText().equals(content)) {
+                log.info("斜杠命令解析成功，原始内容: {}, 处理后内容: {}", content, parseResult.getProcessedText());
+                sink.next("🔧 检测到斜杠命令，正在处理...\n");
+            }
+
+            return parseResult.getProcessedText();
+        } catch (Exception e) {
+            log.error("斜杠命令解析失败: {}", e.getMessage(), e);
+            return content; // 解析失败时返回原始内容
+        }
     }
 
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
