@@ -2,7 +2,7 @@ package run.mone.hive.mcp.service.command;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
-import run.mone.hive.bo.MarkdownDocument;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
@@ -130,7 +130,7 @@ public class ListAgentsCommand extends RoleBaseCommand {
                 
                 try {
                     // 解析markdown文件获取name
-                    MarkdownDocument document = markdownService.readFromFile(mdFile.toString());
+                    AgentMarkdownDocument document = markdownService.readFromFile(mdFile.toString());
                     if (document != null && document.getName() != null && !document.getName().trim().isEmpty()) {
                         agentName = document.getName().trim();
                     }

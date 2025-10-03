@@ -4,8 +4,7 @@ import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.bo.MarkdownDocument;
-import run.mone.hive.common.Safe;
+import run.mone.hive.bo.AgentMarkdownDocument;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,7 +65,7 @@ public class MarkdownService {
      * @return MarkdownDocument对象
      * @throws IOException 读取文件失败时抛出
      */
-    public MarkdownDocument readFromFile(String filePath) throws IOException {
+    public AgentMarkdownDocument readFromFile(String filePath) throws IOException {
         log.info("开始读取markdown文件: {}", filePath);
 
         Path path = Paths.get(filePath);
@@ -84,12 +83,12 @@ public class MarkdownService {
      * @param content markdown内容
      * @return MarkdownDocument对象
      */
-    public MarkdownDocument parseMarkdown(String content) {
+    public AgentMarkdownDocument parseMarkdown(String content) {
         log.debug("开始解析markdown内容，长度: {}", content != null ? content.length() : 0);
 
         if (content == null || content.trim().isEmpty()) {
             log.warn("markdown内容为空");
-            return MarkdownDocument.builder().build();
+            return AgentMarkdownDocument.builder().build();
         }
 
         Document document = parser.parse(content);
@@ -103,7 +102,7 @@ public class MarkdownService {
      * @param filePath 目标文件路径
      * @throws IOException 写入文件失败时抛出
      */
-    public void writeToFile(MarkdownDocument document, String filePath) throws IOException {
+    public void writeToFile(AgentMarkdownDocument document, String filePath) throws IOException {
         log.info("开始写入markdown文件: {}", filePath);
 
         if (document == null) {
@@ -129,7 +128,7 @@ public class MarkdownService {
      * @param document 要转换的文档
      * @return markdown格式的字符串
      */
-    public String generateMarkdown(MarkdownDocument document) {
+    public String generateMarkdown(AgentMarkdownDocument document) {
         if (document == null) {
             return "";
         }
@@ -154,8 +153,8 @@ public class MarkdownService {
     /**
      * 从解析的文档中提取字段
      */
-    private MarkdownDocument extractFields(Document document, String originalContent) {
-        MarkdownDocument.MarkdownDocumentBuilder builder = MarkdownDocument.builder();
+    private AgentMarkdownDocument extractFields(Document document, String originalContent) {
+        AgentMarkdownDocument.MarkdownDocumentBuilder builder = AgentMarkdownDocument.builder();
 
         // 用于存储当前处理的字段和内容
         String currentField = null;
@@ -222,7 +221,7 @@ public class MarkdownService {
     /**
      * 设置字段值
      */
-    private void setFieldValue(MarkdownDocument.MarkdownDocumentBuilder builder, String fieldName, String value) {
+    private void setFieldValue(AgentMarkdownDocument.MarkdownDocumentBuilder builder, String fieldName, String value) {
         if (fieldName == null || value == null) {
             return;
         }
@@ -267,7 +266,7 @@ public class MarkdownService {
      * @param document 要验证的文档
      * @return 验证结果，包含错误信息
      */
-    public ValidationResult validateDocument(MarkdownDocument document) {
+    public ValidationResult validateDocument(AgentMarkdownDocument document) {
         ValidationResult result = new ValidationResult();
 
         if (document == null) {

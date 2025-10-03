@@ -11,8 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.hive.bo.HealthInfo;
-import run.mone.hive.bo.MarkdownDocument;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
@@ -248,7 +249,7 @@ public class RoleService {
 
 
     @SneakyThrows
-    public MarkdownDocument getMarkdownDocument(MarkdownDocument document, ReactorRole role) {
+    public AgentMarkdownDocument getMarkdownDocument(AgentMarkdownDocument document, ReactorRole role) {
         String filename = document.getFileName();
 
         // 构建文件路径 - 假设配置文件在 .hive 目录下
@@ -276,8 +277,8 @@ public class RoleService {
         String from = message.getSentFrom().toString();
 
         // 检查是否是创建role命令，如果是且role为空，则特殊处理
-        if (roleCommandFactory.findCommand(message).isPresent() && 
-            roleCommandFactory.findCommand(message).get() instanceof CreateRoleCommand) {
+        if (roleCommandFactory.findCommand(message).isPresent() &&
+                roleCommandFactory.findCommand(message).get() instanceof CreateRoleCommand) {
             ReactorRole existingRole = roleMap.get(from);
             if (existingRole == null) {
                 return Flux.create(sink -> {
@@ -331,20 +332,30 @@ public class RoleService {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                if (null != message.getData() && message.getData() instanceof MarkdownDocument md) {
-                    MarkdownDocument tmp = getMarkdownDocument(md, rr);
-                    message.setData(tmp);
+                if (resolveMessageData(message, rr)) {
+                    rr.putMessage(message);
                 }
-                rr.putMessage(message);
             }
         });
     }
 
-
-
-
-
-
+    private boolean resolveMessageData(Message message, ReactorRole rr) {
+        if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
+            AgentMarkdownDocument tmp = getMarkdownDocument(md, rr);
+            if (null != tmp) {
+                message.setData(tmp);
+                //放入到配置中
+                rr.getRoleConfig().put(Const.AGENT_CONFIG, GsonUtils.gson.toJson(tmp));
+                //只是切换agent,不需要下发指令
+                return !message.getContent().equals(Const.SWITCH_AGENT);
+            }
+        } else {
+            if (rr.getRoleConfig().containsKey(Const.AGENT_CONFIG)) {
+                message.setData(GsonUtils.gson.fromJson(rr.getRoleConfig().get(Const.AGENT_CONFIG), AgentMarkdownDocument.class));
+            }
+        }
+        return true;
+    }
 
 
     //下线某个Agent

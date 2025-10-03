@@ -2,18 +2,18 @@ package run.mone.hive.mcp.function.command;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
-import run.mone.hive.bo.MarkdownDocument;
+import run.mone.hive.bo.AgentMarkdownDocument;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.schema.Message;
 import run.mone.hive.service.MarkdownService;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 /**
- * 加载agent配置命令处理类
+ * Agent命令处理类
+ * 支持两种操作：
+ * 1. 加载agent配置文件：/agent/<filename> [message]
+ * 2. 切换agent配置：/agent/switch/<fileName>（仅切换，不支持附加消息）
  * 
  * @author goodjava@qq.com
  * @date 2025/1/16
@@ -35,12 +35,79 @@ public class AgentCommand extends BaseCommand {
     @Override
     public Flux<McpSchema.CallToolResult> execute(String clientId, String userId, String agentId, String ownerId, String message, long timeout) {
         try {
-            // 解析命令：/agent/<filename> [message]
+            // 解析命令：/agent/<filename> [message] 或 /agent/switch/<fileName>
             String commandPart = message.substring("/agent/".length()).trim();
             if (commandPart.isEmpty()) {
-                return Flux.just(createErrorResult("请指定agent配置文件名，格式: /agent/<filename> [message]"));
+                return Flux.just(createErrorResult("请指定操作类型，格式: /agent/<filename> [message] 或 /agent/switch/<fileName>"));
             }
 
+            // 检查是否是切换agent命令
+            if (commandPart.startsWith("switch/")) {
+                return handleAgentSwitch(clientId, userId, agentId, ownerId, commandPart.substring("switch/".length()).trim());
+            } else {
+                // 原有的加载配置文件逻辑
+                return handleAgentConfig(clientId, userId, agentId, ownerId, commandPart);
+            }
+
+        } catch (Exception e) {
+            log.error("处理agent命令失败: {}", e.getMessage(), e);
+            return Flux.just(createErrorResult("处理agent命令失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 处理agent切换命令
+     */
+    private Flux<McpSchema.CallToolResult> handleAgentSwitch(String clientId, String userId, String currentAgentId, String ownerId, String switchPart) {
+        try {
+            if (switchPart.isEmpty()) {
+                return Flux.just(createErrorResult("请指定要切换的配置文件名，格式: /agent/switch/<fileName>"));
+            }
+
+            // 只取文件名，不支持附加消息
+            String fileName = switchPart.trim();
+            
+            // 检查是否包含空格（不允许附加消息）
+            if (fileName.contains(" ")) {
+                return Flux.just(createErrorResult("切换命令不支持附加消息，请使用格式: /agent/switch/<fileName>"));
+            }
+
+            if (fileName.isEmpty()) {
+                return Flux.just(createErrorResult("请指定要切换的配置文件名"));
+            }
+
+            // 创建MarkdownDocument对象
+            AgentMarkdownDocument document = new AgentMarkdownDocument();
+            document.setFileName(fileName);
+
+            // 构建切换消息，使用固定的切换提示
+            String finalMessageContent = Const.SWITCH_AGENT;
+
+            // 构建切换agent的消息，使用MarkdownDocument作为data
+            Message switchMessage = Message.builder()
+                    .clientId(clientId)
+                    .userId(userId)
+                    .agentId(currentAgentId)  // 保持当前agentId
+                    .role("user")
+                    .sentFrom(ownerId)
+                    .content(finalMessageContent)
+                    .data(document)  // 使用MarkdownDocument对象
+                    .build();
+
+            log.info("切换agent配置: {} -> {}", currentAgentId, fileName);
+            return sendToRoleService(switchMessage);
+
+        } catch (Exception e) {
+            log.error("处理agent切换命令失败: {}", e.getMessage(), e);
+            return Flux.just(createErrorResult("切换agent失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 处理agent配置加载命令（原有逻辑）
+     */
+    private Flux<McpSchema.CallToolResult> handleAgentConfig(String clientId, String userId, String agentId, String ownerId, String commandPart) {
+        try {
             // 分离文件名和消息内容
             String filename;
             String userMessageContent = null;
@@ -59,7 +126,7 @@ public class AgentCommand extends BaseCommand {
                 return Flux.just(createErrorResult("请指定agent配置文件名"));
             }
 
-            MarkdownDocument document = new MarkdownDocument();
+            AgentMarkdownDocument document = new AgentMarkdownDocument();
             document.setFileName(filename);
 
             // 构建消息内容
@@ -99,6 +166,6 @@ public class AgentCommand extends BaseCommand {
 
     @Override
     public String getCommandDescription() {
-        return "加载agent配置并可选发送消息";
+        return "加载agent配置或切换agent身份。支持: /agent/<filename> [message] 或 /agent/switch/<fileName>";
     }
 }

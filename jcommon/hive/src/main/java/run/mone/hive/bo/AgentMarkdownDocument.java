@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MarkdownDocument {
+public class AgentMarkdownDocument {
     
     /**
      * 名称

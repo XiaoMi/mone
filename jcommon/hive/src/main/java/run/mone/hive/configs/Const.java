@@ -50,4 +50,8 @@ public class Const {
 
     public static final String INTERNAL_SERVER = "internalServer";
 
+    public static final String AGENT_CONFIG = "__agent_config__";
+
+    public static final String SWITCH_AGENT = "__switch_agent__";
+
 }

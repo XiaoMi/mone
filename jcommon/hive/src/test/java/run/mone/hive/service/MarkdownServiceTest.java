@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.io.TempDir;
-import run.mone.hive.bo.MarkdownDocument;
+import run.mone.hive.bo.AgentMarkdownDocument;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,7 +58,7 @@ class MarkdownServiceTest {
                 - 你是一个专业的AI助手，请始终保持友好和专业的态度。
                 """;
 
-        MarkdownDocument document = markdownService.parseMarkdown(markdownContent);
+        AgentMarkdownDocument document = markdownService.parseMarkdown(markdownContent);
 
         assertNotNull(document);
         assertEquals("AI助手", document.getName());
@@ -91,7 +91,7 @@ class MarkdownServiceTest {
                 你是数据分析专家
                 """;
 
-        MarkdownDocument document = markdownService.parseMarkdown(markdownContent);
+        AgentMarkdownDocument document = markdownService.parseMarkdown(markdownContent);
 
         assertNotNull(document);
         assertEquals("数据分析师", document.getName());
@@ -105,7 +105,7 @@ class MarkdownServiceTest {
     @Test
     @DisplayName("测试解析空内容")
     void testParseEmptyContent() {
-        MarkdownDocument document = markdownService.parseMarkdown("");
+        AgentMarkdownDocument document = markdownService.parseMarkdown("");
         assertNotNull(document);
         assertNull(document.getName());
         assertNull(document.getProfile());
@@ -114,7 +114,7 @@ class MarkdownServiceTest {
     @Test
     @DisplayName("测试解析null内容")
     void testParseNullContent() {
-        MarkdownDocument document = markdownService.parseMarkdown(null);
+        AgentMarkdownDocument document = markdownService.parseMarkdown(null);
         assertNotNull(document);
         assertNull(document.getName());
     }
@@ -122,7 +122,7 @@ class MarkdownServiceTest {
     @Test
     @DisplayName("测试生成markdown内容")
     void testGenerateMarkdown() {
-        MarkdownDocument document = MarkdownDocument.builder()
+        AgentMarkdownDocument document = AgentMarkdownDocument.builder()
                 .name("测试助手")
                 .profile("这是一个测试助手")
                 .goal("用于测试目的")
@@ -150,7 +150,7 @@ class MarkdownServiceTest {
     @Test
     @DisplayName("测试生成空文档的markdown")
     void testGenerateEmptyMarkdown() {
-        MarkdownDocument document = MarkdownDocument.builder().build();
+        AgentMarkdownDocument document = AgentMarkdownDocument.builder().build();
         String markdown = markdownService.generateMarkdown(document);
         assertNotNull(markdown);
         assertTrue(markdown.isEmpty() || markdown.trim().isEmpty());
@@ -167,7 +167,7 @@ class MarkdownServiceTest {
     @DisplayName("测试文件读写操作")
     void testFileReadWrite() throws IOException {
         // 创建测试文档
-        MarkdownDocument originalDocument = MarkdownDocument.builder()
+        AgentMarkdownDocument originalDocument = AgentMarkdownDocument.builder()
                 .name("文件测试助手")
                 .profile("用于测试文件读写功能")
                 .goal("验证文件操作正确性")
@@ -184,7 +184,7 @@ class MarkdownServiceTest {
         assertTrue(Files.exists(testFile));
 
         // 读取文件
-        MarkdownDocument readDocument = markdownService.readFromFile(testFile.toString());
+        AgentMarkdownDocument readDocument = markdownService.readFromFile(testFile.toString());
 
         // 验证内容一致
         assertNotNull(readDocument);
@@ -224,7 +224,7 @@ class MarkdownServiceTest {
     @DisplayName("测试文档验证功能")
     void testDocumentValidation() {
         // 测试有效文档
-        MarkdownDocument validDocument = MarkdownDocument.builder()
+        AgentMarkdownDocument validDocument = AgentMarkdownDocument.builder()
                 .name("有效文档")
                 .profile("有效的简介")
                 .goal("有效的目标")
@@ -235,7 +235,7 @@ class MarkdownServiceTest {
         assertTrue(validResult.getErrors().isEmpty());
 
         // 测试无效文档（缺少必需字段）
-        MarkdownDocument invalidDocument = MarkdownDocument.builder()
+        AgentMarkdownDocument invalidDocument = AgentMarkdownDocument.builder()
                 .profile("只有简介")
                 .build();
 
@@ -254,7 +254,7 @@ class MarkdownServiceTest {
     @DisplayName("测试MarkdownDocument的辅助方法")
     void testMarkdownDocumentHelperMethods() {
         // 测试有效文档
-        MarkdownDocument validDocument = MarkdownDocument.builder()
+        AgentMarkdownDocument validDocument = AgentMarkdownDocument.builder()
                 .name("测试文档")
                 .profile("测试简介")
                 .goal("测试目标")
@@ -265,7 +265,7 @@ class MarkdownServiceTest {
         assertTrue(validDocument.getSummary().contains("测试简介"));
 
         // 测试无效文档
-        MarkdownDocument invalidDocument = MarkdownDocument.builder().build();
+        AgentMarkdownDocument invalidDocument = AgentMarkdownDocument.builder().build();
         assertFalse(invalidDocument.isValid());
         assertTrue(invalidDocument.getSummary().contains("未设置"));
     }
@@ -322,7 +322,7 @@ class MarkdownServiceTest {
                 请始终保持这些特点。
                 """;
 
-        MarkdownDocument document = markdownService.parseMarkdown(complexMarkdown);
+        AgentMarkdownDocument document = markdownService.parseMarkdown(complexMarkdown);
 
         assertNotNull(document);
         assertEquals("复杂助手", document.getName());
@@ -349,7 +349,7 @@ class MarkdownServiceTest {
     @DisplayName("测试往返转换（解析后再生成）")
     void testRoundTripConversion() throws IOException {
         // 原始文档
-        MarkdownDocument originalDocument = MarkdownDocument.builder()
+        AgentMarkdownDocument originalDocument = AgentMarkdownDocument.builder()
                 .name("往返测试")
                 .profile("测试往返转换功能")
                 .goal("确保数据完整性")
@@ -362,7 +362,7 @@ class MarkdownServiceTest {
         String markdown = markdownService.generateMarkdown(originalDocument);
 
         // 解析markdown
-        MarkdownDocument parsedDocument = markdownService.parseMarkdown(markdown);
+        AgentMarkdownDocument parsedDocument = markdownService.parseMarkdown(markdown);
 
         // 验证数据一致性
         assertEquals(originalDocument.getName(), parsedDocument.getName());
