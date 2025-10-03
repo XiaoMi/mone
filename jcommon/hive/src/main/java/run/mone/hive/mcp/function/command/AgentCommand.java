@@ -76,22 +76,17 @@ public class AgentCommand extends BaseCommand {
                 return Flux.just(createErrorResult("请指定要切换的配置文件名"));
             }
 
-            // 创建MarkdownDocument对象
-            AgentMarkdownDocument document = new AgentMarkdownDocument();
-            document.setFileName(fileName);
+            // 构建/switch命令消息，让SwitchAgentCommand处理
+            String switchCommand = "/switch " + fileName;
 
-            // 构建切换消息，使用固定的切换提示
-            String finalMessageContent = Const.SWITCH_AGENT;
-
-            // 构建切换agent的消息，使用MarkdownDocument作为data
+            // 构建切换agent的消息
             Message switchMessage = Message.builder()
                     .clientId(clientId)
                     .userId(userId)
                     .agentId(currentAgentId)  // 保持当前agentId
                     .role("user")
                     .sentFrom(ownerId)
-                    .content(finalMessageContent)
-                    .data(document)  // 使用MarkdownDocument对象
+                    .content(switchCommand)
                     .build();
 
             log.info("切换agent配置: {} -> {}", currentAgentId, fileName);
@@ -126,20 +121,21 @@ public class AgentCommand extends BaseCommand {
                 return Flux.just(createErrorResult("请指定agent配置文件名"));
             }
 
+            // 创建AgentMarkdownDocument对象
             AgentMarkdownDocument document = new AgentMarkdownDocument();
             document.setFileName(filename);
 
             // 构建消息内容
             String finalMessageContent;
             if (userMessageContent != null && !userMessageContent.isEmpty()) {
-                // 如果有用户消息，组合配置加载信息和用户消息
+                // 如果有用户消息，使用用户消息内容
                 finalMessageContent = userMessageContent;
             } else {
                 // 如果没有用户消息，只是加载配置
                 finalMessageContent = "加载agent配置: " + filename;
             }
 
-            // 构建包含MarkdownDocument的消息
+            // 构建包含MarkdownDocument的消息，让SwitchAgentCommand处理
             Message userMessage = Message.builder()
                     .clientId(clientId)
                     .userId(userId)
@@ -147,7 +143,7 @@ public class AgentCommand extends BaseCommand {
                     .role("user")
                     .sentFrom(ownerId)
                     .content(finalMessageContent)
-                    .data(document)
+                    .data(document)  // 包含AgentMarkdownDocument，会被SwitchAgentCommand识别
                     .build();
 
             log.info("加载agent配置文件: {}, 用户消息: {}", filename, finalMessageContent);

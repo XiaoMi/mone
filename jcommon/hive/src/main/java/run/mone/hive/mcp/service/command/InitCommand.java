@@ -1,33 +1,84 @@
-package run.mone.hive.task;
+package run.mone.hive.mcp.service.command;
+
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.FluxSink;
+import run.mone.hive.mcp.service.RoleService;
+import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.schema.Message;
 
 /**
- * Init命令实现
- * 对应Claude Code中的/init指令，用于生成MCODE.md文件
+ * Init命令处理类
+ * 处理 /init 命令，用于分析代码库并创建MCODE.md文件
+ * 对应Claude Code中的/init指令功能
+ * 
+ * @author goodjava@qq.com
+ * @date 2025/1/16
  */
-public class InitCommand implements SlashCommand {
-    
-    private static final String COMMAND_NAME = "init";
-    
-    @Override
-    public String getName() {
-        return COMMAND_NAME;
+@Slf4j
+public class InitCommand extends RoleBaseCommand {
+
+    public InitCommand(RoleService roleService) {
+        super(roleService);
     }
-    
+
     @Override
-    public String getDescription() {
-        return "Analyzes the codebase and creates a MCODE.md file to help future instances of Mone Code operate in this repository.";
+    public boolean matches(Message message) {
+        if (message == null) {
+            return false;
+        }
+        String content = message.getContent();
+        return content != null && content.trim().toLowerCase().startsWith("/init");
     }
-    
+
     @Override
-    public boolean matches(String input) {
-        return input.trim().startsWith("/" + COMMAND_NAME);
+    public boolean matches(String content) {
+        if (content == null) {
+            return false;
+        }
+        return content.trim().toLowerCase().startsWith("/init");
     }
-    
+
     @Override
-    public String execute(String input, FocusChainSettings focusChainSettings) {
-        return generateInitPrompt();
+    public void execute(Message message, FluxSink<String> sink, String from, ReactorRole role) {
+        try {
+            sink.next("🔧 正在分析代码库并生成MCODE.md文件...\n");
+            
+            // 生成init命令的完整提示词
+            String initPrompt = generateInitPrompt();
+            
+            // 创建新的消息，包含生成的提示词
+            Message initMessage = Message.builder()
+                    .clientId(message.getClientId())
+                    .userId(message.getUserId())
+                    .agentId(message.getAgentId())
+                    .role("user")
+                    .sentFrom(message.getSentFrom())
+                    .content(initPrompt)
+                    .data(message.getData())
+                    .build();
+
+            sendMessages(sink,
+                "📋 已生成代码库分析指令\n",
+                "🔍 开始分析项目结构和配置文件...\n",
+                "📝 将创建或更新MCODE.md文件\n\n"
+            );
+
+            // 将处理后的消息传递给role处理
+            if (role != null) {
+                role.putMessage(initMessage);
+            } else {
+                sendErrorAndComplete(sink, "当前没有可用的Agent来处理init命令");
+                return;
+            }
+
+            log.info("成功执行init命令, from: {}", from);
+
+        } catch (Exception e) {
+            log.error("处理init命令失败: {}", e.getMessage(), e);
+            sendErrorAndComplete(sink, "执行init命令失败: " + e.getMessage());
+        }
     }
-    
+
     /**
      * 生成Init命令的完整提示词
      */
@@ -75,5 +126,15 @@ public class InitCommand implements SlashCommand {
         prompt.append("</explicit_instructions>\n");
         
         return prompt.toString();
+    }
+
+    @Override
+    public String getCommandName() {
+        return "/init";
+    }
+
+    @Override
+    public String getCommandDescription() {
+        return "分析代码库并创建MCODE.md文件，帮助未来的Mone Code实例在此仓库中操作";
     }
 }
