@@ -150,6 +150,7 @@ watch(existingPidLog, (oldExistingPidLog, newExistingPidLog) => {
       const doc = window.document.getElementById(`process-${pid}`)
       if (doc) {
         doc.innerHTML = existingPidLog[pid]?.slice(-100).join('\n');
+        doc.scrollTop = doc.scrollHeight;
       }
     });
   });
@@ -494,21 +495,21 @@ const addPidButtonEvents = () => {
   }
 }
 
-const addTerminalAppendEvents = () => {
-  if (textRef.value) {
-    // 为所有终端组件设置滚动到底部的行为
-    const terminalBlocks = textRef.value.querySelectorAll('.terminal-process-block');
-    terminalBlocks.forEach((block: Element) => {
-      const htmlBlock = block as HTMLElement;
-      const contentContainer = htmlBlock.querySelector('.terminal-process-content') as HTMLElement;
+// const addTerminalAppendEvents = () => {
+//   // if (textRef.value) {
+//   //   // 为所有终端组件设置滚动到底部的行为
+//   //   const terminalBlocks = textRef.value.querySelectorAll('.terminal-process-block');
+//   //   terminalBlocks.forEach((block: Element) => {
+//   //     const htmlBlock = block as HTMLElement;
+//   //     const contentContainer = htmlBlock.querySelector('.terminal-process-content') as HTMLElement;
 
-      if (contentContainer) {
-        // 确保新内容显示时滚动到底部（滚动条在容器上）
-        contentContainer.scrollTop = contentContainer.scrollHeight;
-      }
-    });
-  }
-}
+//   //     if (contentContainer) {
+//   //       // 确保新内容显示时滚动到底部（滚动条在容器上）
+//   //       // contentContainer.scrollTop = contentContainer.scrollHeight;
+//   //     }
+//   //   });
+//   // }
+// }
 
 const removeEvents = () => {
   if (textRef.value) {
@@ -619,7 +620,7 @@ onMounted(() => {
   addToolResultToggleEvents();
   addFileUrlLinkEvents();
   addPidButtonEvents();
-  addTerminalAppendEvents();
+  // addTerminalAppendEvents();
   if (textRef.value) {
     textRef.value.querySelectorAll('.hive-btn').forEach((ele) => {
       ele?.removeEventListener('click', () => {
@@ -647,7 +648,7 @@ onUpdated(() => {
   addToolResultToggleEvents();
   addFileUrlLinkEvents();
   addPidButtonEvents();
-  addTerminalAppendEvents();
+  // addTerminalAppendEvents();
   if (textRef.value) {
     textRef.value.querySelectorAll('.hive-btn').forEach((ele) => {
       ele?.removeEventListener('click', () => {

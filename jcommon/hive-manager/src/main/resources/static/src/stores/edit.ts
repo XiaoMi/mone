@@ -14,7 +14,7 @@ export const useEditStore = defineStore('edit', () => {
   
   const edit = ref<Edit>({
     isEdit: true,
-    showFollow: false,
+    showFollow: true,
     isFollow: initialIsFollow,
   })
 

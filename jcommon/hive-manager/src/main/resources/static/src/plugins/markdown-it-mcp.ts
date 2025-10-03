@@ -513,8 +513,8 @@ export function markdownItMcp(md: MarkdownIt) {
                   <i class="fa-solid fa-terminal"></i>
                   <span>进程 ${md.utils.escapeHtml(currentPid)}</span>
                 </div>
-                <div class="terminal-process-content" style="display: block;">
-                  <pre><code id=process-${currentPid}>${md.utils.escapeHtml(contentLines.join('\n'))}</code></pre>
+                <div id="process-${currentPid}" class="terminal-process-content">
+                  ${md.utils.escapeHtml(contentLines.join('\n'))}
                 </div>
               </div>`;
               html += componentHtml;
