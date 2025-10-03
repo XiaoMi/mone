@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.AgentMarkdownDocument;
@@ -332,14 +333,14 @@ public class RoleService {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                if (resolveMessageData(message, rr)) {
+                if (resolveMessageData(message, rr, sink)) {
                     rr.putMessage(message);
                 }
             }
         });
     }
 
-    private boolean resolveMessageData(Message message, ReactorRole rr) {
+    private boolean resolveMessageData(Message message, ReactorRole rr, FluxSink sink) {
         if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
             AgentMarkdownDocument tmp = getMarkdownDocument(md, rr);
             if (null != tmp) {
@@ -347,7 +348,12 @@ public class RoleService {
                 //放入到配置中
                 rr.getRoleConfig().put(Const.AGENT_CONFIG, GsonUtils.gson.toJson(tmp));
                 //只是切换agent,不需要下发指令
-                return !message.getContent().equals(Const.SWITCH_AGENT);
+                if (message.getContent().equals(Const.SWITCH_AGENT)) {
+                    sink.next("agent 切换完毕");
+                    sink.complete();
+                    return false;
+                }
+                return true;
             }
         } else {
             if (rr.getRoleConfig().containsKey(Const.AGENT_CONFIG)) {

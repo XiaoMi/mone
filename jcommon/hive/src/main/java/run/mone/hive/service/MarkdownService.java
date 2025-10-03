@@ -154,7 +154,7 @@ public class MarkdownService {
      * 从解析的文档中提取字段
      */
     private AgentMarkdownDocument extractFields(Document document, String originalContent) {
-        AgentMarkdownDocument.MarkdownDocumentBuilder builder = AgentMarkdownDocument.builder();
+        AgentMarkdownDocument.AgentMarkdownDocumentBuilder builder = AgentMarkdownDocument.builder();
 
         // 用于存储当前处理的字段和内容
         String currentField = null;
@@ -221,7 +221,7 @@ public class MarkdownService {
     /**
      * 设置字段值
      */
-    private void setFieldValue(AgentMarkdownDocument.MarkdownDocumentBuilder builder, String fieldName, String value) {
+    private void setFieldValue(AgentMarkdownDocument.AgentMarkdownDocumentBuilder builder, String fieldName, String value) {
         if (fieldName == null || value == null) {
             return;
         }
