@@ -12,7 +12,7 @@ public class SlashCommandParser {
     
     // 支持的默认命令
     private static final Set<String> SUPPORTED_DEFAULT_COMMANDS = Set.of(
-        "newtask", "smol", "compact", "newrule", "reportbug", "deep-planning"
+        "newtask", "smol", "compact", "newrule", "reportbug", "deep-planning", "init"
     );
     
     // 注册的命令
@@ -40,6 +40,7 @@ public class SlashCommandParser {
         registerCommand(new CompactCommand());
         registerCommand(new NewRuleCommand());
         registerCommand(new ReportBugCommand());
+        registerCommand(new InitCommand());
     }
     
     /**
@@ -56,7 +57,21 @@ public class SlashCommandParser {
      * @return 解析结果
      */
     public ParseResult parseSlashCommands(String text, FocusChainSettings focusChainSettings) {
-        // 检查每个标签模式
+        // 首先检查直接的斜杠命令（如 /init）
+        String trimmedText = text.trim();
+        if (trimmedText.startsWith("/")) {
+            String commandName = trimmedText.substring(1).split("\\s+")[0]; // 获取命令名（去掉斜杠和参数）
+            
+            if (SUPPORTED_DEFAULT_COMMANDS.contains(commandName)) {
+                SlashCommand command = registeredCommands.get(commandName);
+                if (command != null) {
+                    String processedText = command.execute(text, focusChainSettings);
+                    return new ParseResult(processedText, commandName.equals("newrule"));
+                }
+            }
+        }
+        
+        // 然后检查XML标签内的斜杠命令
         for (TagPattern tagPattern : tagPatterns) {
             Matcher matcher = tagPattern.pattern.matcher(text);
             
