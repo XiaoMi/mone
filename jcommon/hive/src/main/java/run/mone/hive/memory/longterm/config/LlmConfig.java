@@ -66,7 +66,7 @@ public class LlmConfig {
      * 模型名称
      */
     @Builder.Default
-    private String model = "gpt-4o-mini";
+    private String model = "";
     
     /**
      * API密钥

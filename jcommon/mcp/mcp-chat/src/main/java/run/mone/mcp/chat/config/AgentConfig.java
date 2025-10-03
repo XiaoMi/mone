@@ -4,8 +4,10 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.Rag;
+import run.mone.hive.mcp.service.RoleMemoryConfig;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.WebQuery;
 import run.mone.hive.roles.tool.*;
@@ -27,7 +29,7 @@ public class AgentConfig {
                 .goal("你的目标是更好的帮助用户,和给用户提供情绪价值")
                 .constraints("不要探讨一些负面的东西,如果用户和你讨论,你可以直接拒绝掉")
                 //允许自动从知识库获取内容(意图识别的小模型)
-                .webQuery(WebQuery.builder().autoWebQuery(false).modelType("bert").version("finetune-bert-20250605-73a29258").build())
+//                .webQuery(WebQuery.builder().autoWebQuery(false).modelType("bert").version("finetune-bert-20250605-73a29258").build())
                 //内部工具(意图识别的小模型)
                 .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
                 .tools(Lists.newArrayList(
@@ -35,7 +37,10 @@ public class AgentConfig {
                         new AskTool(),
                         new TavilySearchTool(),
                         new KnowledgeBaseQueryTool(),
-                        new MemoryTool(),
+                        new MemoryTool(RoleMemoryConfig.builder()
+                                .graphStore(RoleMemoryConfig.GraphStoreConfig.builder()
+                                        .llm(RoleMemoryConfig.LlmConfig.builder().providerName(LLMProvider.QWEN.name()).model("qwen3-max").build())
+                                        .build()).build()),
                         new AttemptCompletionTool()
                         ))
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))

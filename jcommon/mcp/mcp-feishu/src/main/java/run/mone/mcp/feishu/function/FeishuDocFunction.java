@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.feishu.model.DocBlock;
 import run.mone.mcp.feishu.model.DocContent;
+import run.mone.mcp.feishu.model.FileInfo;
 import run.mone.mcp.feishu.model.Files;
 import run.mone.mcp.feishu.service.FeishuDocService;
 
@@ -29,19 +30,19 @@ public class FeishuDocFunction implements Function<Map<String, Object>, McpSchem
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "description": "Operation type for Feishu document:\\n1. createDocument: Create new document\\n2. addBlock: Add content blocks\\n3. getFileInfo: Get document info\\n4. getDocument: Get document content\\n5. getRootFolder: Get root folder token\\n\\nExample: 'createDocument';Please pay attention to serialization issues"
+                        "description": "Operation type for Feishu document:\\n1. createDocument: Create new document\\n2. addBlock: Add content blocks\\n3. getFileBaseInfo: Get document basic info\\n4. getDocuments: Get document list\\n5. getFileContent: get the content of the document"
                     },
                     "title": {
                         "type": "string",
                         "description": "Document title. Example: 'Project Meeting Notes'"
                     },
-                    "folderToken": {
-                        "type": "string",
-                        "description": "Parent folder token. Example: 'fldcnxxxxxxxx'"
-                    },
                     "documentId": {
                         "type": "string",
                         "description": "Document ID. Example: 'docx8H1i9Ko0TPLt'"
+                    },
+                    "user_access_token":{
+                    "type": "string",
+                    "description": "User's permission token"
                     },
                     "block": {
                         "type": "object",
@@ -68,9 +69,9 @@ public class FeishuDocFunction implements Function<Map<String, Object>, McpSchem
             String result = switch (operation) {
                 case "createDocument" -> createDocument(args);
                 case "addBlock" -> addBlock(args);
-                case "getFileInfo" -> getFileInfo(args);
-                case "getDocument" -> getDocument(args);
-                case "getRootFolder" -> getRootFolder();
+                case "getFileBaseInfo" -> getFileBaseInfo(args);
+                case "getDocuments" -> getFileList(args);
+                case "getFileContent" -> getFileContent(args);
                 default -> throw new IllegalArgumentException("Unknown operation: " + operation);
             };
 
@@ -81,11 +82,16 @@ public class FeishuDocFunction implements Function<Map<String, Object>, McpSchem
         }
     }
 
+    private String getFileList(Map<String, Object> args) throws Exception {
+        String userAccessToken = (String) args.get("userAccessToken");
+        List<Files> documentFiles = docService.getDocumentFiles(userAccessToken);
+        return objectMapper.writeValueAsString(documentFiles);
+    }
+
     private String createDocument(Map<String, Object> args) throws Exception {
         String title = (String) args.get("title");
-        String folderToken = (String) args.get("folderToken");
-
-        DocContent doc = docService.createDocument(title, folderToken);
+        String userAccessToken = (String) args.get("userAccessToken");
+        DocContent doc = docService.createDocument(title, userAccessToken);
         return objectMapper.writeValueAsString(doc);
     }
 
@@ -98,23 +104,32 @@ public class FeishuDocFunction implements Function<Map<String, Object>, McpSchem
         return objectMapper.writeValueAsString(createdBlock);
     }
 
-    private String getFileInfo(Map<String, Object> args) throws Exception {
+    private String getFileBaseInfo(Map<String, Object> args) throws Exception {
         String documentId = (String) args.get("documentId");
+        if (documentId == null || documentId.isBlank()) {
+            return "文件Id为空!";
+        }
 
-        Files fileInfo = docService.getFileInfo(documentId);
+        if (documentId.startsWith("https://mi.feishu.cn/docx/")){
+            documentId = documentId.replace("https://mi.feishu.cn/docx/", "");
+        }
+
+        FileInfo fileInfo = docService.getFileBaseInfo(documentId);
         return objectMapper.writeValueAsString(fileInfo);
     }
 
-    private String getDocument(Map<String, Object> args) throws Exception {
+    private String getFileContent(Map<String, Object> args) throws Exception {
         String documentId = (String) args.get("documentId");
+        if (documentId == null || documentId.isBlank()) {
+            return "文件Id为空!";
+        }
 
-        DocContent doc = docService.getDocument(documentId);
-        return objectMapper.writeValueAsString(doc);
-    }
+        if (documentId.startsWith("https://mi.feishu.cn/docx/")){
+            documentId = documentId.replace("https://mi.feishu.cn/docx/", "");
+        }
 
-    private String getRootFolder() throws Exception {
-        String rootFolderToken = docService.getRootFolderToken();
-        return objectMapper.writeValueAsString(Map.of("rootFolderToken", rootFolderToken));
+        String content =  docService.getFileContent(documentId);
+        return content;
     }
 
 } 

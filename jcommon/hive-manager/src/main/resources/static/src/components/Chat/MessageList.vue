@@ -12,6 +12,9 @@
         :onMessageCmd="onMessageCmd"
         :onPlayAudio="onPlayAudio"
         @pidAction="handlePidAction"
+        @onClick2Conversion="(id) => {
+            $emit('onClick2Conversion', id)
+          }"
       >
         <template v-slot:user-avatar="scopedProps">
           <slot

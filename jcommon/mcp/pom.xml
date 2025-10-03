@@ -57,6 +57,7 @@
         <module>mcp-image</module>
         <module>mcp-remote-file</module>
         <module>mcp-miapi-cursor</module>
+        <module>mcp-vue3</module>
     </modules>
 
     <properties>

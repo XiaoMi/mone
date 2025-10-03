@@ -91,7 +91,7 @@ public class Memory implements MemoryBase {
                 .build())
             .llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName()))
             .url(MemoryUtils.validateUrl(LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl()) ? LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl() : config.getLlm().getBaseUrl()) 
-            .model(config.getLlm().getModel() != null ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
+            .model(StringUtils.isNotBlank(config.getLlm().getModel()) ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
             .json(StringUtils.isNotBlank(config.getLlm().getResponseJsonFormat()) ? Boolean.parseBoolean(config.getLlm().getResponseJsonFormat()) : false)
             .build());
         // 如果apiKey不为空，则设置apiKey, 否则从环境变量中获取
@@ -605,8 +605,13 @@ public class Memory implements MemoryBase {
                     .role(it.get("role").toString())
                     .content(it.get("content").toString())
                     .build()).toList();
-
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+            
             String response = llm.chat(msgList);
+            
             log.info("Fact extraction LLM response: {}", response);
 
             return parseFactsFromJsonResponse(response);
@@ -701,7 +706,13 @@ public class Memory implements MemoryBase {
             List<AiMessage> msgList = messages.stream().map(it ->
                     AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+
             String response = llm.chat(msgList);
+
             log.info("Memory decision LLM response: {}", response);
 
             return parseMemoryActionsFromJsonResponse(response);
@@ -1059,6 +1070,11 @@ public class Memory implements MemoryBase {
 
             List<AiMessage> msgList = parsedMessages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+            
             String proceduralMemory = llm.chat(msgList);
 
             metadata.put("memory_type", "procedural_memory");

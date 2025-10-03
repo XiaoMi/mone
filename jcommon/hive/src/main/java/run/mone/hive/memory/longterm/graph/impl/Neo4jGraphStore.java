@@ -97,7 +97,7 @@ public class Neo4jGraphStore implements GraphStoreBase {
                     .build())
                 .llmProvider(LLMProvider.valueOf(config.getLlm().getProviderName()))
                 .url(MemoryUtils.validateUrl(LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl()) ? LLMProvider.valueOf(config.getLlm().getProviderName()).getUrl() : config.getLlm().getBaseUrl()) 
-                .model(config.getLlm().getModel() != null ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
+                .model(StringUtils.isNotBlank(config.getLlm().getModel()) ? config.getLlm().getModel() : LLMProvider.valueOf(config.getLlm().getProviderName()).getDefaultModel())
                 .json(StringUtils.isNotBlank(config.getLlm().getResponseJsonFormat()) ? Boolean.parseBoolean(config.getLlm().getResponseJsonFormat()) : false)
                 .build());
             // 如果apiKey不为空，则设置apiKey, 否则从环境变量中获取
@@ -257,6 +257,10 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
             // 调用LLM进行关系提取
             String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
@@ -315,6 +319,10 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
 
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
             // 调用LLM进行关系提取
             String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
@@ -1129,8 +1137,12 @@ public class Neo4jGraphStore implements GraphStoreBase {
 
             // 调用LLM进行实体提取
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
-
-            // 调用LLM进行关系提取
+            
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
+            // 调用LLM进行实体提取
             String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
             Map<String, Object> response = new Gson().fromJson(str, Map.class);
@@ -1263,6 +1275,10 @@ public class Neo4jGraphStore implements GraphStoreBase {
             // 调用LLM进行关系提取
             List<AiMessage> msgList = messages.stream().map(it -> AiMessage.builder().role(it.get("role").toString()).content(it.get("content").toString()).build()).collect(Collectors.toList());
             // 调用LLM进行关系提取
+            // HINT: 这里如果需要不在模型上绑定返回格式的化需要用下面的写法，因为llmConfig.json字段会影响responseFormat
+            // LLMConfig llmConfig = LLMConfig.copy(this.llm.getConfig());
+            // llmConfig.setJson(false); // 调用时自行决定
+            // String proceduralMemory = llm.chat(msgList, llmConfig);
             String str = llm.chat(msgList);
             str = MemoryUtils.removeCodeBlocks(str.trim());
             Map<String, Object> response = new Gson().fromJson(str, Map.class);
