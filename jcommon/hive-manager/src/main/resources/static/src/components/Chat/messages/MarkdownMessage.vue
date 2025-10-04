@@ -601,14 +601,7 @@ const removeEvents = () => {
       }
     });
 
-    // 移除hive-msg-copy-btn事件(保持兼容性)
-    const hiveMsgCopyButtons = textRef.value.querySelectorAll('.hive-msg-copy-btn');
-    hiveMsgCopyButtons.forEach((button: any) => {
-      if (button._clickHandler) {
-        button.removeEventListener('click', button._clickHandler);
-        delete button._clickHandler;
-      }
-    });
+
   }
 }
 

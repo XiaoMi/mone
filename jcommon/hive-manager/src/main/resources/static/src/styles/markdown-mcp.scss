@@ -2016,17 +2016,7 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
           text-align: center;
         }
 
-        .hive-msg-copy-btn {
-          align-self: center;
-          min-width: 120px;
-          padding: 10px 16px;
 
-          &::after {
-            content: '复制ID';
-            margin-left: 6px;
-            font-size: 0.85em;
-          }
-        }
       }
     }
   }
@@ -2063,10 +2053,7 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     .hive-msg-id-display {
       border-width: 2px;
 
-      .hive-msg-copy-btn {
-        border-width: 2px;
-        font-weight: 700;
-      }
+
     }
   }
 }
@@ -2074,8 +2061,7 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
 // 减少动画偏好
 @media (prefers-reduced-motion: reduce) {
   .hive-msg-block {
-    .hive-msg-id-display,
-    .hive-msg-copy-btn {
+    .hive-msg-id-display {
       transition: none;
       animation: none !important;
 
