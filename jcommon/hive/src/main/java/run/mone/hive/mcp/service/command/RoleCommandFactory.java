@@ -31,6 +31,7 @@ public class RoleCommandFactory {
         registerCommand(new GetConfigCommand(roleService));
         registerCommand(new SwitchAgentCommand(roleService));
         registerCommand(new InitCommand(roleService));
+        registerCommand(new PingCommand(roleService));
     }
 
     /**
