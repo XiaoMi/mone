@@ -53,7 +53,7 @@ const { setShowFollow } = useEditStore()
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string)
 const messageId = ref<string>('')
-const sendMethod = ref<string>('ws')
+const sendMethod = ref<string>('sse')
 const list = computed(() => {
   return messageList
 })
@@ -296,7 +296,7 @@ const sendCreateCommand = async () => {
     }
     
     messageId.value = uuidv4()
-    let params = {
+    const params = {
       message: '/create',
       __owner_id__: user?.username,
       __web_search__: functionPanelStore.webSearchEnabled || false,
@@ -321,7 +321,7 @@ const sendCreateCommand = async () => {
         },
         (data: any) => {
           if (data) {
-            fluxCodeHandler(data, messageId.value)
+            throttledFluxCodeHandler(data, messageId.value)
           }
         }
       )
@@ -396,7 +396,7 @@ const sendMessage = async (message: Message) => {
         },
         (data: any) => {
           if (data) {
-            fluxCodeHandler(data, messageId.value)
+            throttledFluxCodeHandler(data, messageId.value)
           }
         }
       )
@@ -575,7 +575,7 @@ onMounted(async () => {
           text: `你好，我是 ${agent.name}，有什么可以帮你的吗？`,
         },
       })
-      toggleSendMethod('ws')
+      // toggleSendMethod('ws')
       
       // 自动发送/create命令
       // await sendCreateCommand()
