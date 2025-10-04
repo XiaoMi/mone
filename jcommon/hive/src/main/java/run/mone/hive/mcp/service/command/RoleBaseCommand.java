@@ -7,6 +7,7 @@ import reactor.core.publisher.FluxSink;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
+import run.mone.hive.utils.JsonUtils;
 
 /**
  * Role命令处理基础类
@@ -62,7 +63,7 @@ public abstract class RoleBaseCommand {
      * @param message 成功消息
      */
     protected void sendSuccessAndComplete(FluxSink<String> sink, String message) {
-        sink.next(message);
+        sink.next(JsonUtils.toolResult(message));
         sink.complete();
     }
 

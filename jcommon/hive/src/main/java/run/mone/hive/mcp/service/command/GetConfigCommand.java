@@ -9,7 +9,6 @@ import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,18 +59,8 @@ public class GetConfigCommand extends RoleBaseCommand {
                 return;
             }
             
-            sink.next("📋 正在获取配置信息...\n");
-
             // 创建配置信息Map
             Map<String, Object> configMap = new HashMap<>();
-            
-            // 基本信息
-            configMap.put("agentName", roleService.getAgentName());
-            configMap.put("agentGroup", roleService.getAgentGroup());
-            configMap.put("agentVersion", roleService.getAgentversion());
-            configMap.put("agentIp", roleService.getAgentIp());
-            configMap.put("grpcPort", roleService.getGrpcPort());
-            
             // Role相关信息
             if (role != null) {
                 configMap.put("owner", role.getOwner());
@@ -100,23 +89,14 @@ public class GetConfigCommand extends RoleBaseCommand {
                 }
             }
             
-            // MCP服务器信息
-            if (roleService.getMcpServers() != null && !roleService.getMcpServers().isEmpty()) {
-                configMap.put("mcpServers", new ArrayList<>(roleService.getMcpServers()));
-            }
-            
+
             // 系统信息
             Map<String, Object> systemInfo = new HashMap<>();
             systemInfo.put("mcpPath", roleService.getMcpPath());
             systemInfo.put("mcpServerList", roleService.getMcpServerList());
             systemInfo.put("delay", roleService.getDelay());
             configMap.put("systemInfo", systemInfo);
-            
-            // 统计信息
-            Map<String, Object> statsInfo = new HashMap<>();
-            statsInfo.put("totalRoles", roleService.getRoleMap().size());
-            statsInfo.put("connectedClients", roleService.getClientMap().size());
-            configMap.put("statistics", statsInfo);
+
 
             // 格式化输出
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -126,14 +106,6 @@ public class GetConfigCommand extends RoleBaseCommand {
             result.append("⚙️ 当前配置信息:\n\n");
             result.append("```json\n");
             result.append(jsonConfig);
-            result.append("\n```\n");
-            result.append("\n📊 配置项说明:\n");
-            result.append("- **agentName**: Agent名称\n");
-            result.append("- **agentGroup**: Agent组\n");
-            result.append("- **roleState**: 当前Role状态\n");
-            result.append("- **workspacePath**: 工作空间路径\n");
-            result.append("- **roleConfig**: Role特定配置\n");
-            result.append("- **statistics**: 统计信息\n");
 
             sendSuccessAndComplete(sink, result.toString());
 
