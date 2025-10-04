@@ -591,6 +591,24 @@ const removeEvents = () => {
         delete button._clickHandler;
       }
     });
+
+    // 移除hive-checkpoint-btn事件
+    const checkpointButtons = textRef.value.querySelectorAll('.hive-checkpoint-btn');
+    checkpointButtons.forEach((button: any) => {
+      if (button._clickHandler) {
+        button.removeEventListener('click', button._clickHandler);
+        delete button._clickHandler;
+      }
+    });
+
+    // 移除hive-msg-copy-btn事件(保持兼容性)
+    const hiveMsgCopyButtons = textRef.value.querySelectorAll('.hive-msg-copy-btn');
+    hiveMsgCopyButtons.forEach((button: any) => {
+      if (button._clickHandler) {
+        button.removeEventListener('click', button._clickHandler);
+        delete button._clickHandler;
+      }
+    });
   }
 }
 
@@ -634,6 +652,18 @@ onMounted(() => {
         emit('onClick2Conversion', { id })
       })
     })
+      textRef.value.querySelectorAll('.hive-checkpoint-btn').forEach((ele) => {
+        ele?.removeEventListener('click', () => {
+          const id = ele?.getAttribute('data-msg-id')
+          clearMessageAfterId(id)
+          emit('onClick2Conversion', { id })
+        })
+        ele?.addEventListener('click', () => {
+          const id = ele?.getAttribute('data-msg-id')
+          clearMessageAfterId(id)
+          emit('onClick2Conversion', { id })
+        })
+      })
   }
 })
 
@@ -662,6 +692,18 @@ onUpdated(() => {
         emit('onClick2Conversion', { id })
       })
     })
+      textRef.value.querySelectorAll('.hive-checkpoint-btn').forEach((ele) => {
+        ele?.removeEventListener('click', () => {
+          const id = ele?.getAttribute('data-msg-id')
+          clearMessageAfterId(id)
+          emit('onClick2Conversion', { id })
+        })
+        ele?.addEventListener('click', () => {
+          const id = ele?.getAttribute('data-msg-id')
+          clearMessageAfterId(id)
+          emit('onClick2Conversion', { id })
+        })
+      })
   }
 })
 
