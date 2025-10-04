@@ -421,7 +421,7 @@ export default {
       gitTimer: 0,
       composerConfig: ['bugfix', 'bizJar', 'Codebase', 'Analyze', 'Knowledge', 'UnitTest'],
       composerList: [],
-      sendMethod: 'ws',
+      sendMethod: 'sse',
     };
   },
   computed: {
