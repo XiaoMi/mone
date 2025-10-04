@@ -53,13 +53,13 @@
       </div>
     </div>
     <!-- 永久跟随按钮 -->
-    <div class="follow-toggle-btn" @click="toggleFollow">
+    <!-- <div class="follow-toggle-btn" @click="toggleFollow">
       <el-tooltip :content="isFollow ? '点击取消自动滚动到底部' : '点击开启自动滚动到底部'" placement="left">
         <div class="follow-btn" :class="{ active: isFollow }">
           {{ isFollow ? '跟随' : '停止' }}
         </div>
       </el-tooltip>
-    </div>
+    </div> -->
   </div>
 </template>
 

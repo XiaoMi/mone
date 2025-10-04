@@ -290,13 +290,13 @@ export function markdownItMcp(md: MarkdownIt) {
               <div class="tool-result-header">
                 <i class="fa-solid fa-code"></i>
                 <span>工具结果</span>
-                <i class="toggle-icon fa-solid fa-chevron-down"></i>
+                <i class="toggle-icon fa-solid fa-chevron-up"></i>
               </div>
-              <div class="tool-result-content">`;
+              <div class="tool-result-content is-active">`;
         } else if (name === "pid") {
           html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
         } else if (name === 'hive-msg-id') {
-          html += `<div class="hive-msg-btn">`;
+          html += `<div class="hive-checkpoint-container">`;
         }else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
           // html += `<!-- terminal_append_start -->`;
@@ -370,7 +370,13 @@ export function markdownItMcp(md: MarkdownIt) {
           html += md.render(text);
           return;
         } else if (tagName === "hive-msg-id") {
-          html += `<div class="hive-btn" id="${text.trim()}">${text.trim()}</div>`;
+          const msgId = text.trim();
+          html += `
+            <button class="hive-checkpoint-btn" data-msg-id="${msgId}" title="消息检查点: ${msgId}">
+              <i class="fa-solid fa-bookmark"></i>
+              <span class="checkpoint-text">Checkpoint</span>
+              <code class="checkpoint-id">${msgId}</code>
+            </button>`;
           return;
         }  else if (tagName === "usage") {
           // 处理任务进度内容，转换为列表
