@@ -578,7 +578,9 @@ onMounted(async () => {
       // toggleSendMethod('ws')
       
       // 自动发送/create命令
-      // await sendCreateCommand()
+      setTimeout(() => {
+        sendCreateCommand()
+      }, 1000);
     }
   } catch (error) {
     console.error('获取Agent详情失败:', error)
