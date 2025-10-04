@@ -4,13 +4,21 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
+import run.mone.hive.service.MarkdownService;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 获取配置命令处理类
@@ -21,6 +29,8 @@ import java.util.Map;
  */
 @Slf4j
 public class GetConfigCommand extends RoleBaseCommand {
+
+    private final MarkdownService markdownService = new MarkdownService();
 
     public GetConfigCommand(RoleService roleService) {
         super(roleService);
@@ -95,6 +105,13 @@ public class GetConfigCommand extends RoleBaseCommand {
             systemInfo.put("mcpPath", roleService.getMcpPath());
             systemInfo.put("mcpServerList", roleService.getMcpServerList());
             systemInfo.put("delay", roleService.getDelay());
+            
+            // 添加agent文件列表
+            if (role != null) {
+                Map<String, String> agentList = getAgentListFromWorkspace(role);
+                systemInfo.put("agentList", agentList);
+            }
+            
             configMap.put("systemInfo", systemInfo);
 
             // 构建标准响应格式
@@ -126,7 +143,7 @@ public class GetConfigCommand extends RoleBaseCommand {
 
     @Override
     public String getCommandDescription() {
-        return "获取当前Agent配置信息或设置配置项 (用法: /config 或 /config put key=value)";
+        return "获取当前Agent配置信息、系统信息和可用Agent列表，或设置配置项 (用法: /config 或 /config put key=value)";
     }
     
     /**
@@ -202,5 +219,63 @@ public class GetConfigCommand extends RoleBaseCommand {
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             sendErrorAndComplete(sink, gson.toJson(errorResponse));
         }
+    }
+    
+    /**
+     * 获取指定workspace下所有.md文件的文件名和name映射
+     * @param role ReactorRole实例
+     * @return Map<filename, agentName>
+     */
+    private Map<String, String> getAgentListFromWorkspace(ReactorRole role) {
+        Map<String, String> agentMap = new HashMap<>();
+        
+        try {
+            // 获取workspace路径
+            String workspacePath = role.getWorkspacePath();
+            if (workspacePath == null || workspacePath.isEmpty()) {
+                log.warn("无法获取workspace路径");
+                return agentMap;
+            }
+
+            // 构建.hive目录路径
+            Path hiveDir = Paths.get(workspacePath, ".hive");
+
+            // 检查目录是否存在
+            if (!Files.exists(hiveDir) || !Files.isDirectory(hiveDir)) {
+                log.warn(".hive目录不存在: {}", hiveDir.toString());
+                return agentMap;
+            }
+
+            // 遍历目录下的所有.md文件
+            List<Path> mdFiles = Files.list(hiveDir)
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().toLowerCase().endsWith(".md"))
+                    .collect(Collectors.toList());
+
+            for (Path mdFile : mdFiles) {
+                String filename = mdFile.getFileName().toString();
+                String agentName = null;
+                
+                try {
+                    // 解析markdown文件获取name
+                    AgentMarkdownDocument document = markdownService.readFromFile(mdFile.toString());
+                    if (document != null && document.getName() != null && !document.getName().trim().isEmpty()) {
+                        agentName = document.getName().trim();
+                    }
+                } catch (Exception e) {
+                    log.warn("解析markdown文件失败: {}, 错误: {}", filename, e.getMessage());
+                    // 如果解析失败，agentName保持为null
+                }
+                
+                agentMap.put(filename, agentName);
+            }
+            
+        } catch (IOException e) {
+            log.error("读取.hive目录失败: {}", e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("获取agent列表失败: {}", e.getMessage(), e);
+        }
+        
+        return agentMap;
     }
 }
