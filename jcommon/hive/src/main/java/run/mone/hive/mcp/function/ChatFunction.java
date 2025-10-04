@@ -22,7 +22,6 @@ import java.util.function.Function;
 /**
  * goodjava@qq.com
  * 每个Agent都具备chat能力
- *
  */
 @RequiredArgsConstructor
 @Data
@@ -34,11 +33,11 @@ public class ChatFunction implements McpFunction {
     private final String agentName;
 
     private final long timeout;
-    
+
     private CommandManager commandManager;
 
     //支持权限验证
-    private Function<TokenReq, TokenRes> tokenFunc = (req)-> TokenRes.builder().userId(req.getUserId()).success(true).build();
+    private Function<TokenReq, TokenRes> tokenFunc = (req) -> TokenRes.builder().userId(req.getUserId()).success(true).build();
 
 
     @Override
@@ -46,7 +45,7 @@ public class ChatFunction implements McpFunction {
         this.roleService = roleService;
         this.commandManager = new CommandManager(roleService);
     }
-    
+
     public ChatFunction(String agentName, long timeout, RoleService roleService) {
         this.agentName = agentName;
         this.timeout = timeout;
@@ -74,6 +73,7 @@ public class ChatFunction implements McpFunction {
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
+        log.info("chat arguments:{}", arguments);
         //这个agent的拥有者
         String ownerId = arguments.get(Const.OWNER_ID).toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();

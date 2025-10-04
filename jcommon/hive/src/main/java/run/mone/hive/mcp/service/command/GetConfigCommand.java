@@ -97,21 +97,25 @@ public class GetConfigCommand extends RoleBaseCommand {
             systemInfo.put("delay", roleService.getDelay());
             configMap.put("systemInfo", systemInfo);
 
+            // 构建标准响应格式
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "获取配置信息成功");
+            response.put("data", configMap);
 
             // 格式化输出
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            String jsonConfig = gson.toJson(configMap);
-            
-            StringBuilder result = new StringBuilder();
-            result.append("⚙️ 当前配置信息:\n\n");
-            result.append("```json\n");
-            result.append(jsonConfig);
+            String jsonResponse = gson.toJson(response);
 
-            sendSuccessAndComplete(sink, result.toString());
+            sendSuccessAndComplete(sink, jsonResponse);
 
         } catch (Exception e) {
             log.error("获取配置信息失败: {}", e.getMessage(), e);
-            sendErrorAndComplete(sink, "获取配置信息失败: " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "获取配置信息失败: " + e.getMessage());
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            sendErrorAndComplete(sink, gson.toJson(errorResponse));
         }
     }
 
@@ -133,14 +137,22 @@ public class GetConfigCommand extends RoleBaseCommand {
             // 解析命令格式: /config put key=value
             String[] parts = content.trim().split("\\s+", 3);
             if (parts.length < 3) {
-                sendErrorAndComplete(sink, "❌ 命令格式错误！正确格式: /config put key=value");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "命令格式错误！正确格式: /config put key=value");
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                sendErrorAndComplete(sink, gson.toJson(errorResponse));
                 return;
             }
             
             String keyValue = parts[2];
             String[] kvPair = keyValue.split("=", 2);
             if (kvPair.length != 2) {
-                sendErrorAndComplete(sink, "❌ 参数格式错误！正确格式: key=value");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "参数格式错误！正确格式: key=value");
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                sendErrorAndComplete(sink, gson.toJson(errorResponse));
                 return;
             }
             
@@ -148,7 +160,11 @@ public class GetConfigCommand extends RoleBaseCommand {
             String value = kvPair[1].trim();
             
             if (key.isEmpty()) {
-                sendErrorAndComplete(sink, "❌ 配置键不能为空！");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "配置键不能为空！");
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                sendErrorAndComplete(sink, gson.toJson(errorResponse));
                 return;
             }
             
@@ -161,16 +177,30 @@ public class GetConfigCommand extends RoleBaseCommand {
                 }
                 roleConfig.put(key, value);
                 
-                sink.next("✅ 配置已保存\n");
-                sink.next(String.format("📝 %s = %s\n", key, value));
-                sendSuccessAndComplete(sink, "配置设置成功！");
+                // 构建JSON响应
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "配置设置成功！");
+                response.put("key", key);
+                response.put("value", value);
+                
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                sendSuccessAndComplete(sink, gson.toJson(response));
             } else {
-                sendErrorAndComplete(sink, "❌ Role对象为空，无法保存配置");
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Role对象为空，无法保存配置");
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                sendErrorAndComplete(sink, gson.toJson(errorResponse));
             }
             
         } catch (Exception e) {
             log.error("处理put config命令失败: {}", e.getMessage(), e);
-            sendErrorAndComplete(sink, "设置配置失败: " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "设置配置失败: " + e.getMessage());
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            sendErrorAndComplete(sink, gson.toJson(errorResponse));
         }
     }
 }

@@ -12,7 +12,7 @@ import run.mone.hive.schema.Message;
 /**
  * 切换Agent命令处理类
  * 处理 /switch 命令和包含AgentMarkdownDocument数据的消息
- * 
+ *
  * @author goodjava@qq.com
  * @date 2025/1/16
  */
@@ -28,13 +28,13 @@ public class SwitchAgentCommand extends RoleBaseCommand {
         if (message == null) {
             return false;
         }
-        
+
         String content = message.getContent();
         Object data = message.getData();
-        
+
         // 匹配 /switch 命令或包含AgentMarkdownDocument数据的消息
         return (content != null && content.trim().toLowerCase().startsWith("/switch")) ||
-               (data != null && data instanceof AgentMarkdownDocument);
+                (data != null && data instanceof AgentMarkdownDocument);
     }
 
     @Override
@@ -49,22 +49,22 @@ public class SwitchAgentCommand extends RoleBaseCommand {
     public void execute(Message message, FluxSink<String> sink, String from, ReactorRole role) {
         try {
             Object data = message.getData();
-            
+
             // 处理包含AgentMarkdownDocument数据的消息
             if (data instanceof AgentMarkdownDocument md) {
                 handleAgentMarkdownDocument(message, sink, from, role, md);
                 return;
             }
-            
+
             // 处理 /switch 命令
             String content = message.getContent();
             if (content != null && content.trim().toLowerCase().startsWith("/switch")) {
                 handleSwitchCommand(message, sink, from, role, content);
                 return;
             }
-            
+
             sendErrorAndComplete(sink, "无效的切换命令格式");
-            
+
         } catch (Exception e) {
             log.error("处理切换agent命令失败: {}", e.getMessage(), e);
             sendErrorAndComplete(sink, "切换agent失败: " + e.getMessage());
@@ -81,31 +81,31 @@ public class SwitchAgentCommand extends RoleBaseCommand {
                 message.setData(tmp);
                 // 放入到配置中
                 role.getRoleConfig().put(Const.AGENT_CONFIG, GsonUtils.gson.toJson(tmp));
-                
+
                 // 只是切换agent,不需要下发指令
                 if (message.getContent().equals(Const.SWITCH_AGENT)) {
-                    sendMessages(sink, 
-                        "🔄 正在切换Agent配置...\n",
-                        String.format("📋 已加载配置文件: %s\n", md.getFileName()),
-                        "✅ Agent切换完毕\n"
+                    sendMessages(sink,
+                            "🔄 正在切换Agent配置...\n",
+                            String.format("📋 已加载配置文件: %s\n", md.getFileName()),
+                            "✅ Agent切换完毕\n"
                     );
                     sink.complete();
                     return;
                 }
-                
+
                 // 如果不是纯切换命令，继续处理消息
-                sendMessages(sink, 
-                    "🔄 已加载Agent配置文件: " + md.getFileName() + "\n",
-                    "💡 配置已更新，继续处理您的消息...\n"
+                sendMessages(sink,
+                        "🔄 已加载Agent配置文件: " + md.getFileName() + "\n",
+                        "💡 配置已更新，继续处理您的消息...\n"
                 );
-                
+
                 // 将消息传递给role处理
                 role.putMessage(message);
-                
+
             } else {
                 sendErrorAndComplete(sink, "无法加载Agent配置文件: " + md.getFileName());
             }
-            
+
         } catch (Exception e) {
             log.error("处理AgentMarkdownDocument失败: {}", e.getMessage(), e);
             sendErrorAndComplete(sink, "处理Agent配置失败: " + e.getMessage());
@@ -140,26 +140,25 @@ public class SwitchAgentCommand extends RoleBaseCommand {
                 // 更新消息数据和内容
                 message.setData(tmp);
                 message.setContent(Const.SWITCH_AGENT);
-                
+
                 // 放入到配置中
                 role.getRoleConfig().put(Const.AGENT_CONFIG, GsonUtils.gson.toJson(tmp));
-                
+
                 sendMessages(sink,
-                    "🔄 正在切换Agent配置...\n",
-                    String.format("📋 已加载配置文件: %s\n", fileName),
-                    "✅ Agent切换完毕\n"
+                        "🔄 正在切换Agent配置...\n",
+                        String.format("📋 已加载配置文件: %s\n", fileName),
+                        "✅ Agent切换完毕\n"
                 );
-                
+
                 log.info("成功切换Agent配置, from: {}, fileName: {}", from, fileName);
             } else {
                 sendErrorAndComplete(sink, "无法找到或加载配置文件: " + fileName);
             }
-            
-            sink.complete();
-            
         } catch (Exception e) {
             log.error("处理switch命令失败: {}", e.getMessage(), e);
             sendErrorAndComplete(sink, "切换Agent配置失败: " + e.getMessage());
+        } finally {
+            sink.complete();
         }
     }
 
