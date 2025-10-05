@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.hub;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -76,18 +77,25 @@ public class McpHub {
 
     private void ping() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() ->{
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> {
                 value.getClient().ping();
-                }, ex -> {
+            }, ex -> {
                 if (null == ex) {
                     value.setErrorNum(0);
                 } else {
                     //发生错误了
                     value.setErrorNum(value.getErrorNum() + 1);
                     if (value.getErrorNum() >= 3) {
-                        this.connections.remove(key);
-                        value.getTransport().close();
-                        McpHubHolder.remove(key);
+                        value.setErrorNum(0);
+                        McpConnection conn = this.connections.get(key);
+                        Safe.run(() -> {
+                            value.getTransport().close();
+                        });
+                        //尝试再连接过去
+                        String name = conn.getServer().getName();
+                        ServerParameters params = conn.getServer().getServerParameters();
+                        log.info("reconnect:{}", name);
+                        updateServerConnections(ImmutableMap.of(name,params));
                     }
                 }
             })));
@@ -198,7 +206,7 @@ public class McpHub {
                 } catch (Exception e) {
                     log.error("Failed to connect to new MCP server " + name + ": " + e.getMessage());
                 }
-            } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
+            } else {
                 // Existing server with changed config
                 try {
                     deleteConnection(name);
@@ -289,7 +297,7 @@ public class McpHub {
             server.setStatus("disconnected");
             server.setError(e.getMessage());
             // Clean up failed connection
-            connections.remove(name);
+//            connections.remove(name);
             try {
                 transport.closeGracefully();
                 client.closeGracefully();
