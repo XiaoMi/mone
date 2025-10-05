@@ -1,10 +1,15 @@
 package run.mone.hive.mcp.service.command;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 创建Role命令处理类
@@ -43,8 +48,6 @@ public class CreateRoleCommand extends RoleBaseCommand {
     @Override
     public void execute(Message message, FluxSink<String> sink, String from, ReactorRole role) {
         try {
-            sink.next("🔄 正在创建新的Role实例...\n");
-
             // 创建新的role
             ReactorRole newRole = roleService.createRole(message);
             
@@ -52,28 +55,53 @@ public class CreateRoleCommand extends RoleBaseCommand {
                 // 将新创建的role添加到roleMap中
                 roleService.getRoleMap().put(from, newRole);
                 
-                sendMessages(sink,
-                    "✅ Role创建成功！\n",
-                    String.format("📋 Role信息:\n"),
-                    String.format("  - Owner: %s\n", from),
-                    String.format("  - ClientId: %s\n", message.getClientId()),
-                    String.format("  - UserId: %s\n", message.getUserId()),
-                    String.format("  - AgentId: %s\n", message.getAgentId()),
-                    String.format("  - AgentName: %s\n", roleService.getAgentName()),
-                    "💡 Role已准备就绪，可以开始对话了！\n"
-                );
+                // 构建成功响应
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "Role创建成功");
+                response.put("timestamp", System.currentTimeMillis());
+                
+                // 添加Role详细信息
+                Map<String, Object> data = new HashMap<>();
+                data.put("owner", from);
+                data.put("clientId", message.getClientId());
+                data.put("userId", message.getUserId());
+                data.put("agentId", message.getAgentId());
+                data.put("agentName", roleService.getAgentName());
+                data.put("status", "ready");
+                response.put("data", data);
+                
+                // 格式化输出
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                String jsonResponse = gson.toJson(response);
+                
+                sendSuccessAndComplete(sink, jsonResponse);
                 
                 log.info("成功创建新的Role实例, from: {}, clientId: {}", from, message.getClientId());
             } else {
-                sendMessages(sink, "❌ Role创建失败，请检查系统配置\n");
+                // 构建失败响应
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Role创建失败，请检查系统配置");
+                errorResponse.put("timestamp", System.currentTimeMillis());
+                
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                sendErrorAndComplete(sink, gson.toJson(errorResponse));
+                
                 log.error("创建Role失败, from: {}", from);
             }
-            
-            sink.complete();
 
         } catch (Exception e) {
             log.error("处理创建role命令失败: {}", e.getMessage(), e);
-            sendErrorAndComplete(sink, "创建Role失败: " + e.getMessage());
+            
+            // 构建异常响应
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "创建Role失败: " + e.getMessage());
+            errorResponse.put("timestamp", System.currentTimeMillis());
+            
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            sendErrorAndComplete(sink, gson.toJson(errorResponse));
         }
     }
 

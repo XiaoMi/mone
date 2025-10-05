@@ -282,3 +282,4 @@ EmbedderConfig config = EmbedderConfig.builder()
 ```
 
 这样就完成了GLM嵌入模型的完整实现和文档。
+

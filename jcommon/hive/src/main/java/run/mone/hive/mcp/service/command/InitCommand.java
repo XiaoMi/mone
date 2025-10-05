@@ -76,6 +76,8 @@ public class InitCommand extends RoleBaseCommand {
         } catch (Exception e) {
             log.error("处理init命令失败: {}", e.getMessage(), e);
             sendErrorAndComplete(sink, "执行init命令失败: " + e.getMessage());
+        } finally {
+            sink.complete();
         }
     }
 

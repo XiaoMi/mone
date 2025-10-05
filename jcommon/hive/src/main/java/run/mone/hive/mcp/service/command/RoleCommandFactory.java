@@ -1,13 +1,16 @@
 package run.mone.hive.mcp.service.command;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -32,6 +35,9 @@ public class RoleCommandFactory {
         registerCommand(new SwitchAgentCommand(roleService));
         registerCommand(new InitCommand(roleService));
         registerCommand(new PingCommand(roleService));
+        
+        // 自动扫描和注册带@RoleCommand注解的命令
+        scanAndRegisterAnnotatedCommands(roleService);
     }
 
     /**
@@ -45,27 +51,109 @@ public class RoleCommandFactory {
     }
 
     /**
+     * 扫描并注册带@RoleCommand注解的命令
+     *
+     * @param roleService RoleService实例
+     */
+    private void scanAndRegisterAnnotatedCommands(RoleService roleService) {
+        try {
+            if (!ApplicationContextHolder.isInitialized()) {
+                log.warn("ApplicationContext未初始化，跳过自动扫描命令");
+                return;
+            }
+
+            ApplicationContext applicationContext = ApplicationContextHolder.getApplicationContext();
+            Map<String, Object> commandBeans = applicationContext.getBeansWithAnnotation(RoleCommand.class);
+
+            List<RoleBaseCommand> annotatedCommands = new ArrayList<>();
+            
+            for (Object bean : commandBeans.values()) {
+                if (bean instanceof RoleBaseCommand) {
+                    RoleBaseCommand command = (RoleBaseCommand) bean;
+                    annotatedCommands.add(command);
+                    
+                    RoleCommand annotation = bean.getClass().getAnnotation(RoleCommand.class);
+                    log.info("发现带@RoleCommand注解的命令: {} - {} (priority: {})", 
+                            annotation.value().isEmpty() ? command.getCommandName() : annotation.value(),
+                            annotation.description().isEmpty() ? command.getCommandDescription() : annotation.description(),
+                            annotation.priority());
+                }
+            }
+
+            // 按优先级排序，优先级数值越小越靠前
+            annotatedCommands.sort(Comparator.comparingInt(cmd -> 
+                    cmd.getClass().getAnnotation(RoleCommand.class).priority()));
+
+            // 注册排序后的命令
+            for (RoleBaseCommand command : annotatedCommands) {
+                // 避免重复注册（如果已经手动注册过）
+                boolean alreadyRegistered = commands.stream()
+                        .anyMatch(existingCmd -> existingCmd.getClass().equals(command.getClass()));
+                
+                if (!alreadyRegistered) {
+                    registerCommand(command);
+                    log.info("自动注册Role命令: {}", command.getCommandName());
+                } else {
+                    log.debug("命令已存在，跳过注册: {}", command.getCommandName());
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("扫描和注册带注解的命令失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * 查找匹配的命令（基于Message）
+     * 按优先级排序，优先级高的命令优先匹配
      *
      * @param message 用户输入的消息
      * @return 匹配的命令，如果没有找到则返回空
      */
     public Optional<RoleBaseCommand> findCommand(Message message) {
         return commands.stream()
+                .sorted(this::compareCommandPriority)
                 .filter(command -> command.matches(message))
                 .findFirst();
     }
 
     /**
      * 查找匹配的命令（基于字符串内容）
+     * 按优先级排序，优先级高的命令优先匹配
      *
      * @param content 消息内容
      * @return 匹配的命令，如果没有找到则返回空
      */
     public Optional<RoleBaseCommand> findCommand(String content) {
         return commands.stream()
+                .sorted(this::compareCommandPriority)
                 .filter(command -> command.matches(content))
                 .findFirst();
+    }
+
+    /**
+     * 比较命令优先级
+     * 有@RoleCommand注解的按priority排序，没有注解的按默认优先级100处理
+     *
+     * @param cmd1 命令1
+     * @param cmd2 命令2
+     * @return 比较结果
+     */
+    private int compareCommandPriority(RoleBaseCommand cmd1, RoleBaseCommand cmd2) {
+        int priority1 = getPriority(cmd1);
+        int priority2 = getPriority(cmd2);
+        return Integer.compare(priority1, priority2);
+    }
+
+    /**
+     * 获取命令的优先级
+     *
+     * @param command 命令
+     * @return 优先级
+     */
+    private int getPriority(RoleBaseCommand command) {
+        RoleCommand annotation = command.getClass().getAnnotation(RoleCommand.class);
+        return annotation != null ? annotation.priority() : 100; // 默认优先级100
     }
 
     /**
