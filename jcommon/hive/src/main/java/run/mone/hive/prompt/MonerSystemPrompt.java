@@ -402,6 +402,12 @@ public class MonerSystemPrompt {
             <% } %>
             
             
+            请记住这三个参数必须提供:  
+            <server_name>
+            <tool_name>
+            <arguments>
+            
+            
             ====
             
             RULES
