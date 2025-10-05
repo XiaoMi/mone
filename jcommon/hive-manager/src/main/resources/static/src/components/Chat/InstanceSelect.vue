@@ -14,6 +14,23 @@
           :value="item.ip"
         />
       </el-select>
+      
+      <!-- Agent选择器 -->
+      <el-select
+        v-if="Object.keys(agentList).length > 0"
+        v-model="selectedAgentKey"
+        placeholder="请选择Agent"
+        class="agent-select"
+        popper-class="instance-select-popper"
+        @change="handleAgentChange"
+      >
+        <el-option
+          v-for="(name, key) in agentList"
+          :key="key"
+          :label="name"
+          :value="key"
+        />
+      </el-select>
       <div class="right-btns">
         <el-tooltip class="instance-select-tooltip" effect="dark" content="配置" placement="top">
           <el-icon size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"
@@ -104,9 +121,27 @@ import {
   type AgentConfig,
   deleteAgentConfig,
 } from '@/api/agent'
+import { useAgentConfigStore } from '@/stores/agent-config'
 
 const { getInstance, setSelectedInstance } = useUserStore()
 const { setMessageList, tokenUsage, resetTokenUsage } = useChatContextStore()
+const agentConfigStore = useAgentConfigStore()
+
+const selectedAgentKey = computed({
+  get() {
+    return agentConfigStore.selectedAgentKey
+  },
+  set(value) {
+    agentConfigStore.setSelectedAgent(value)
+  }
+})
+
+const agentList = computed(() => {
+  const list = agentConfigStore.agentList
+  console.log('agentList computed:', list)
+  return list
+})
+
 const selectedIp = ref('')
 const  calToken = computed(() => {
   if (tokenUsage.inputTokens + tokenUsage.outputTokens - tokenUsage.compressedTokens <= 0) return 0
@@ -124,6 +159,10 @@ const props = defineProps({
   onStopMsg: {
     type: Function,
     required: true,
+  },
+  onSwitchAgent: {
+    type: Function,
+    required: false,
   },
 })
 const list = computed(() => {
@@ -268,6 +307,12 @@ const handleSubmitConfig = async () => {
     loading.value = false
   }
 }
+
+const handleAgentChange = (agentKey: string) => {
+  console.log('Agent changed to:', agentKey)
+  agentConfigStore.setSelectedAgent(agentKey)
+  props.onSwitchAgent?.(agentKey)
+}
 </script>
 
 <style>
@@ -302,27 +347,86 @@ const handleSubmitConfig = async () => {
 }
 
 .instance-select .ip-select {
-  width: 200px;
-  margin: 6px 12px;
+  width: 220px;
+  margin: 8px 16px;
   border: none !important;
   background-color: transparent;
 }
 
-.instance-select .el-select__wrapper {
+.instance-select .agent-select {
+  width: 200px;
+  margin: 8px 16px;
+  border: none !important;
   background-color: transparent;
+}
+
+.instance-select .el-select {
+  --el-select-border-color-hover: rgba(255, 255, 255, 0.3);
+  --el-select-input-focus-border-color: rgba(64, 158, 255, 0.8);
+}
+
+.instance-select .el-select__wrapper {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
   box-shadow: none !important;
-  border: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 36px;
 }
 
 .instance-select .el-select__wrapper:hover {
-  border-color: transparent;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.instance-select .el-select__wrapper.is-focused {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(64, 158, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .instance-select .el-input__inner {
   color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  height: 34px;
+  line-height: 34px;
 }
+
+.instance-select .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
 .instance-select .el-select__selected-item {
-  color: #fff;
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.instance-select .el-select__selection .el-select__selected-item {
+  color: #fff !important;
+}
+
+.instance-select .el-input__wrapper .el-input__inner {
+  color: #fff !important;
+}
+
+.instance-select .el-select .el-input .el-input__inner {
+  color: #fff !important;
+}
+
+.instance-select .el-select__caret {
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.instance-select .el-select__wrapper:hover .el-select__caret {
+  color: rgba(255, 255, 255, 0.9);
 }
 .instance-select-popper {
   border: none !important;
