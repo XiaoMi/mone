@@ -4,6 +4,7 @@
       :onClearHistory="onClearHistory"
       :onOffline="onOffline"
       :onStopMsg="onStopMsg"
+      :onSwitchAgent="onSwitchAgent"
     />
     <MessageList
       :messages="messages"
@@ -136,6 +137,10 @@ export default {
     onStopMsg: {
       type: Function,
       required: true,
+    },
+    onSwitchAgent: {
+      type: Function,
+      required: false,
     },
   },
   data() {

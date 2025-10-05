@@ -16,6 +16,7 @@
       :onClearHistory="onClearHistory"
       :onOffline="onOfflineAgent"
       :onStopMsg="onStopMsg"
+      :onSwitchAgent="sendSwitchAgentCommand"
       @pidAction="onPidAction"
       @onClick2Conversion="onClick2Conversion"
     />
@@ -35,6 +36,7 @@ import { fluxCodeHandler } from '@/components/Chat/common/result-code'
 import { useTheme } from '@/styles/theme/useTheme'
 import { useFunctionPanelStore } from '@/stores/function-panel'
 import { useEditStore } from '@/stores/edit'
+import { useAgentConfigStore } from '@/stores/agent-config'
 const route = useRoute()
 const {
   getChatContext,
@@ -50,6 +52,7 @@ const {
 const { user, setAgent, setInstance, getSelectedInstance, getAgent } = useUserStore()
 const functionPanelStore = useFunctionPanelStore()
 const { setShowFollow } = useEditStore()
+const { setAgentConfig, clearAgentConfig } = useAgentConfigStore()
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string)
 const messageId = ref<string>('')
@@ -303,47 +306,135 @@ const sendCreateCommand = async () => {
       __rag__: functionPanelStore.ragEnabled || false,
     }
     
-    if (sendMethod.value === 'sse') {
-      // sse发送消息
-      streamChat(
-        {
-          mapData: {
-            outerTag: 'use_mcp_tool',
-            server_name: `${agent.name}:${agent.group}:${agent.version}:${
-              getSelectedInstance().ip
-            }:${getSelectedInstance().port}`,
-            tool_name: getAgentName(),
-            arguments: JSON.stringify(params),
-          },
-          conversationId: route.query.conversationId,
-          agentId: route.query.serverAgentId,
-          agentInstance: getSelectedInstance(),
+    // sse发送消息
+    await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
         },
-        (data: any) => {
-          if (data) {
-            throttledFluxCodeHandler(data, messageId.value)
-          }
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      (data: any) => {
+        if (data) {
+          throttledFluxCodeHandler(data, messageId.value)
         }
-      )
-    } else {
-      // ws发送消息
-      socket.value?.send(
-        JSON.stringify({
-          mapData: {
-            outerTag: 'use_mcp_tool',
-            server_name: `${agent.name}:${agent.group}:${agent.version}:${
-              getSelectedInstance().ip
-            }:${getSelectedInstance().port}`,
-            tool_name: getAgentName(),
-            arguments: JSON.stringify(params),
-          },
-          agentId: route.query.serverAgentId,
-          agentInstance: getSelectedInstance(),
-        })
-      )
-    }
+      }
+    )
+    
+    // 发送完/create后，延迟发送/config命令
+    setTimeout(() => {
+      sendConfigCommand()
+    }, 0)
   } catch (error) {
     console.error('发送/create命令失败:', error)
+  }
+}
+
+const sendConfigCommand = async () => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return
+    }
+    
+    const params = {
+      message: '/config',
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+    
+    // sse发送消息
+    const response = await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      () => {}
+    )
+    console.log('config response>>', response)
+    handleConfigResponse(response.data)
+  } catch (error) {
+    console.error('发送/config命令失败:', error)
+  }
+}
+
+const handleConfigResponse = (data: string) => {
+  try {
+    // 先处理消息显示
+    // throttledFluxCodeHandler(data, configMessageId)
+    
+    // 提取tool_result标签中的JSON数据
+    const toolResultMatch = data.match(/<tool_result>([\s\S]*?)<\/tool_result>/)
+    if (toolResultMatch) {
+      const jsonData = JSON.parse(toolResultMatch[1].trim())
+      if (jsonData.success && jsonData.data && jsonData.data.systemInfo && jsonData.data.systemInfo.agentList) {
+        // 保存agent配置到store
+        setAgentConfig(jsonData.data)
+        console.log('Agent配置已保存:', jsonData.data.systemInfo.agentList)
+      }
+    }
+  } catch (error) {
+    console.error('处理/config响应失败:', error)
+  }
+}
+
+const sendSwitchAgentCommand = async (agentKey: string) => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return
+    }
+    
+    messageId.value = uuidv4()
+    const params = {
+      message: `/switch ${agentKey}`,
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+    
+    // sse发送消息
+    await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      (data: any) => {
+        if (data) {
+          throttledFluxCodeHandler(data, messageId.value)
+        }
+      }
+    )
+  } catch (error) {
+    console.error('发送/switch命令失败:', error)
   }
 }
 
@@ -548,6 +639,7 @@ onBeforeUnmount(() => {
   setInstance(null)
   initCodePrompt()
   resetTokenUsage()
+  clearAgentConfig()
 })
 
 // 获取主题
@@ -578,7 +670,9 @@ onMounted(async () => {
       // toggleSendMethod('ws')
       
       // 自动发送/create命令
-      // await sendCreateCommand()
+      setTimeout(async () => {
+        await sendCreateCommand()
+      }, 1000);
     }
   } catch (error) {
     console.error('获取Agent详情失败:', error)
