@@ -17,6 +17,8 @@
       :onOffline="onOfflineAgent"
       :onStopMsg="onStopMsg"
       :onSwitchAgent="sendSwitchAgentCommand"
+      :onRefreshMcp="sendRefreshMcpCommand"
+      :onSwitchLlm="sendSwitchLlmCommand"
       @pidAction="onPidAction"
       @onClick2Conversion="onClick2Conversion"
     />
@@ -321,11 +323,7 @@ const sendCreateCommand = async () => {
         agentId: route.query.serverAgentId,
         agentInstance: getSelectedInstance(),
       },
-      (data: any) => {
-        if (data) {
-          throttledFluxCodeHandler(data, messageId.value)
-        }
-      }
+      () => {}
     )
     
     // 发送完/create后，延迟发送/config命令
@@ -385,10 +383,11 @@ const handleConfigResponse = (data: string) => {
     const toolResultMatch = data.match(/<tool_result>([\s\S]*?)<\/tool_result>/)
     if (toolResultMatch) {
       const jsonData = JSON.parse(toolResultMatch[1].trim())
-      if (jsonData.success && jsonData.data && jsonData.data.systemInfo && jsonData.data.systemInfo.agentList) {
+      if (jsonData.success && jsonData.data) {
         // 保存agent配置到store
         setAgentConfig(jsonData.data)
-        console.log('Agent配置已保存:', jsonData.data.systemInfo.agentList)
+        console.log('Agent配置已保存:', jsonData.data.systemInfo?.agentList)
+        console.log('LLM选项已保存:', jsonData.data.llmOptions)
       }
     }
   } catch (error) {
@@ -435,6 +434,90 @@ const sendSwitchAgentCommand = async (agentKey: string) => {
     )
   } catch (error) {
     console.error('发送/switch命令失败:', error)
+  }
+}
+
+const sendRefreshMcpCommand = async () => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return
+    }
+    
+    messageId.value = uuidv4()
+    const params = {
+      message: '/mcp refresh docker_manager',
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+    
+    // sse发送消息
+    await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      (data: any) => {
+        if (data) {
+          throttledFluxCodeHandler(data, messageId.value)
+        }
+      }
+    )
+  } catch (error) {
+    console.error('发送/mcp refresh命令失败:', error)
+  }
+}
+
+const sendSwitchLlmCommand = async (llmKey: string) => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return
+    }
+    
+    messageId.value = uuidv4()
+    const params = {
+      message: `/config put llm=${llmKey}`,
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+    
+    // sse发送消息
+    await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      (data: any) => {
+        if (data) {
+          throttledFluxCodeHandler(data, messageId.value)
+        }
+      }
+    )
+  } catch (error) {
+    console.error('发送/config put llm命令失败:', error)
   }
 }
 

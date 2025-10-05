@@ -5,6 +5,8 @@
       :onOffline="onOffline"
       :onStopMsg="onStopMsg"
       :onSwitchAgent="onSwitchAgent"
+      :onRefreshMcp="onRefreshMcp"
+      :onSwitchLlm="onSwitchLlm"
     />
     <MessageList
       :messages="messages"
@@ -139,6 +141,14 @@ export default {
       required: true,
     },
     onSwitchAgent: {
+      type: Function,
+      required: false,
+    },
+    onRefreshMcp: {
+      type: Function,
+      required: false,
+    },
+    onSwitchLlm: {
       type: Function,
       required: false,
     },
