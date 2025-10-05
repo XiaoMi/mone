@@ -464,6 +464,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
 
+        objectMap.remove(Const.ROLE);
+
         Map<String, String> stringMap = objectMap.entrySet().stream()
                 .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
                 .collect(Collectors.toMap(

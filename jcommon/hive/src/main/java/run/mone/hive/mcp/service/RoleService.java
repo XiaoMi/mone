@@ -248,6 +248,12 @@ public class RoleService {
         });
     }
 
+    public void refreshMcp(List<String> list, ReactorRole role) {
+        role.getMcpHub().dispose();
+        McpHub hub = updateMcpConnections(list, role.getClientId());
+        role.setMcpHub(hub);
+    }
+
 
     @SneakyThrows
     public AgentMarkdownDocument getMarkdownDocument(AgentMarkdownDocument document, ReactorRole role) {
