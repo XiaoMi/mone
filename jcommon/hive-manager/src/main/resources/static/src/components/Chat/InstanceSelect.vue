@@ -86,6 +86,7 @@
             </svg>
           </el-icon>
         </el-tooltip>
+        <McpManager v-if="onExecuteMcpCommand" :onExecuteMcpCommand="onExecuteMcpCommand" />
         <el-tooltip
           class="instance-select-tooltip"
           effect="dark"
@@ -152,6 +153,8 @@
           </span>
         </template>
       </el-dialog>
+
+
     </div>
     <TokenUsage :used-tokens="calToken" :total-tokens="tokenUsage.totalTokens" />
   </div>
@@ -163,14 +166,29 @@ import { useUserStore } from '@/stores/user'
 import { computed, ref, watch, watchEffect } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useChatContextStore } from '@/stores/chat-context'
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, Delete } from '@element-plus/icons-vue'
 import {
   getAgentConfigs,
   setBatchAgentConfig,
-  type AgentConfig,
   deleteAgentConfig,
 } from '@/api/agent'
 import { useAgentConfigStore } from '@/stores/agent-config'
+import McpManager from './McpManager.vue'
+
+// Components
+defineOptions({
+  components: {
+    McpManager,
+  },
+})
+
+// 定义实例接口
+interface Instance {
+  id: string
+  ip: string
+  port: number
+  agentId?: string
+}
 
 const { getInstance, setSelectedInstance } = useUserStore()
 const { setMessageList, tokenUsage, resetTokenUsage } = useChatContextStore()
@@ -236,6 +254,10 @@ const props = defineProps({
     type: Function,
     required: false,
   },
+  onExecuteMcpCommand: {
+    type: Function,
+    required: false,
+  },
 })
 const list = computed(() => {
   return getInstance()
@@ -244,7 +266,7 @@ const list = computed(() => {
 watch(
   () => selectedIp.value,
   (newIp) => {
-    setSelectedInstance(list.value?.find((item: any) => item.ip === newIp))
+    setSelectedInstance(list.value?.find((item: Instance) => item.ip === newIp))
   }
 )
 
@@ -286,7 +308,7 @@ const configList = ref<Array<{ key: string; value: string }>>([])
 const loading = ref(false)
 
 const handleOpenConfig = async () => {
-  const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value)
+  const selectedInstance = getInstance()?.find((item: Instance) => item.ip === selectedIp.value)
   if (!selectedInstance?.agentId) {
     ElMessage.error('未找到当前实例对应的Agent')
     return
@@ -326,7 +348,7 @@ const removeConfig = async (index: number) => {
       type: 'warning',
     })
 
-    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value)
+    const selectedInstance = getInstance()?.find((item: Instance) => item.ip === selectedIp.value)
     if (!selectedInstance?.agentId) {
       ElMessage.error('未找到当前实例对应的Agent')
       return
@@ -355,7 +377,7 @@ const handleSubmitConfig = async () => {
     return
   }
 
-  const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value)
+  const selectedInstance = getInstance()?.find((item: Instance) => item.ip === selectedIp.value)
   if (!selectedInstance?.agentId) {
     ElMessage.error('未找到当前实例对应的Agent')
     return
@@ -396,6 +418,8 @@ const handleLlmChange = (llmKey: string) => {
   agentConfigStore.setSelectedLlm(llmKey)
   props.onSwitchLlm?.(llmKey)
 }
+
+
 </script>
 
 <style>
