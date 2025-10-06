@@ -170,9 +170,6 @@ public class ReactorRole extends Role {
 
     public void unreg(RegInfo regInfo) {
         log.info("unreg info:{}", regInfo);
-
-
-
     }
 
     public void health(HealthInfo healthInfo) {
@@ -254,7 +251,6 @@ public class ReactorRole extends Role {
             this.fileCheckpointManager = new FileCheckpointManager(this.workspacePath);
         } catch (Exception e) {
             log.error("Failed to initialize FileCheckpointManager", e);
-            // 如果检查点管理器初始化失败，可能需要抛出异常或禁用相关功能
         }
     }
 
@@ -301,10 +297,10 @@ public class ReactorRole extends Role {
     @Override
     protected void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
-        
+
         // 保存配置到HiveManager
         saveConfigToHiveManager();
-        
+
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
 
@@ -314,7 +310,7 @@ public class ReactorRole extends Role {
     private void saveConfigToHiveManager() {
         Safe.run(() -> {
             if (hiveManagerService != null) {
-                hiveManagerService.saveRoleConfig(roleConfig, workspacePath);
+                hiveManagerService.saveRoleConfig(roleConfig, workspacePath, this.getConfg().getAgentId(), this.getConfg().getUserId());
             } else {
                 log.debug("HiveManagerService is null, skipping config save");
             }

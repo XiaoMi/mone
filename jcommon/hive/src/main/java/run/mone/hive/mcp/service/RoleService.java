@@ -228,6 +228,8 @@ public class RoleService {
         //加载配置(从 agent manager获取来的)
         updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
 
+        role.getConfg().setAgentId(agentId);
+        role.getConfg().setUserId(userId);
         //一直执行不会停下来
         role.run();
         return role;

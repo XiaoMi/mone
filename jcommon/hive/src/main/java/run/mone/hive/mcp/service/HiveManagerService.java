@@ -255,15 +255,12 @@ public class HiveManagerService {
      * @param workspacePath 工作区路径
      * @return 保存结果
      */
-    public boolean saveRoleConfig(Map<String, String> roleConfig, String workspacePath) {
+    public boolean saveRoleConfig(Map<String, String> roleConfig, String workspacePath,String agentIdStr, String userIdStr) {
         if (roleConfig == null || roleConfig.isEmpty()) {
             log.debug("RoleConfig is empty, skipping config save");
             return false;
         }
 
-        // 从配置中获取agentId和userId
-        String agentIdStr = roleConfig.getOrDefault("agentId", "");
-        String userIdStr = roleConfig.getOrDefault("userId", "");
 
         if (agentIdStr.isEmpty() || userIdStr.isEmpty()) {
             log.debug("No agentId or userId found in roleConfig, skipping config save");
