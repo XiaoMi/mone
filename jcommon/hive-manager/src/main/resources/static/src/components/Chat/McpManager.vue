@@ -34,22 +34,65 @@
         <div class="mcp-section">
           <div class="section-header">
             <h3>MCP服务列表</h3>
-            <el-button type="primary" size="small" @click="handleMcpList">
+            <el-button type="primary" size="small" @click="handleMcpList" :loading="isFetchingServers">
               <el-icon><Refresh /></el-icon>
               刷新列表
             </el-button>
           </div>
           <div class="mcp-servers-list">
-            <el-empty v-if="mcpServers.length === 0" description="暂无MCP服务" />
-            <div v-else class="server-list">
-              <div v-for="server in mcpServers" :key="server" class="server-item">
-                <span class="server-name">{{ server }}</span>
+            <div class="add-server">
+              <el-input
+                v-model="newServerName"
+                size="small"
+                placeholder="请输入 MCP 服务名称"
+                clearable
+                @keyup.enter="handleMcpAdd"
+              />
+              <el-button
+                type="primary"
+                size="small"
+                :disabled="!canSubmitNewServer || isAddingServer"
+                :loading="isAddingServer"
+                @click="handleMcpAdd"
+              >
+                添加服务
+              </el-button>
+            </div>
+            <el-empty v-if="!mcpServers.length && !isFetchingServers" description="暂无MCP服务" />
+            <div v-else class="server-list" v-loading="isFetchingServers">
+              <div v-for="server in mcpServers" :key="server.name" class="server-item">
+                <div class="server-meta">
+                  <span class="server-name">{{ server.name }}</span>
+                  <div class="server-stats" v-if="server.toolsCount !== undefined || server.status">
+                    <span v-if="server.toolsCount !== undefined" class="server-tools">
+                      工具数：{{ server.toolsCount }}
+                    </span>
+                    <el-tag
+                      v-if="server.status"
+                      size="small"
+                      effect="dark"
+                      :type="getStatusTagType(server.status)"
+                    >
+                      {{ formatStatusLabel(server.status) }}
+                    </el-tag>
+                  </div>
+                </div>
                 <div class="server-actions">
-                  <el-button size="small" type="warning" @click="handleMcpRefresh(server)">
+                  <el-button
+                    size="small"
+                    type="success"
+                    @click="handleMcpRefresh(server.name)"
+                    :loading="isServerLoading(server.name, 'refresh')"
+                  >
                     <el-icon><Refresh /></el-icon>
-                    刷新
+                    添加/刷新
                   </el-button>
-                  <el-button size="small" type="danger" @click="handleMcpDelete(server)">
+                  <el-button
+                    size="small"
+                    type="danger"
+                    @click="handleMcpDelete(server.name)"
+                    :loading="isServerLoading(server.name, 'delete')"
+                  >
                     <el-icon><Delete /></el-icon>
                     删除
                   </el-button>
@@ -59,51 +102,15 @@
           </div>
         </div>
         
-        <!-- 批量操作 -->
-        <div class="mcp-section">
-          <div class="section-header">
-            <h3>批量操作</h3>
-          </div>
-          <div class="batch-actions">
-            <el-button type="success" @click="handleMcpRefreshAll">
-              <el-icon><Refresh /></el-icon>
-              刷新所有MCP服务
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 命令执行日志 -->
-        <div class="mcp-section">
-          <div class="section-header">
-            <h3>执行日志</h3>
-            <el-button size="small" @click="clearMcpLogs">
-              <el-icon><Delete /></el-icon>
-              清空日志
-            </el-button>
-          </div>
-          <div class="mcp-logs">
-            <div v-if="mcpLogs.length === 0" class="empty-logs">暂无执行日志</div>
-            <div v-else class="logs-container">
-              <div 
-                v-for="(log, index) in mcpLogs" 
-                :key="index" 
-                class="log-item"
-                :class="log.type"
-              >
-                <span class="log-time">{{ log.time }}</span>
-                <span class="log-message">{{ log.message }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { computed, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Delete } from '@element-plus/icons-vue'
 
 // Props定义
@@ -114,44 +121,198 @@ const props = defineProps({
   },
 })
 
-// 响应式数据
-const mcpConfigDrawerVisible = ref(false)
-const mcpServers = ref<string[]>([])
-const mcpLogs = ref<Array<{ time: string; message: string; type: 'success' | 'error' | 'info' }>>([])
-
-// MCP日志管理
-const addMcpLog = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-  const now = new Date()
-  const time = now.toLocaleTimeString()
-  mcpLogs.value.unshift({ time, message, type })
-  // 最多保留100条日志
-  if (mcpLogs.value.length > 100) {
-    mcpLogs.value = mcpLogs.value.slice(0, 100)
-  }
+interface McpCommandResult {
+  success: boolean
+  output?: string
+  error?: string
 }
 
-const clearMcpLogs = () => {
-  mcpLogs.value = []
-  addMcpLog('日志已清空', 'info')
+interface McpServer {
+  name: string
+  toolsCount?: number
+  status?: string
+}
+
+interface ParsedMcpListResult {
+  servers: McpServer[]
+  message?: string
+  totalCount?: number
+}
+
+// 响应式数据
+const mcpConfigDrawerVisible = ref(false)
+const mcpServers = ref<McpServer[]>([])
+const newServerName = ref('')
+const isAddingServer = ref(false)
+const isFetchingServers = ref(false)
+const serverLoadingMap = ref<Record<string, { refresh: boolean; delete: boolean }>>({})
+
+const canSubmitNewServer = computed(() => newServerName.value.trim().length > 0)
+
+// MCP日志管理（暂时输出至控制台，后续可接入UI）
+const addMcpLog = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const now = new Date().toLocaleTimeString()
+  console.log(`[%cMCP%c ${type}] ${now} ${message}`, 'color:#409EFF;', 'color:inherit;')
 }
 
 // MCP命令执行
-const executeMcpCommand = async (command: string): Promise<{ success: boolean; output: string }> => {
+const executeMcpCommand = async (command: string): Promise<McpCommandResult> => {
   try {
     addMcpLog(`执行命令: ${command}`, 'info')
     
-    const result = await props.onExecuteMcpCommand(command)
-    if (result.success) {
+    const result: McpCommandResult = await props.onExecuteMcpCommand(command)
+    const output = typeof result?.output === 'string' ? result.output : ''
+    const error = typeof result?.error === 'string' ? result.error : undefined
+
+    if (result?.success) {
       addMcpLog(`命令执行成功`, 'success')
     } else {
-      addMcpLog(`命令执行失败: ${result.error || '未知错误'}`, 'error')
+      addMcpLog(`命令执行失败: ${error || '未知错误'}`, 'error')
     }
-    return result
+    return {
+      success: !!result?.success,
+      output,
+      error,
+    }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : '未知错误'
     addMcpLog(`命令执行异常: ${errorMsg}`, 'error')
-    return { success: false, output: errorMsg }
+    return { success: false, output: '', error: errorMsg }
   }
+}
+
+const tryParseJson = (raw: string): Record<string, unknown> | Array<unknown> | null => {
+  if (!raw) return null
+  let payload = raw.trim()
+  if (!payload || payload.startsWith('<')) return null
+
+  if (!payload.startsWith('{') && !payload.startsWith('[')) {
+    const needsClosingBrace = !payload.endsWith('}')
+    payload = `{${payload}${needsClosingBrace ? '}' : ''}`
+  }
+  try {
+    return JSON.parse(payload)
+  } catch (parseError) {
+    console.warn('初次解析JSON失败:', parseError)
+    const jsonMatch = payload.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0])
+      } catch (innerError) {
+        console.warn('解析JSON失败:', innerError)
+      }
+    }
+  }
+  return null
+}
+
+const normalizeServers = (servers: unknown[]): McpServer[] => {
+  return servers
+    .map((server, index) => {
+      if (typeof server === 'string') {
+        return { name: server }
+      }
+      if (server && typeof server === 'object') {
+        const serverObj = server as Record<string, unknown>
+        const name = typeof serverObj.name === 'string' && serverObj.name.trim() ? serverObj.name.trim() : `MCP_${index + 1}`
+        const toolsCount = typeof serverObj.toolsCount === 'number' ? serverObj.toolsCount : undefined
+        const status = typeof serverObj.status === 'string' ? serverObj.status : undefined
+        return { name, toolsCount, status }
+      }
+      return null
+    })
+    .filter((item): item is McpServer => !!item && !!item.name)
+}
+
+const parseMcpListResponse = (rawOutput: string): ParsedMcpListResult => {
+  const fallback: ParsedMcpListResult = { servers: [] }
+  if (!rawOutput?.trim()) {
+    return fallback
+  }
+
+  const candidatePayloads: string[] = []
+  const dataLines = rawOutput
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => !!line)
+
+  dataLines.forEach(line => {
+    if (line.startsWith('data:')) {
+      candidatePayloads.push(line.slice(5).trim())
+    }
+  })
+
+  if (!candidatePayloads.length) {
+    candidatePayloads.push(rawOutput.trim())
+  }
+
+  for (const payload of candidatePayloads) {
+    const parsed = tryParseJson(payload)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const record = parsed as Record<string, unknown>
+      if (Array.isArray(record.servers)) {
+        return {
+          servers: normalizeServers(record.servers),
+          message: typeof record.message === 'string' ? record.message : undefined,
+          totalCount: typeof record.totalCount === 'number' ? record.totalCount : undefined,
+        }
+      }
+    }
+    if (Array.isArray(parsed)) {
+      return {
+        servers: normalizeServers(parsed),
+      }
+    }
+  }
+
+  // Fallback: 提取所有 name 字段
+  const nameMatches = Array.from(rawOutput.matchAll(/"name"\s*:\s*"([^"\\]+)"/g)).map(match => match[1])
+  if (nameMatches.length) {
+    return {
+      servers: nameMatches.map(name => ({ name })),
+    }
+  }
+
+  // 最后尝试按照行拆分
+  const plainNames = rawOutput
+    .replace(/data:/g, '')
+    .split(/[\s,]+/)
+    .map(item => item.replace(/["\[\]{}]/g, '').trim())
+    .filter(item => item && !/^(success|message|totalCount|timestamp|true|false)$/i.test(item) && item.includes('_'))
+
+  if (plainNames.length) {
+    return {
+      servers: plainNames.map(name => ({ name })),
+    }
+  }
+
+  return fallback
+}
+
+const setServerLoading = (name: string, action: 'refresh' | 'delete', value: boolean) => {
+  const prev = serverLoadingMap.value[name] || { refresh: false, delete: false }
+  serverLoadingMap.value = {
+    ...serverLoadingMap.value,
+    [name]: {
+      ...prev,
+      [action]: value,
+    },
+  }
+}
+
+const clearObsoleteServerLoading = (servers: McpServer[]) => {
+  const availableNames = new Set(servers.map(server => server.name))
+  const nextMap: Record<string, { refresh: boolean; delete: boolean }> = {}
+  Object.entries(serverLoadingMap.value).forEach(([name, state]) => {
+    if (availableNames.has(name)) {
+      nextMap[name] = state
+    }
+  })
+  serverLoadingMap.value = nextMap
+}
+
+const isServerLoading = (name: string, action: 'refresh' | 'delete') => {
+  return serverLoadingMap.value[name]?.[action] === true
 }
 
 // MCP管理操作
@@ -162,47 +323,31 @@ const handleOpenMcpConfig = () => {
 }
 
 const handleMcpList = async () => {
+  if (isFetchingServers.value) return
+  isFetchingServers.value = true
   const result = await executeMcpCommand('/mcp list')
-  if (result.success) {
-    try {
-      // 尝试从响应中提取服务器列表
-      const output = result.output
-      if (output) {
-        // 模拟一些常见的MCP服务器用于演示
-        // 实际使用时会根据真实的响应进行解析
-        const mockServers = ['docker_manager', 'file_manager', 'database_manager', 'api_manager']
-        
-        // 如果返回的是JSON格式
-        if (output.includes('{') && output.includes('}')) {
-          const jsonMatch = output.match(/\{[\s\S]*\}/)
-          if (jsonMatch) {
-            const data = JSON.parse(jsonMatch[0])
-            if (data.servers && Array.isArray(data.servers)) {
-              mcpServers.value = data.servers
-              return
-            }
-          }
-        }
-        
-        // 如果返回的是纯文本格式，按行分割
-        const servers = output
-          .split('\n')
-          .filter(line => line.trim() && !line.startsWith('#') && !line.startsWith('//'))
-          .map(line => line.trim())
-          .filter(line => line.length > 0)
-        
-        mcpServers.value = servers.length > 0 ? servers : mockServers
-      } else {
-        // 如果没有输出，使用模拟数据
-        mcpServers.value = ['docker_manager', 'file_manager', 'database_manager']
+
+  try {
+    if (result.success) {
+      const parsed = parseMcpListResponse(result.output || '')
+      mcpServers.value = parsed.servers
+      clearObsoleteServerLoading(parsed.servers)
+
+      if (parsed.message) {
+        addMcpLog(parsed.message, 'info')
       }
-    } catch (error) {
-      addMcpLog(`解析服务器列表失败: ${error}`, 'error')
-      // 解析失败时使用模拟数据
-      mcpServers.value = ['docker_manager', 'file_manager']
+
+      if (!parsed.servers.length) {
+        addMcpLog('未获取到任何MCP服务', 'info')
+      } else {
+        const count = parsed.totalCount ?? parsed.servers.length
+        addMcpLog(`已获取 ${count} 个MCP服务`, 'success')
+      }
     }
-  } else {
-    addMcpLog('获取MCP服务列表失败', 'error')
+  } catch (error) {
+    addMcpLog(`解析服务器列表失败: ${error instanceof Error ? error.message : error}`, 'error')
+  } finally {
+    isFetchingServers.value = false
   }
 }
 
@@ -214,31 +359,78 @@ const handleMcpDelete = async (serverName: string) => {
       type: 'warning',
     })
     
+    setServerLoading(serverName, 'delete', true)
     const result = await executeMcpCommand(`/mcp delete ${serverName}`)
     if (result.success) {
       // 删除成功后刷新列表
+      ElMessage.success(`已删除 MCP 服务 ${serverName}`)
+      addMcpLog(`服务 ${serverName} 已删除`, 'success')
       await handleMcpList()
     }
   } catch {
     // 用户取消操作
     addMcpLog(`取消删除服务: ${serverName}`, 'info')
+  } finally {
+    setServerLoading(serverName, 'delete', false)
   }
 }
 
 const handleMcpRefresh = async (serverName: string) => {
+  setServerLoading(serverName, 'refresh', true)
   const result = await executeMcpCommand(`/mcp refresh ${serverName}`)
   if (result.success) {
     // 刷新成功后更新列表
+    ElMessage.success(`已添加或刷新 MCP 服务 ${serverName}`)
+    addMcpLog(`服务 ${serverName} 添加/刷新成功`, 'success')
     await handleMcpList()
   }
+  setServerLoading(serverName, 'refresh', false)
 }
 
-const handleMcpRefreshAll = async () => {
-  const result = await executeMcpCommand('/mcp refresh all')
-  if (result.success) {
-    // 刷新成功后更新列表
-    await handleMcpList()
+const handleMcpAdd = async () => {
+  if (!canSubmitNewServer.value || isAddingServer.value) {
+    return
   }
+
+  const serverName = newServerName.value.trim()
+  isAddingServer.value = true
+
+  const result = await executeMcpCommand(`/mcp refresh ${serverName}`)
+
+  if (result.success) {
+    ElMessage.success(`已添加 MCP 服务 ${serverName}`)
+    addMcpLog(`添加服务成功: ${serverName}`, 'success')
+    newServerName.value = ''
+    await handleMcpList()
+  } else {
+    ElMessage.error(`添加 MCP 服务失败：${result.error || '未知错误'}`)
+  }
+
+  isAddingServer.value = false
+}
+
+const statusLabelMap: Record<string, string> = {
+  connected: '已连接',
+  connecting: '连接中',
+  disconnected: '已断开',
+  error: '异常',
+  running: '运行中',
+  idle: '空闲',
+}
+
+const getStatusTagType = (status?: string): 'success' | 'info' | 'warning' | 'danger' => {
+  if (!status) return 'info'
+  const normalized = status.toLowerCase()
+  if (['connected', 'running', 'active', 'ready'].includes(normalized)) return 'success'
+  if (['connecting', 'pending', 'initializing', 'refreshing'].includes(normalized)) return 'warning'
+  if (['disconnected', 'error', 'failed', 'offline'].includes(normalized)) return 'danger'
+  return 'info'
+}
+
+const formatStatusLabel = (status?: string) => {
+  if (!status) return '未知状态'
+  const normalized = status.toLowerCase()
+  return statusLabelMap[normalized] || status
 }
 
 // 暴露给父组件的方法
@@ -332,72 +524,40 @@ defineExpose({
   gap: 8px;
 }
 
-.batch-actions {
-  display: flex;
-  justify-content: center;
-  padding: 16px 0;
-}
-
-.mcp-logs {
-  max-height: 300px;
-  overflow-y: auto;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  padding: 12px;
-}
-
-.empty-logs {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.6);
-  padding: 24px;
-  font-style: italic;
-}
-
-.logs-container {
+.server-meta {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.server-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.server-tools {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
 }
 
-.log-item {
+.add-server {
   display: flex;
   gap: 12px;
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  line-height: 1.4;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.log-item.success {
-  background: rgba(103, 194, 58, 0.1);
-  color: #67c23a;
+.add-server :deep(.el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
-.log-item.error {
-  background: rgba(245, 108, 108, 0.1);
-  color: #f56c6c;
-}
 
-.log-item.info {
-  background: rgba(144, 147, 153, 0.1);
-  color: #909399;
-}
-
-.log-time {
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 500;
-  min-width: 70px;
-}
-
-.log-message {
-  flex: 1;
-  word-break: break-all;
-}
-
-/* 自定义滚动条 */
-.mcp-logs::-webkit-scrollbar {
-  width: 6px;
-}
 
 .mcp-logs::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);

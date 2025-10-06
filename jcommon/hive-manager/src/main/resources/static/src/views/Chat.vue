@@ -553,12 +553,10 @@ const sendMcpCommand = async (command: string) => {
         agentId: route.query.serverAgentId,
         agentInstance: getSelectedInstance(),
       },
-      (data: any) => {
-        if (data) {
-          throttledFluxCodeHandler(data, messageId.value)
-        }
-      }
+      () => {}
     )
+
+    console.log('MCP命令响应>>', response.data || '')
     
     return { success: true, output: response?.data || '' }
   } catch (error) {
