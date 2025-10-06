@@ -203,7 +203,8 @@ public class ReactorRole extends Role {
             if (null != this.lastReceiveMsgTime) {
                 Date currentDate = new Date();
                 long timeDifference = currentDate.getTime() - this.lastReceiveMsgTime.getTime();
-                if (timeDifference >= TimeUnit.SECONDS.toMillis(120)) {
+                if (timeDifference >= TimeUnit.HOURS.toMillis(2)) {
+                    log.info("kick off time>2 hour");
                     //发出退出指令
                     this.putMessage(Message.builder().data(Const.ROLE_EXIT).build());
                 }
