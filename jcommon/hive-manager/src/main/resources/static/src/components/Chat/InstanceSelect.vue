@@ -31,11 +31,60 @@
           :value="key"
         />
       </el-select>
+      
+      <!-- LLM模型选择器 -->
+      <el-select
+        v-if="Object.keys(llmOptions).length > 0"
+        v-model="selectedLlmKey"
+        placeholder="请选择模型"
+        class="llm-select"
+        popper-class="instance-select-popper"
+        @change="handleLlmChange"
+      >
+        <el-option
+          v-for="(name, key) in llmOptions"
+          :key="key"
+          :label="key"
+          :value="key"
+        />
+      </el-select>
       <div class="right-btns">
         <el-tooltip class="instance-select-tooltip" effect="dark" content="配置" placement="top">
           <el-icon size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"
             ><Setting
           /></el-icon>
+        </el-tooltip>
+        <el-tooltip
+          class="instance-select-tooltip"
+          effect="dark"
+          content="刷新MCP服务"
+          placement="top"
+        >
+          <el-icon size="14px" color="var(--el-color-success)" @click="handleRefreshMcp">
+            <svg
+              viewBox="0 0 1024 1024"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+            >
+              <path
+                d="M771.776 794.624c-90.368 83.2-233.216 83.2-323.584 0-83.2-76.8-90.368-195.584-21.504-279.552L307.2 435.2c-97.28 118.784-83.2 291.84 35.584 389.12 125.952 104.448 307.2 104.448 433.152 0 48.128-41.984 76.8-90.368 90.368-146.432l-76.8-27.648c-6.656 27.648-20.992 48.128-41.984 69.12z"
+                fill="currentColor"
+              />
+              <path
+                d="M252.416 229.376c90.368-83.2 233.216-83.2 323.584 0 83.2 76.8 90.368 195.584 21.504 279.552L716.8 588.8c97.28-118.784 83.2-291.84-35.584-389.12-125.952-104.448-307.2-104.448-433.152 0-48.128 41.984-76.8 90.368-90.368 146.432l76.8 27.648c6.656-27.648 20.992-48.128 41.984-69.12z"
+                fill="currentColor"
+              />
+              <path
+                d="M729.6 64v150.4l134.4-76.8z"
+                fill="currentColor"
+              />
+              <path
+                d="M294.4 960v-150.4l-134.4 76.8z"
+                fill="currentColor"
+              />
+            </svg>
+          </el-icon>
         </el-tooltip>
         <el-tooltip
           class="instance-select-tooltip"
@@ -142,6 +191,21 @@ const agentList = computed(() => {
   return list
 })
 
+const llmOptions = computed(() => {
+  const options = agentConfigStore.llmOptions
+  console.log('llmOptions computed:', options)
+  return options || {}
+})
+
+const selectedLlmKey = computed({
+  get() {
+    return agentConfigStore.selectedLlmKey
+  },
+  set(value) {
+    agentConfigStore.setSelectedLlm(value)
+  }
+})
+
 const selectedIp = ref('')
 const  calToken = computed(() => {
   if (tokenUsage.inputTokens + tokenUsage.outputTokens - tokenUsage.compressedTokens <= 0) return 0
@@ -161,6 +225,14 @@ const props = defineProps({
     required: true,
   },
   onSwitchAgent: {
+    type: Function,
+    required: false,
+  },
+  onRefreshMcp: {
+    type: Function,
+    required: false,
+  },
+  onSwitchLlm: {
     type: Function,
     required: false,
   },
@@ -313,6 +385,17 @@ const handleAgentChange = (agentKey: string) => {
   agentConfigStore.setSelectedAgent(agentKey)
   props.onSwitchAgent?.(agentKey)
 }
+
+const handleRefreshMcp = () => {
+  console.log('Refreshing MCP service')
+  props.onRefreshMcp?.()
+}
+
+const handleLlmChange = (llmKey: string) => {
+  console.log('LLM changed to:', llmKey)
+  agentConfigStore.setSelectedLlm(llmKey)
+  props.onSwitchLlm?.(llmKey)
+}
 </script>
 
 <style>
@@ -355,6 +438,13 @@ const handleAgentChange = (agentKey: string) => {
 
 .instance-select .agent-select {
   width: 200px;
+  margin: 8px 16px;
+  border: none !important;
+  background-color: transparent;
+}
+
+.instance-select .llm-select {
+  width: 150px;
   margin: 8px 16px;
   border: none !important;
   background-color: transparent;
