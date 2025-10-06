@@ -178,6 +178,7 @@ public class RoleService {
             this.clientMap.put(clientId, clientId);
         }
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
+        //用来和manager通信的agent
         ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, llm, this.toolList, this.mcpToolList, ip) {
             @Override
             public void reg(RegInfo info) {
@@ -205,6 +206,9 @@ public class RoleService {
         role.setFunctionList(this.functionList);
         role.setOwner(owner);
         role.setClientId(clientId);
+
+        // 设置HiveManagerService引用，用于配置保存
+        role.setHiveManagerService(this.hiveManagerService);
 
         role.setRoleMeta(roleMeta);
         role.setProfile(roleMeta.getProfile());

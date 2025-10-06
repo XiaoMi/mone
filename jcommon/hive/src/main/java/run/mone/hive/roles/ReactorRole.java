@@ -112,6 +112,9 @@ public class ReactorRole extends Role {
 
     private FocusChainManager focusChainManager;
 
+    // HiveManagerService引用 - 用于保存配置
+    private run.mone.hive.mcp.service.HiveManagerService hiveManagerService;
+
     /**
      * -- GETTER --
      * 获取当前工作区路径
@@ -167,6 +170,9 @@ public class ReactorRole extends Role {
 
     public void unreg(RegInfo regInfo) {
         log.info("unreg info:{}", regInfo);
+
+
+
     }
 
     public void health(HealthInfo healthInfo) {
@@ -295,7 +301,24 @@ public class ReactorRole extends Role {
     @Override
     protected void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
+        
+        // 保存配置到HiveManager
+        saveConfigToHiveManager();
+        
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
+    }
+
+    /**
+     * 保存配置到HiveManager
+     */
+    private void saveConfigToHiveManager() {
+        Safe.run(() -> {
+            if (hiveManagerService != null) {
+                hiveManagerService.saveRoleConfig(roleConfig, workspacePath);
+            } else {
+                log.debug("HiveManagerService is null, skipping config save");
+            }
+        });
     }
 
 
@@ -985,17 +1008,6 @@ public class ReactorRole extends Role {
         return true;
     }
 
-    /**
-     * 检查中断状态，如果被中断则抛出异常
-     * 用于在关键执行点进行中断检查
-     */
-    private void checkInterrupted() {
-        if (this.interrupted.get()) {
-            log.info("Role '{}' 执行被中断", this.name);
-            throw new RuntimeException("Role execution interrupted");
-        }
-    }
-
     public void initConfig() {
         if (null != this.roleConfig) {
             if (this.roleConfig.containsKey("workspacePath")) {
@@ -1262,4 +1274,6 @@ public class ReactorRole extends Role {
             return null;
         });
     }
+
+
 }
