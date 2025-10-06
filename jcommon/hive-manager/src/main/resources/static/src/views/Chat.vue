@@ -17,7 +17,6 @@
       :onOffline="onOfflineAgent"
       :onStopMsg="onStopMsg"
       :onSwitchAgent="sendSwitchAgentCommand"
-      :onRefreshMcp="sendRefreshMcpCommand"
       :onSwitchLlm="sendSwitchLlmCommand"
       :onExecuteMcpCommand="sendMcpCommand"
       @pidAction="onPidAction"
@@ -435,48 +434,6 @@ const sendSwitchAgentCommand = async (agentKey: string) => {
     )
   } catch (error) {
     console.error('发送/switch命令失败:', error)
-  }
-}
-
-const sendRefreshMcpCommand = async () => {
-  try {
-    const agent = getAgent()
-    if (!agent) {
-      console.error('Agent not found')
-      return
-    }
-    
-    messageId.value = uuidv4()
-    const params = {
-      message: '/mcp refresh docker_manager',
-      __owner_id__: user?.username,
-      __web_search__: functionPanelStore.webSearchEnabled || false,
-      __rag__: functionPanelStore.ragEnabled || false,
-    }
-    
-    // sse发送消息
-    await streamChat(
-      {
-        mapData: {
-          outerTag: 'use_mcp_tool',
-          server_name: `${agent.name}:${agent.group}:${agent.version}:${
-            getSelectedInstance().ip
-          }:${getSelectedInstance().port}`,
-          tool_name: getAgentName(),
-          arguments: JSON.stringify(params),
-        },
-        conversationId: route.query.conversationId,
-        agentId: route.query.serverAgentId,
-        agentInstance: getSelectedInstance(),
-      },
-      (data: any) => {
-        if (data) {
-          throttledFluxCodeHandler(data, messageId.value)
-        }
-      }
-    )
-  } catch (error) {
-    console.error('发送/mcp refresh命令失败:', error)
   }
 }
 
