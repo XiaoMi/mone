@@ -113,6 +113,14 @@ public class GetConfigCommand extends RoleBaseCommand {
             }
             
             configMap.put("systemInfo", systemInfo);
+            
+            // LLM配置选项
+            Map<String, String> llmOptions = new HashMap<>();
+            llmOptions.put("qwen", "qwen");
+            llmOptions.put("glm", "glm_46");
+            llmOptions.put("deepseek", "deepseek");
+            llmOptions.put("claude", "openrouter_claude_sonnet_45");
+            configMap.put("llmOptions", llmOptions);
 
             // 构建标准响应格式
             Map<String, Object> response = new HashMap<>();
