@@ -19,6 +19,7 @@
       :onSwitchAgent="sendSwitchAgentCommand"
       :onRefreshMcp="sendRefreshMcpCommand"
       :onSwitchLlm="sendSwitchLlmCommand"
+      :onExecuteMcpCommand="sendMcpCommand"
       @pidAction="onPidAction"
       @onClick2Conversion="onClick2Conversion"
     />
@@ -518,6 +519,49 @@ const sendSwitchLlmCommand = async (llmKey: string) => {
     )
   } catch (error) {
     console.error('发送/config put llm命令失败:', error)
+  }
+}
+
+const sendMcpCommand = async (command: string) => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return { success: false, error: 'Agent not found' }
+    }
+    
+    messageId.value = uuidv4()
+    const params = {
+      message: command,
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+    
+    // sse发送消息
+    const response = await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      () => {}
+    )
+
+    console.log('MCP命令响应>>', response.data || '')
+    
+    return { success: true, output: response?.data || '' }
+  } catch (error) {
+    console.error('发送MCP命令失败:', error)
+    return { success: false, error: error instanceof Error ? error.message : '未知错误' }
   }
 }
 
