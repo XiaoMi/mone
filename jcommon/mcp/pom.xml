@@ -30,6 +30,7 @@
         <module>mcp-fetch</module>
         <module>mcp-gateway</module>
         <module>mcp-coder</module>
+        <module>mcp-codegen</module>
         <module>mcp-excel</module>
         <module>mcp-song</module>
         <module>mcp-sequentialthinking</module>
