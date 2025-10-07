@@ -7,6 +7,7 @@ import com.xiaomi.youpin.codegen.generator.FileGenerator;
 import com.xiaomi.youpin.codegen.generator.PomGenerator;
 import com.xiaomi.youpin.infra.rpc.Result;
 import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -24,28 +25,31 @@ import java.util.Map;
  * @date 2025/10/7 15:24
  */
 @Slf4j
+@Data
 public class AgentGen {
+
+    private boolean zip = false;
 
     /**
      * 生成Agent项目并打包
      *
-     * @param projectPath   项目生成路径
-     * @param projectName   项目名称（例如：mcp-coder）
-     * @param groupId       Maven GroupId
-     * @param packageName   包名（例如：run.mone.mcp.coder）
-     * @param author        作者
-     * @param versionId     版本号
-     * @param agentName     Agent名称（例如：coder）
-     * @param agentGroup    Agent分组（例如：staging）
-     * @param agentProfile  Agent简介
-     * @param agentGoal     Agent目标
+     * @param projectPath      项目生成路径
+     * @param projectName      项目名称（例如：mcp-coder）
+     * @param groupId          Maven GroupId
+     * @param packageName      包名（例如：run.mone.mcp.coder）
+     * @param author           作者
+     * @param versionId        版本号
+     * @param agentName        Agent名称（例如：coder）
+     * @param agentGroup       Agent分组（例如：staging）
+     * @param agentProfile     Agent简介
+     * @param agentGoal        Agent目标
      * @param agentConstraints Agent约束
      * @return 生成的zip文件路径
      */
     public Result<String> generateAndZip(String projectPath, String projectName, String groupId,
-                                          String packageName, String author, String versionId,
-                                          String agentName, String agentGroup, String agentProfile,
-                                          String agentGoal, String agentConstraints) {
+                                         String packageName, String author, String versionId,
+                                         String agentName, String agentGroup, String agentProfile,
+                                         String agentGoal, String agentConstraints) {
         return generateAndZip(projectPath, projectName, groupId, packageName, author, versionId,
                 agentName, agentGroup, agentProfile, agentGoal, agentConstraints,
                 "run.mone", "mcp", "1.6.1-jdk21-SNAPSHOT",
@@ -56,11 +60,11 @@ public class AgentGen {
      * 生成Agent项目并打包（完整参数版本）
      */
     public Result<String> generateAndZip(String projectPath, String projectName, String groupId,
-                                          String packageName, String author, String versionId,
-                                          String agentName, String agentGroup, String agentProfile,
-                                          String agentGoal, String agentConstraints,
-                                          String parentGroupId, String parentArtifactId, String parentVersion,
-                                          String grpcPort, String hiveManagerUrl, String llmModel, String javaVersion) {
+                                         String packageName, String author, String versionId,
+                                         String agentName, String agentGroup, String agentProfile,
+                                         String agentGoal, String agentConstraints,
+                                         String parentGroupId, String parentArtifactId, String parentVersion,
+                                         String grpcPort, String hiveManagerUrl, String llmModel, String javaVersion) {
 
         String srcPath = "/src/main/java/";
         String resourcesPath = "/src/main/resources/";
@@ -109,9 +113,11 @@ public class AgentGen {
             // 生成README.md
             generateReadme(projectPath, projectName, agentName);
 
-            // 打包成zip
-            FileUtils.compress(projectPath + File.separator + projectName,
-                    projectPath + File.separator + projectName + ".zip");
+            if (zip) {
+                // 打包成zip
+                FileUtils.compress(projectPath + File.separator + projectName,
+                        projectPath + File.separator + projectName + ".zip");
+            }
 
             log.info("Agent project generated successfully: {}", projectName);
 
@@ -120,15 +126,20 @@ public class AgentGen {
             return Result.fail(GeneralCodes.InternalError, "InternalError: " + e.getMessage());
         }
 
-        return Result.success(projectPath + File.separator + projectName + ".zip");
+        String data = projectPath + File.separator;
+        if (zip) {
+            data = data + projectName + ".zip";
+        }
+
+        return Result.success(data);
     }
 
     /**
      * 生成pom.xml文件
      */
     private void generatePom(String projectPath, String projectName, String groupId, String versionId,
-                              String packageName, String bootstrapClassName, String parentGroupId,
-                              String parentArtifactId, String parentVersion, String javaVersion) {
+                             String packageName, String bootstrapClassName, String parentGroupId,
+                             String parentArtifactId, String parentVersion, String javaVersion) {
         PomGenerator pomGenerator = new PomGenerator(projectPath, projectName, "agent/pom_xml.tml");
         Map<String, Object> m = new HashMap<>();
         m.put("parentGroupId", parentGroupId);
@@ -148,8 +159,8 @@ public class AgentGen {
      * 生成Bootstrap启动类
      */
     private void generateBootstrap(String projectPath, String projectName, String packageName,
-                                     String author, String packagePath, String srcPath,
-                                     String bootstrapClassName) {
+                                   String author, String packagePath, String srcPath,
+                                   String bootstrapClassName) {
         ClassGenerator classGenerator = new ClassGenerator(projectPath, projectName, srcPath,
                 packagePath, bootstrapClassName, "agent/bootstrap.tml");
         Map<String, Object> m = new HashMap<>();
@@ -165,8 +176,8 @@ public class AgentGen {
      * 生成AgentConfig配置类
      */
     private void generateAgentConfig(String projectPath, String projectName, String packageName,
-                                       String author, String packagePath, String srcPath,
-                                       String agentProfile, String agentGoal, String agentConstraints) {
+                                     String author, String packagePath, String srcPath,
+                                     String agentProfile, String agentGoal, String agentConstraints) {
         ClassGenerator classGenerator = new ClassGenerator(projectPath, projectName, srcPath,
                 packagePath + "/config", "AgentConfig", "agent/agent_config.tml");
         Map<String, Object> m = new HashMap<>();
@@ -184,10 +195,10 @@ public class AgentGen {
      * 生成application.properties
      */
     private void generateApplicationProperties(String projectPath, String projectName,
-                                                 String resourcesPath, String agentName,
-                                                 String agentGroup, String versionId,
-                                                 String grpcPort, String hiveManagerUrl,
-                                                 String llmModel) {
+                                               String resourcesPath, String agentName,
+                                               String agentGroup, String versionId,
+                                               String grpcPort, String hiveManagerUrl,
+                                               String llmModel) {
         FileGenerator fileGenerator = new FileGenerator(projectPath, projectName,
                 resourcesPath + "application.properties", "agent/application_properties.tml");
         Map<String, Object> m = new HashMap<>();
@@ -204,7 +215,7 @@ public class AgentGen {
      * 生成logback.xml
      */
     private void generateLogback(String projectPath, String projectName, String resourcesPath,
-                                   String agentName) {
+                                 String agentName) {
         FileGenerator fileGenerator = new FileGenerator(projectPath, projectName,
                 resourcesPath + "logback.xml", "agent/logback.tml");
         Map<String, Object> m = new HashMap<>();
