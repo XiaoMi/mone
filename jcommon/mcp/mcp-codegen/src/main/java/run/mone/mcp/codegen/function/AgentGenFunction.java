@@ -27,7 +27,7 @@ public class AgentGenFunction implements McpFunction {
               "properties": {
                 "projectPath": {
                   "type": "string",
-                  "description": "项目生成路径，例如: /tmp/agent-projects"
+                  "description": "项目生成路径，例如: ~/agent-projects 默认: ~/agent-projects"
                 },
                 "projectName": {
                   "type": "string",
@@ -43,7 +43,7 @@ public class AgentGenFunction implements McpFunction {
                 },
                 "author": {
                   "type": "string",
-                  "description": "作者名称或邮箱"
+                  "description": "作者名称或邮箱 默认: hive"
                 },
                 "versionId": {
                   "type": "string",
