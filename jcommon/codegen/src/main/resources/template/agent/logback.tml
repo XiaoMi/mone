@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="5 seconds">
 
-    <property name="USER_HOME" value="${user.home}" />
+    <property name="USER_HOME" value="\${user.home}" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -12,12 +12,12 @@
     <!-- 文件输出 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 日志文件路径 -->
-        <file>${USER_HOME}/mcp/ipinfo.log</file>
+        <file>\${USER_HOME}/mcp/${agentName}.log</file>
 
         <!-- 日志滚动策略 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- 滚动文件的命名模式 -->
-            <fileNamePattern>${USER_HOME}/mcp/ipinfo-log-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>\${USER_HOME}/mcp/${agentName}-log-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <!-- 单个日志文件最大大小 -->
             <maxFileSize>10MB</maxFileSize>
             <!-- 保留天数 -->
@@ -41,3 +41,4 @@
     </root>
 
 </configuration>
+

@@ -1,4 +1,4 @@
-package run.mone.mcp.coder.config;
+package ${package}.${project}.config;
 
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,21 +9,21 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
 
 /**
- * @author goodjava@qq.com
- * @date 2025/4/24 15:07
+ * @author ${author}
+ * @date ${date}
  */
 @Configuration
 public class AgentConfig {
 
-    @Value("${mcp.agent.name}")
+    @Value("\${mcp.agent.name}")
     private String agentName;
 
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
-                .profile("你是一名优秀的软件工程师")
-                .goal("你的目标是根据用户的需求写好代码")
-                .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
+                .profile("${agentProfile}")
+                .goal("${agentGoal}")
+                .constraints("${agentConstraints}")
                 .tools(Lists.newArrayList(
                         new ListFilesTool(),
                         new ExecuteCommandToolOptimized(),
@@ -43,3 +43,4 @@ public class AgentConfig {
 
 
 }
+
