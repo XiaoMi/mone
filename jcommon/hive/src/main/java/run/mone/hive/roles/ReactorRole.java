@@ -49,8 +49,8 @@ import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
 import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
 
 /**
- * @author wangyingjie
  * @author goodjava@qq.com
+ * @author wangyingjie
  * 会自己决策和行动的Role(Agent)
  */
 @EqualsAndHashCode(callSuper = true)
@@ -115,12 +115,6 @@ public class ReactorRole extends Role {
     // HiveManagerService引用 - 用于保存配置
     private run.mone.hive.mcp.service.HiveManagerService hiveManagerService;
 
-    /**
-     * -- GETTER --
-     * 获取当前工作区路径
-     *
-     * @return 工作区根目录路径
-     */
     //工作区根目录路径，用于路径解析
     private String workspacePath = System.getProperty("user.dir");
 
