@@ -83,11 +83,6 @@ public class MonerSystemPrompt {
         String mdStr = getAgentMd(workspacePath);
         if (mdStr != null) return mdStr;
 
-        //是定制的
-        if (mdStr.contains("## Profile")) {
-            return "";
-        }
-
         // 从角色配置中获取自定义指令，如果不存在则使用默认指令
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
     }
