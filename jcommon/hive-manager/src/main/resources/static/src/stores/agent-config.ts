@@ -7,8 +7,9 @@ export interface AgentConfig {
   roleConfig: {
     workspacePath: string
     workspace: string
+    llm: string
     __user_internal_name__: string
-  }
+  } & Record<string, string>
   systemInfo: {
     delay: number
     mcpPath: string
@@ -55,12 +56,12 @@ export const useAgentConfigStore = defineStore('agentConfig', () => {
     // 默认选择第一个agent
     const agentKeys = Object.keys(config.systemInfo.agentList || {})
     if (agentKeys.length > 0 && !selectedAgentKey.value) {
-      selectedAgentKey.value = agentKeys[0]
+      selectedAgentKey.value = config.roleConfig?.agent || agentKeys[0]
     }
     // 默认选择第一个LLM模型
     const llmKeys = Object.keys(config.llmOptions || {})
     if (llmKeys.length > 0 && !selectedLlmKey.value) {
-      selectedLlmKey.value = "qwen"// || llmKeys[0]
+      selectedLlmKey.value = config.roleConfig?.llm || llmKeys[0]
     }
   }
   

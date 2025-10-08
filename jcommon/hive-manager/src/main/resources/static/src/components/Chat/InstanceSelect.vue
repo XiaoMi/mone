@@ -36,7 +36,7 @@
         <!-- LLM模型选择器 -->
         <el-select
           v-if="Object.keys(llmOptions).length > 0"
-          v-model="selectedLlmKey"
+          v-model="selectedLlmValue"
           placeholder="请选择模型"
           class="llm-select"
           popper-class="instance-select-popper"
@@ -46,7 +46,7 @@
             v-for="(name, key) in llmOptions"
             :key="key"
             :label="key"
-            :value="key"
+            :value="name"
           />
         </el-select>
       </div>
@@ -185,12 +185,20 @@ const llmOptions = computed(() => {
   return options || {}
 })
 
-const selectedLlmKey = computed({
+const selectedLlmValue = computed({
   get() {
-    return agentConfigStore.selectedLlmKey
+    const options = llmOptions.value || {}
+    const selectedKey = agentConfigStore.selectedLlmKey
+    return (selectedKey && options[selectedKey]) || ''
   },
-  set(value) {
-    agentConfigStore.setSelectedLlm(value)
+  set(value: string) {
+    const options = llmOptions.value || {}
+    const matchedEntry = Object.entries(options).find(([, optionValue]) => optionValue === value)
+    if (matchedEntry) {
+      agentConfigStore.setSelectedLlm(matchedEntry[0])
+    } else if (!value) {
+      agentConfigStore.setSelectedLlm('')
+    }
   }
 })
 
@@ -374,10 +382,9 @@ const handleAgentChange = (agentKey: string) => {
   props.onSwitchAgent?.(agentKey)
 }
 
-const handleLlmChange = (llmKey: string) => {
-  console.log('LLM changed to:', llmKey)
-  agentConfigStore.setSelectedLlm(llmKey)
-  props.onSwitchLlm?.(llmKey)
+const handleLlmChange = (llmValue: string) => {
+  console.log('LLM changed to:', llmValue)
+  props.onSwitchLlm?.(llmValue)
 }
 
 
