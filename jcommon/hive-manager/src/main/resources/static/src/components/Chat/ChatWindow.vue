@@ -5,7 +5,6 @@
       :onOffline="onOffline"
       :onStopMsg="onStopMsg"
       :onSwitchAgent="onSwitchAgent"
-      :onRefreshMcp="onRefreshMcp"
       :onSwitchLlm="onSwitchLlm"
       :onExecuteMcpCommand="onExecuteMcpCommand"
     />
@@ -142,10 +141,6 @@ export default {
       required: true,
     },
     onSwitchAgent: {
-      type: Function,
-      required: false,
-    },
-    onRefreshMcp: {
       type: Function,
       required: false,
     },
