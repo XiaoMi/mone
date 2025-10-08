@@ -54,4 +54,6 @@ public class Const {
 
     public static final String SWITCH_AGENT = "__switch_agent__";
 
+    public static final String WORKSPACE_PATH_KEY = "workspacePath";
+
 }

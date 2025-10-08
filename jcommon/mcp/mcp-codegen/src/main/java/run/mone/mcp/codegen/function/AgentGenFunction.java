@@ -27,7 +27,7 @@ public class AgentGenFunction implements McpFunction {
               "properties": {
                 "projectPath": {
                   "type": "string",
-                  "description": "项目生成路径，例如: ~/agent-projects 默认: ~/agent-projects"
+                  "description": "项目生成路径，例如: ~/agent-projects 默认: /tmp/agent-projects"
                 },
                 "projectName": {
                   "type": "string",

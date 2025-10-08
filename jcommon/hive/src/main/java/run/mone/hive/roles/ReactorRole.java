@@ -387,16 +387,6 @@ public class ReactorRole extends Role {
             return -1;
         }
 
-        //刷新配置(不会退出)
-        if (null != msg.getData() && msg.getData().equals(Const.REFRESH_CONFIG)) {
-            log.info("ReactorRole {} 收到配置刷新通知", this.name);
-            // 完成当前流式输出
-            if (null != msg.getSink()) {
-                msg.getSink().complete();
-            }
-            return -1;
-        }
-
         //放到记忆中
         this.putMemory(msg);
 
@@ -1000,12 +990,21 @@ public class ReactorRole extends Role {
 
     public void initConfig() {
         if (null != this.roleConfig) {
-            if (this.roleConfig.containsKey("workspacePath")) {
-                setWorkspacePath(this.roleConfig.get("workspacePath"));
+            if (this.roleConfig.containsKey(Const.WORKSPACE_PATH_KEY)) {
+                setWorkspacePath(this.roleConfig.get(Const.WORKSPACE_PATH_KEY));
             }
-
             // 配置上下文压缩参数
             configureContextCompression();
+            //解决agent.md的配置问题
+            String str = this.getRoleConfig().get(Const.AGENT_CONFIG);
+            if (StringUtils.isEmpty(str) && StringUtils.isNotEmpty(this.workspacePath)) {
+                //尝试读取下agent.md
+                str = MonerSystemPrompt.getAgentMd(this.workspacePath);
+                //标准格式
+                if (str.contains("## Profile")) {
+                    this.getRoleConfig().put(Const.AGENT_CONFIG, str);
+                }
+            }
         }
     }
 

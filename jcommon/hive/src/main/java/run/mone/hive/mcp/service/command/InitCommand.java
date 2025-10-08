@@ -10,9 +10,6 @@ import run.mone.hive.schema.Message;
  * Init命令处理类
  * 处理 /init 命令，用于分析代码库并创建MCODE.md文件
  * 对应Claude Code中的/init指令功能
- * 
- * @author goodjava@qq.com
- * @date 2025/1/16
  */
 @Slf4j
 public class InitCommand extends RoleBaseCommand {

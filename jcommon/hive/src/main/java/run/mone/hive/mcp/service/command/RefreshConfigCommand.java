@@ -46,30 +46,12 @@ public class RefreshConfigCommand extends RoleBaseCommand {
 
         try {
             sink.next("🔄 开始刷新Agent配置...\n");
-
             // 执行刷新配置
             roleService.refreshConfig(message);
-
             sendMessages(sink,
                 "✅ Agent " + from + " 配置刷新完成！\n",
                 "📋 已更新MCP连接和角色设置\n"
             );
-
-            // 构建一个特殊的消息，用于通知ReactorRole配置已刷新
-            Message refreshMessage = Message.builder()
-                    .sentFrom(message.getSentFrom())
-                    .clientId(message.getClientId())
-                    .userId(message.getUserId())
-                    .agentId(message.getAgentId())
-                    .role("system")
-                    .content("配置已刷新")
-                    .data(Const.REFRESH_CONFIG)
-                    .sink(sink)
-                    .build();
-
-            // 发送给ReactorRole，让它知道配置已刷新
-            role.putMessage(refreshMessage);
-
         } catch (Exception e) {
             log.error("刷新配置失败: {}", e.getMessage(), e);
             sendErrorAndComplete(sink, "配置刷新失败: " + e.getMessage());

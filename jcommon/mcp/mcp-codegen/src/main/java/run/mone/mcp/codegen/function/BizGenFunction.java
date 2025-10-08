@@ -27,7 +27,7 @@ public class BizGenFunction implements McpFunction {
               "properties": {
                 "projectPath": {
                   "type": "string",
-                  "description": "项目生成路径，例如: ~/biz-projects  默认:~/biz-projects"
+                  "description": "项目生成路径，例如: ~/biz-projects  默认:/tmp/biz-projects"
                 },
                 "projectName": {
                   "type": "string",

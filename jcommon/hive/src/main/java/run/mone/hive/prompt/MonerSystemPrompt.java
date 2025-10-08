@@ -81,7 +81,9 @@ public class MonerSystemPrompt {
 
         // 构建.hive/agent.md文件路径
         String mdStr = getAgentMd(workspacePath);
-        if (mdStr != null) return mdStr;
+        if (mdStr != null) {
+            return mdStr;
+        }
 
         // 从角色配置中获取自定义指令，如果不存在则使用默认指令
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
@@ -138,7 +140,7 @@ public class MonerSystemPrompt {
     }
 
     @Nullable
-    private static String getAgentMd(String workspacePath) {
+    public static String getAgentMd(String workspacePath) {
         String filePath = workspacePath
                 + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive" + File.separator + "agent.md";
@@ -172,6 +174,7 @@ public class MonerSystemPrompt {
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", MonerSystemPrompt.cwd(role));
         data.put("hiveCwd", MonerSystemPrompt.hiveCwd(role));
+        //这里也会处理下agent.md的逻辑,需要注意(这个的agent.md的优先级并不高,有可能会被后边的覆盖掉)
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
