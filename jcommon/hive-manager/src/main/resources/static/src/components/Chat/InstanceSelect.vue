@@ -1,53 +1,55 @@
 <template>
   <div class="container">
     <div class="instance-select">
-      <el-select
-        v-model="selectedIp"
-        placeholder="请选择实例IP"
-        class="ip-select"
-        popper-class="instance-select-popper"
-      >
-        <el-option
-          v-for="item in list"
-          :key="item.id"
-          :label="`${item.ip}:${item.port}`"
-          :value="item.ip"
-        />
-      </el-select>
-      
-      <!-- Agent选择器 -->
-      <el-select
-        v-if="Object.keys(agentList).length > 0"
-        v-model="selectedAgentKey"
-        placeholder="请选择Agent"
-        class="agent-select"
-        popper-class="instance-select-popper"
-        @change="handleAgentChange"
-      >
-        <el-option
-          v-for="(name, key) in agentList"
-          :key="key"
-          :label="name"
-          :value="key"
-        />
-      </el-select>
-      
-      <!-- LLM模型选择器 -->
-      <el-select
-        v-if="Object.keys(llmOptions).length > 0"
-        v-model="selectedLlmKey"
-        placeholder="请选择模型"
-        class="llm-select"
-        popper-class="instance-select-popper"
-        @change="handleLlmChange"
-      >
-        <el-option
-          v-for="(name, key) in llmOptions"
-          :key="key"
-          :label="key"
-          :value="key"
-        />
-      </el-select>
+      <div class="selector-group">
+        <el-select
+          v-model="selectedIp"
+          placeholder="请选择实例IP"
+          class="ip-select"
+          popper-class="instance-select-popper"
+        >
+          <el-option
+            v-for="item in list"
+            :key="item.id"
+            :label="`${item.ip}:${item.port}`"
+            :value="item.ip"
+          />
+        </el-select>
+
+        <!-- Agent选择器 -->
+        <el-select
+          v-if="Object.keys(agentList).length > 0"
+          v-model="selectedAgentKey"
+          placeholder="请选择Agent"
+          class="agent-select"
+          popper-class="instance-select-popper"
+          @change="handleAgentChange"
+        >
+          <el-option
+            v-for="(name, key) in agentList"
+            :key="key"
+            :label="name"
+            :value="key"
+          />
+        </el-select>
+
+        <!-- LLM模型选择器 -->
+        <el-select
+          v-if="Object.keys(llmOptions).length > 0"
+          v-model="selectedLlmKey"
+          placeholder="请选择模型"
+          class="llm-select"
+          popper-class="instance-select-popper"
+          @change="handleLlmChange"
+        >
+          <el-option
+            v-for="(name, key) in llmOptions"
+            :key="key"
+            :label="key"
+            :value="key"
+          />
+        </el-select>
+      </div>
       <div class="right-btns">
         <el-tooltip class="instance-select-tooltip" effect="dark" content="配置" placement="top">
           <el-icon size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"
@@ -405,6 +407,16 @@ const handleLlmChange = (llmKey: string) => {
   box-shadow: 0 10px 30px rgba(15, 15, 35, 0.25);
 }
 
+.instance-select .selector-group {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 12px;
+  min-width: 0;
+}
+
 .instance-select .right-btns {
   margin-left: auto;
   display: flex;
@@ -412,6 +424,8 @@ const handleLlmChange = (llmKey: string) => {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex: 0 0 auto;
+  min-width: fit-content;
 }
 
 .instance-select .right-btns .el-icon {
@@ -423,22 +437,10 @@ const handleLlmChange = (llmKey: string) => {
   transform: scale(1.2);
 }
 
-.instance-select .ip-select {
-  width: 220px;
-  margin: 0;
-  border: none !important;
-  background-color: transparent;
-}
-
-.instance-select .agent-select {
-  width: 200px;
-  margin: 0;
-  border: none !important;
-  background-color: transparent;
-}
-
-.instance-select .llm-select {
-  width: 180px;
+.instance-select .selector-group .el-select {
+  flex: 1 1 200px;
+  min-width: 180px;
+  max-width: 240px;
   margin: 0;
   border: none !important;
   background-color: transparent;
@@ -553,13 +555,14 @@ const handleLlmChange = (llmKey: string) => {
     gap: 12px;
   }
 
-  .instance-select .ip-select {
-    width: 200px;
+  .instance-select .selector-group {
+    column-gap: 12px;
   }
 
-  .instance-select .agent-select,
-  .instance-select .llm-select {
-    width: 180px;
+  .instance-select .selector-group .el-select {
+    flex: 1 1 180px;
+    min-width: 160px;
+    max-width: 220px;
   }
 }
 
@@ -569,11 +572,14 @@ const handleLlmChange = (llmKey: string) => {
     border-radius: 10px;
   }
 
-  .instance-select .ip-select,
-  .instance-select .agent-select,
-  .instance-select .llm-select {
+  .instance-select .selector-group {
+    flex: 1 1 100%;
+  }
+
+  .instance-select .selector-group .el-select {
     flex: 1 1 45%;
     min-width: 200px;
+    max-width: none;
   }
 
   .instance-select .right-btns {
@@ -593,11 +599,14 @@ const handleLlmChange = (llmKey: string) => {
     padding: 12px;
   }
 
-  .instance-select .ip-select,
-  .instance-select .agent-select,
-  .instance-select .llm-select {
+  .instance-select .selector-group {
+    gap: 10px;
+  }
+
+  .instance-select .selector-group .el-select {
     flex: 1 1 100%;
     width: 100%;
+    min-width: 0;
   }
 
   .instance-select .right-btns {
