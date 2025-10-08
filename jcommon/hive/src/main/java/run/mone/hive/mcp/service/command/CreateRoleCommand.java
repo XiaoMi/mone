@@ -48,8 +48,14 @@ public class CreateRoleCommand extends RoleBaseCommand {
     @Override
     public void execute(Message message, FluxSink<String> sink, String from, ReactorRole role) {
         try {
-            // 创建新的role
-            ReactorRole newRole = roleService.createRole(message);
+            ReactorRole newRole = null;
+
+            ReactorRole oldRole = roleService.getRoleMap().get(from);
+            if (null != oldRole) {
+                newRole = oldRole;
+            } else {
+                newRole = roleService.createRole(message);
+            }
             
             if (newRole != null) {
                 // 将新创建的role添加到roleMap中

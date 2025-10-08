@@ -289,7 +289,7 @@ public class ReactorRole extends Role {
     }
 
     @Override
-    protected void postReact(ActionContext ac) {
+    public void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
 
         // 保存配置到HiveManager
