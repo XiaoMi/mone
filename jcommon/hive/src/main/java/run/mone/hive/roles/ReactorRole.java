@@ -43,6 +43,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
@@ -196,6 +197,12 @@ public class ReactorRole extends Role {
         this.llm = llm;
         this.scheduledTaskHandler = message -> {
             log.debug("Processing scheduled message: {}", this.getName());
+
+            List<Function<ReactorRole, String>> tasks = roleMeta.getTaskList();
+            tasks.forEach(task -> {
+                String res = task.apply(this);
+                log.info("call task res:{}", res);
+            });
             //添加退出逻辑
             if (null != this.lastReceiveMsgTime) {
                 Date currentDate = new Date();
