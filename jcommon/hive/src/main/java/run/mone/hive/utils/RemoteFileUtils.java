@@ -54,14 +54,14 @@ public class RemoteFileUtils {
      * @return 文件列表结果
      * @throws IOException 如果操作失败
      */
-    public static String listFiles(String dirName) throws IOException {
+    public static String listFiles(String dirName, boolean recursive) throws IOException {
         if (dirName == null || dirName.isEmpty()) {
             return null;
         }
         if (dirName.startsWith(File.separator)) {
             dirName = dirName.substring(1);
         }
-        String url = String.format("%s/list?directory=%s&userKey=%s&userSecret=%s&token=%s", getHost(), dirName, getUserKey(), getUserSecret(), getToken());
+        String url = String.format("%s/list?directory=%s&userKey=%s&userSecret=%s&token=%s&circle=%s", getHost(), dirName, getUserKey(), getUserSecret(), getToken(), String.valueOf(recursive));
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(url);
