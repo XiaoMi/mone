@@ -39,6 +39,16 @@ public class SearchFilesTool implements ITool {
 
     public static final String name = "search_files";
 
+    private final boolean isRemote;
+
+    public SearchFilesTool() {
+        this(false);
+    }
+
+    public SearchFilesTool(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
+
     // Maximum number of results to prevent overwhelming output
     private static final int MAX_RESULTS = 300;
     

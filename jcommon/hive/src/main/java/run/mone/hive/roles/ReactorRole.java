@@ -1011,7 +1011,7 @@ public class ReactorRole extends Role {
                 //尝试读取下agent.md
                 str = MonerSystemPrompt.getAgentMd(this.workspacePath);
                 //标准格式
-                if (str.contains("## Profile")) {
+                if (str != null && str.contains("## Profile")) {
                     this.getRoleConfig().put(Const.AGENT_CONFIG, str);
                 }
             }

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.RemoteFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.nio.file.StandardOpenOption;
 
 /**
  * 文件写入工具，用于创建新文件或覆盖现有文件的内容
- * 
+ * <p>
  * 此工具会：
  * 1. 如果文件存在，将用提供的内容覆盖它
  * 2. 如果文件不存在，将创建它
@@ -28,6 +29,16 @@ import java.nio.file.StandardOpenOption;
 public class WriteToFileTool implements ITool {
 
     public static final String name = "write_to_file";
+
+    private final boolean isRemote;
+
+    public WriteToFileTool() {
+        this(false);
+    }
+
+    public WriteToFileTool(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
 
     @Override
     public String getName() {
@@ -80,22 +91,22 @@ public class WriteToFileTool implements ITool {
     @Override
     public String usage() {
         String taskProgress = """
-            <task_progress>
-            任务进度清单（可选）
-            </task_progress>
-            """;
+                <task_progress>
+                任务进度清单（可选）
+                </task_progress>
+                """;
         if (!taskProgress()) {
             taskProgress = "";
         }
         return """
-            <write_to_file>
-            <path>文件路径</path>
-            <content>
-            您的文件内容
-            </content>
-            %s
-            </write_to_file>
-            """.formatted(taskProgress);
+                <write_to_file>
+                <path>文件路径</path>
+                <content>
+                您的文件内容
+                </content>
+                %s
+                </write_to_file>
+                """.formatted(taskProgress);
     }
 
     @Override
@@ -168,7 +179,11 @@ public class WriteToFileTool implements ITool {
             String path = inputJson.get("path").getAsString();
             String content = inputJson.get("content").getAsString();
 
-            return performWriteToFile(path, content);
+            if (isRemote) {
+                return performRemoteWriteToFile(path, content);
+            } else {
+                return performWriteToFile(path, content);
+            }
 
         } catch (Exception e) {
             log.error("执行write_to_file操作时发生异常", e);
@@ -176,6 +191,43 @@ public class WriteToFileTool implements ITool {
             return result;
         }
     }
+
+    /**
+     * 远程执行文件写入操作
+     */
+    private JsonObject performRemoteWriteToFile(String path, String content) {
+        JsonObject result = new JsonObject();
+
+        try {
+            // 检查路径安全性
+            if (!isPathSafe(path)) {
+                log.error("不安全的文件路径：{}", path);
+                result.addProperty("error", "不安全的文件路径: " + path);
+                return result;
+            }
+
+            // 对文件内容进行Base64编码
+            String base64Content = java.util.Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));
+
+            // 调用RemoteFileUtils上传文件
+            String uploadResult = RemoteFileUtils.uploadFile(path, base64Content);
+
+            log.info("远程文件写入结果：{}", uploadResult);
+            result.addProperty("result", uploadResult);
+            result.addProperty("path", path);
+            result.addProperty("contentLength", content.length());
+
+        } catch (IOException e) {
+            log.error("远程写入文件时发生IO异常：{}", path, e);
+            result.addProperty("error", "远程文件写入失败: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("远程写入文件时发生异常：{}", path, e);
+            result.addProperty("error", "远程文件写入失败: " + e.getMessage());
+        }
+
+        return result;
+    }
+
 
     /**
      * 执行文件写入操作
@@ -186,7 +238,7 @@ public class WriteToFileTool implements ITool {
         try {
             Path filePath = Paths.get(path);
             File file = filePath.toFile();
-            
+
             // 检查路径是否指向一个目录
             if (file.exists() && file.isDirectory()) {
                 log.error("指定的路径是一个目录，无法写入文件：{}", path);
@@ -195,7 +247,7 @@ public class WriteToFileTool implements ITool {
             }
 
             boolean fileExisted = file.exists();
-            
+
             // 自动创建必要的父目录
             File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
@@ -210,16 +262,14 @@ public class WriteToFileTool implements ITool {
 
             // 处理内容预处理（移除可能的代码块标记等）
             String processedContent = preprocessContent(content);
-            
+
             // 写入文件内容
-            Files.writeString(filePath, processedContent, StandardCharsets.UTF_8, 
-                            StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            
+            Files.writeString(filePath, processedContent, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
             String operation = fileExisted ? "覆盖" : "创建";
             log.info("成功{}文件：{}，内容长度：{} 字符", operation, path, processedContent.length());
-            
-            result.addProperty("result", 
-                String.format("文件已成功%s: %s", operation, path));
+
+            result.addProperty("result", String.format("文件已成功%s: %s", operation, path));
             result.addProperty("operation", operation);
             result.addProperty("path", path);
             result.addProperty("contentLength", processedContent.length());
@@ -244,9 +294,9 @@ public class WriteToFileTool implements ITool {
         if (content == null) {
             return "";
         }
-        
+
         String processed = content;
-        
+
         // 移除开头的markdown代码块标记（如果存在）
         if (processed.startsWith("```")) {
             String[] lines = processed.split("\n");
@@ -262,7 +312,7 @@ public class WriteToFileTool implements ITool {
                 processed = sb.toString();
             }
         }
-        
+
         // 移除结尾的markdown代码块标记（如果存在）
         if (processed.endsWith("```")) {
             String[] lines = processed.split("\n");
@@ -278,10 +328,10 @@ public class WriteToFileTool implements ITool {
                 processed = sb.toString();
             }
         }
-        
+
         // 移除末尾多余的换行符（保留一个换行符，如果原本就有的话）
         processed = processed.replaceAll("\\n+$", "");
-        
+
         return processed;
     }
 
@@ -293,17 +343,17 @@ public class WriteToFileTool implements ITool {
         if (path == null || path.trim().isEmpty()) {
             return false;
         }
-        
+
         // 检查路径遍历攻击
         if (path.contains("..") || path.contains("~")) {
             return false;
         }
-        
+
         // 检查绝对路径（在某些情况下可能不安全）
         if (path.startsWith("/") || (path.length() > 1 && path.charAt(1) == ':')) {
             log.warn("检测到绝对路径，建议使用相对路径：{}", path);
         }
-        
+
         return true;
     }
 
@@ -314,7 +364,7 @@ public class WriteToFileTool implements ITool {
         if (path == null) {
             return "unknown";
         }
-        
+
         String lowerPath = path.toLowerCase();
         if (lowerPath.endsWith(".java")) return "java";
         if (lowerPath.endsWith(".js") || lowerPath.endsWith(".ts")) return "javascript/typescript";
@@ -326,7 +376,7 @@ public class WriteToFileTool implements ITool {
         if (lowerPath.endsWith(".properties")) return "properties";
         if (lowerPath.endsWith(".md")) return "markdown";
         if (lowerPath.endsWith(".txt")) return "text";
-        
+
         return "unknown";
     }
 }
