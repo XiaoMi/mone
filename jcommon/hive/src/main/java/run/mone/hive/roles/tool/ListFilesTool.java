@@ -188,7 +188,7 @@ public class ListFilesTool implements ITool {
         JsonObject result = new JsonObject();
 
         try {
-            String response = RemoteFileUtils.listFiles(path);
+            String response = RemoteFileUtils.listFiles(path, recursive);
 
             // 解析响应并构建结果
             result.addProperty("result", response);
