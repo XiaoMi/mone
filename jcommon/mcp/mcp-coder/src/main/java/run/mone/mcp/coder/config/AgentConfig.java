@@ -5,13 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
-import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
-import run.mone.hive.schema.Message;
-import run.mone.mcp.coder.sink.McpTransportFluxSink;
-
-import javax.annotation.Resource;
 
 /**
  * @author goodjava@qq.com
@@ -26,9 +21,6 @@ public class AgentConfig {
     @Value("${mcp.remote.file}")
     private Boolean isRemoteFile;
 
-    @Resource
-    private GrpcServerTransport transport;
-
     @Bean
     public RoleMeta roleMeta() {
 
@@ -42,27 +34,27 @@ public class AgentConfig {
                 .goal("你的目标是根据用户的需求写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .tools(Lists.newArrayList(
-                        listFilesTool,
-                        new ExecuteCommandToolOptimized(),
-                        readFileTool,
-                        new SearchFilesTool(),
-                        replaceInFileTool,
-                        new ListCodeDefinitionNamesTool(),
-                        writeToFileTool,
-                        new ChatTool(),
-                        new AskTool(),
-                        new AttemptCompletionTool()
+                                listFilesTool,
+                                new ExecuteCommandToolOptimized(),
+                                readFileTool,
+                                new SearchFilesTool(),
+                                replaceInFileTool,
+                                new ListCodeDefinitionNamesTool(),
+                                writeToFileTool,
+                                new ChatTool(),
+                                new AskTool(),
+                                new AttemptCompletionTool()
                         )
                 )
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
-                .taskList(Lists.newArrayList((role)->{
-                    role.putMessage(Message.builder()
-                            .content("1+1=?")
-                            .data("1+1=?")
-                            .sink(new McpTransportFluxSink(transport, role))
-                            .build());
-                    return "ok";
-                }))
+//                .taskList(Lists.newArrayList((role) -> {
+//                    role.putMessage(Message.builder()
+//                            .role("user")
+//                            .content("1+1=?")
+//                            .sink(new McpTransportFluxSink(transport, role))
+//                            .build());
+//                    return "ok";
+//                }))
                 .build();
     }
 
