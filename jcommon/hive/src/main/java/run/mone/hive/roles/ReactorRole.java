@@ -198,10 +198,13 @@ public class ReactorRole extends Role {
         this.scheduledTaskHandler = message -> {
             log.debug("Processing scheduled message: {}", this.getName());
 
+
             List<Function<ReactorRole, String>> tasks = roleMeta.getTaskList();
             tasks.forEach(task -> {
-                String res = task.apply(this);
-                log.info("call task res:{}", res);
+                if (!this.clientId.equals(Const.DEFAULT)) {
+                    String res = task.apply(this);
+                    log.info("call task res:{}", res);
+                }
             });
             //添加退出逻辑
             if (null != this.lastReceiveMsgTime) {
