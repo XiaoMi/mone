@@ -23,26 +23,32 @@ public class AgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Value("${mcp.remote.file}")
+    private Boolean isRemoteFile;
+
     @Resource
     private GrpcServerTransport transport;
 
     @Bean
     public RoleMeta roleMeta() {
+
+        ListFilesTool listFilesTool = isRemoteFile ? new ListFilesTool(true) : new ListFilesTool(false);
+        ReadFileTool readFileTool = isRemoteFile ? new ReadFileTool(true) : new ReadFileTool(false);
+        WriteToFileTool writeToFileTool = isRemoteFile ? new WriteToFileTool(true) : new WriteToFileTool(false);
+        ReplaceInFileTool replaceInFileTool = isRemoteFile ? new ReplaceInFileTool(true) : new ReplaceInFileTool(false);
+
         return RoleMeta.builder()
                 .profile("你是一名优秀的软件工程师")
                 .goal("你的目标是根据用户的需求写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .tools(Lists.newArrayList(
-                        new ListFilesTool(),
-//                        new ListFilesTool(true),
+                        listFilesTool,
                         new ExecuteCommandToolOptimized(),
-                        new ReadFileTool(),
-//                        new ReadFileTool(true),
+                        readFileTool,
                         new SearchFilesTool(),
-                        new ReplaceInFileTool(),
-//                        new ReplaceInFileTool(true),
+                        replaceInFileTool,
                         new ListCodeDefinitionNamesTool(),
-                        new WriteToFileTool(),
+                        writeToFileTool,
                         new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool()

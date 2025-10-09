@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 
 /**
  * 文件内容替换工具，使用SEARCH/REPLACE块格式进行精确的文件内容替换
- * 
+ * <p>
  * 支持的格式：
  * ------- SEARCH
  * [要查找的确切内容]
@@ -31,7 +31,16 @@ import java.util.regex.Pattern;
 public class ReplaceInFileTool implements ITool {
 
     public static final String name = "replace_in_file";
-
+    // SEARCH/REPLACE块的标记符
+    private static final String SEARCH_BLOCK_START = "------- SEARCH";
+    private static final String SEARCH_BLOCK_END = "=======";
+    private static final String REPLACE_BLOCK_END = "+++++++ REPLACE";
+    // 正则表达式模式，支持更灵活的格式
+    private static final Pattern SEARCH_BLOCK_START_PATTERN = Pattern.compile("^[-]{3,}\\s+SEARCH>?$");
+    private static final Pattern LEGACY_SEARCH_BLOCK_START_PATTERN = Pattern.compile("^[<]{3,}\\s+SEARCH>?$");
+    private static final Pattern SEARCH_BLOCK_END_PATTERN = Pattern.compile("^[=]{3,}$");
+    private static final Pattern REPLACE_BLOCK_END_PATTERN = Pattern.compile("^[+]{3,}\\s+REPLACE>?$");
+    private static final Pattern LEGACY_REPLACE_BLOCK_END_PATTERN = Pattern.compile("^[>]{3,}\\s+REPLACE>?$");
     private final boolean isRemote;
 
     public ReplaceInFileTool() {
@@ -41,18 +50,6 @@ public class ReplaceInFileTool implements ITool {
     public ReplaceInFileTool(boolean isRemote) {
         this.isRemote = isRemote;
     }
-
-    // SEARCH/REPLACE块的标记符
-    private static final String SEARCH_BLOCK_START = "------- SEARCH";
-    private static final String SEARCH_BLOCK_END = "=======";
-    private static final String REPLACE_BLOCK_END = "+++++++ REPLACE";
-
-    // 正则表达式模式，支持更灵活的格式
-    private static final Pattern SEARCH_BLOCK_START_PATTERN = Pattern.compile("^[-]{3,}\\s+SEARCH>?$");
-    private static final Pattern LEGACY_SEARCH_BLOCK_START_PATTERN = Pattern.compile("^[<]{3,}\\s+SEARCH>?$");
-    private static final Pattern SEARCH_BLOCK_END_PATTERN = Pattern.compile("^[=]{3,}$");
-    private static final Pattern REPLACE_BLOCK_END_PATTERN = Pattern.compile("^[+]{3,}\\s+REPLACE>?$");
-    private static final Pattern LEGACY_REPLACE_BLOCK_END_PATTERN = Pattern.compile("^[>]{3,}\\s+REPLACE>?$");
 
     @Override
     public String getName() {
@@ -102,7 +99,7 @@ public class ReplaceInFileTool implements ITool {
                   [要替换为的新内容]
                   +++++++ REPLACE
                   ```
-                  
+                
                   关键规则：
                   1. SEARCH内容必须与关联的文件部分完全匹配：
                      * 逐字符匹配，包括空格、缩进、行结束符
@@ -125,84 +122,81 @@ public class ReplaceInFileTool implements ITool {
     @Override
     public String usage() {
         String taskProgress = """
-            <task_progress>
-            任务进度清单（可选）
-            </task_progress>
-            """;
+                <task_progress>
+                任务进度清单（可选）
+                </task_progress>
+                """;
         if (!taskProgress()) {
             taskProgress = "";
         }
         return """
-            <replace_in_file>
-            <path>文件路径</path>
-            <diff>
-            搜索和替换块
-            </diff>
-            %s
-            </replace_in_file>
-            """.formatted(taskProgress);
+                <replace_in_file>
+                <path>文件路径</path>
+                <diff>
+                搜索和替换块
+                </diff>
+                %s
+                </replace_in_file>
+                """.formatted(taskProgress);
     }
 
     @Override
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
 
-        // 检查必要参数
-        if (!inputJson.has("path") || StringUtils.isBlank(inputJson.get("path").getAsString())) {
-            log.error("replace_in_file操作缺少必需的path参数");
-            result.addProperty("error", "缺少必需参数'path'");
-            return result;
-        }
+        try {
+            // 检查必要参数
+            if (!inputJson.has("path") || StringUtils.isBlank(inputJson.get("path").getAsString())) {
+                log.error("replace_in_file操作缺少必需的path参数");
+                result.addProperty("error", "缺少必需参数'path'");
+                return result;
+            }
 
-        if (!inputJson.has("diff") || StringUtils.isBlank(inputJson.get("diff").getAsString())) {
-            log.error("replace_in_file操作缺少必需的diff参数");
-            result.addProperty("error", "缺少必需参数'diff'");
-            return result;
-        }
+            if (!inputJson.has("diff") || StringUtils.isBlank(inputJson.get("diff").getAsString())) {
+                log.error("replace_in_file操作缺少必需的diff参数");
+                result.addProperty("error", "缺少必需参数'diff'");
+                return result;
+            }
 
-        if (!isRemote) {
-            try {
+            String path = inputJson.get("path").getAsString();
+            String diff = inputJson.get("diff").getAsString();
 
-                String path = inputJson.get("path").getAsString();
-                String diff = inputJson.get("diff").getAsString();
-
+            if (isRemote) {
+                return performRemoteReplaceInFile(path, diff);
+            } else {
                 return performReplaceInFile(path, diff);
-
-            } catch (Exception e) {
-                log.error("执行replace_in_file操作时发生异常", e);
-                result.addProperty("error", "执行replace_in_file操作失败: " + e.getMessage());
-                return result;
             }
+
+        } catch (Exception e) {
+            log.error("执行replace_in_file操作时发生异常", e);
+            result.addProperty("error", "执行replace_in_file操作失败: " + e.getMessage());
+            return result;
         }
+    }
 
-        if (isRemote) {
-            try {
+    private JsonObject performRemoteReplaceInFile(String path, String diff) {
+        JsonObject result = new JsonObject();
+        try {
 
-                String path = inputJson.get("path").getAsString();
-                String diff = inputJson.get("diff").getAsString();
+            // 获取远程文件内容
+            String remoteContent = RemoteFileUtils.getRemoteFileContent(path);
 
-                // 获取远程文件内容
-                String remoteContent = RemoteFileUtils.getRemoteFileContent(path);
+            // 解析并应用SEARCH/REPLACE块
+            String newContent = applySearchReplaceBlocks(remoteContent, diff);
 
-                // 解析并应用SEARCH/REPLACE块
-                String newContent = applySearchReplaceBlocks(remoteContent, diff);
+            // 上传修改后的内容到远程文件
+            String base64Content = java.util.Base64.getEncoder().encodeToString(newContent.getBytes(StandardCharsets.UTF_8));
+            String uploadResult = RemoteFileUtils.uploadFile(path, base64Content);
 
-                // 上传修改后的内容到远程文件
-                String base64Content = java.util.Base64.getEncoder().encodeToString(newContent.getBytes(StandardCharsets.UTF_8));
-                String uploadResult = RemoteFileUtils.uploadFile(path, base64Content);
+            log.info("成功应用替换到远程文件：{}", path);
+            result.addProperty("result", uploadResult);
 
-                log.info("成功应用替换到远程文件：{}", path);
-                result.addProperty("result", uploadResult);
-
-                return result;
-            } catch (Exception e) {
-                log.error("执行远程replace_in_file操作时发生异常", e);
-                result.addProperty("error", "执行远程replace_in_file操作失败: " + e.getMessage());
-                return result;
-            }
+            return result;
+        } catch (Exception e) {
+            log.error("执行远程replace_in_file操作时发生异常", e);
+            result.addProperty("error", "执行远程replace_in_file操作失败: " + e.getMessage());
+            return result;
         }
-
-        return result;
     }
 
     /**
@@ -229,13 +223,13 @@ public class ReplaceInFileTool implements ITool {
 
             // 读取原始文件内容
             String originalContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-            
+
             // 解析并应用SEARCH/REPLACE块
             String newContent = applySearchReplaceBlocks(originalContent, diff);
-            
+
             // 写入新内容
             Files.writeString(file.toPath(), newContent, StandardCharsets.UTF_8);
-            
+
             log.info("成功应用替换到文件：{}", path);
             result.addProperty("result", "文件内容已成功更新: " + path);
 
@@ -255,33 +249,33 @@ public class ReplaceInFileTool implements ITool {
      */
     private String applySearchReplaceBlocks(String originalContent, String diff) throws Exception {
         List<SearchReplaceBlock> blocks = parseSearchReplaceBlocks(diff);
-        
+
         if (blocks.isEmpty()) {
             throw new Exception("未找到有效的SEARCH/REPLACE块");
         }
-        
+
         String result = originalContent;
         int lastProcessedIndex = 0;
-        
+
         for (SearchReplaceBlock block : blocks) {
             // 查找匹配位置
             int matchIndex = findMatch(result, block.searchContent, lastProcessedIndex);
-            
+
             if (matchIndex == -1) {
                 throw new Exception("SEARCH块未找到匹配内容:\n" + block.searchContent.trim());
             }
-            
+
             // 执行替换
             String before = result.substring(0, matchIndex);
             String after = result.substring(matchIndex + block.searchContent.length());
             result = before + block.replaceContent + after;
-            
+
             // 更新处理位置
             lastProcessedIndex = matchIndex + block.replaceContent.length();
-            
+
             log.debug("成功应用SEARCH/REPLACE块，匹配位置: {}", matchIndex);
         }
-        
+
         return result;
     }
 
@@ -291,12 +285,12 @@ public class ReplaceInFileTool implements ITool {
     private List<SearchReplaceBlock> parseSearchReplaceBlocks(String diff) throws Exception {
         List<SearchReplaceBlock> blocks = new ArrayList<>();
         String[] lines = diff.split("\n");
-        
+
         StringBuilder currentSearchContent = new StringBuilder();
         StringBuilder currentReplaceContent = new StringBuilder();
         boolean inSearch = false;
         boolean inReplace = false;
-        
+
         for (String line : lines) {
             if (isSearchBlockStart(line)) {
                 // 开始新的SEARCH块
@@ -306,7 +300,7 @@ public class ReplaceInFileTool implements ITool {
                 currentReplaceContent = new StringBuilder();
                 continue;
             }
-            
+
             if (isSearchBlockEnd(line)) {
                 // 结束SEARCH，开始REPLACE
                 if (!inSearch) {
@@ -316,24 +310,21 @@ public class ReplaceInFileTool implements ITool {
                 inReplace = true;
                 continue;
             }
-            
+
             if (isReplaceBlockEnd(line)) {
                 // 结束REPLACE块
                 if (!inReplace) {
                     throw new Exception("发现REPLACE结束标记，但未在REPLACE状态中");
                 }
-                
+
                 // 添加完整的块
-                blocks.add(new SearchReplaceBlock(
-                    currentSearchContent.toString(),
-                    currentReplaceContent.toString()
-                ));
-                
+                blocks.add(new SearchReplaceBlock(currentSearchContent.toString(), currentReplaceContent.toString()));
+
                 inSearch = false;
                 inReplace = false;
                 continue;
             }
-            
+
             // 累积内容
             if (inSearch) {
                 if (currentSearchContent.length() > 0) {
@@ -347,12 +338,12 @@ public class ReplaceInFileTool implements ITool {
                 currentReplaceContent.append(line);
             }
         }
-        
+
         // 检查是否有未完成的块
         if (inSearch || inReplace) {
             throw new Exception("SEARCH/REPLACE块格式不完整");
         }
-        
+
         return blocks;
     }
 
@@ -366,19 +357,19 @@ public class ReplaceInFileTool implements ITool {
         if (exactMatch != -1) {
             return exactMatch;
         }
-        
+
         // 2. 行级匹配（忽略行首行尾空格）
         int lineMatch = findLineTrimmedMatch(content, searchContent, startIndex);
         if (lineMatch != -1) {
             return lineMatch;
         }
-        
+
         // 3. 锚点匹配（对于3行以上的块，使用首尾行作为锚点）
         int anchorMatch = findBlockAnchorMatch(content, searchContent, startIndex);
         if (anchorMatch != -1) {
             return anchorMatch;
         }
-        
+
         return -1;
     }
 
@@ -388,14 +379,14 @@ public class ReplaceInFileTool implements ITool {
     private int findLineTrimmedMatch(String content, String searchContent, int startIndex) {
         String[] contentLines = content.split("\n");
         String[] searchLines = searchContent.split("\n");
-        
+
         // 移除搜索内容末尾的空行
         if (searchLines.length > 0 && searchLines[searchLines.length - 1].isEmpty()) {
             String[] newSearchLines = new String[searchLines.length - 1];
             System.arraycopy(searchLines, 0, newSearchLines, 0, searchLines.length - 1);
             searchLines = newSearchLines;
         }
-        
+
         // 找到起始行号
         int startLineNum = 0;
         int currentIndex = 0;
@@ -403,22 +394,22 @@ public class ReplaceInFileTool implements ITool {
             currentIndex += contentLines[startLineNum].length() + 1; // +1 for \n
             startLineNum++;
         }
-        
+
         // 在每个可能的起始位置尝试匹配
         for (int i = startLineNum; i <= contentLines.length - searchLines.length; i++) {
             boolean matches = true;
-            
+
             // 尝试匹配所有搜索行
             for (int j = 0; j < searchLines.length; j++) {
                 String contentLineTrimmed = contentLines[i + j].trim();
                 String searchLineTrimmed = searchLines[j].trim();
-                
+
                 if (!contentLineTrimmed.equals(searchLineTrimmed)) {
                     matches = false;
                     break;
                 }
             }
-            
+
             // 如果找到匹配，计算确切的字符位置
             if (matches) {
                 int matchStartIndex = 0;
@@ -428,7 +419,7 @@ public class ReplaceInFileTool implements ITool {
                 return matchStartIndex;
             }
         }
-        
+
         return -1;
     }
 
@@ -438,23 +429,23 @@ public class ReplaceInFileTool implements ITool {
     private int findBlockAnchorMatch(String content, String searchContent, int startIndex) {
         String[] contentLines = content.split("\n");
         String[] searchLines = searchContent.split("\n");
-        
+
         // 只对3行以上的块使用此方法
         if (searchLines.length < 3) {
             return -1;
         }
-        
+
         // 移除搜索内容末尾的空行
         if (searchLines.length > 0 && searchLines[searchLines.length - 1].isEmpty()) {
             String[] newSearchLines = new String[searchLines.length - 1];
             System.arraycopy(searchLines, 0, newSearchLines, 0, searchLines.length - 1);
             searchLines = newSearchLines;
         }
-        
+
         String firstLineSearch = searchLines[0].trim();
         String lastLineSearch = searchLines[searchLines.length - 1].trim();
         int searchBlockSize = searchLines.length;
-        
+
         // 找到起始行号
         int startLineNum = 0;
         int currentIndex = 0;
@@ -462,28 +453,28 @@ public class ReplaceInFileTool implements ITool {
             currentIndex += contentLines[startLineNum].length() + 1;
             startLineNum++;
         }
-        
+
         // 寻找匹配的首尾锚点
         for (int i = startLineNum; i <= contentLines.length - searchBlockSize; i++) {
             // 检查首行是否匹配
             if (!contentLines[i].trim().equals(firstLineSearch)) {
                 continue;
             }
-            
+
             // 检查尾行是否在预期位置匹配
             if (!contentLines[i + searchBlockSize - 1].trim().equals(lastLineSearch)) {
                 continue;
             }
-            
+
             // 计算确切的字符位置
             int matchStartIndex = 0;
             for (int k = 0; k < i; k++) {
                 matchStartIndex += contentLines[k].length() + 1;
             }
-            
+
             return matchStartIndex;
         }
-        
+
         return -1;
     }
 
@@ -491,8 +482,7 @@ public class ReplaceInFileTool implements ITool {
      * 检查是否为SEARCH块开始标记
      */
     private boolean isSearchBlockStart(String line) {
-        return SEARCH_BLOCK_START_PATTERN.matcher(line).matches() || 
-               LEGACY_SEARCH_BLOCK_START_PATTERN.matcher(line).matches();
+        return SEARCH_BLOCK_START_PATTERN.matcher(line).matches() || LEGACY_SEARCH_BLOCK_START_PATTERN.matcher(line).matches();
     }
 
     /**
@@ -506,8 +496,7 @@ public class ReplaceInFileTool implements ITool {
      * 检查是否为REPLACE块结束标记
      */
     private boolean isReplaceBlockEnd(String line) {
-        return REPLACE_BLOCK_END_PATTERN.matcher(line).matches() || 
-               LEGACY_REPLACE_BLOCK_END_PATTERN.matcher(line).matches();
+        return REPLACE_BLOCK_END_PATTERN.matcher(line).matches() || LEGACY_REPLACE_BLOCK_END_PATTERN.matcher(line).matches();
     }
 
     /**
