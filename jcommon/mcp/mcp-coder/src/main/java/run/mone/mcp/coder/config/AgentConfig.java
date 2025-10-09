@@ -5,8 +5,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.hive.schema.Message;
+import run.mone.mcp.coder.sink.McpTransportFluxSink;
+
+import javax.annotation.Resource;
 
 /**
  * @author goodjava@qq.com
@@ -17,6 +22,9 @@ public class AgentConfig {
 
     @Value("${mcp.agent.name}")
     private String agentName;
+
+    @Resource
+    private GrpcServerTransport transport;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -41,6 +49,14 @@ public class AgentConfig {
                         )
                 )
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
+                .taskList(Lists.newArrayList((role)->{
+                    role.putMessage(Message.builder()
+                            .content("1+1=?")
+                            .data("1+1=?")
+                            .sink(new McpTransportFluxSink(transport, role))
+                            .build());
+                    return "ok";
+                }))
                 .build();
     }
 
