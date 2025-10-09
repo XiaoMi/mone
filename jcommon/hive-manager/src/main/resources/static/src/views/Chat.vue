@@ -104,6 +104,21 @@ const throttledFluxCodeHandler = throttle(fluxCodeHandler, 1000);
 const toggleSendMethod = (val: string) => {
   sendMethod.value = val
   if (val === 'ws') {
+    const agent = getAgent()
+    const instance = getSelectedInstance()
+
+    if (
+      agent?.name &&
+      agent?.group &&
+      agent?.version &&
+      instance?.ip &&
+      typeof instance.port !== 'undefined'
+    ) {
+      uuid.value = `${agent.name}:${agent.group}:${agent.version}:${instance.ip}:${instance.port}`
+    } else {
+      console.warn('缺少构建WebSocket UUID所需的Agent或实例信息，将使用已有UUID')
+    }
+
     // 连接websocket
     socket.value = connectWebSocket(
       uuid.value,
