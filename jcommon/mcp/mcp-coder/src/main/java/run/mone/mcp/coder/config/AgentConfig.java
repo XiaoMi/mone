@@ -33,27 +33,27 @@ public class AgentConfig {
                 .goal("你的目标是根据用户的需求写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .tools(Lists.newArrayList(
-                        new ListFilesTool(),
-                        new ExecuteCommandToolOptimized(),
-                        new ReadFileTool(),
-                        new SearchFilesTool(),
-                        new ReplaceInFileTool(),
-                        new ListCodeDefinitionNamesTool(),
-                        new WriteToFileTool(),
-                        new ChatTool(),
-                        new AskTool(),
-                        new AttemptCompletionTool()
+                                new ListFilesTool(),
+                                new ExecuteCommandToolOptimized(),
+                                new ReadFileTool(),
+                                new SearchFilesTool(),
+                                new ReplaceInFileTool(),
+                                new ListCodeDefinitionNamesTool(),
+                                new WriteToFileTool(),
+                                new ChatTool(),
+                                new AskTool(),
+                                new AttemptCompletionTool()
                         )
                 )
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
-                .taskList(Lists.newArrayList((role)->{
-                    role.putMessage(Message.builder()
-                            .content("1+1=?")
-                            .data("1+1=?")
-                            .sink(new McpTransportFluxSink(transport, role))
-                            .build());
-                    return "ok";
-                }))
+//                .taskList(Lists.newArrayList((role) -> {
+//                    role.putMessage(Message.builder()
+//                            .role("user")
+//                            .content("1+1=?")
+//                            .sink(new McpTransportFluxSink(transport, role))
+//                            .build());
+//                    return "ok";
+//                }))
                 .build();
     }
 
