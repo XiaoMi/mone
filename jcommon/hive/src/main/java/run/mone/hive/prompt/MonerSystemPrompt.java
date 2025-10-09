@@ -206,6 +206,7 @@ public class MonerSystemPrompt {
             data.put("name", md.getName());
             data.put("roleDescription", rd);
             data.put("customInstructions",md.getAgentPrompt());
+            data.put("workflow",md.getWorkflow());
         }
 
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,

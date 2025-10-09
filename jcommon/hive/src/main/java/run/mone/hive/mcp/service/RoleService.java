@@ -354,7 +354,7 @@ public class RoleService {
 
     private boolean resolveMessageData(Message message, ReactorRole rr, FluxSink sink) {
         // 如果role配置中已有agent配置，则自动加载到消息数据中
-        if (message.getData() == null && rr.getRoleConfig().containsKey(Const.AGENT_CONFIG)) {
+        if (rr.getRoleConfig().containsKey(Const.AGENT_CONFIG)) {
             message.setData(GsonUtils.gson.fromJson(rr.getRoleConfig().get(Const.AGENT_CONFIG), AgentMarkdownDocument.class));
         }
         return true;
