@@ -26,10 +26,13 @@ public class AgentConfig {
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .tools(Lists.newArrayList(
                         new ListFilesTool(),
+//                        new ListFilesTool(true),
                         new ExecuteCommandToolOptimized(),
                         new ReadFileTool(),
+//                        new ReadFileTool(true),
                         new SearchFilesTool(),
                         new ReplaceInFileTool(),
+//                        new ReplaceInFileTool(true),
                         new ListCodeDefinitionNamesTool(),
                         new WriteToFileTool(),
                         new ChatTool(),

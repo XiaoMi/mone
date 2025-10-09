@@ -4,13 +4,12 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.RemoteFileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -32,6 +31,16 @@ import java.util.regex.Pattern;
 public class ReplaceInFileTool implements ITool {
 
     public static final String name = "replace_in_file";
+
+    private final boolean isRemote;
+
+    public ReplaceInFileTool() {
+        this(false);
+    }
+
+    public ReplaceInFileTool(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
 
     // SEARCH/REPLACE块的标记符
     private static final String SEARCH_BLOCK_START = "------- SEARCH";
@@ -138,30 +147,62 @@ public class ReplaceInFileTool implements ITool {
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
 
-        try {
-            // 检查必要参数
-            if (!inputJson.has("path") || StringUtils.isBlank(inputJson.get("path").getAsString())) {
-                log.error("replace_in_file操作缺少必需的path参数");
-                result.addProperty("error", "缺少必需参数'path'");
-                return result;
-            }
-
-            if (!inputJson.has("diff") || StringUtils.isBlank(inputJson.get("diff").getAsString())) {
-                log.error("replace_in_file操作缺少必需的diff参数");
-                result.addProperty("error", "缺少必需参数'diff'");
-                return result;
-            }
-
-            String path = inputJson.get("path").getAsString();
-            String diff = inputJson.get("diff").getAsString();
-
-            return performReplaceInFile(path, diff);
-
-        } catch (Exception e) {
-            log.error("执行replace_in_file操作时发生异常", e);
-            result.addProperty("error", "执行replace_in_file操作失败: " + e.getMessage());
+        // 检查必要参数
+        if (!inputJson.has("path") || StringUtils.isBlank(inputJson.get("path").getAsString())) {
+            log.error("replace_in_file操作缺少必需的path参数");
+            result.addProperty("error", "缺少必需参数'path'");
             return result;
         }
+
+        if (!inputJson.has("diff") || StringUtils.isBlank(inputJson.get("diff").getAsString())) {
+            log.error("replace_in_file操作缺少必需的diff参数");
+            result.addProperty("error", "缺少必需参数'diff'");
+            return result;
+        }
+
+        if (!isRemote) {
+            try {
+
+                String path = inputJson.get("path").getAsString();
+                String diff = inputJson.get("diff").getAsString();
+
+                return performReplaceInFile(path, diff);
+
+            } catch (Exception e) {
+                log.error("执行replace_in_file操作时发生异常", e);
+                result.addProperty("error", "执行replace_in_file操作失败: " + e.getMessage());
+                return result;
+            }
+        }
+
+        if (isRemote) {
+            try {
+
+                String path = inputJson.get("path").getAsString();
+                String diff = inputJson.get("diff").getAsString();
+
+                // 获取远程文件内容
+                String remoteContent = RemoteFileUtils.getRemoteFileContent(path);
+
+                // 解析并应用SEARCH/REPLACE块
+                String newContent = applySearchReplaceBlocks(remoteContent, diff);
+
+                // 上传修改后的内容到远程文件
+                String base64Content = java.util.Base64.getEncoder().encodeToString(newContent.getBytes(StandardCharsets.UTF_8));
+                String uploadResult = RemoteFileUtils.uploadFile(path, base64Content);
+
+                log.info("成功应用替换到远程文件：{}", path);
+                result.addProperty("result", uploadResult);
+
+                return result;
+            } catch (Exception e) {
+                log.error("执行远程replace_in_file操作时发生异常", e);
+                result.addProperty("error", "执行远程replace_in_file操作失败: " + e.getMessage());
+                return result;
+            }
+        }
+
+        return result;
     }
 
     /**
