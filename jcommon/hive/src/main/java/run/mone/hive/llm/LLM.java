@@ -966,6 +966,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.GLM_46 ||
                     this.llmProvider == LLMProvider.OPENROUTER_CLAUDE_SONNET_45 ||
                     this.llmProvider == LLMProvider.OPENROUTER_GEMINI_25_FLUSH ||
+                    this.llmProvider == LLMProvider.OPENROUTER_GEMINI_25_PRO ||
                     this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX_MINI ||
                     this.llmProvider == LLMProvider.OPENROUTER_OPENAI_CODEX ||
                     this.llmProvider == LLMProvider.KIMI_K2_TURBO_PREVIEW ||
