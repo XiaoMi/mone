@@ -180,6 +180,8 @@ public class MonerSystemPrompt {
         data.put("enableTaskProgress", enableTaskProgress);
         List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
+        // 添加开关控制,如果serverList为空则不加载MCP相关内容
+        data.put("enableMcp", !serverList.isEmpty());
         if (StringUtils.isEmpty(workFlow)) {
             workFlow = "";
         }
@@ -279,6 +281,7 @@ public class MonerSystemPrompt {
             
             
             
+            <% if(enableMcp) { %>
             ## use_mcp_tool
             Description: Request to use a tool provided by a connected MCP server. Each MCP server can provide multiple tools with different capabilities. Tools have defined input schemas that specify required and optional parameters.
             Parameters:
@@ -300,6 +303,7 @@ public class MonerSystemPrompt {
             Checklist here (optional)
             </task_progress><% } %>
             </use_mcp_tool>
+            <% } %>
             
             # Tool Use Examples
             
@@ -390,6 +394,7 @@ public class MonerSystemPrompt {
             
             ====
             
+            <% if(enableMcp) { %>
             MCP SERVERS
             
             The Model Context Protocol (MCP) enables communication between the system and locally running MCP servers that provide additional tools and resources to extend your capabilities.
@@ -412,6 +417,7 @@ public class MonerSystemPrompt {
             
             
             ====
+            <% } %>
             
             RULES
             
