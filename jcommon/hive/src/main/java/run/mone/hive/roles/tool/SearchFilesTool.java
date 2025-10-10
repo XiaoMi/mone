@@ -59,6 +59,7 @@ public class SearchFilesTool implements ITool {
             "mp3", "mp4", "avi", "mov", "wmv", "flv",
             "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"
     );
+
     private final boolean isRemote;
 
     public SearchFilesTool() {
@@ -208,7 +209,12 @@ public class SearchFilesTool implements ITool {
             String regex = inputJson.get("regex").getAsString();
             String filePattern = inputJson.has("file_pattern") ? inputJson.get("file_pattern").getAsString() : null;
 
-            return performFileSearch(path, regex, filePattern);
+            // 根据是否为远程搜索调用不同的方法
+            if (isRemote) {
+                return performRemoteFileSearch(path, regex, filePattern);
+            } else {
+                return performFileSearch(path, regex, filePattern);
+            }
 
         } catch (Exception e) {
             log.error("Exception occurred while executing search_files operation", e);
@@ -216,6 +222,37 @@ public class SearchFilesTool implements ITool {
             return result;
         }
     }
+
+    private JsonObject performRemoteFileSearch(String path, String regex, String filePattern) {
+        JsonObject result = new JsonObject();
+
+        try {
+            // 调用RemoteFileUtils的searchFiles方法进行远程文件搜索
+            String searchResult = run.mone.hive.utils.RemoteFileUtils.searchFiles(path, regex, filePattern);
+            
+            // 构建结果对象
+            result.addProperty("result", searchResult);
+            result.addProperty("searchPath", path);
+            result.addProperty("regex", regex);
+            if (filePattern != null) {
+                result.addProperty("filePattern", filePattern);
+            }
+            
+            log.info("成功在远程目录 {} 中搜索文件，正则表达式: {}, 文件模式: {}", 
+                    path, regex, filePattern != null ? filePattern : "所有文件");
+            
+            return result;
+        } catch (IOException e) {
+            log.error("在远程目录中搜索文件时发生IO异常: {}", path, e);
+            result.addProperty("error", "远程文件搜索失败: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("在远程目录中搜索文件时发生异常: {}", path, e);
+            result.addProperty("error", "远程文件搜索错误: " + e.getMessage());
+        }
+
+        return result;
+    }
+
 
     /**
      * Perform the file search operation
