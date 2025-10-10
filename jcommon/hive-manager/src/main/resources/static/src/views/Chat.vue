@@ -19,6 +19,7 @@
       :onSwitchAgent="sendSwitchAgentCommand"
       :onSwitchLlm="sendSwitchLlmCommand"
       :onExecuteMcpCommand="sendMcpCommand"
+      :onExecuteSystemCommand="sendSystemCommand"
       @pidAction="onPidAction"
       @onClick2Conversion="onClick2Conversion"
     />
@@ -533,6 +534,54 @@ const sendMcpCommand = async (command: string) => {
     return { success: true, output: response?.data || '' }
   } catch (error) {
     console.error('发送MCP命令失败:', error)
+    return { success: false, error: error instanceof Error ? error.message : '未知错误' }
+  }
+}
+
+// 通用的系统命令发送函数（用于 /refresh、/reload 等命令）
+const sendSystemCommand = async (command: string, showResponse = false) => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return { success: false, error: 'Agent not found' }
+    }
+    
+    messageId.value = uuidv4()
+    const params = {
+      message: command,
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+    
+    // sse发送消息
+    const response = await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      showResponse ? (data: any) => {
+        if (data) {
+          throttledFluxCodeHandler(data, messageId.value)
+        }
+      } : () => {}
+    )
+    
+    console.log(`${command} 命令已发送`)
+    
+    return { success: true, output: response?.data || '' }
+  } catch (error) {
+    console.error(`发送 ${command} 命令失败:`, error)
     return { success: false, error: error instanceof Error ? error.message : '未知错误' }
   }
 }
