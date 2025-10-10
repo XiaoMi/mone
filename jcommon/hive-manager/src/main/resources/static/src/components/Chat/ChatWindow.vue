@@ -7,6 +7,7 @@
       :onSwitchAgent="onSwitchAgent"
       :onSwitchLlm="onSwitchLlm"
       :onExecuteMcpCommand="onExecuteMcpCommand"
+      :onExecuteSystemCommand="onExecuteSystemCommand"
     />
     <MessageList
       :messages="messages"
@@ -149,6 +150,10 @@ export default {
       required: false,
     },
     onExecuteMcpCommand: {
+      type: Function,
+      required: false,
+    },
+    onExecuteSystemCommand: {
       type: Function,
       required: false,
     },
