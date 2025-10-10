@@ -8,6 +8,7 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
 import run.mone.mcp.miline.function.MilineFunction;
 import run.mone.mcp.miline.tools.ModifyMemberTool;
+import run.mone.mcp.miline.tools.RunPipelineTool;
 
 
 /**
@@ -25,6 +26,7 @@ public class AgentConfig {
                 .constraints("不要探讨与miline平台无关的东西,如果用户问你,你就直接拒绝掉")
                 //内部工具
                 .tools(Lists.newArrayList(
+                        new RunPipelineTool(),
                         new ModifyMemberTool(),
                         new ChatTool(),
                         new AskTool(),
