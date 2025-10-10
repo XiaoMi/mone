@@ -655,6 +655,13 @@ public class ReactorRole extends Role {
             sendToSink(contentForUser, assistantMessage, true);
         }
 
+        String name = "";
+        if (result.getToolName().endsWith("_chat")) {
+            name = result.getToolName().split("_")[1]+":\n";
+        }
+
+        contentForLlm = name + contentForLlm;
+
         // 存档
         assistantMessage.setData(contentForLlm);
         assistantMessage.setContent(contentForLlm);

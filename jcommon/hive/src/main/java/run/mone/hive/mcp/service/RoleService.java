@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -118,8 +119,8 @@ public class RoleService {
         shutdownHook();
     }
 
-    private McpHub updateMcpConnections(List<String> agentNames, String clientId) {
-        McpHub hub = new McpHub();
+    private McpHub updateMcpConnections(List<String> agentNames, String clientId, ReactorRole role) {
+        McpHub hub = getMcpHub(role);
         Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
         map.entrySet().forEach(entry -> {
             Safe.run(() -> {
@@ -134,9 +135,19 @@ public class RoleService {
                 parameters.getEnv().put(Const.TOKEN, "");
                 parameters.getEnv().put(Const.CLIENT_ID, "mcp_" + clientId);
                 log.info("connect :{} ip:{} port:{}", entry.getKey(), m.get("ip"), m.get("port"));
-                hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters));
+                hub.updateServerConnections(ImmutableMap.of(entry.getKey(), parameters), false);
             });
         });
+        return hub;
+    }
+
+    private static @NotNull McpHub getMcpHub(ReactorRole role) {
+        McpHub hub = new McpHub();
+        if (null != role.getMcpHub()) {
+            hub = role.getMcpHub();
+        } else {
+            hub = new McpHub();
+        }
         return hub;
     }
 
@@ -247,7 +258,7 @@ public class RoleService {
                     if (configMap.containsKey(Const.MCP)) {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
                         //更新mcp agent
-                        McpHub hub = updateMcpConnections(list, clientId);
+                        McpHub hub = updateMcpConnections(list, clientId, role);
                         role.setMcpHub(hub);
                     } else {
                         role.setMcpHub(new McpHub());
@@ -261,7 +272,12 @@ public class RoleService {
 
     public void refreshMcp(List<String> list, ReactorRole role) {
         role.getMcpHub().dispose();
-        McpHub hub = updateMcpConnections(list, role.getClientId());
+        McpHub hub = updateMcpConnections(list, role.getClientId(), role);
+        role.setMcpHub(hub);
+    }
+
+    public void addMcp(List<String> list, ReactorRole role) {
+        McpHub hub = updateMcpConnections(list, role.getClientId(), role);
         role.setMcpHub(hub);
     }
 
@@ -445,7 +461,7 @@ public class RoleService {
     }
 
     //刷新某个Agent的配置
-    public void refreshConfig(Message message,boolean refreshMcp) {
+    public void refreshConfig(Message message, boolean refreshMcp) {
         String from = message.getSentFrom().toString();
         ReactorRole role = roleMap.get(from);
         if (null != role) {
