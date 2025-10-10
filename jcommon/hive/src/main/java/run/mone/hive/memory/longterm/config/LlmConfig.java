@@ -66,7 +66,7 @@ public class LlmConfig {
      * 模型名称
      */
     @Builder.Default
-    private String model = "gpt-4o-mini";
+    private String model = "";
     
     /**
      * API密钥
@@ -139,6 +139,12 @@ public class LlmConfig {
             String providerName = configMap.get("providerName").toString();
             builder.providerName(providerName);
         }
+
+        if (configMap.containsKey("responseJsonFormat")) {
+            String responseJsonFormat = configMap.get("responseJsonFormat").toString();
+            builder.responseJsonFormat(responseJsonFormat);
+        }
+
         
         if (configMap.containsKey("model")) {
             builder.model((String) configMap.get("model"));

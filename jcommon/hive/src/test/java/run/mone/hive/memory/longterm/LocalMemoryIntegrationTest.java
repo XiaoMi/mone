@@ -200,7 +200,7 @@ public class LocalMemoryIntegrationTest {
         try {
             // 首先添加一个记忆用于删除测试
             Map<String, Object> addResult = addMemoryWithEmbedding(
-                TEST_USER_ID + "说过一切记忆终将逝去", TEST_USER_ID);
+                TEST_USER_ID + "最喜欢蓝色，最不喜欢红色", TEST_USER_ID);
             
             assertNotNull(addResult, "添加记忆结果不应为null");
             

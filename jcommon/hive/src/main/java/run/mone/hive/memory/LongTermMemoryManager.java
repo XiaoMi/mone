@@ -26,6 +26,18 @@ public class LongTermMemoryManager {
         initializeLongTermMemory();
     }
 
+    /**
+     * 使用指定的配置创建长期记忆管理器
+     * 
+     * @param roleName 角色名称
+     * @param memoryConfig 记忆配置
+     */
+    public LongTermMemoryManager(String roleName, MemoryConfig memoryConfig) {
+        this.roleName = roleName;
+        this.memoryConfig = memoryConfig;
+        initializeLongTermMemory();
+    }
+
 
     /**
      * 初始化长期记忆系统
@@ -36,7 +48,6 @@ public class LongTermMemoryManager {
             if (this.memoryConfig == null) {
                 this.memoryConfig = loadMemoryConfig();
             }
-
             // 使用配置创建Memory实例
             if (this.memoryConfig != null) {
                 this.longTermMemory = new Memory(this.memoryConfig);

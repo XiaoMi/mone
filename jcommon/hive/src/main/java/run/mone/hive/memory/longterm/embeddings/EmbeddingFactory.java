@@ -37,6 +37,8 @@ public class EmbeddingFactory {
                 return new VertexAiEmbedding(config);
             case TOGETHER:
                 return new TogetherEmbedding(config);
+            case GLM:
+                return new GlmEmbedding(config);
             default:
                 throw new IllegalArgumentException("Unsupported embedding provider: " + config.getProvider());
         }
@@ -49,6 +51,15 @@ public class EmbeddingFactory {
      */
     public static EmbeddingBase createDefault() {
         return create(EmbedderConfig.openAiDefault());
+    }
+    
+    /**
+     * 创建默认的GLM嵌入实例
+     * 
+     * @return GLM嵌入实例
+     */
+    public static EmbeddingBase createGlmDefault() {
+        return create(EmbedderConfig.glmDefault());
     }
     
     /**

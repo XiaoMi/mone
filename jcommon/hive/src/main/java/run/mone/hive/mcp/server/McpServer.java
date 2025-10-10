@@ -118,7 +118,7 @@ public interface McpServer {
 	 * @param call The function that implements the tool's logic, receiving arguments and
 	 * returning results
 	 */
-	public static record ToolRegistration(Tool tool, Function<Map<String, Object>, CallToolResult> call) {
+	public static record ToolRegistration(Tool tool, Function<Map<String, Object>,  Flux<CallToolResult>> call) {
 	}
 
 	public static record ToolStreamRegistration(Tool tool, Function<Map<String, Object>, Flux<CallToolResult>> call) {
@@ -315,7 +315,7 @@ public interface McpServer {
 		 * @return This builder instance for method chaining
 		 * @throws IllegalArgumentException if tool or handler is null
 		 */
-		public Builder tool(McpSchema.Tool tool, Function<Map<String, Object>, McpSchema.CallToolResult> handler) {
+		public Builder tool(McpSchema.Tool tool, Function<Map<String, Object>,  Flux<CallToolResult>>  handler) {
 			Assert.notNull(tool, "Tool must not be null");
 			Assert.notNull(handler, "Handler must not be null");
 

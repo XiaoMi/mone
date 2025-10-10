@@ -70,6 +70,20 @@ public class HiveAutoConfigure {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
             return new LLM(config);
         }
+        if (LLMProvider.OPENAICOMPATIBLE.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAICOMPATIBLE).build();
+            config.setUrl(System.getenv("OPENAI_COMPATIBLE_URL"));
+            config.setModel(System.getenv("OPENAI_COMPATIBLE_MODEL"));
+            config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
+            return new LLM(config);
+        }
+        if (LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE).build();
+            config.setUrl(System.getenv("OPENAI_COMPATIBLE_URL"));
+            config.setModel(System.getenv("OPENAI_COMPATIBLE_MODEL"));
+            config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
+            return new LLM(config);
+        }
 
         return new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmType.toUpperCase(Locale.ROOT))).build());
     }

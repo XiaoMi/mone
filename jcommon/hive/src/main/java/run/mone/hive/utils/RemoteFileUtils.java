@@ -10,6 +10,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
+import java.io.File;
 import java.io.IOException;
 
 @Slf4j
@@ -49,12 +50,18 @@ public class RemoteFileUtils {
     /**
      * 列出远程文件或目录
      *
-     * @param fileName 文件名或目录路径
+     * @param dirName 目录路径
      * @return 文件列表结果
      * @throws IOException 如果操作失败
      */
-    public static String listFiles(String fileName) throws IOException {
-        String url = String.format("%s/list?name=%s&userKey=%s&userSecret=%s&token=%s", getHost(), fileName, getUserKey(), getUserSecret(), getToken());
+    public static String listFiles(String dirName, boolean recursive) throws IOException {
+        if (dirName == null || dirName.isEmpty()) {
+            return null;
+        }
+        if (dirName.startsWith(File.separator)) {
+            dirName = dirName.substring(1);
+        }
+        String url = String.format("%s/list?directory=%s&userKey=%s&userSecret=%s&token=%s&circle=%s", getHost(), dirName, getUserKey(), getUserSecret(), getToken(), String.valueOf(recursive));
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(url);

@@ -23,6 +23,7 @@ export interface TokenUsage {
   totalTokens: number;
   inputTokens: number;
   outputTokens: number;
+  compressedTokens: number;
   lastUpdate: Date;
 }
 
@@ -145,6 +146,7 @@ export const useChatContextStore = defineStore("chat-context", () => {
     totalTokens: 1000000, // 默认总量
     inputTokens: 0,
     outputTokens: 0,
+    compressedTokens: 0,
     lastUpdate: new Date()
   });
 
@@ -206,7 +208,22 @@ export const useChatContextStore = defineStore("chat-context", () => {
   function addMessage(message: Message) {
     messageList.value.push(message);
   }
-
+  function clearMessageAfterId(id) {
+    const index = messageList.value.findIndex((msg) => msg.data?.text?.includes(id))
+    if (
+      messageList.value[index]?.data?.text?.replace(
+        new RegExp(`<hive-msg-id>${id}<\\/hive-msg-id>[\\s\\S]*$`),
+        '',
+      ) === ''
+    ) {
+      messageList.value.length = index
+      return
+    }
+    messageList.value[index].data.text = messageList.value[index]?.data?.text?.replace(
+      new RegExp(`<hive-msg-id>${id}<\\/hive-msg-id>[\\s\\S]*$`),
+      '',
+    )
+  }
   function setMessageList(list: MessageList) {
     messageList.value.length = 0;  // 清空现有数组
     messageList.value.push(...list);  // 添加新的元素
@@ -268,10 +285,11 @@ export const useChatContextStore = defineStore("chat-context", () => {
   }
 
   // Token使用量相关方法
-  function updateTokenUsage(inputTokens: number, outputTokens: number) {
+  function updateTokenUsage(inputTokens: number, outputTokens: number, compressedTokens: number = 0) {
     tokenUsage.value.inputTokens += inputTokens;
     tokenUsage.value.outputTokens += outputTokens;
-    tokenUsage.value.usedTokens = tokenUsage.value.inputTokens + tokenUsage.value.outputTokens;
+    tokenUsage.value.compressedTokens += compressedTokens;
+    tokenUsage.value.usedTokens = tokenUsage.value.inputTokens + tokenUsage.value.outputTokens - tokenUsage.value.compressedTokens;
     tokenUsage.value.lastUpdate = new Date();
   }
 
@@ -284,12 +302,13 @@ export const useChatContextStore = defineStore("chat-context", () => {
       usedTokens: 0,
       inputTokens: 0,
       outputTokens: 0,
+      compressedTokens: 0,
       lastUpdate: new Date()
     });
   }
 
   function getTokenUsagePercentage(): number {
-    if (tokenUsage.value.totalTokens === 0) return 0;
+    if (tokenUsage.value.totalTokens <= 0) return 0;
     return Math.min((tokenUsage.value.usedTokens / tokenUsage.value.totalTokens) * 100, 100);
   }
 
@@ -326,5 +345,6 @@ export const useChatContextStore = defineStore("chat-context", () => {
     setTotalTokens,
     resetTokenUsage,
     getTokenUsagePercentage,
+    clearMessageAfterId
   };
 });

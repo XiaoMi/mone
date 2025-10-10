@@ -16,6 +16,7 @@ import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -42,13 +43,15 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_END;
 import static run.mone.hive.common.Constants.TOKEN_USAGE_LABEL_START;
 
 /**
- * @author wangyingjie
  * @author goodjava@qq.com
+ * @author wangyingjie
  * 会自己决策和行动的Role(Agent)
  */
 @EqualsAndHashCode(callSuper = true)
@@ -110,12 +113,9 @@ public class ReactorRole extends Role {
 
     private FocusChainManager focusChainManager;
 
-    /**
-     * -- GETTER --
-     *  获取当前工作区路径
-     *
-     * @return 工作区根目录路径
-     */
+    // HiveManagerService引用 - 用于保存配置
+    private run.mone.hive.mcp.service.HiveManagerService hiveManagerService;
+
     //工作区根目录路径，用于路径解析
     private String workspacePath = System.getProperty("user.dir");
 
@@ -125,9 +125,11 @@ public class ReactorRole extends Role {
     // 任务状态 - 用于上下文压缩
     private TaskState taskState;
 
-
     // 意图分类服务
     private IntentClassificationService classificationService;
+
+    // 文件检查点管理器
+    private FileCheckpointManager fileCheckpointManager;
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -195,11 +197,21 @@ public class ReactorRole extends Role {
         this.llm = llm;
         this.scheduledTaskHandler = message -> {
             log.debug("Processing scheduled message: {}", this.getName());
+
+
+            List<Function<ReactorRole, String>> tasks = roleMeta.getTaskList();
+            tasks.forEach(task -> {
+                if (!this.clientId.equals(Const.DEFAULT)) {
+                    String res = task.apply(this);
+                    log.info("call task res:{}", res);
+                }
+            });
             //添加退出逻辑
             if (null != this.lastReceiveMsgTime) {
                 Date currentDate = new Date();
                 long timeDifference = currentDate.getTime() - this.lastReceiveMsgTime.getTime();
-                if (timeDifference >= TimeUnit.SECONDS.toMillis(120)) {
+                if (timeDifference >= TimeUnit.HOURS.toMillis(2)) {
+                    log.info("kick off time>2 hour");
                     //发出退出指令
                     this.putMessage(Message.builder().data(Const.ROLE_EXIT).build());
                 }
@@ -239,6 +251,11 @@ public class ReactorRole extends Role {
         // 初始化意图分类服务
         this.classificationService = new IntentClassificationService();
 
+        try {
+            this.fileCheckpointManager = new FileCheckpointManager(this.workspacePath);
+        } catch (Exception e) {
+            log.error("Failed to initialize FileCheckpointManager", e);
+        }
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
@@ -282,9 +299,26 @@ public class ReactorRole extends Role {
     }
 
     @Override
-    protected void postReact(ActionContext ac) {
+    public void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
+
+        // 保存配置到HiveManager
+        saveConfigToHiveManager();
+
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
+    }
+
+    /**
+     * 保存配置到HiveManager
+     */
+    private void saveConfigToHiveManager() {
+        Safe.run(() -> {
+            if (hiveManagerService != null) {
+                hiveManagerService.saveRoleConfig(roleConfig, workspacePath, this.getConfg().getAgentId(), this.getConfg().getUserId());
+            } else {
+                log.debug("HiveManagerService is null, skipping config save");
+            }
+        });
     }
 
 
@@ -363,18 +397,15 @@ public class ReactorRole extends Role {
             return -1;
         }
 
-        //刷新配置(不会退出)
-        if (null != msg.getData() && msg.getData().equals(Const.REFRESH_CONFIG)) {
-            log.info("ReactorRole {} 收到配置刷新通知", this.name);
-            // 完成当前流式输出
-            if (null != msg.getSink()) {
-                msg.getSink().complete();
-            }
-            return -1;
-        }
-
         //放到记忆中
         this.putMemory(msg);
+
+        // 为用户消息创建文件检查点
+        Safe.run(() -> {
+            if (fileCheckpointManager != null) {
+                fileCheckpointManager.createCheckpoint(msg.getId());
+            }
+        });
 
         // 处理上下文压缩
         processContextCompression(msg);
@@ -496,7 +527,7 @@ public class ReactorRole extends Role {
             AtomicBoolean hasError = new AtomicBoolean(false);
 
             //获取系统提示词
-            String systemPrompt = buildSystemPrompt();
+            String systemPrompt = buildSystemPrompt(msg);
 
             // 在调用LLM前检查中断状态
             if (this.interrupted.get()) {
@@ -506,8 +537,8 @@ public class ReactorRole extends Role {
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
 
-            //调用大模型(选用合适的工具)
             focusChainManager.getTaskState().setApiRequestCount(focusChainManager.getTaskState().getApiRequestCount() + 1);
+            //调用大模型(选用合适的工具)
             String toolRes = callLLM(systemPrompt, compoundMsg, sink, hasError);
             log.info("call llm res:\n{} \nhasError:\n{}", toolRes, hasError.get());
             if (hasError.get()) {
@@ -575,17 +606,62 @@ public class ReactorRole extends Role {
     private void callMcp(ToolDataInfo it, FluxSink sink) {
         String toolName = it.getKeyValuePairs().get("tool_name");
         it.setRole(this);
-        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, sink, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+
+        // 提前创建Message以获得ID
+        Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
+
+        // 为工具消息创建文件检查点
+        Safe.run(() -> {
+            if (fileCheckpointManager != null) {
+                fileCheckpointManager.createCheckpoint(assistantMessage.getId());
+            }
+        });
+
+        // 执行mcpCall，但不让它直接写sink，以便我们控制输出
+        McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, null, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+
         McpSchema.Content content = result.getContent();
+        String contentForLlm;
+        String contentForUser = "";
+
         if (content instanceof McpSchema.TextContent textContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool:" + toolName + "\n结果:\n" + textContent.text() + "\n").build());
+            contentForUser = textContent.text();
+            contentForLlm = "调用Tool:" + toolName + "\n结果:\n" + contentForUser;
         } else if (content instanceof McpSchema.ImageContent imageContent) {
-            this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n").build());
+            contentForUser = "[图片]";
+            contentForLlm = "图片占位符" + "\n";
+            assistantMessage.setImages(List.of(imageContent.data()));
+        } else {
+            contentForUser = "执行完成";
+            contentForLlm = "调用Tool:" + toolName + " 完成";
         }
+
+        // 发送给前端
+        if (StringUtils.isNotEmpty(contentForUser)) {
+            sendToSink(contentForUser, assistantMessage, true);
+        }
+
+        // 存档
+        assistantMessage.setData(contentForLlm);
+        assistantMessage.setContent(contentForLlm);
+        this.putMessage(assistantMessage);
     }
 
     private void callTool(String name, ToolDataInfo it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
+
+        // 提前创建Message以获得ID
+        Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
+
+        // 为工具消息创建文件检查点
+        Safe.run(() -> {
+            if (fileCheckpointManager != null) {
+                fileCheckpointManager.createCheckpoint(assistantMessage.getId());
+            }
+        });
+
+        String contentForLlm;
+
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
@@ -595,25 +671,47 @@ public class ReactorRole extends Role {
 
             ToolInterceptor.before(name, params, extraParam);
             JsonObject toolRes = this.toolMap.get(name).execute(this, params);
+
+            String contentForUser;
             if (toolRes.has("toolMsgType")) {
                 // 说明需要调用方做特殊处理
-                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
-                if (null != sink && tool.show()) {
-                    sink.next(toolRes.toString());
-                }
+                contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
+                contentForUser = toolRes.toString();
             } else {
-                res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
-                if (null != sink && tool.show()) {
-                    sink.next(tool.formatResult(toolRes));
-                }
+                contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
+                contentForUser = tool.formatResult(toolRes);
             }
+
+            if (tool.show()) {
+                sendToSink(contentForUser, assistantMessage, true);
+            }
+
+        } else {
+            contentForLlm = res;
         }
+
+        assistantMessage.setData(contentForLlm);
+        assistantMessage.setContent(contentForLlm);
+
         if (tool.completed()) {
             if (null != sink) {
                 sink.complete();
             }
         }
-        this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
+        this.putMessage(assistantMessage);
+    }
+
+    private void sendToSink(String content, Message contextMessage, boolean addId) {
+        if (this.fluxSink != null) {
+            // 先发送内容
+            if (StringUtils.isNotEmpty(content)) {
+                this.fluxSink.next(content);
+            }
+            // 如果需要，再单独发送ID
+            if (addId && contextMessage != null) {
+                this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");
+            }
+        }
     }
 
     private String callLLM(String systemPrompt, LLMCompoundMsg compoundMsg, FluxSink sink, AtomicBoolean hasError) {
@@ -631,18 +729,15 @@ public class ReactorRole extends Role {
             if (this.interrupted.get()) {
                 log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
                 hasError.set(true);
-                Optional.ofNullable(sink).ifPresent(s -> {
-                    s.next("⚠️ 执行已被中断\n");
-                    s.complete();
-                });
+                sendToSink("⚠️ 执行已被中断\n", null, false);
+                Optional.ofNullable(sink).ifPresent(FluxSink::complete);
                 break;
             }
 
             try {
                 if (retryCount > 0) {
                     log.info("LLM调用重试第{}次", retryCount);
-                    int tmpRetries = retryCount;
-                    Optional.ofNullable(sink).ifPresent(s -> s.next("LLM调用超时，正在重试第" + tmpRetries + "次...\n"));
+                    sendToSink("LLM调用超时，正在重试第" + retryCount + "次...\n", null, false);
                 }
 
                 sb.setLength(0); // 清空之前的结果
@@ -653,16 +748,14 @@ public class ReactorRole extends Role {
                             if (this.interrupted.get()) {
                                 log.info("Role '{}' 在LLM流式响应中被中断", this.name);
                                 hasError.set(true);
-                                Optional.ofNullable(sink).ifPresent(s -> {
-                                    s.next("⚠️ 执行已被中断\n");
-                                    s.complete();
-                                });
+                                sendToSink("⚠️ 执行已被中断\n", null, false);
+                                Optional.ofNullable(sink).ifPresent(FluxSink::complete);
                                 return; // 停止处理后续响应
                             }
                             if (it != null && !it.startsWith(TOKEN_USAGE_LABEL_START)) {
                                 sb.append(it);
                             }
-                            Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                            sendToSink(it, null, false);
                         })
                         .doOnError(error -> {
                             throw new RuntimeException(error);
@@ -677,11 +770,8 @@ public class ReactorRole extends Role {
 
                 if (retryCount >= maxRetries) {
                     // 所有重试都失败了
-                    final int finalRetryCount = retryCount;
-                    Optional.ofNullable(sink).ifPresent(s -> {
-                        s.next("LLM调用失败，已重试" + finalRetryCount + "次，无法完成请求。\n");
-                        s.error(error);
-                    });
+                    sendToSink("LLM调用失败，已重试" + retryCount + "次，无法完成请求。\n", null, false);
+                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
                     sb.append("LLM调用失败: ").append(error.getMessage());
                     hasError.set(true);
                 }
@@ -701,7 +791,7 @@ public class ReactorRole extends Role {
     }
 
 
-    private String buildSystemPrompt() {
+    private String buildSystemPrompt(Message message) {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
             roleDescription = """
@@ -713,13 +803,13 @@ public class ReactorRole extends Role {
                     \n
                     """.formatted(this.profile, this.goal, this.constraints, this.outputFormat);
         }
-        String prompt = MonerSystemPrompt.mcpPrompt(this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
+        String prompt = MonerSystemPrompt.mcpPrompt(message, this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
         log.debug("system prompt:{}", prompt);
         return prompt;
     }
 
     //构建用户提问的prompt
-    //1.支持从网络获取内容  2.支持从知识库获取内容
+    //1.支持从网络获取内容  2.支持从知识库获取内容  3.支持斜杠命令解析
     public String buildUserPrompt(Message msg, String history, FluxSink sink) {
         String queryInfo = "";
         //支持自动从网络查询信息
@@ -757,6 +847,7 @@ public class ReactorRole extends Role {
         }
         return queryInfo;
     }
+
 
     private String queryKnowledgeBase(Message msg, FluxSink sink) {
         try {
@@ -840,24 +931,90 @@ public class ReactorRole extends Role {
     }
 
     /**
-     * 检查中断状态，如果被中断则抛出异常
-     * 用于在关键执行点进行中断检查
+     * 回滚记忆，移除最后一次交互或回滚到指定消息
+     *
+     * @param messageId 如果提供，则回滚到此消息之前（包含此消息）
+     * @return 如果成功回滚则返回true，否则返回false
      */
-    private void checkInterrupted() {
-        if (this.interrupted.get()) {
-            log.info("Role '{}' 执行被中断", this.name);
-            throw new RuntimeException("Role execution interrupted");
+    public boolean rollbackMemory(String messageId) {
+        List<Message> history = this.rc.getMemory().getStorage();
+        if (history == null || history.isEmpty()) {
+            log.warn("无法回滚，历史记录为空");
+            return false;
         }
+
+        String checkpointIdToRevert = messageId;
+
+        // 如果没有提供messageId，则回滚最后一次交互
+        if (StringUtils.isEmpty(messageId)) {
+            log.info("回滚最后一次交互");
+            // 获取最后一条消息的ID作为回滚点
+            checkpointIdToRevert = history.get(history.size() - 1).getId();
+            // 通常一次交互包含用户消息和AI助理消息，所以我们移除最后两条
+            int messagesToRemove = 2;
+            if (history.size() < messagesToRemove) {
+                messagesToRemove = history.size();
+            }
+            for (int i = 0; i < messagesToRemove; i++) {
+                if (!history.isEmpty()) {
+                    history.remove(history.size() - 1);
+                }
+            }
+        } else {
+            // 如果提供了messageId，则找到该消息并移除之后的所有内容
+            int targetIndex = -1;
+            for (int i = 0; i < history.size(); i++) {
+                if (history.get(i).getId().equals(messageId)) {
+                    targetIndex = i;
+                    break;
+                }
+            }
+
+            if (targetIndex != -1) {
+                log.info("回滚到消息ID: {} (索引: {})", messageId, targetIndex);
+                int originalSize = history.size();
+                // 移除从targetIndex到列表末尾的所有元素
+                history.subList(targetIndex, originalSize).clear();
+                log.info("成功移除 {} 条消息", originalSize - targetIndex);
+            } else {
+                log.warn("无法回滚上下文，未找到消息ID: {}", messageId);
+                return false; // 上下文回滚失败，直接返回
+            }
+        }
+
+        // 上下文回滚成功后，执行文件回滚
+        try {
+            if (fileCheckpointManager != null && checkpointIdToRevert != null) {
+                log.info("开始回滚文件系统到检查点: {}", checkpointIdToRevert);
+                fileCheckpointManager.revert(checkpointIdToRevert);
+                log.info("文件系统成功回滚到检查点: {}", checkpointIdToRevert);
+            }
+        } catch (Exception e) {
+            log.error("文件系统回滚失败，检查点ID: " + checkpointIdToRevert, e);
+            // 注意：这里可以选择是否向上抛出异常或返回false
+            // 当前实现为只记录错误，即使文件回滚失败，上下文回滚依然算成功
+        }
+
+        return true;
     }
 
     public void initConfig() {
         if (null != this.roleConfig) {
-            if (this.roleConfig.containsKey("workspacePath")) {
-                setWorkspacePath(this.roleConfig.get("workspacePath"));
+            if (this.roleConfig.containsKey(Const.WORKSPACE_PATH_KEY)) {
+                setWorkspacePath(this.roleConfig.get(Const.WORKSPACE_PATH_KEY));
             }
-
             // 配置上下文压缩参数
             configureContextCompression();
+            //解决agent.md的配置问题
+            String str = this.getRoleConfig().get(Const.AGENT_CONFIG);
+            if (StringUtils.isEmpty(str) && StringUtils.isNotEmpty(this.workspacePath)) {
+                //尝试读取下agent.md
+                str = MonerSystemPrompt.getAgentMd(this.workspacePath);
+                //标准格式
+                if (str != null && str.contains("## Profile")) {
+                    this.getRoleConfig().put(Const.AGENT_CONFIG, str);
+                }
+            }
         }
     }
 
@@ -903,6 +1060,7 @@ public class ReactorRole extends Role {
         try {
             // 获取当前的消息历史
             List<Message> currentMessages = getCurrentMessageHistory();
+            FluxSink sink = getFluxSink(newMessage);
 
             // 异步处理上下文压缩
             this.contextManager.processNewMessage(
@@ -920,10 +1078,12 @@ public class ReactorRole extends Role {
 
                     // 标记任务状态
                     this.taskState.setDidCompleteContextCompression(true);
+                    sink.next(getTokenUsageLabel(result));
 
                 } else if (result.wasOptimized()) {
                     log.info("应用了上下文规则优化");
                     updateMessageHistory(result.getProcessedMessages());
+                    sink.next(getTokenUsageLabel(result));
                 }
 
                 if (result.hasError()) {
@@ -937,6 +1097,11 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             log.error("处理上下文压缩时发生异常", e);
         }
+    }
+
+    private String getTokenUsageLabel(ConversationContextManager.ContextProcessingResult result) {
+        LLM.LLMUsage usage = LLM.LLMUsage.builder().compressedTokens(result.getCompressedTokenNum()).build();
+        return TOKEN_USAGE_LABEL_START + GsonUtils.gson.toJson(usage) + TOKEN_USAGE_LABEL_END;
     }
 
     /**
@@ -1108,4 +1273,6 @@ public class ReactorRole extends Role {
             return null;
         });
     }
+
+
 }
