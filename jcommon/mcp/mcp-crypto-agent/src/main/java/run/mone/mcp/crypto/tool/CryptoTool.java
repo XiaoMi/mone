@@ -52,13 +52,14 @@ public class CryptoTool implements ITool {
                 2. Get all users' balances
                 3. Execute internal trade (transfer) between users
                 Use this tool when users need to check their cryptocurrency balance or transfer coins to other users.
+                4. 用户没提供的参数,如果有默认值则直接使用默认值即可
                 """;
     }
 
     @Override
     public String parameters() {
         return """
-                - 用户没提供的参数就用提供的默认值
+                - 用户没提供的参数,如果有默认值则直接使用默认值即可
                 - operation: (required) The operation to perform. Must be one of: "get_balance", "get_all_balance", "inner_trade"
                 - name: (required for get_balance) The username to query balance for
                 - sender: (required for inner_trade) The sender's username 默认值:%s
@@ -218,12 +219,12 @@ public class CryptoTool implements ITool {
                 req.addProperty("sender", System.getenv("sender"));
             }
 
-            if (req.get("senderPwd").getAsString().equals("senderPwd")) {
-                req.addProperty("senderPwd", System.getenv("senderPwd"));
+            if (req.get("senderAccount").getAsString().equals("senderAccount")) {
+                req.addProperty("senderAccount", System.getenv("senderAccount"));
             }
 
-            if (req.get("receiverAccount").getAsString().equals("receiverAccount")) {
-                req.addProperty("receiverAccount", System.getenv("senderAccount"));
+            if (req.get("senderPwd").getAsString().equals("senderPwd")) {
+                req.addProperty("senderPwd", System.getenv("senderPwd"));
             }
 
 
