@@ -2,9 +2,10 @@ server:
   port: 8080
 
 mcp:
-  llm: CLAUDE_COMPANY
+#  llm: CLAUDE_COMPANY
 #  llm: doubao_deepseek_v3
-#  llm: grok
+  llm: deepseek
+  #  llm: grok
   transport:
     type: grpc
   grpc:
@@ -12,7 +13,7 @@ mcp:
   hub:
     path:
   agent:
-    name: agentManager
+    name: zzy_agent_manager
     delay: 8
 
 spring:
