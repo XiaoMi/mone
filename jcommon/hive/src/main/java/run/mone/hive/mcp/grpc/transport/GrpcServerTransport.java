@@ -7,6 +7,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
@@ -215,19 +216,23 @@ public class GrpcServerTransport implements ServerMcpTransport {
     }
 
 
+    private boolean serverPing = false;
+
     /**
      * MCP 服务的 gRPC 实现
      */
     private class McpServiceImpl extends McpServiceGrpc.McpServiceImplBase {
 
         public McpServiceImpl() {
-            Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-                Safe.run(() -> {
-                    userConnections.forEach((k, v) -> {
-                        v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
+            if (serverPing) {
+                Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+                    Safe.run(() -> {
+                        userConnections.forEach((k, v) -> {
+                            v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
+                        });
                     });
-                });
-            }, 5, 5, TimeUnit.SECONDS);
+                }, 5, 5, TimeUnit.SECONDS);
+            }
         }
 
 
@@ -341,6 +346,23 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (name.equals(METHOD_TOOLS_CALL)) {
                 DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
                 Object res = rh.handle(request).block();
+
+                if (res instanceof Flux<?> flux) {
+                    McpSchema.CallToolResult r = (McpSchema.CallToolResult) flux.blockLast();
+                    McpSchema.Content it = r.content().get(0);
+                    if (it instanceof McpSchema.TextContent tc) {
+                        TextContent.Builder builder = TextContent.newBuilder();
+                        builder.setData(tc.data());
+                        builder.setText(tc.text());
+                        resBuilder.addContent(Content.newBuilder().setText(builder).build());
+                    }
+                    if (it instanceof McpSchema.ImageContent ic) {
+                        ImageContent.Builder builder = ImageContent.newBuilder();
+                        builder.setData(ic.data());
+                        builder.setMimeType(ic.mimeType());
+                        resBuilder.addContent(Content.newBuilder().setImage(builder).build());
+                    }
+                }
 
                 //支持image 和 text
                 if (res instanceof McpSchema.CallToolResult ctr) {

@@ -2,6 +2,7 @@ package run.mone.hive.roles.tool;
 
 import com.google.gson.JsonObject;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.JsonUtils;
 
 /**
  * @author goodjava@qq.com
@@ -42,7 +43,7 @@ public interface ITool {
     }
 
     default String formatResult(JsonObject res) {
-        return "<tool_result>"+res.toString()+"</tool_result>";
+        return JsonUtils.toolResult(res.toString());
     }
 
     default JsonObject execute(ReactorRole role, JsonObject req) {

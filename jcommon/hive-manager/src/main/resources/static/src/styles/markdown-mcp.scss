@@ -1,55 +1,165 @@
-.thinking-block {
-  margin: 10px 0;
+// ===== 公共样式变量 =====
+$block-margin: 10px 0;
+$block-border-radius: 8px;
+$button-border-radius: 6px;
+$block-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+$header-padding: 20px 15px;
+$content-padding: 16px 24px;
+$border-color: #3d3d3d;
+$background-primary: #1e1e1e;
+$background-secondary: #2d2d2d;
+$text-primary: #e1e1e1;
+$text-secondary: #888;
+$accent-blue: #00b3ff;
+$accent-green: #67c23a;
+$accent-red: #e74c3c;
+$accent-purple: #9c27b0;
+$accent-orange: #ff9500;
+$accent-cyan: #3498db;
+$accent-teal: #2ecc71;
+$accent-indigo: #4a90e2;
+$accent-violet: #8e44ad;
+$font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
+
+// ===== Mixins =====
+@mixin block-base {
+  margin: $block-margin;
   border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: $block-border-radius;
+  background: $background-primary;
+  box-shadow: $block-shadow;
   line-height: 0;
   overflow: hidden;
+}
+
+@mixin header-base($bg-color: $background-secondary) {
+  display: flex;
+  align-items: center;
+  padding: $header-padding;
+  background: $bg-color;
+  border-bottom: 1px solid $border-color;
+}
+
+@mixin header-clickable {
+  @include header-base;
+  cursor: pointer;
+  user-select: none;
+}
+
+@mixin content-base {
+  padding: $content-padding;
+  color: $text-primary;
+  line-height: 1.6;
+  background: $background-primary;
+}
+
+@mixin collapsible-content {
+  @include content-base;
+  display: none;
+  
+  &.is-active {
+    display: block;
+  }
+}
+
+@mixin icon-base($color: $accent-blue) {
+  font-size: 16px;
+  color: $color;
+  margin-right: 12px;
+}
+
+@mixin toggle-icon {
+  margin-left: auto;
+  margin-right: 0;
+  color: $text-secondary;
+  transition: transform 0.3s ease;
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
+}
+
+@mixin section-base($accent-color) {
+  margin: 8px 0;
+  padding: 12px;
+  background: $background-secondary;
+  border-radius: 4px;
+  border-left: 4px solid $accent-color;
+
+  &::before {
+    display: block;
+    color: $accent-color;
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: capitalize;
+  }
+}
+
+@mixin code-style {
+  font-family: $font-mono;
+  font-size: 0.9em;
+  color: $accent-blue;
+  background: $background-primary;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+}
+
+@mixin task-progress-list($accent-color: $accent-blue) {
+  ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+
+    li {
+      line-height: 1.6;
+      margin: 0.3rem 0;
+      color: $text-primary;
+
+      &::before {
+        content: '';
+        margin-right: 8px;
+        color: $text-secondary;
+      }
+
+      &.completed::before {
+        content: '';
+        color: $accent-green;
+      }
+    }
+  }
+}
+
+// ===== 基础元素重置 =====
+.markdown-body {
+  counter-reset: step;
+}
+
+// ===== 思考块 =====
+.thinking-block {
+  @include block-base;
 
   .thinking-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
+    @include header-clickable;
     background: rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 
     i {
-      font-size: 16px;
-      color: #00b3ff;
-      margin-right: 12px;
+      @include icon-base($accent-blue);
 
       &.toggle-icon {
-        margin-left: auto;
-        margin-right: 0;
-        color: #888;
-        transition: transform 0.3s ease;
-
-        &.expanded {
-          transform: rotate(180deg);
-        }
+        @include toggle-icon;
       }
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .thinking-content {
+    @include collapsible-content;
     padding: 0 24px 16px 24px;
-    border-top: 1px solid #3d3d3d;
-    display: none;
-    color: #e1e1e1;
-    line-height: 1.6;
-
-    &.is-active {
-      display: block;
-    }
+    border-top: 1px solid $border-color;
 
     p {
       line-height: 1.6;
@@ -57,53 +167,42 @@
   }
 }
 
+// ===== MCP 工具块 =====
 .mcp-tool-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  // background: #1e1e1e;
+  @include block-base;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  line-height: 0;
 
   .mcp-tool-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      margin-right: 12px;
-      color: #00b3ff;
+      @include icon-base($accent-blue);
       
       &:nth-of-type(2) {
         margin-left: 24px;
         margin-right: 12px;
-        color: #00b3ff;
       }
     }
 
     .server-name {
       font-weight: 500;
-      color: #e1e1e1;
+      color: $text-primary;
       
       &::before {
         content: "服务：";
-        color: #888;
+        color: $text-secondary;
         font-weight: normal;
         margin-right: 4px;
       }
     }
 
     .tool-name {
-      color: #e1e1e1;
+      color: $text-primary;
       
       &::before {
         margin-left: 12px;
         content: "工具：";
-        color: #888;
+        color: $text-secondary;
         margin-right: 4px;
       }
     }
@@ -113,7 +212,6 @@
     .arguments {
       margin: 0;
       padding: 15px;
-      // background: #1e1e1e;
 
       pre {
         margin: 0;
@@ -121,9 +219,9 @@
         background-color: transparent;
         
         code {
-          font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+          font-family: $font-mono;
           font-size: 0.9em;
-          color: #e1e1e1;
+          color: $text-primary;
           white-space: pre-wrap;
         }
       }
@@ -131,60 +229,48 @@
   }
 }
 
+// ===== 完成尝试块 =====
 .attempt-completion-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
-  .completion-result, .completion-command {
-    border-radius: 8px;
+  .completion-result, 
+  .completion-command {
+    border-radius: $block-border-radius;
     padding: 0;
     overflow: hidden;
   }
 
-  .result-header, .command-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #67c23a;
-    border-bottom: 1px solid #3d3d3d;
+  .result-header, 
+  .command-header {
+    @include header-base($accent-green);
     
     i {
-      font-size: 16px;
-      margin-right: 12px;
+      @include icon-base;
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .command-header {
     background: #909399;
-  }
 
-  .result-header {
     i {
-      color: #00d9b2;
+      color: $accent-blue;
     }
   }
 
-  .command-header {
-    i {
-      color: #00b3ff;
-    }
+  .result-header i {
+    color: #00d9b2;
   }
 
   .result-content {
-    color: #67c23a;
+    color: $accent-green;
     line-height: 1.6;
     padding: 15px;
-    background: #1e1e1e;
+    background: $background-primary;
     
     p {
       margin: 0.5rem 0;
@@ -193,20 +279,18 @@
   }
 
   .command-content {
-    background: #2d2d2d;
+    background: $background-secondary;
     padding: 15px;
     border-radius: 4px;
     margin: 15px;
     
     code {
-      color: #00b3ff;
-      font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-      font-size: 0.9em;
+      @include code-style;
     }
   }
 
   .completion-command {
-    border-top: 1px solid #3d3d3d;
+    border-top: 1px solid $border-color;
     margin-top: 8px;
 
     .command-header {
@@ -215,20 +299,20 @@
       border-radius: 6px 6px 0 0;
 
       i {
-        color: #00b3ff;
+        color: $accent-blue;
         font-size: 14px;
         margin-right: 8px;
       }
 
       span {
-        color: #e1e1e1;
+        color: $text-primary;
         font-weight: 500;
         font-size: 0.9em;
       }
     }
 
     .command-content {
-      background: #2d2d2d;
+      background: $background-secondary;
       padding: 12px 15px;
       border-radius: 0 0 6px 6px;
       margin: 0;
@@ -236,70 +320,61 @@
       pre {
         margin: 0;
         padding: 8px;
-        background: #1e1e1e;
+        background: $background-primary;
         border-radius: 4px;
         overflow-x: auto;
 
         code {
-          color: #00b3ff;
-          font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+          font-family: $font-mono;
           font-size: 0.9em;
+          color: $accent-blue;
           padding: 0;
           background: transparent;
         }
       }
 
       code {
-        color: #00b3ff;
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
+        background: $background-primary;
       }
     }
   }
 }
 
+// ===== 询问后续问题块 =====
 .ask-followup-block {
   display: flex;
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  // line-height: 0;
-  overflow: hidden;
-  background: transparent;
   flex-direction: column;
+  margin: $block-margin;
+  border: none;
+  border-radius: $block-border-radius;
+  background: transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 
   .followup-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
     
     i {
-      font-size: 16px;
-      margin-right: 12px;
-      color: #00b3ff;
+      @include icon-base($accent-blue);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .followup-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
+    @include content-base;
 
     p {
       margin: 0.5rem 0;
       line-height: 1.6;
+
+      &:empty {
+        margin: 1rem 0;
+      }
     }
 
     ul, ol {
@@ -311,61 +386,30 @@
         margin: 0.3rem 0;
       }
     }
-
-    p:empty {
-      margin: 1rem 0;
-    }
   }
 
   .task-progress-section {
-      margin: 8px;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #00b3ff;
+    @include section-base($accent-blue);
+    margin: 8px;
 
-      &::before {
-        content: attr(class);
-        display: block;
-        color: #00b3ff;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
-      }
-
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
-
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
-
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
-      }
+    &::before {
+      content: attr(class);
     }
+
+    @include task-progress-list;
+  }
 }
 
+// ===== 终端样式 =====
 .terminal {
-  background: #1e1e1e;
+  background: $background-primary;
   padding: 12px;
   margin: 0;
-  box-shadow: 0 4px 12px #1e1e1e;
+  box-shadow: 0 4px 12px $background-primary;
   border-radius: 5px;
-  position: relative; // 添加相对定位
+  position: relative;
   color: #fff !important;
+
   &::before {
     content: '';
     position: absolute;
@@ -381,77 +425,49 @@
   }
 }
 
+// ===== 步骤块 =====
 .step-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
   counter-increment: step;
 
   .step-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+    @include header-clickable;
 
-    & span {
+    span {
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    & span::before {
-      content: counter(step);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      margin-right: 6px;
-      background: #00b3ff;
-      color: #fff;
-      border-radius: 50%;
-      font-size: 12px;
+      color: $text-primary;
       font-weight: 500;
-    }
 
-    i {
-      font-size: 16px;
-      color: #00b3ff;
-      margin-right: 6px;
-
-      &.toggle-icon {
-        margin-left: auto;
-        margin-right: 0;
-        color: #888;
-        transition: transform 0.3s ease;
-
-        &.expanded {
-          transform: rotate(180deg);
-        }
+      &::before {
+        content: counter(step);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        margin-right: 6px;
+        background: $accent-blue;
+        color: #fff;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 500;
       }
     }
 
-    span {
-      color: #e1e1e1;
-      font-weight: 500;
+    i {
+      @include icon-base($accent-blue);
+      margin-right: 6px;
+
+      &.toggle-icon {
+        @include toggle-icon;
+      }
     }
   }
 
   .step-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
     p {
       margin: 0.5rem 0;
@@ -469,17 +485,14 @@
     }
 
     code {
-      font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-      font-size: 0.9em;
-      padding: 0.2em 0.4em;
-      background: #2d2d2d;
-      border-radius: 4px;
+      @include code-style;
+      background: $background-secondary;
     }
 
     pre {
       margin: 0.5rem 0;
       padding: 1rem;
-      background: #2d2d2d;
+      background: $background-secondary;
       border-radius: 6px;
       overflow-x: auto;
 
@@ -494,7 +507,7 @@
       align-items: center;
       margin-top: 1rem;
       padding: 0.5rem 1rem;
-      background: #2d2d2d;
+      background: $background-secondary;
       border-radius: 4px;
 
       &.success {
@@ -519,11 +532,7 @@
   }
 }
 
-// 重置计数器
-.markdown-body {
-  counter-reset: step;
-}
-
+// ===== 通用组件样式 =====
 .completion-command {
   display: flex;
   flex-direction: column;
@@ -540,13 +549,13 @@
   .command-content {
     display: flex;
     flex-direction: column;
+    
     pre {
       padding: 0;
     }
   }
 }
 
-// 任务进度头部样式
 .task-progress-section {
   display: flex;
   flex-direction: column;
@@ -555,125 +564,87 @@
 .task-progress-header {
   display: flex;
   align-items: center;
-  padding: 12px 0px;
-  background: #2d2d2d;
-  border-bottom: 1px solid #3d3d3d;
+  padding: 12px 0;
+  background: $background-secondary;
+  border-bottom: 1px solid $border-color;
   border-radius: 6px 6px 0 0;
 
   i {
-    font-size: 16px;
-    color: #00b3ff;
-    margin-right: 12px;
+    @include icon-base($accent-blue);
   }
 
   span {
-    color: #e1e1e1;
+    color: $text-primary;
     font-weight: 500;
     font-size: 0.95em;
   }
 }
 
-// 文件操作块样式
-.file-block, .file-operation-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+// ===== 文件相关块 =====
+.file-block, 
+.file-operation-block {
+  @include block-base;
 
-  .file-header, .file-operation-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+  .file-header, 
+  .file-operation-header {
+    @include header-base;
     
     i {
-      font-size: 16px;
-      color: #00b3ff;
-      margin-right: 12px;
+      @include icon-base($accent-blue);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
-  .file-content, .file-operation-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+  .file-content, 
+  .file-operation-content {
+    @include content-base;
 
-    .operation-section, .path-section, .content-section, .r-section, .result-section {
-      margin: 8px 0;
-      padding: 8px;
-      background: #2d2d2d;
-      border-radius: 4px;
+    .operation-section, 
+    .path-section, 
+    .content-section, 
+    .r-section, 
+    .result-section {
+      @include section-base($text-secondary);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #888;
-        font-size: 0.9em;
-        margin-bottom: 4px;
-        text-transform: capitalize;
+        color: $text-secondary;
       }
     }
   }
 }
 
-// 执行命令块样式
 .execute-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .execute-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
     
     i {
-      font-size: 16px;
-      color: #00b3ff;
-      margin-right: 12px;
+      @include icon-base($accent-blue);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .execute-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    // line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .command-section, .working_directory-section, .timeout-section {
-      margin: 8px 0;
-      padding: 8px;
-      background: #2d2d2d;
-      border-radius: 4px;
+    .command-section, 
+    .working_directory-section, 
+    .timeout-section {
+      @include section-base($text-secondary);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #888;
-        font-size: 0.9em;
-        margin-bottom: 4px;
-        text-transform: capitalize;
+        color: $text-secondary;
       }
     }
 
@@ -690,90 +661,58 @@
     }
   }
 }
+
 .file-url-section {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
+  
   .file-url-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
+    @include header-clickable;
     background: rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+    
     i {
-      font-size: 16px;
-      color: #00b3ff;
-      margin-right: 12px;
+      @include icon-base($accent-blue);
     }
   }
+  
   .file-url-content {
-    padding: 16px 24px 16px 24px;
-    border-top: 1px solid #3d3d3d;
+    padding: 16px 24px;
+    border-top: 1px solid $border-color;
     display: flex;
-    color: #e1e1e1;
+    color: $text-primary;
     line-height: 1.6;
     align-items: center;
     justify-content: flex-start;
   }
 }
 
-// 执行命令块样式
+// ===== 执行命令块 =====
 .execute-command-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .execute-command-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      color: #67c23a;
-      margin-right: 12px;
+      @include icon-base($accent-green);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .execute-command-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .command-section, .completion-command, .requires-approval-section, .task-progress-section {
-      margin: 8px 0;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #67c23a;
+    .command-section, 
+    .completion-command, 
+    .requires-approval-section, 
+    .task-progress-section {
+      @include section-base($accent-green);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #67c23a;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
       }
 
       &.completion-command::before {
@@ -781,25 +720,20 @@
       }
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        color: #00b3ff;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
       }
 
       pre {
         margin: 0.5rem 0;
         padding: 1rem;
-        background: #1e1e1e;
+        background: $background-primary;
         border-radius: 6px;
         overflow-x: auto;
 
         code {
           padding: 0;
           background: transparent;
-          color: #e1e1e1;
+          color: $text-primary;
         }
       }
     }
@@ -818,189 +752,92 @@
       }
 
       .approval-value {
-        color: #e1e1e1;
+        color: $text-primary;
       }
     }
 
     .task-progress-section {
-      border-left-color: #00b3ff;
+      border-left-color: $accent-blue;
 
       &::before {
-        color: #00b3ff;
+        color: $accent-blue;
       }
 
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
-
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
-
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
-      }
+      @include task-progress-list;
     }
   }
 }
 
-// 读取文件块样式
+// ===== 读取文件块 =====
 .read-file-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .read-file-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      color: #4a90e2;
-      margin-right: 12px;
+      @include icon-base($accent-indigo);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .read-file-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .path-section, .task-progress-section {
-      margin: 8px 0;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #4a90e2;
+    .path-section, 
+    .task-progress-section {
+      @include section-base($accent-indigo);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #4a90e2;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
       }
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        color: #00b3ff;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
       }
     }
 
     .task-progress-section {
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
-
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
-
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
-      }
+      @include task-progress-list;
     }
   }
 }
 
-// 文件替换块样式
+// ===== 文件替换块 =====
 .replace-in-file-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .replace-in-file-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      color: #e74c3c;
-      margin-right: 12px;
+      @include icon-base($accent-red);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .replace-in-file-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .path-section, .diff-section, .task-progress-section {
-      margin: 8px 0;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #e74c3c;
+    .path-section, 
+    .diff-section, 
+    .task-progress-section {
+      @include section-base($accent-red);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #e74c3c;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
       }
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        color: #00b3ff;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
       }
     }
 
@@ -1012,12 +849,12 @@
 
         i {
           font-size: 14px;
-          color: #e74c3c;
+          color: $accent-red;
           margin-right: 8px;
         }
 
         span {
-          color: #e74c3c;
+          color: $accent-red;
           font-weight: 500;
           font-size: 0.9em;
         }
@@ -1027,14 +864,14 @@
         pre {
           margin: 0;
           padding: 1rem;
-          background: #1e1e1e;
+          background: $background-primary;
           border-radius: 6px;
           overflow-x: auto;
 
           code {
             padding: 0;
             background: transparent;
-            color: #e1e1e1;
+            color: $text-primary;
             white-space: pre-wrap;
           }
         }
@@ -1042,424 +879,281 @@
     }
 
     .task-progress-section {
-      border-left-color: #00b3ff;
+      border-left-color: $accent-blue;
 
       &::before {
-        color: #00b3ff;
+        color: $accent-blue;
       }
 
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
-
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
-
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
-      }
+      @include task-progress-list;
     }
   }
 }
 
-// 文件搜索块样式
+// ===== 文件搜索块 =====
 .search-files-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .search-files-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      color: #8e44ad;
-      margin-right: 12px;
+      @include icon-base($accent-violet);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .search-files-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .path-section, .regex-section, .file-pattern-section, .task-progress-section {
-      margin: 8px 0;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #8e44ad;
+    .path-section, 
+    .regex-section, 
+    .file-pattern-section, 
+    .task-progress-section {
+      @include section-base($accent-violet);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #8e44ad;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
       }
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        color: #00b3ff;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
       }
     }
 
     .regex-section {
       .regex-label {
-        color: #8e44ad;
+        color: $accent-violet;
         font-weight: 500;
         margin-right: 8px;
       }
 
       .regex-value {
-        color: #e1e1e1;
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
+        color: $text-primary;
+        background: $background-primary;
       }
     }
 
     .file-pattern-section {
       .file-pattern-label {
-        color: #8e44ad;
+        color: $accent-violet;
         font-weight: 500;
         margin-right: 8px;
       }
 
       .file-pattern-value {
-        color: #e1e1e1;
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
+        color: $text-primary;
+        background: $background-primary;
       }
     }
 
     .task-progress-section {
-      border-left-color: #00b3ff;
+      border-left-color: $accent-blue;
 
       &::before {
-        color: #00b3ff;
+        color: $accent-blue;
       }
 
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
-
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
-
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
-      }
+      @include task-progress-list;
     }
   }
 }
 
-// 文件写入块样式
+// ===== 文件写入块 =====
 .write-to-file-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .write-to-file-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      color: #2ecc71;
-      margin-right: 12px;
+      @include icon-base($accent-teal);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .write-to-file-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .path-section, .content-section, .task-progress-section {
-      margin: 8px 0;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #2ecc71;
+    .path-section, 
+    .content-section, 
+    .task-progress-section {
+      @include section-base($accent-teal);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #2ecc71;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
       }
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        color: #00b3ff;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
       }
 
       pre {
         margin: 0.5rem 0;
         padding: 1rem;
-        background: #1e1e1e;
+        background: $background-primary;
         border-radius: 6px;
         overflow-x: auto;
 
         code {
           padding: 0;
           background: transparent;
-          color: #e1e1e1;
+          color: $text-primary;
           white-space: pre-wrap;
         }
       }
     }
 
     .task-progress-section {
-      border-left-color: #00b3ff;
+      border-left-color: $accent-blue;
 
       &::before {
-        color: #00b3ff;
+        color: $accent-blue;
       }
 
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
-
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
-
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
-
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
-      }
+      @include task-progress-list;
     }
   }
 }
 
-// 文件列表块样式
+// ===== 文件列表块 =====
 .list-files-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .list-files-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-base;
 
     i {
-      font-size: 16px;
-      color: #ff9500;
-      margin-right: 12px;
+      @include icon-base($accent-orange);
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .list-files-content {
-    padding: 16px 24px;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
+    @include content-base;
 
-    .path-section, .recursive-section, .task-progress-section {
-      margin: 8px 0;
-      padding: 12px;
-      background: #2d2d2d;
-      border-radius: 4px;
-      border-left: 4px solid #ff9500;
+    .path-section, 
+    .recursive-section, 
+    .task-progress-section {
+      @include section-base($accent-orange);
 
       &::before {
         content: attr(class);
-        display: block;
-        color: #ff9500;
-        font-size: 0.9em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        text-transform: capitalize;
       }
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-        font-size: 0.9em;
-        color: #00b3ff;
-        background: #1e1e1e;
-        padding: 0.2em 0.4em;
-        border-radius: 3px;
+        @include code-style;
       }
     }
 
     .recursive-section {
       .recursive-label {
-        color: #ff9500;
+        color: $accent-orange;
         font-weight: 500;
         margin-right: 8px;
       }
 
       .recursive-value {
-        color: #e1e1e1;
+        color: $text-primary;
       }
     }
 
     .task-progress-section {
-      border-left-color: #00b3ff;
+      border-left-color: $accent-blue;
 
       &::before {
-        color: #00b3ff;
+        color: $accent-blue;
       }
 
-      ul {
-        margin: 0.5rem 0;
-        padding-left: 1.5rem;
+      @include task-progress-list;
+    }
+  }
+}
 
-        li {
-          line-height: 1.6;
-          margin: 0.3rem 0;
-          color: #e1e1e1;
+// ===== 代码定义列表块 =====
+.list-code-definition-names-block {
+  @include block-base;
 
-          &:before {
-            content: '□';
-            margin-right: 8px;
-            color: #888;
-          }
+  .list-code-definition-names-header {
+    @include header-base;
 
-          &.completed:before {
-            content: '☑';
-            color: #67c23a;
-          }
-        }
+    i {
+      @include icon-base($accent-purple);
+    }
+
+    span {
+      color: $text-primary;
+      font-weight: 500;
+    }
+  }
+
+  .list-code-definition-names-content {
+    @include content-base;
+
+    .path-section {
+      @include section-base($accent-purple);
+
+      &::before {
+        content: "路径";
+      }
+
+      code {
+        @include code-style;
       }
     }
   }
 }
 
-// 工具结果块样式
+// ===== 工具结果块 =====
 .tool-result-block {
-  margin: 10px 0;
-  border: none;
-  border-radius: 8px;
-  background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  line-height: 0;
-  overflow: hidden;
+  @include block-base;
 
   .tool-result-header {
-    display: flex;
-    align-items: center;
-    padding: 20px 15px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #3d3d3d;
+    @include header-clickable;
 
     i {
-      font-size: 16px;
-      color: #3498db;
-      margin-right: 12px;
+      @include icon-base($accent-cyan);
+
+      &.toggle-icon {
+        @include toggle-icon;
+      }
     }
 
     span {
-      color: #e1e1e1;
+      color: $text-primary;
       font-weight: 500;
     }
   }
 
   .tool-result-content {
+    @include collapsible-content;
     padding: 0;
-    color: #e1e1e1;
-    line-height: 1.6;
-    background: #1e1e1e;
 
     pre {
       margin: 0;
       padding: 15px 20px;
-      background: #2d2d2d;
+      background: $background-secondary;
       border-radius: 0;
       overflow-x: auto;
 
       code {
-        font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+        font-family: $font-mono;
         font-size: 0.9em;
-        color: #e1e1e1;
+        color: $text-primary;
         padding: 0;
         background: transparent;
         white-space: pre-wrap;
@@ -1468,6 +1162,916 @@
         &.language-json {
           color: #98c379;
         }
+      }
+    }
+  }
+}
+
+// ===== PID 按钮 =====
+// PID 按钮容器样式
+.pid-buttons-container {
+  display: inline-flex;
+  gap: 10px;
+  margin: 8px 6px;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba($background-secondary, 0.5);
+  border-radius: 10px;
+  border: 1px solid rgba($border-color, 0.3);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  position: relative;
+
+  // PID 状态指示器
+  &::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 20px;
+    background: linear-gradient(180deg, $accent-green 0%, $accent-blue 100%);
+    border-radius: 3px;
+    opacity: 0.8;
+    animation: pidStatusPulse 2s infinite ease-in-out;
+  }
+
+  &:hover {
+    background: rgba($background-secondary, 0.8);
+    border-color: rgba($border-color, 0.6);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    &::before {
+      opacity: 1;
+      width: 8px;
+    }
+  }
+
+  // 进程运行状态样式
+  &.process-running::before {
+    background: linear-gradient(180deg, $accent-green 0%, lighten($accent-green, 10%) 100%);
+    animation: pidRunningPulse 1.5s infinite ease-in-out;
+  }
+
+  &.process-stopped::before {
+    background: linear-gradient(180deg, $accent-red 0%, lighten($accent-red, 10%) 100%);
+    animation: none;
+    opacity: 0.6;
+  }
+
+  &.process-background::before {
+    background: linear-gradient(180deg, $accent-blue 0%, lighten($accent-blue, 10%) 100%);
+    animation: pidBackgroundPulse 2.5s infinite ease-in-out;
+  }
+}
+
+// PID 按钮共用样式
+@mixin pid-button-base($primary-color, $hover-color: null) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 15%) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  box-shadow: 
+    0 2px 8px rgba($primary-color, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+
+  // 添加光泽效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(white, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover {
+    $hover-bg: if($hover-color, $hover-color, lighten($primary-color, 8%));
+    background: linear-gradient(135deg, $hover-bg 0%, darken($hover-bg, 10%) 100%);
+    box-shadow: 
+      0 4px 16px rgba($primary-color, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(1);
+    box-shadow: 
+      0 2px 8px rgba($primary-color, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &.loading {
+    opacity: 0.8;
+    cursor: not-allowed;
+    animation: pidPulse 2s infinite ease-in-out;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      margin: -8px 0 0 -8px;
+      border: 2px solid rgba(white, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: pidSpin 1s infinite linear;
+    }
+  }
+
+  &.success {
+    background: linear-gradient(135deg, $accent-green 0%, darken($accent-green, 15%) 100%);
+    box-shadow: 
+      0 2px 8px rgba($accent-green, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+    animation: pidSuccessPulse 0.6s ease-out;
+  }
+
+  &.error {
+    background: linear-gradient(135deg, #e74c3c 0%, darken(#e74c3c, 15%) 100%);
+    box-shadow: 
+      0 2px 8px rgba(#e74c3c, 0.4),
+      0 1px 3px rgba(0, 0, 0, 0.3);
+    animation: pidErrorShake 0.6s ease-in-out;
+  }
+
+  i {
+    font-size: 1em;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  small {
+    font-size: 0.75em;
+    opacity: 0.8;
+    font-weight: 500;
+    background: rgba(white, 0.15);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+  }
+
+  &:hover i {
+    transform: scale(1.15) rotate(5deg);
+  }
+
+  &:hover small {
+    opacity: 1;
+    background: rgba(white, 0.25);
+  }
+
+  // 禁用状态
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// PID 杀死进程按钮样式
+.pid-kill-button {
+  @include pid-button-base($accent-red, #ff6b6b);
+
+  &:hover {
+    background: linear-gradient(135deg, #ff6b6b 0%, darken(#ff6b6b, 10%) 100%);
+  }
+
+  // 危险操作的额外警告效果
+  &:hover {
+    animation: pidDangerPulse 1.5s infinite ease-in-out;
+  }
+}
+
+// PID 后台运行按钮样式
+.pid-detach-button {
+  @include pid-button-base($accent-blue, #4dabf7);
+
+  &:hover {
+    background: linear-gradient(135deg, #4dabf7 0%, darken(#4dabf7, 10%) 100%);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .pid-buttons-container {
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+    
+    .pid-kill-button,
+    .pid-detach-button {
+      justify-content: center;
+      padding: 10px 12px;
+      font-size: 0.9em;
+      
+      small {
+        margin-left: 6px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .pid-buttons-container {
+    margin: 6px 0;
+    
+    .pid-kill-button,
+    .pid-detach-button {
+      padding: 8px 10px;
+      font-size: 0.85em;
+      
+      span {
+        display: none; // 在小屏幕上只显示图标和 PID
+      }
+      
+      small {
+        margin-left: 8px;
+      }
+    }
+  }
+}
+
+// 暗色主题优化
+@media (prefers-color-scheme: dark) {
+  .pid-buttons-container {
+    background: rgba($background-primary, 0.8);
+    border-color: rgba($border-color, 0.5);
+  }
+}
+
+// 高对比度模式
+@media (prefers-contrast: high) {
+  .pid-kill-button,
+  .pid-detach-button {
+    border: 2px solid currentColor;
+    font-weight: 700;
+  }
+}
+
+// 减少动画偏好
+@media (prefers-reduced-motion: reduce) {
+  .pid-kill-button,
+  .pid-detach-button {
+    transition: none;
+    animation: none !important;
+    
+    &::before {
+      display: none;
+    }
+    
+    &:hover {
+      transform: none;
+    }
+  }
+  
+  .pid-buttons-container {
+    transition: none;
+    
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// PID 相关动画
+@keyframes pidPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes pidSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pidSuccessPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba($accent-green, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba($accent-green, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba($accent-green, 0.4);
+  }
+}
+
+@keyframes pidErrorShake {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-3px) scale(1.02);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(3px) scale(1.02);
+  }
+}
+
+@keyframes pidDangerPulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 16px rgba($accent-red, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 4px 16px rgba($accent-red, 0.8),
+      0 2px 8px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba($accent-red, 0.4);
+  }
+}
+
+@keyframes pidStatusPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateY(-50%) scaleY(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1.2);
+  }
+}
+
+@keyframes pidRunningPulse {
+  0%, 100% {
+    opacity: 0.8;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes pidBackgroundPulse {
+  0%, 100% {
+    opacity: 0.7;
+    transform: translateY(-50%) scaleX(1);
+  }
+  33% {
+    opacity: 0.9;
+    transform: translateY(-50%) scaleX(1.3);
+  }
+  66% {
+    opacity: 0.8;
+    transform: translateY(-50%) scaleX(0.8);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+// ===== 终端进程组件样式 =====
+.terminal-process-block {
+  @include block-base;
+  margin: 15px 0;
+  border-left: 4px solid $accent-green;
+
+  .terminal-process-header {
+    @include header-base($background-secondary);
+    background: linear-gradient(135deg, rgba($accent-green, 0.1), rgba($accent-teal, 0.1));
+    color: $accent-green;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    i {
+      margin-right: 10px;
+      color: $accent-green;
+      font-size: 1.1em;
+    }
+
+    span {
+      font-family: $font-mono;
+      letter-spacing: 0.5px;
+      flex: 1;
+    }
+    
+    .terminal-toggle-btn {
+      background: rgba($accent-green, 0.1);
+      border: 1px solid rgba($accent-green, 0.3);
+      color: $accent-green;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      &:hover {
+        background: rgba($accent-green, 0.2);
+        border-color: rgba($accent-green, 0.5);
+      }
+      
+      &:active {
+        transform: translateY(1px);
+      }
+      
+      i {
+        margin: 0;
+        font-size: 0.9em;
+      }
+    }
+  }
+
+  .terminal-process-content {
+    @include content-base;
+    background: $background-primary;
+    line-height: 1.4;
+    max-height: 300px; // 限制最大高度为300px
+    overflow-y: auto; // 添加垂直滚动条
+    overflow-x: hidden; // 隐藏水平滚动条
+
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba($text-secondary, 0.1);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba($accent-green, 0.6);
+      border-radius: 4px;
+      
+      &:hover {
+        background: rgba($accent-green, 0.8);
+      }
+    }
+
+    pre {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      font-family: $font-mono;
+      font-size: 0.95em;
+      color: $text-primary;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-x: visible; // 让文本正常换行，不需要水平滚动
+    }
+  }
+}
+
+// 终端追加内容样式
+.terminal-append-update {
+  margin: 10px 0;
+  border-left: 3px solid $accent-cyan;
+  background: rgba($accent-cyan, 0.05);
+  border-radius: $block-border-radius;
+
+  .terminal-append-content {
+    padding: 12px 16px;
+
+    pre {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      font-family: $font-mono;
+      font-size: 0.9em;
+      color: $text-primary;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.3;
+    }
+  }
+}
+
+// 终端更新效果
+.terminal-updated {
+  animation: terminalPulse 1s ease-in-out;
+  border-color: $accent-green !important;
+}
+
+@keyframes terminalPulse {
+  0% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 15px rgba($accent-green, 0.4);
+  }
+  100% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.terminal-append-update {
+  &::before {
+    content: "📝";
+    position: absolute;
+    left: -8px;
+    top: 12px;
+    background: $background-secondary;
+    padding: 2px 4px;
+    border-radius: 50%;
+    font-size: 0.8em;
+  }
+
+  position: relative;
+}
+
+// ===== PID 日志弹框样式 =====
+.pid-log-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+
+  .pid-log-modal-content {
+    background: $background-primary;
+    border-radius: $block-border-radius;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .pid-log-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: $background-secondary;
+      border-bottom: 1px solid $border-color;
+
+      h3 {
+        margin: 0;
+        color: $text-primary;
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+
+      .pid-log-modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: $text-secondary;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: $text-primary;
+        }
+      }
+    }
+
+    .pid-log-modal-body {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+
+      .pid-log-content {
+        margin: 0;
+        padding: 20px;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-family: $font-mono;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+    }
+
+    .pid-log-modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: $background-secondary;
+      border-top: 1px solid $border-color;
+
+      .pid-log-count {
+        color: $text-secondary;
+        font-size: 0.9em;
+      }
+
+      .pid-log-modal-close-btn {
+        background: $accent-blue;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: $button-border-radius;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: darken($accent-blue, 10%);
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+}
+
+// ===== PID 查看日志按钮样式 =====
+.pid-view-logs-button {
+  @include pid-button-base($accent-cyan, #4ecdc4);
+
+  &:hover {
+    background: linear-gradient(135deg, #4ecdc4 0%, darken(#4ecdc4, 10%) 100%);
+  }
+}
+
+// ===== Hive Checkpoint 样式 - 类似 Cline checkpoint 按钮 =====
+.hive-checkpoint-container {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.hive-checkpoint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, $accent-purple 0%, $accent-violet 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba($accent-purple, 0.3);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba($accent-purple, 0.4);
+    
+    .checkpoint-copy {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  // 添加光晕效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+  }
+
+  &:hover::before {
+    left: 100%;
+  }
+
+  .fa-bookmark {
+    font-size: 14px;
+    color: $accent-orange;
+  }
+
+  .checkpoint-text {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .checkpoint-id {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: $font-mono;
+    font-size: 11px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+  }
+
+  .checkpoint-copy {
+    font-size: 12px;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+    margin-left: 4px;
+    
+    &:hover {
+      color: $accent-orange;
+    }
+  }
+
+  // 复制成功状态
+  &.copied {
+    background: linear-gradient(135deg, $accent-green 0%, darken($accent-green, 10%) 100%);
+    transform: translateY(-1px) scale(1.05);
+    
+    .fa-bookmark {
+      color: white;
+    }
+    
+    .checkpoint-text {
+      color: white;
+    }
+  }
+
+  // 复制错误状态
+  &.error {
+    background: linear-gradient(135deg, $accent-red 0%, darken($accent-red, 10%) 100%);
+    animation: shake 0.5s ease-in-out;
+    
+    .checkpoint-text {
+      color: white;
+    }
+  }
+}
+
+// 震动动画
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+// Hive 消息ID 相关动画
+@keyframes copySuccess {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba($accent-purple, 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba($accent-green, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba($accent-purple, 0.3);
+  }
+}
+
+@keyframes copyError {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px) scale(1.02);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px) scale(1.02);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    border-color: rgba($accent-purple, 0.2);
+    box-shadow: 0 4px 12px rgba($accent-purple, 0.2);
+  }
+  50% {
+    border-color: $accent-green;
+    box-shadow: 0 4px 20px rgba($accent-green, 0.4);
+  }
+  100% {
+    border-color: rgba($accent-purple, 0.2);
+    box-shadow: 0 4px 12px rgba($accent-purple, 0.2);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .hive-msg-block {
+    .hive-msg-content {
+      padding: 12px 16px;
+
+      .hive-msg-id-display {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+
+        .hive-msg-label {
+          text-align: center;
+        }
+
+
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .hive-msg-block {
+    .hive-msg-id-display {
+      .hive-msg-value {
+        font-size: 0.8em;
+        padding: 8px;
+      }
+    }
+  }
+}
+
+// 暗色主题优化
+@media (prefers-color-scheme: dark) {
+  .hive-msg-block {
+    .hive-msg-id-display {
+      .hive-msg-value {
+        background: rgba($background-primary, 0.9);
+        border-color: rgba($border-color, 0.4);
+      }
+    }
+  }
+}
+
+// 高对比度模式
+@media (prefers-contrast: high) {
+  .hive-msg-block {
+    border-left-width: 6px;
+
+    .hive-msg-id-display {
+      border-width: 2px;
+
+
+    }
+  }
+}
+
+// 减少动画偏好
+@media (prefers-reduced-motion: reduce) {
+  .hive-msg-block {
+    .hive-msg-id-display {
+      transition: none;
+      animation: none !important;
+
+      &::before,
+      &::after {
+        display: none;
+      }
+
+      &:hover {
+        transform: none;
       }
     }
   }

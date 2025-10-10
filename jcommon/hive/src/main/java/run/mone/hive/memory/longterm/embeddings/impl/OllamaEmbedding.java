@@ -29,7 +29,7 @@ public class OllamaEmbedding implements EmbeddingBase {
     private final Gson gson;
     
     private static final String DEFAULT_BASE_URL = "http://localhost:11434";
-    private static final String DEFAULT_MODEL = "nomic-embed-text";
+    private static final String DEFAULT_MODEL = "embeddinggemma";
     
     public OllamaEmbedding(EmbedderConfig config) {
         this.config = config;
@@ -56,10 +56,10 @@ public class OllamaEmbedding implements EmbeddingBase {
             // 构建请求
             JsonObject request = new JsonObject();
             request.addProperty("model", config.getModel());
-            request.addProperty("prompt", text);
+            request.addProperty("input", text);
             
             // API URL
-            String apiUrl = config.getBaseUrl() + "/api/embeddings";
+            String apiUrl = config.getBaseUrl() + "/api/embed";
             
             // 发送HTTP请求
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
@@ -120,7 +120,9 @@ public class OllamaEmbedding implements EmbeddingBase {
         
         // 根据模型返回默认维度
         String model = config.getModel().toLowerCase();
-        if (model.contains("nomic-embed-text")) {
+        if (model.contains("embeddinggemma")) {
+            return 768;
+        } else if (model.contains("nomic-embed-text")) {
             return 768;
         } else if (model.contains("mxbai-embed-large")) {
             return 1024;
@@ -141,7 +143,22 @@ public class OllamaEmbedding implements EmbeddingBase {
                 throw new RuntimeException("Ollama API error: " + errorMessage);
             }
             
-            // 提取嵌入向量
+            // 提取嵌入向量 - Ollama返回的是embeddings数组，取第一个
+            if (response.has("embeddings")) {
+                JsonArray embeddingsArray = response.getAsJsonArray("embeddings");
+                if (embeddingsArray.size() > 0) {
+                    JsonArray embeddingArray = embeddingsArray.get(0).getAsJsonArray();
+                    List<Double> embedding = new ArrayList<>();
+                    
+                    for (int i = 0; i < embeddingArray.size(); i++) {
+                        embedding.add(embeddingArray.get(i).getAsDouble());
+                    }
+                    
+                    return embedding;
+                }
+            }
+            
+            // 兼容旧格式 - 单个embedding字段
             if (response.has("embedding")) {
                 JsonArray embeddingArray = response.getAsJsonArray("embedding");
                 List<Double> embedding = new ArrayList<>();
@@ -214,6 +231,7 @@ public class OllamaEmbedding implements EmbeddingBase {
                name.contains("nomic") ||
                name.contains("mxbai") ||
                name.contains("bge") ||
+               name.contains("gemma") ||
                name.contains("sentence");
     }
     
@@ -222,6 +240,7 @@ public class OllamaEmbedding implements EmbeddingBase {
      */
     public static List<String> getCommonEmbeddingModels() {
         return List.of(
+            "embeddinggemma",
             "nomic-embed-text",
             "mxbai-embed-large",
             "all-minilm",
@@ -244,6 +263,8 @@ public class OllamaEmbedding implements EmbeddingBase {
      */
     public static int getModelDimensions(String model) {
         switch (model.toLowerCase()) {
+            case "embeddinggemma":
+                return 768;
             case "nomic-embed-text":
             case "bge-base":
                 return 768;

@@ -41,6 +41,19 @@ mvn package                   # Build JAR
 java -jar target/app.jar      # Run the application
 ```
 
+Alternative server configuration for app.jar:
+```json
+{
+  "my-server": {
+    "command": "java",
+    "args": [
+      "-jar",
+      "/path/to/hive/target/app.jar"
+    ]
+  }
+}
+```
+
 Kill running instances:
 ```bash
 jps -l|grep app.jar|awk -F '' '{print $1}'|xargs kill -9
@@ -50,8 +63,16 @@ jps -l|grep app.jar|awk -F '' '{print $1}'|xargs kill -9
 
 ### Core Agent Framework
 - **Team-based architecture**: Multiple agents with different roles work together
-- **Think->Act cycle**: Main reasoning pattern for agents
+- **Think->Act cycle**: Main reasoning pattern for agents (think->act->think->act)
 - **Role-Action-Team** pattern: Agents have roles, execute actions, and work in teams
+- **Collective intelligence**: "One bee is dumb, but a swarm of bees is smart"
+- **Communication features**:
+  - gRPC support with headers for clientId and token
+  - Permission verification
+  - Server push capability
+  - Every MCP has a chat tool for user communication
+- **Agent lifecycle**: Agents are removed when users disconnect or are inactive too long
+- **Advanced capabilities**: Support for interruption, proactive agent communication, model switching
 
 ### Key Packages
 
@@ -98,8 +119,10 @@ Long-term memory module supports:
 - Anthropic Claude
 - Google Gemini
 - Ollama (local models)
-- Various vector databases
-- Graph databases (Neo4j, Memgraph)
+- Vector databases: Chroma
+- Graph databases: Neo4j, Kuzu
+- Embedded storage: SQLite
+- Search ranking: Apache Lucene (BM25)
 
 ## Working with the Codebase
 
@@ -126,6 +149,16 @@ The long-term memory system is a key component:
 - Integration tests for memory system
 - Role-specific tests for agent behaviors
 - MCP integration tests
+
+### Recent Updates
+- **2025-06-09**: Agent removal on user disconnect and inactivity timeout
+- **2025-09-08**:
+  - Interruption support (via intent recognition)
+  - Proactive agent communication
+  - Model switching capabilities
+  - Memory system implementation
+  - Todo list functionality
+  - Context compression features
 
 ## Project Structure Context
 

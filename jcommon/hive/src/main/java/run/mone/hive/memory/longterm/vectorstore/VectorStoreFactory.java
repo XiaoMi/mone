@@ -21,26 +21,10 @@ public class VectorStoreFactory {
         }
         
         switch (config.getProvider()) {
-            case LOCAL:
-                return new LocalVectorStore(config);
             case CHROMA:
                 return new ChromaVectorStore(config);
-            case QDRANT:
-                return new QdrantVectorStore(config);
-            case WEAVIATE:
-                return new WeaviateVectorStore(config);
-            case PINECONE:
-                return new PineconeVectorStore(config);
-            case FAISS:
-                return new FaissVectorStore(config);
-            case ELASTICSEARCH:
-                return new ElasticsearchVectorStore(config);
-            case REDIS:
-                return new RedisVectorStore(config);
-            case PGVECTOR:
-                return new PgVectorStore(config);
-            case MILVUS:
-                return new MilvusVectorStore(config);
+            case NEO4J:
+                return new Neo4jVectorStore(config);
             default:
                 throw new IllegalArgumentException("Unsupported vector store provider: " + config.getProvider());
         }
@@ -68,6 +52,24 @@ public class VectorStoreFactory {
                 .path("./data/test/chroma")
                 .embeddingModelDims(384)
                 .build());
+    }
+
+    /**
+     * 创建Neo4j向量存储实例
+     *
+     * @return Neo4j向量存储实例
+     */
+    public static VectorStoreBase createNeo4j() {
+        return create(VectorStoreConfig.neo4jDefault());
+    }
+
+    /**
+     * 为测试创建Neo4j向量存储实例
+     *
+     * @return Neo4j向量存储实例
+     */
+    public static VectorStoreBase createNeo4jForTesting() {
+        return create(VectorStoreConfig.neo4jForTesting());
     }
     
     /**

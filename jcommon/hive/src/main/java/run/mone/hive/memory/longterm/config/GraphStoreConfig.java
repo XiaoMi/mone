@@ -22,11 +22,8 @@ public class GraphStoreConfig {
      * 图存储提供商类型
      */
     public enum Provider {
-        LOCAL("local"),
         NEO4J("neo4j"),
-        KUZU("kuzu"),
-        MEMGRAPH("memgraph"),
-        NEPTUNE("neptune");
+       ;
         
         private final String value;
         
@@ -91,15 +88,21 @@ public class GraphStoreConfig {
     private LlmConfig llm;
 
     /**
+     * 嵌入模型配置
+     */
+    private EmbedderConfig embedder;
+
+    /**
      * 自定义提示词
      */
     private String customPrompt;
 
     /**
-     * @param configMap
-     * @return
+     * 相似度阈值
      */
-    
+    private double threshold;
+
+
     /**
      * 从Map创建配置
      */
@@ -136,21 +139,31 @@ public class GraphStoreConfig {
             Map<String, Object> config = (Map<String, Object>) configMap.get("config");
             builder.config(config);
         }
-        
+
+        if (configMap.containsKey("llm")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> llmMap = (Map<String, Object>) configMap.get("llm");
+            builder.llm(LlmConfig.fromMap(llmMap));
+        }
+
+        if (configMap.containsKey("embedder")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> embedderMap = (Map<String, Object>) configMap.get("embedder");
+            builder.embedder(EmbedderConfig.fromMap(embedderMap));
+        }
+
+        if (configMap.containsKey("customPrompt")) {
+            builder.customPrompt((String) configMap.get("customPrompt"));
+        }
+
+        if (configMap.containsKey("threshold")) {
+            builder.threshold((Double) configMap.get("threshold"));
+        }
+
         return builder.build();
     }
     
-    /**
-     * 获取本地图存储默认配置
-     */
-    public static GraphStoreConfig localDefault() {
-        return GraphStoreConfig.builder()
-                .provider(Provider.LOCAL)
-                .url("./data/graph")
-                .enabled(true)
-                .build();
-    }
-    
+
     /**
      * 获取Neo4j默认配置
      */
@@ -162,53 +175,10 @@ public class GraphStoreConfig {
                 .password("password")
                 .database("neo4j")
                 .enabled(false)
+                .threshold(0.7)
                 .build();
     }
     
     
-    /**
-     * 创建默认的Memgraph配置
-     */
-    public static GraphStoreConfig memgraphDefault() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.MEMGRAPH)
-            .url("bolt://localhost:7687")
-            .username("memgraph")
-            .password("memgraph")
-            .enabled(false)
-            .build();
-    }
-    
-    /**
-     * 创建默认的Neptune配置
-     */
-    public static GraphStoreConfig neptuneDefault() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.NEPTUNE)
-            .url("neptune-graph://your-graph-id")
-            .enabled(false)
-            .build();
-    }
-    
-    /**
-     * 创建默认的Kuzu配置（本地嵌入式）
-     */
-    public static GraphStoreConfig kuzuDefault() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.KUZU)
-            .url("./data/kuzu")
-            .enabled(true)
-            .build();
-    }
 
-    /**
-     * 创建本地嵌入式Kuzu配置（测试用）
-     */
-    public static GraphStoreConfig kuzuEmbedded() {
-        return GraphStoreConfig.builder()
-            .provider(Provider.KUZU)
-            .url("./data/kuzu_embedded")
-            .enabled(true)
-            .build();
-    }
 }

@@ -1,10 +1,13 @@
 server:
   port: 8080
+  cas:
+    ignoreUrl: ${CAS_IGNORE_URL:/api/v1/users/login,/api/v1/users/register,/api/v1/agents/register,/api/v1/agents/unregister,/api/v1/tasks/execute,/api/v1/agents/config,/api/v1/agents/health}
 
 mcp:
-  llm: CLAUDE_COMPANY
+#  llm: CLAUDE_COMPANY
 #  llm: doubao_deepseek_v3
-#  llm: grok
+  llm: deepseek
+  #  llm: grok
   transport:
     type: grpc
   grpc:
@@ -12,7 +15,7 @@ mcp:
   hub:
     path:
   agent:
-    name: agentManager
+    name: zzy_agent_manager
     delay: 8
 
 spring:
@@ -47,3 +50,16 @@ logging:
 hive:
   manager:
     token: ${hive_manager_token}
+
+# Authentication and security configuration
+auth:
+  aegis:
+    sdk:
+      public:
+        key: ${AEGIS_SDK_PUBLIC_KEY:}
+  token:
+    parse:
+      url: ${TOKEN_PARSE_URL:}
+  cas:
+    inner:
+      auth: true

@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import run.mone.hive.bo.InternalServer;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
@@ -16,14 +17,12 @@ import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.schema.Message;
 import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -56,35 +55,94 @@ public class MonerSystemPrompt {
         return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
     }
 
+    public static String hiveCwd(ReactorRole role) {
+        String workspacePath = cwd(role);
+        return workspacePath
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
+                + ".hive";
+    }
+
     /**
      * 获取自定义指令
-     * 
+     * <p>
      * 首先尝试从工作目录下的.hive/agent.md文件读取自定义指令
      * 如果文件不存在或读取失败，则从角色配置中获取
-     * 
-     * @param role 反应堆角色
+     *
+     * @param role               反应堆角色
      * @param customInstructions 默认指令（如果文件不存在且配置中无指令时使用）
      * @return 自定义指令内容
      */
     public static String customInstructions(ReactorRole role, String customInstructions) {
-        String workspacePath = role.getWorkspacePath();
+        String workspacePath = cwd(role);
         if (StringUtils.isBlank(workspacePath)) {
             log.warn("工作空间路径为空，使用默认指令");
             return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
         }
-        
+
         // 构建.hive/agent.md文件路径
         String mdStr = getAgentMd(workspacePath);
-        if (mdStr != null) return mdStr;
+        if (mdStr != null) {
+            return mdStr;
+        }
 
         // 从角色配置中获取自定义指令，如果不存在则使用默认指令
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
     }
 
+    /**
+     * 获取.hive目录下所有md文件的内容并拼接
+     *
+     * @param workspacePath 工作空间路径
+     * @return 拼接后的md内容，如果没有找到任何md文件则返回null
+     */
     @Nullable
-    private static String getAgentMd(String workspacePath) {
+    private static String getAllMdFiles(String workspacePath) {
+        String hiveDir = workspacePath
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
+                + ".hive";
+
+        File hiveDirFile = new File(hiveDir);
+        if (!hiveDirFile.exists() || !hiveDirFile.isDirectory()) {
+            log.debug(".hive目录不存在: {}", hiveDir);
+            return null;
+        }
+
+        // 获取所有.md文件
+        File[] mdFiles = hiveDirFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".md"));
+        if (mdFiles == null || mdFiles.length == 0) {
+            log.debug(".hive目录下没有找到md文件: {}", hiveDir);
+            return null;
+        }
+
+        StringBuilder result = new StringBuilder();
+        boolean hasContent = false;
+
+        // 按文件名排序，确保输出顺序一致
+        Arrays.sort(mdFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));
+
+        for (File mdFile : mdFiles) {
+            try {
+                String content = FileUtils.readMarkdownFile(mdFile.getAbsolutePath());
+                if (StringUtils.isNotBlank(content)) {
+                    if (hasContent) {
+                        result.append("\n\n");
+                    }
+                    result.append(content);
+                    hasContent = true;
+                    log.debug("成功读取md文件: {}", mdFile.getName());
+                }
+            } catch (Exception e) {
+                log.debug("读取md文件失败: {}, 原因: {}", mdFile.getName(), e.getMessage());
+            }
+        }
+
+        return hasContent ? result.toString() : null;
+    }
+
+    @Nullable
+    public static String getAgentMd(String workspacePath) {
         String filePath = workspacePath
-                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive" + File.separator + "agent.md";
 
         try {
@@ -100,12 +158,13 @@ public class MonerSystemPrompt {
         return null;
     }
 
+
     // 为了向后兼容，提供不带enableTaskProgress参数的重载方法
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
-        return mcpPrompt(role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
+        return mcpPrompt(message, role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
     }
 
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -114,12 +173,15 @@ public class MonerSystemPrompt {
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", MonerSystemPrompt.cwd(role));
+        data.put("hiveCwd", MonerSystemPrompt.hiveCwd(role));
+        //这里也会处理下agent.md的逻辑,需要注意(这个的agent.md的优先级并不高,有可能会被后边的覆盖掉)
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
-
         List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
+        // 添加开关控制,如果serverList为空则不加载MCP相关内容
+        data.put("enableMcp", !serverList.isEmpty());
         if (StringUtils.isEmpty(workFlow)) {
             workFlow = "";
         }
@@ -130,6 +192,23 @@ public class MonerSystemPrompt {
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+
+        //markdown文件会根本上重置这些配置
+        if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
+            String rd = """
+                    \n
+                    profile: %s
+                    goal: %s
+                    constraints: %s
+                    \n
+                    """.formatted(md.getProfile(), md.getGoal(), md.getConstraints());
+
+            data.put("name", md.getName());
+            data.put("roleDescription", rd);
+            data.put("customInstructions",md.getAgentPrompt());
+            data.put("workflow",md.getWorkflow());
+        }
+
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
                 Lists.newArrayList(
                         //反射执行
@@ -203,6 +282,7 @@ public class MonerSystemPrompt {
             
             
             
+            <% if(enableMcp) { %>
             ## use_mcp_tool
             Description: Request to use a tool provided by a connected MCP server. Each MCP server can provide multiple tools with different capabilities. Tools have defined input schemas that specify required and optional parameters.
             Parameters:
@@ -224,6 +304,7 @@ public class MonerSystemPrompt {
             Checklist here (optional)
             </task_progress><% } %>
             </use_mcp_tool>
+            <% } %>
             
             # Tool Use Examples
             
@@ -314,6 +395,7 @@ public class MonerSystemPrompt {
             
             ====
             
+            <% if(enableMcp) { %>
             MCP SERVERS
             
             The Model Context Protocol (MCP) enables communication between the system and locally running MCP servers that provide additional tools and resources to extend your capabilities.
@@ -329,7 +411,14 @@ public class MonerSystemPrompt {
             <% } %>
             
             
+            请记住这三个参数必须提供:  
+            <server_name>
+            <tool_name>
+            <arguments>
+            
+            
             ====
+            <% } %>
             
             RULES
             
@@ -373,6 +462,10 @@ public class MonerSystemPrompt {
             用户可能会定义一些使用工作的流程(Flow),会使用内部工具和Mcp工具,这个时候你需要严格按照用户的定义来执行这个工作流.如果用户没有定义则忽略掉这条规则.
             用户定义的工作流:
             ${workflow}
+            
+            ====
+            
+            
             
             <% if(enableTaskProgress) { %>
             ====

@@ -22,17 +22,9 @@ public class VectorStoreConfig {
      * 向量存储提供商类型
      */
     public enum Provider {
-        LOCAL("local"),
-        QDRANT("qdrant"),
         CHROMA("chroma"),
-        WEAVIATE("weaviate"),
-        PINECONE("pinecone"),
-        FAISS("faiss"),
-        ELASTICSEARCH("elasticsearch"),
-        REDIS("redis"),
-        PGVECTOR("pgvector"),
-        MILVUS("milvus");
-        
+        NEO4J("neo4j");
+
         private final String value;
         
         Provider(String value) {
@@ -57,7 +49,11 @@ public class VectorStoreConfig {
      * 提供商
      */
     @Builder.Default
-    private Provider provider = Provider.QDRANT;
+    private Provider provider = Provider.CHROMA;
+
+
+    @Builder.Default
+    private boolean enable = true;
     
     /**
      * 集合名称
@@ -70,6 +66,8 @@ public class VectorStoreConfig {
      */
     @Builder.Default
     private int embeddingModelDims = 1536;
+
+    private String model;
     
     /**
      * 连接配置
@@ -119,6 +117,14 @@ public class VectorStoreConfig {
      */
     public static VectorStoreConfig fromMap(Map<String, Object> configMap) {
         var builder = VectorStoreConfig.builder();
+
+        if (configMap.containsKey("model")) {
+            builder.model(configMap.get("model").toString());
+        }
+
+        if (configMap.containsKey("enable")) {
+            builder.enable(Boolean.parseBoolean(configMap.get("enable").toString()));
+        }
         
         if (configMap.containsKey("provider")) {
             String providerStr = (String) configMap.get("provider");
@@ -170,31 +176,8 @@ public class VectorStoreConfig {
         return builder.build();
     }
     
-    /**
-     * 获取本地存储默认配置
-     */
-    public static VectorStoreConfig localDefault() {
-        return VectorStoreConfig.builder()
-                .provider(Provider.LOCAL)
-                .path("./data/memory")
-                .collectionName("mem0")
-                .embeddingModelDims(1536)
-                .build();
-    }
-    
-    /**
-     * 获取Qdrant默认配置
-     */
-    public static VectorStoreConfig qdrantDefault() {
-        return VectorStoreConfig.builder()
-                .provider(Provider.QDRANT)
-                .host("localhost")
-                .port(6333)
-                .collectionName("mem0")
-                .embeddingModelDims(1536)
-                .build();
-    }
-    
+
+
     /**
      * 获取Chroma默认配置（本地嵌入式）
      */
@@ -218,6 +201,34 @@ public class VectorStoreConfig {
                 .host("localhost")
                 .path("./data/chroma_embedded")
                 .collectionName("embedded_mem0")
+                .embeddingModelDims(384)
+                .build();
+    }
+
+    /**
+     * 获取Neo4j默认配置
+     */
+    public static VectorStoreConfig neo4jDefault() {
+        return VectorStoreConfig.builder()
+                .provider(Provider.NEO4J)
+                .host("localhost")
+                .port(7687)
+                .database("neo4j")
+                .collectionName("mem0")
+                .embeddingModelDims(1536)
+                .build();
+    }
+
+    /**
+     * 获取Neo4j测试配置
+     */
+    public static VectorStoreConfig neo4jForTesting() {
+        return VectorStoreConfig.builder()
+                .provider(Provider.NEO4J)
+                .host("localhost")
+                .port(7687)
+                .database("neo4j")
+                .collectionName("test_memory_vectors")
                 .embeddingModelDims(384)
                 .build();
     }

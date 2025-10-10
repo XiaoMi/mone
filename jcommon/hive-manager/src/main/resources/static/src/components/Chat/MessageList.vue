@@ -11,6 +11,10 @@
         :onMessageClick="onMessageClick"
         :onMessageCmd="onMessageCmd"
         :onPlayAudio="onPlayAudio"
+        @pidAction="handlePidAction"
+        @onClick2Conversion="(id) => {
+            $emit('onClick2Conversion', id)
+          }"
       >
         <template v-slot:user-avatar="scopedProps">
           <slot
@@ -47,18 +51,15 @@
         <span></span>
         <span></span>
       </div>
-      <div class="btns-wrap" v-else-if="showDiscardBtn && isShowPause">
-        <div class="inputing" @click.stop="handleDiscard">
-          <svg t="1731982340192" class="pause-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="7323" width="16" height="16"><path d="M512 0a512 512 0 1 0 0 1024A512 512 0 0 0 512 0z m0 928a416 416 0 1 1 0-832 416 416 0 0 1 0 832zM320 320h384v384H320z" p-id="7324" fill="currentColor"></path></svg>
-          <span class="inputing-text">停止输出</span>
-        </div>
-        <div class="inputing" @click.stop="handleScrollToBottom">
-          <svg t="1732181144291" v-if="scrollToBottom" class="pause-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6454" width="16" height="16"><path d="M512.005 62.008c-248.528 0-450 201.472-450 449.995 0 248.528 201.472 449.995 450 449.995 248.524 0 449.992-201.468 449.992-449.995 0-248.524-201.468-449.995-449.992-449.995z m359.996 449.997c0 69.339-19.61 134.096-53.577 189.038L265.996 249.182c64.361-60.27 150.873-97.175 246.008-97.175C710.821 152.007 872 313.182 872 512.003z m-719.994 0c0-71.436 20.805-138.011 56.69-193.998l553.556 452.78C697.475 833.443 609.242 872 512.003 872c-198.826 0-359.996-161.174-359.996-359.996z" p-id="6455" fill="currentColor"></path></svg>
-          <svg t="1732181044851" v-else class="pause-icon" viewBox="0 0 1156 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4507" width="16" height="16"><path d="M1093.860207 540.871472c34.676456 0 62.411978-30.049167 62.411979-62.411978a62.143934 62.143934 0 0 0-62.411979-62.397871H613.101755a62.143934 62.143934 0 0 0-62.411979 62.397871 62.143934 62.143934 0 0 0 62.411979 62.411978zM728.657025 827.481271c-32.362812 0-60.098333 30.049167-60.098334 64.725623s27.735522 62.411978 60.098334 62.411978H1096.159745c34.662349 0 60.098333-27.735522 60.098333-62.411978 0-36.975993-27.735522-64.711515-60.098333-64.711515z m-140.991255-187.221827c-11.554116-13.881869-27.735522-18.495051-46.216465-18.495051a63.145573 63.145573 0 0 0-43.916928 18.495051L365.781594 792.847138V0.000578H240.957638v795.117882L109.206854 642.573089c-13.867761-13.867761-30.049167-20.808695-46.230572-20.808696s-32.362812 4.62729-43.916928 16.181406c-25.393662 25.393662-25.393662 64.725623 0 90.1475l238.079689 275.098006c13.867761 16.181406 30.049167 20.808695 48.544218 20.808695 13.867761 0 32.362812-6.926827 43.916927-18.480943L589.979415 728.093299c23.108232-23.108232 23.108232-62.411978-2.313645-87.833855zM1093.860207 124.824535a62.143934 62.143934 0 0 0 62.411979-62.411978A62.143934 62.143934 0 0 0 1093.860207 0.000578H613.101755a62.143934 62.143934 0 0 0-62.411979 62.411979 62.143934 62.143934 0 0 0 62.411979 62.411978z m0 0" fill="currentColor" p-id="4508"></path></svg>
-          <span class="inputing-text">{{scrollToBottom ? '取消跟随' : '跟随输出'}}</span>
-        </div>
-      </div>
     </div>
+    <!-- 永久跟随按钮 -->
+    <!-- <div class="follow-toggle-btn" @click="toggleFollow">
+      <el-tooltip :content="isFollow ? '点击取消自动滚动到底部' : '点击开启自动滚动到底部'" placement="left">
+        <div class="follow-btn" :class="{ active: isFollow }">
+          {{ isFollow ? '跟随' : '停止' }}
+        </div>
+      </el-tooltip>
+    </div> -->
   </div>
 </template>
 
@@ -70,11 +71,8 @@ import type {
 import Message from "./Message.vue";
 
 import { useChatContextStore } from "@/stores/chat-context"
-import { useIdeaInfoStore } from "@/stores/idea-info";
 import { mapState } from "pinia";
-import util from "@/libs/util";
-
-const { addDiscardId, setScrollToBottom, setShowDiscardBtn } = useChatContextStore();
+import { useEditStore } from '@/stores/edit'
 
 let resizeObserver: ResizeObserver;
 
@@ -109,6 +107,7 @@ export default {
       initialScrollTop: null,
       isUserScrolling: false,
       scrollTimer: null,
+      timer: 0,
     };
   },
   watch: {
@@ -121,8 +120,9 @@ export default {
     }
   },
   computed: {
-    ...mapState(useChatContextStore, ["isLoading", "showDiscardBtn", "scrollToBottom"]),
-    ...mapState(useIdeaInfoStore, ['isShowPause']),
+    ...mapState(useChatContextStore, ["isLoading"]),
+    ...mapState(useEditStore, ['isFollow', 'showFollow']),
+
   },
   mounted() {
     this.watchScrollList();
@@ -130,21 +130,14 @@ export default {
   },
   beforeUnmount() {
     resizeObserver.unobserve(this.$refs.scrollList);
+    clearTimeout(this.timer);
   },
   updated() {
-    if (this.shouldScrollToBottom()) this.$nextTick(this._scrollDown());
+    if (this.shouldScrollToBottom()) this.$nextTick(() => this._scrollDown());
   },
   methods: {
-    handleDiscard() {
-      util.stopWs()
-      setShowDiscardBtn(false)
-      addDiscardId()
-    },
-    handleScrollToBottom() {
-      setScrollToBottom(!this.scrollToBottom)
-    },
     _scrollDown() {
-      if (this.scrollToBottom) {
+      if (this.isFollow) {
         this.$nextTick(() => {
           this.$refs.scrollList.scrollTop = this.$refs.scrollList.scrollHeight;
           if (!this.initialScrollTop) {
@@ -191,6 +184,14 @@ export default {
 
       resizeObserver.observe(this.$refs.scrollList1);
     },
+    handlePidAction(data: { pid: string; action: string }) {
+      // 向上传递 pidAction 事件
+      this.$emit('pidAction', data);
+    },
+    toggleFollow() {
+      const editStore = useEditStore();
+      editStore.setIsFollow(!this.isFollow);
+    },
   },
 };
 </script>
@@ -199,7 +200,7 @@ export default {
 .sc-message-list {  flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background-image: 
+  background-image:
     linear-gradient(rgba(100, 100, 255, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(100, 100, 255, 0.1) 1px, transparent 1px);
   background-size: 30px 30px;
@@ -289,6 +290,82 @@ export default {
   }
   100% {
     transform: scale(0.9);
+  }
+}
+
+.follow-toggle-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  
+  .follow-btn {
+    min-width: 60px;
+    height: 36px;
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    // 默认状态（停止跟随）
+    background: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.95);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    // 激活状态（跟随中）
+    &.active {
+      background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+      color: #ffffff;
+      border-color: #00d4ff;
+      box-shadow: 0 2px 12px rgba(0, 212, 255, 0.3);
+      
+      &:hover {
+        background: linear-gradient(135deg, #00b8e6 0%, #0088bb 100%);
+        box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+        transform: translateY(-2px);
+      }
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        right: -1px;
+        bottom: -1px;
+        background: linear-gradient(135deg, #00d4ff, #0099cc);
+        border-radius: 19px;
+        z-index: -1;
+        opacity: 0.5;
+        animation: pulse-glow 2s infinite;
+      }
+    }
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }
 

@@ -83,8 +83,7 @@ public class McpService {
     }
 
     private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
-        McpHub mcpHub = new McpHub(null, (msg) -> {
-        }, true);
+        McpHub mcpHub = new McpHub(null, McpMessageHandler::handleMessage, true);
         ServerParameters parameters = new ServerParameters();
         parameters.setType("grpc");
         parameters.getEnv().put("host", instance.getIp());

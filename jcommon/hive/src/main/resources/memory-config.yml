@@ -1,0 +1,48 @@
+memory:
+  # LLM Configuration
+  llm:
+    providerName: QWEN
+    model: qwen3-max
+    responseJsonFormat: true
+
+  # Embedder Configuration
+  embedder:
+    provider: ollama
+#    model: embeddinggemma
+    model: qwen3-embedding:4b
+#    embeddingDims: 768
+    embeddingDims: 2560
+
+  # Vector Store Configuration
+  vectorStore:
+    provider: chroma
+    port: 8000
+    collectionName: test_collection1
+#    embeddingModelDims: 768
+    embeddingModelDims: 2560
+    embeddingFunction: ollama
+    model: qwen3-embedding:4b
+    enable: false
+
+  # Graph Store Configuration
+  graphStore:
+    provider: neo4j
+    enabled: true
+    url: bolt://localhost:7687
+    # url will be set programmatically to temp directory
+    llm:
+      providerName: QWEN
+      model: qwen3-max
+      responseJsonFormat: true
+    embedder:
+      provider: ollama
+#      model: embeddinggemma
+      model: qwen3-embedding:4b
+#      embeddingDims: 768
+      embeddingDims: 2560
+
+  # History Database Path
+  historyDbPath: ./temp/history.db
+
+  # API Version
+  version: v1.1

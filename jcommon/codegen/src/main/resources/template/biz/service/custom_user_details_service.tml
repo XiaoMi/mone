@@ -1,0 +1,32 @@
+package ${package}.service;
+
+import ${package}.model.User;
+import ${package}.repository.UserRepository;
+import ${package}.security.CustomUserDetails;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+/**
+ * 自定义用户详情服务
+ * 实现Spring Security的UserDetailsService接口，用于用户认证
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Service
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService {
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("用户不存在: " + username));
+        
+        return new CustomUserDetails(user);
+    }
+}
+

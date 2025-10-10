@@ -64,9 +64,28 @@ public class HiveAutoConfigure {
         if (LLMProvider.DOUBAO_DEEPSEEK_V3.name().toLowerCase(Locale.ROOT).equals(llmType)) {
             return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
         }
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
-        config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
-        return new LLM(config);
+
+        if (LLMProvider.GOOGLE_2.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
+            return new LLM(config);
+        }
+        if (LLMProvider.OPENAICOMPATIBLE.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAICOMPATIBLE).build();
+            config.setUrl(System.getenv("OPENAI_COMPATIBLE_URL"));
+            config.setModel(System.getenv("OPENAI_COMPATIBLE_MODEL"));
+            config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
+            return new LLM(config);
+        }
+        if (LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE).build();
+            config.setUrl(System.getenv("OPENAI_COMPATIBLE_URL"));
+            config.setModel(System.getenv("OPENAI_COMPATIBLE_MODEL"));
+            config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
+            return new LLM(config);
+        }
+
+        return new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmType.toUpperCase(Locale.ROOT))).build());
     }
 
     //传输协议

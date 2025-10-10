@@ -1,6 +1,5 @@
 package run.mone.hive.mcp.service;
 
-import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -249,6 +248,105 @@ public class HiveManagerService {
     }
 
     /**
+     * 从ReactorRole保存配置到HiveManager
+     * 自动过滤系统配置，只保存用户自定义配置
+     *
+     * @param roleConfig ReactorRole的完整配置
+     * @param workspacePath 工作区路径
+     * @return 保存结果
+     */
+    public boolean saveRoleConfig(Map<String, String> roleConfig, String workspacePath,String agentIdStr, String userIdStr) {
+        if (roleConfig == null || roleConfig.isEmpty()) {
+            log.debug("RoleConfig is empty, skipping config save");
+            return false;
+        }
+
+
+        if (agentIdStr.isEmpty() || userIdStr.isEmpty()) {
+            log.debug("No agentId or userId found in roleConfig, skipping config save");
+            return false;
+        }
+
+        try {
+            Long agentId = Long.valueOf(agentIdStr);
+            Long userId = Long.valueOf(userIdStr);
+
+            // 过滤掉不需要保存的系统配置，只保存用户自定义配置
+            Map<String, String> configsToSave = new HashMap<>();
+            for (Map.Entry<String, String> entry : roleConfig.entrySet()) {
+                String key = entry.getKey();
+                // 排除系统内置配置，只保存用户配置
+                if (!key.equals("agentId") && !key.equals("userId") &&
+                        !key.equals("USER_INTERNAL_NAME") && !key.equals("timestamp")) {
+                    configsToSave.put(key, entry.getValue());
+                }
+            }
+
+            // 添加一些运行时信息
+            configsToSave.put("lastExitTime", String.valueOf(System.currentTimeMillis()));
+            if (workspacePath != null && !workspacePath.isEmpty()) {
+                configsToSave.put("workspacePath", workspacePath);
+            }
+
+            // 调用保存配置方法
+            boolean success = saveConfig(agentId, userId, configsToSave);
+            if (success) {
+                log.info("Successfully saved config to HiveManager for agentId: {}, userId: {}", agentId, userId);
+            } else {
+                log.warn("Failed to save config to HiveManager for agentId: {}, userId: {}", agentId, userId);
+            }
+            return success;
+        } catch (NumberFormatException e) {
+            log.error("Invalid agentId or userId format: agentId={}, userId={}", agentIdStr, userIdStr, e);
+            return false;
+        }
+    }
+
+    /**
+     * 保存配置信息
+     *
+     * @param agentId Agent ID
+     * @param userId 用户ID
+     * @param configs 配置信息映射
+     * @return 保存结果
+     */
+    public boolean saveConfig(Long agentId, Long userId, Map<String, String> configs) {
+        if (!enableRegHiveManager) {
+            // 如果未启用HiveManager，模拟保存成功
+            log.info("Simulating config save for agentId: {}, userId: {}, configs: {}", agentId, userId, configs);
+            return true;
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // 构建请求参数
+            Map<String, Object> request = new HashMap<>();
+            request.put("agentId", agentId);
+            request.put("userId", userId);
+            request.put("configs", configs);
+
+            HttpEntity<Map<String, Object>> httpRequest = new HttpEntity<>(request, headers);
+            String saveConfigUrl = baseUrl + "/api/v1/agents/config/save";
+            Map<String, Object> response = restTemplate.postForObject(saveConfigUrl, httpRequest, Map.class);
+
+            log.info("Config save response: {}", response);
+
+            if (response != null && response.containsKey("code")) {
+                Integer code = (Integer) response.get("code");
+                return code != null && code == 200;
+            } else {
+                log.error("Invalid response format for config save: {}", response);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Error during saving config for agentId: {}, userId: {}", agentId, userId, e);
+            return false;
+        }
+    }
+
+    /**
      * 获取默认配置信息
      * 当无法从HiveManager获取配置时使用
      *
@@ -320,4 +418,4 @@ public class HiveManagerService {
             }
         }, "task-simulator-" + taskInfo.getTaskId()).start();
     }
-} 
+}

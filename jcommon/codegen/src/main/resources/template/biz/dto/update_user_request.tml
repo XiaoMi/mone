@@ -1,0 +1,18 @@
+package ${package}.dto;
+
+import lombok.Data;
+
+/**
+ * 用户信息更新请求DTO
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Data
+public class UpdateUserRequest {
+    private String username;
+    private String email;
+    private String phone;
+    private String address;
+}
+
