@@ -56,4 +56,6 @@ public class Const {
 
     public static final String WORKSPACE_PATH_KEY = "workspacePath";
 
+    public static final String MCP = "mcp";
+
 }

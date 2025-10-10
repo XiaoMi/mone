@@ -226,7 +226,7 @@ public class RoleService {
         }
 
         //加载配置(从 agent manager获取来的)
-        updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
+        updateRoleConfigAndMcpHub(clientId, userId, agentId, role, true);
 
         role.getConfg().setAgentId(agentId);
         role.getConfg().setUserId(userId);
@@ -235,18 +235,20 @@ public class RoleService {
         return role;
     }
 
-    private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role) {
+    private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role, boolean refreshMcp) {
         Safe.run(() -> {
             if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
                 //每个用户的配置是不同的
                 Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
-                if (configMap.containsKey("mcp")) {
-                    List<String> list = Splitter.on(",").splitToList(configMap.get("mcp"));
-                    //更新mcp agent
-                    McpHub hub = updateMcpConnections(list, clientId);
-                    role.setMcpHub(hub);
-                } else {
-                    role.setMcpHub(new McpHub());
+                if (refreshMcp) {
+                    if (configMap.containsKey(Const.MCP)) {
+                        List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
+                        //更新mcp agent
+                        McpHub hub = updateMcpConnections(list, clientId);
+                        role.setMcpHub(hub);
+                    } else {
+                        role.setMcpHub(new McpHub());
+                    }
                 }
                 role.getRoleConfig().putAll(configMap);
                 role.initConfig();
@@ -366,6 +368,7 @@ public class RoleService {
         String from = message.getSentFrom().toString();
         ReactorRole agent = roleMap.get(from);
         if (null != agent) {
+            agent.saveMcpConfig();
             message.setData(Const.ROLE_EXIT);
             message.setContent(Const.ROLE_EXIT);
             agent.putMessage(message);
@@ -436,7 +439,7 @@ public class RoleService {
     }
 
     //刷新某个Agent的配置
-    public void refreshConfig(Message message) {
+    public void refreshConfig(Message message,boolean refreshMcp) {
         String from = message.getSentFrom().toString();
         ReactorRole role = roleMap.get(from);
         if (null != role) {
@@ -444,19 +447,10 @@ public class RoleService {
 
             // 重新加载配置和MCP连接
             String clientId = role.getClientId();
-            String userId = message.getUserId();
-            String agentId = message.getAgentId();
+            String userId = role.getConfg().getUserId();
+            String agentId = role.getConfg().getAgentId();
 
-            // 如果没有从消息中获取到userId和agentId，尝试从role中获取
-            if (StringUtils.isEmpty(userId)) {
-                userId = role.getRoleConfig().getOrDefault("userId", "");
-            }
-            if (StringUtils.isEmpty(agentId)) {
-                agentId = role.getRoleConfig().getOrDefault("agentId", "");
-            }
-
-            updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
-
+            updateRoleConfigAndMcpHub(clientId, userId, agentId, role, refreshMcp);
             log.info("Agent {} 配置刷新完成", from);
         } else {
             log.warn("未找到要刷新配置的Agent: {}", from);

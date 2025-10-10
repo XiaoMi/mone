@@ -47,7 +47,7 @@ public class RefreshConfigCommand extends RoleBaseCommand {
         try {
             sink.next("🔄 开始刷新Agent配置...\n");
             // 执行刷新配置
-            roleService.refreshConfig(message);
+            roleService.refreshConfig(message,false);
             sendMessages(sink,
                 "✅ Agent " + from + " 配置刷新完成！\n",
                 "📋 已更新MCP连接和角色设置\n"
