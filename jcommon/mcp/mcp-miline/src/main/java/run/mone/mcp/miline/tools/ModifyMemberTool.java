@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 public class ModifyMemberTool implements ITool {
 
     public static final String name = "modify_member";
-    private static final String BASE_URL = "http://XX/mtop/miline";
+    private static final String BASE_URL = System.getenv("req_base_url");
     private static final String GET_MEMBERS_URL = BASE_URL + "/getProjectMembers";
     private static final String MODIFY_MEMBERS_URL = BASE_URL + "/modifyMember";
 
