@@ -28,6 +28,7 @@ public class AgentConfig {
         ReadFileTool readFileTool = isRemoteFile ? new ReadFileTool(true) : new ReadFileTool(false);
         WriteToFileTool writeToFileTool = isRemoteFile ? new WriteToFileTool(true) : new WriteToFileTool(false);
         ReplaceInFileTool replaceInFileTool = isRemoteFile ? new ReplaceInFileTool(true) : new ReplaceInFileTool(false);
+        SearchFilesTool searchFilesTool = isRemoteFile ? new SearchFilesTool(true) : new SearchFilesTool(false);
 
         return RoleMeta.builder()
                 .profile("你是一名优秀的软件工程师")
@@ -37,7 +38,7 @@ public class AgentConfig {
                                 listFilesTool,
                                 new ExecuteCommandToolOptimized(),
                                 readFileTool,
-                                new SearchFilesTool(),
+                                searchFilesTool,
                                 replaceInFileTool,
                                 new ListCodeDefinitionNamesTool(),
                                 writeToFileTool,
