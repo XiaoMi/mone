@@ -302,6 +302,9 @@ public class RoleService {
                 return Flux.create(sink -> {
                     roleCommandFactory.executeCommand(message, sink, from, null);
                 });
+            } else {
+                existingRole.saveMcpConfig();
+                existingRole.saveConfigToHiveManager();
             }
         }
 

@@ -325,7 +325,7 @@ public class ReactorRole extends Role {
     /**
      * 保存配置到HiveManager
      */
-    private void saveConfigToHiveManager() {
+    public void saveConfigToHiveManager() {
         Safe.run(() -> {
             if (hiveManagerService != null) {
                 hiveManagerService.saveRoleConfig(roleConfig, workspacePath, this.getConfg().getAgentId(), this.getConfg().getUserId());

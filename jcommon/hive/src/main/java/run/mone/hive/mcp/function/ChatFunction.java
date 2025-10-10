@@ -75,7 +75,7 @@ public class ChatFunction implements McpFunction {
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("chat arguments:{}", arguments);
         //这个agent的拥有者
-        String ownerId = arguments.get(Const.OWNER_ID).toString();
+        String ownerId = arguments.getOrDefault(Const.OWNER_ID,"owner_id").toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();
         long timeout = Long.parseLong(arguments.getOrDefault(Const.TIMEOUT, String.valueOf(this.timeout)).toString());
 
