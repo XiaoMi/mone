@@ -91,12 +91,6 @@ public class SearchAgentFunction implements McpFunction {
                         if (selectedAgent.getAgent().getConstraints() != null) {
                             infoBuilder.append("约束: ").append(selectedAgent.getAgent().getConstraints()).append("\n");
                         }
-                        if (selectedAgent.getAgent().getToolMap() != null) {
-                            infoBuilder.append("可用工具: ").append(selectedAgent.getAgent().getToolMap()).append("\n");
-                        }
-                        if (selectedAgent.getAgent().getMcpToolMap() != null) {
-                            infoBuilder.append("MCP工具: ").append(selectedAgent.getAgent().getMcpToolMap()).append("\n");
-                        }
 
                         // 添加实例信息
                         if (selectedAgent.getInstances() != null && !selectedAgent.getInstances().isEmpty()) {
