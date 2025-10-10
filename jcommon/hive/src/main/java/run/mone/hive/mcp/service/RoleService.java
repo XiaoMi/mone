@@ -123,6 +123,9 @@ public class RoleService {
         Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
         map.entrySet().forEach(entry -> {
             Safe.run(() -> {
+                if (entry.getValue().size() == 0) {
+                    return;
+                }
                 Map m = (Map) entry.getValue().get(0);
                 ServerParameters parameters = new ServerParameters();
                 parameters.setType("grpc");
