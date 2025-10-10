@@ -58,7 +58,7 @@ public class CryptoTool implements ITool {
     @Override
     public String parameters() {
         return """
-                - 用户没提供的就用我提供的默认值,如果没有默认值再询问用户
+                - 用户没提供的参数就用提供的默认值
                 - operation: (required) The operation to perform. Must be one of: "get_balance", "get_all_balance", "inner_trade"
                 - name: (required for get_balance) The username to query balance for
                 - sender: (required for inner_trade) The sender's username 默认值:%s
@@ -101,10 +101,10 @@ public class CryptoTool implements ITool {
                 <operation>inner_trade</operation>
                 <sender>zhangxiaowei</sender>
                 <senderAccount>abc</senderAccount>
-                <receiver>goodjava@qq.com</receiver>
+                <receiver>go@qq.com</receiver>
                 <receiverAccount>abc</receiverAccount>
                 <amount>1</amount>
-                <senderPwd>MSSS==</senderPwd>
+                <senderPwd>SSSS==</senderPwd>
                 <tradeDesc>Transfer for service</tradeDesc>
                 %s
                 </crypto_trade>
