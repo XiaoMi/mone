@@ -1,0 +1,19 @@
+package ${package}.dto;
+
+import lombok.Data;
+
+/**
+ * 用户注册请求DTO
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Data
+public class RegisterRequest {
+    private String username;
+    private String password;
+    private String email;
+    private String phone;
+    private String address;
+}
+

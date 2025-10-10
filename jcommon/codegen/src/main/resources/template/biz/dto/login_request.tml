@@ -1,0 +1,16 @@
+package ${package}.dto;
+
+import lombok.Data;
+
+/**
+ * 用户登录请求DTO
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Data
+public class LoginRequest {
+    private String username;
+    private String password;
+}
+

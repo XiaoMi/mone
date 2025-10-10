@@ -38,6 +38,7 @@ public class McpServer {
                     new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
             );
             syncServer.addStreamTool(toolStreamRegistration);
+            syncServer.addTool(new run.mone.hive.mcp.server.McpServer.ToolRegistration(new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function));
         });
 
         return syncServer;

@@ -8,10 +8,14 @@ interface Edit {
 }
 
 export const useEditStore = defineStore('edit', () => {
+  // 从 localStorage 读取 isFollow 设置，默认为 true
+  const savedFollowSetting = localStorage.getItem('chatFollowScroll');
+  const initialIsFollow = savedFollowSetting ? JSON.parse(savedFollowSetting) : true;
+  
   const edit = ref<Edit>({
     isEdit: true,
-    showFollow: false,
-    isFollow: true,
+    showFollow: true,
+    isFollow: initialIsFollow,
   })
 
   const _showApprove = ref<boolean>(false);
@@ -38,6 +42,8 @@ export const useEditStore = defineStore('edit', () => {
 
   function setIsFollow(value: boolean) {
     edit.value.isFollow = value;
+    // 将设置保存到 localStorage
+    localStorage.setItem('chatFollowScroll', JSON.stringify(value));
   }
 
   function disableEdit() {

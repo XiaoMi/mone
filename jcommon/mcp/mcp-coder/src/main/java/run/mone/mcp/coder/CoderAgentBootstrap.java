@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.coder")
+@ComponentScan({"run.mone.mcp.coder", "run.mone.hive.spring.starter"})
 public class CoderAgentBootstrap {
 
     public static void main(String[] args) {

@@ -9,9 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import run.mone.hive.bo.HealthInfo;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
@@ -19,14 +22,19 @@ import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.mcp.service.command.CreateRoleCommand;
+import run.mone.hive.mcp.service.command.RoleCommandFactory;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
+import run.mone.hive.service.MarkdownService;
 import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,6 +85,8 @@ public class RoleService {
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
+    private MarkdownService markdownService = new MarkdownService();
+
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
@@ -90,9 +100,14 @@ public class RoleService {
     //连接过来的客户端
     private ConcurrentHashMap<String, String> clientMap = new ConcurrentHashMap<>();
 
+    //Role命令工厂
+    private RoleCommandFactory roleCommandFactory;
+
     @PostConstruct
     @SneakyThrows
     public void init() {
+        //初始化Role命令工厂
+        this.roleCommandFactory = new RoleCommandFactory(this);
         //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
@@ -163,6 +178,7 @@ public class RoleService {
             this.clientMap.put(clientId, clientId);
         }
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
+        //用来和manager通信的agent
         ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, llm, this.toolList, this.mcpToolList, ip) {
             @Override
             public void reg(RegInfo info) {
@@ -191,6 +207,9 @@ public class RoleService {
         role.setOwner(owner);
         role.setClientId(clientId);
 
+        // 设置HiveManagerService引用，用于配置保存
+        role.setHiveManagerService(this.hiveManagerService);
+
         role.setRoleMeta(roleMeta);
         role.setProfile(roleMeta.getProfile());
         role.setGoal(roleMeta.getGoal());
@@ -209,6 +228,8 @@ public class RoleService {
         //加载配置(从 agent manager获取来的)
         updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
 
+        role.getConfg().setAgentId(agentId);
+        role.getConfg().setUserId(userId);
         //一直执行不会停下来
         role.run();
         return role;
@@ -233,9 +254,51 @@ public class RoleService {
         });
     }
 
+    public void refreshMcp(List<String> list, ReactorRole role) {
+        role.getMcpHub().dispose();
+        McpHub hub = updateMcpConnections(list, role.getClientId());
+        role.setMcpHub(hub);
+    }
+
+
+    @SneakyThrows
+    public AgentMarkdownDocument getMarkdownDocument(AgentMarkdownDocument document, ReactorRole role) {
+        String filename = document.getFileName();
+
+        // 构建文件路径 - 假设配置文件在 .hive 目录下
+        String baseDir = role.getWorkspacePath() + "/.hive/";
+        Path filePath = Paths.get(baseDir + filename);
+
+        // 检查文件是否存在
+        if (!Files.exists(filePath)) {
+            return null;
+        }
+
+        // 读取并解析markdown文件
+        document = markdownService.readFromFile(filePath.toString());
+
+        // 验证文档有效性
+        if (!document.isValid()) {
+            return null;
+        }
+        return document;
+    }
+
+
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
+
+        // 检查是否是创建role命令，如果是且role为空，则特殊处理
+        if (roleCommandFactory.findCommand(message).isPresent() &&
+                roleCommandFactory.findCommand(message).get() instanceof CreateRoleCommand) {
+            ReactorRole existingRole = roleMap.get(from);
+            if (existingRole == null) {
+                return Flux.create(sink -> {
+                    roleCommandFactory.executeCommand(message, sink, from, null);
+                });
+            }
+        }
 
         roleMap.compute(from, (k, v) -> {
             if (v == null) {
@@ -264,118 +327,39 @@ public class RoleService {
                 }
             }
 
-            // 检查是否是中断命令
-            String content = message.getContent();
-            if (isInterruptCommand(content)) {
-                handleInterruptCommand(rr, sink, from);
-                return;
-            }
-
-            // 检查是否是刷新配置命令
-            if (isRefreshConfigCommand(content)) {
-                handleRefreshConfigCommand(rr, message, sink, from);
-                return;
+            // 使用命令工厂处理所有命令
+            if (roleCommandFactory.executeCommand(message, sink, from, rr)) {
+                return; // 命令已处理
             }
 
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
-            if (rr.isInterrupted() && !isInterruptCommand(content)) {
+            String content = message.getContent();
+            if (rr.isInterrupted() && !roleCommandFactory.findCommand(content).isPresent()) {
                 log.info("Agent {} 收到新的非中断命令，自动重置中断状态", from);
                 rr.resetInterrupt();
                 sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
             }
 
+            //把消息下发给Agent
             if (!(rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                rr.putMessage(message);
+                if (resolveMessageData(message, rr, sink)) {
+                    rr.putMessage(message);
+                }
             }
         });
     }
 
-    /**
-     * 检查是否是中断命令
-     */
-    private boolean isInterruptCommand(String content) {
-        if (content == null) {
-            return false;
+    private boolean resolveMessageData(Message message, ReactorRole rr, FluxSink sink) {
+        // 如果role配置中已有agent配置，则自动加载到消息数据中
+        if (rr.getRoleConfig().containsKey(Const.AGENT_CONFIG)) {
+            message.setData(GsonUtils.gson.fromJson(rr.getRoleConfig().get(Const.AGENT_CONFIG), AgentMarkdownDocument.class));
         }
-        String trimmed = content.trim().toLowerCase();
-        return trimmed.equals("/exit") ||
-                trimmed.equals("/stop") ||
-                trimmed.equals("/interrupt") ||
-                trimmed.equals("/cancel") ||
-                trimmed.contains("停止") ||
-                trimmed.contains("中断") ||
-                trimmed.contains("取消");
+        return true;
     }
 
-    /**
-     * 检查是否是刷新配置命令
-     */
-    private boolean isRefreshConfigCommand(String content) {
-        if (content == null) {
-            return false;
-        }
-        String trimmed = content.trim().toLowerCase();
-        return trimmed.equals("/refresh") ||
-                trimmed.equals("/reload") ||
-                trimmed.contains("刷新配置") ||
-                trimmed.contains("重新加载");
-    }
-
-    /**
-     * 处理中断命令
-     */
-    private void handleInterruptCommand(ReactorRole role, reactor.core.publisher.FluxSink<String> sink, String from) {
-        if (role.isInterrupted()) {
-            // 如果已经是中断状态，提示用户
-            sink.next("⚠️ Agent " + from + " 已经处于中断状态\n");
-            sink.next("💡 发送任何非中断命令将自动重置中断状态并继续执行\n");
-        } else {
-            // 执行中断
-            role.interrupt();
-            log.info("Agent {} 收到中断命令，已被中断", from);
-            sink.next("🛑 Agent " + from + " 已被强制中断\n");
-            sink.next("💡 发送任何新命令将自动重置中断状态并继续执行\n");
-        }
-        sink.complete();
-    }
-
-    /**
-     * 处理刷新配置命令
-     */
-    private void handleRefreshConfigCommand(ReactorRole role, Message message, reactor.core.publisher.FluxSink<String> sink, String from) {
-        try {
-            sink.next("🔄 开始刷新Agent配置...\n");
-            
-            // 执行刷新配置
-            refreshConfig(message);
-            
-            sink.next("✅ Agent " + from + " 配置刷新完成！\n");
-            sink.next("📋 已更新MCP连接和角色设置\n");
-            
-            // 构建一个特殊的消息，用于通知ReactorRole配置已刷新
-            Message refreshMessage = Message.builder()
-                    .sentFrom(message.getSentFrom())
-                    .clientId(message.getClientId())
-                    .userId(message.getUserId())
-                    .agentId(message.getAgentId())
-                    .role("system")
-                    .content("配置已刷新")
-                    .data(Const.REFRESH_CONFIG)
-                    .sink(sink)
-                    .build();
-            
-            // 发送给ReactorRole，让它知道配置已刷新
-            role.putMessage(refreshMessage);
-            
-        } catch (Exception e) {
-            log.error("刷新配置失败: {}", e.getMessage(), e);
-            sink.next("❌ 配置刷新失败: " + e.getMessage() + "\n");
-            sink.complete();
-        }
-    }
 
     //下线某个Agent
     public Mono<Void> offlineAgent(Message message) {
@@ -397,6 +381,17 @@ public class RoleService {
         if (null != role) {
             role.clearMemory();
         }
+    }
+
+    //回滚某个Agent的记录
+    public boolean rollbackHistory(Message message) {
+        String from = message.getSentFrom().toString();
+        String messageId = message.getId();
+        ReactorRole role = roleMap.get(from);
+        if (null != role) {
+            return role.rollbackMemory(messageId);
+        }
+        return false;
     }
 
     //中断某个Agent的执行
@@ -446,12 +441,12 @@ public class RoleService {
         ReactorRole role = roleMap.get(from);
         if (null != role) {
             log.info("开始刷新Agent {} 的配置", from);
-            
+
             // 重新加载配置和MCP连接
             String clientId = role.getClientId();
             String userId = message.getUserId();
             String agentId = message.getAgentId();
-            
+
             // 如果没有从消息中获取到userId和agentId，尝试从role中获取
             if (StringUtils.isEmpty(userId)) {
                 userId = role.getRoleConfig().getOrDefault("userId", "");
@@ -459,9 +454,9 @@ public class RoleService {
             if (StringUtils.isEmpty(agentId)) {
                 agentId = role.getRoleConfig().getOrDefault("agentId", "");
             }
-            
+
             updateRoleConfigAndMcpHub(clientId, userId, agentId, role);
-            
+
             log.info("Agent {} 配置刷新完成", from);
         } else {
             log.warn("未找到要刷新配置的Agent: {}", from);
@@ -480,6 +475,7 @@ public class RoleService {
         log.info("已中断 {} 个Agent", count);
         return Mono.just("已中断 " + count + " 个Agent");
     }
+
 
     @Override
     public String toString() {

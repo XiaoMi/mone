@@ -50,7 +50,7 @@ public class MonerMcpClient {
                     StringBuilder sb = new StringBuilder();
                     //内部调用(直接调用本地的mcp)
                     if (serviceName.equals(Const.INTERNAL_SERVER)) {
-                        log.info("call internal mcp:{}", toolName);
+                        log.info("call internal mcp:{} type:{}", toolName, "stream");
                         McpFunction function = f.apply(toolName);
                         Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
                         flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
@@ -89,14 +89,27 @@ public class MonerMcpClient {
 
                     log.debug("res:{}", sb);
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
-                } else {
+                } else { //非流式调用
+                    if (serviceName.equals(Const.INTERNAL_SERVER)) {
+                        log.info("call internal mcp:{} type:{}", toolName, "internal");
+                        McpFunction function = f.apply(toolName);
+                        Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
+                        String c = function.formatResult(((McpSchema.TextContent) flux.blockLast().content().get(0)).text());
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(c)).build();
+                    }
                     // 只有当before返回true时才调用工具
-                    McpHub mcpHub = McpHubHolder.get(from);
-                    if (null == mcpHub) {
+                    McpHub hub = null;
+                    if (null != role) {
+                        //调用绑定在这个用户的mcp
+                        hub = role.getMcpHub();
+                    } else {
+                        //主要用来调用chat
+                        hub = McpHubHolder.get(from);
+                    }
+                    if (null == hub) {
                         return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
                     }
-
-                    toolRes = mcpHub.callTool(serviceName, toolName,
+                    toolRes = hub.callTool(serviceName, toolName,
                             toolArguments);
                 }
                 monerMcpInterceptor.after(toolName, toolRes);

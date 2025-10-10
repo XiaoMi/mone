@@ -1,0 +1,46 @@
+package ${package}.${project}.config;
+
+import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.service.RoleMeta;
+import run.mone.hive.roles.tool.*;
+
+/**
+ * @author ${author}
+ * @date ${date}
+ */
+@Configuration
+public class AgentConfig {
+
+    @Value("\${mcp.agent.name}")
+    private String agentName;
+
+    @Bean
+    public RoleMeta roleMeta() {
+        return RoleMeta.builder()
+                .profile("${agentProfile}")
+                .goal("${agentGoal}")
+                .constraints("${agentConstraints}")
+                .tools(Lists.newArrayList(
+                        new ListFilesTool(),
+                        new ExecuteCommandToolOptimized(),
+                        new ReadFileTool(),
+                        new SearchFilesTool(),
+                        new ReplaceInFileTool(),
+                        new ListCodeDefinitionNamesTool(),
+                        new WriteToFileTool(),
+                        new ChatTool(),
+                        new AskTool(),
+                        new AttemptCompletionTool()
+                        )
+                )
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
+                .build();
+    }
+
+
+}
+

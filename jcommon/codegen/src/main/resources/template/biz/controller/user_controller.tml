@@ -1,0 +1,136 @@
+package ${package}.controller;
+
+import ${package}.dto.*;
+import ${package}.service.UserService;
+import ${package}.annotation.AuthUser;
+import ${package}.model.User;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+/**
+ * 用户控制器
+ * 提供用户注册、登录、信息管理等接口
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+public class UserController {
+    private final UserService userService;
+
+    /**
+     * 用户注册接口 - 公开接口，无需登录
+     */
+    @PostMapping("/register")
+    public ApiResponse<UserDTO> register(@RequestBody RegisterRequest request) {
+        return ApiResponse.success(userService.register(request), "用户注册成功");
+    }
+
+    /**
+     * 用户登录接口 - 公开接口，无需登录
+     */
+    @PostMapping("/login")
+    public ApiResponse<AuthResponse> login(@RequestBody LoginRequest request) {
+        return ApiResponse.success(userService.login(request), "登录成功");
+    }
+
+    /**
+     * 获取用户信息 - 需要登录
+     * 任何登录用户都可以查看其他用户的基本信息
+     */
+    @GetMapping("/{username}")
+    public ApiResponse<UserDTO> getUserByUsername(@AuthUser User authUser, @PathVariable String username) {
+        // authUser 用于验证用户已登录
+        User user = userService.findByUsername(username);
+        if (user == null) {
+            return ApiResponse.error(404, "用户不存在");
+        }
+        UserDTO userDTO = userService.convertToDTO(user);
+        return ApiResponse.success(userDTO, "获取用户信息成功");
+    }
+
+    /**
+     * 更新用户信息 - 需要登录
+     * 只能修改自己的信息或管理员可以修改任何用户信息
+     */
+    @PutMapping("/{username}")
+    public ApiResponse<UserDTO> updateUser(@AuthUser User authUser, @PathVariable String username, @RequestBody UpdateUserRequest request) {
+        // 权限检查：只能修改自己的信息，或者是管理员
+        if (!authUser.getUsername().equals(username) && !"ADMIN".equals(authUser.getRole())) {
+            return ApiResponse.error(403, "无权限修改其他用户信息");
+        }
+        
+        UserDTO updatedUser = userService.updateUser(username, request);
+        if (updatedUser == null) {
+            return ApiResponse.error(404, "用户不存在");
+        }
+        return ApiResponse.success(updatedUser, "更新用户信息成功");
+    }
+
+    /**
+     * 删除用户 - 需要管理员权限
+     */
+    @DeleteMapping("/{username}")
+    public ApiResponse<Void> deleteUser(@AuthUser User authUser, @PathVariable String username) {
+        // 权限检查：只有管理员可以删除用户
+        if (!"ADMIN".equals(authUser.getRole())) {
+            return ApiResponse.error(403, "无权限删除用户，需要管理员权限");
+        }
+        
+        // 不能删除自己
+        if (authUser.getUsername().equals(username)) {
+            return ApiResponse.error(400, "不能删除自己的账号");
+        }
+        
+        try {
+            userService.deleteUser(username);
+            return ApiResponse.success(null, "删除用户成功");
+        } catch (RuntimeException e) {
+            return ApiResponse.error(404, "用户不存在");
+        }
+    }
+
+    /**
+     * 修改用户状态 - 需要管理员权限
+     */
+    @PatchMapping("/{username}/status")
+    public ApiResponse<UserDTO> updateUserStatus(@AuthUser User authUser, @PathVariable String username, @RequestParam boolean active) {
+        // 权限检查：只有管理员可以修改用户状态
+        if (!"ADMIN".equals(authUser.getRole())) {
+            return ApiResponse.error(403, "无权限修改用户状态，需要管理员权限");
+        }
+        
+        // 不能修改自己的状态
+        if (authUser.getUsername().equals(username)) {
+            return ApiResponse.error(400, "不能修改自己的账号状态");
+        }
+        
+        UserDTO updatedUser = userService.updateUserStatus(username, active);
+        if (updatedUser == null) {
+            return ApiResponse.error(404, "用户不存在");
+        }
+        return ApiResponse.success(updatedUser, active ? "激活用户成功" : "停用用户成功");
+    }
+
+    /**
+     * 获取当前登录用户信息 - 需要登录
+     */
+    @GetMapping("/profile")
+    public ApiResponse<UserDTO> getCurrentUser(@AuthUser User user) {
+        User userEntity = userService.getUserById(user.getId());
+        UserDTO userDTO = userService.convertToDTO(userEntity);
+        return ApiResponse.success(userDTO, "获取当前用户信息成功");
+    }
+
+    /**
+     * 更新当前登录用户信息 - 需要登录
+     */
+    @PutMapping("/profile")
+    public ApiResponse<UserDTO> updateCurrentUser(@AuthUser User user, @RequestBody UpdateUserRequest request) {
+        UserDTO updatedUser = userService.updateUser(user.getId(), request);
+        return ApiResponse.success(updatedUser, "更新个人信息成功");
+    }
+}
+

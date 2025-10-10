@@ -4,6 +4,9 @@
       :onClearHistory="onClearHistory"
       :onOffline="onOffline"
       :onStopMsg="onStopMsg"
+      :onSwitchAgent="onSwitchAgent"
+      :onSwitchLlm="onSwitchLlm"
+      :onExecuteMcpCommand="onExecuteMcpCommand"
     />
     <MessageList
       :messages="messages"
@@ -13,6 +16,9 @@
       @scrollToTop="$emit('scrollToTop')"
       :onPlayAudio="onPlayAudio"
       @pidAction="handlePidAction"
+      @onClick2Conversion="(id) => {
+            $emit('onClick2Conversion', id)
+          }"
     >
       <template #user-avatar="scopedProps">
         <slot name="user-avatar" :user="scopedProps.user" :message="scopedProps.message"> </slot>
@@ -133,6 +139,18 @@ export default {
     onStopMsg: {
       type: Function,
       required: true,
+    },
+    onSwitchAgent: {
+      type: Function,
+      required: false,
+    },
+    onSwitchLlm: {
+      type: Function,
+      required: false,
+    },
+    onExecuteMcpCommand: {
+      type: Function,
+      required: false,
     },
   },
   data() {

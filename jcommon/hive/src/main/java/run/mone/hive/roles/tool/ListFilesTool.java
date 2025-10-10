@@ -16,15 +16,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * Directory listing tool for exploring file system structure
- * 
+ * <p>
  * This tool lists files and directories within a specified directory, with support
  * for both recursive and non-recursive listing modes. It provides detailed information
  * about each file including size, type, and modification time.
- * 
+ * <p>
  * Use this tool when you need to:
  * - Explore project structure and organization
  * - Understand directory contents before making changes
@@ -38,30 +37,25 @@ import java.util.stream.Stream;
 public class ListFilesTool implements ITool {
 
     public static final String name = "list_files";
-
+    // Default directories to ignore during recursive listing
+    private static final Set<String> DEFAULT_IGNORE_DIRECTORIES = Set.of(
+            "node_modules", "__pycache__", "env", "venv", "target", "build",
+            "dist", "out", "bundle", "vendor", "tmp", "temp", "deps", "Pods",
+            ".git", ".svn", ".hg", ".idea", ".vscode", ".gradle", ".m2"
+    );
+    // Hidden file/directory prefixes to ignore (unless specifically targeting them)
+    private static final Set<String> HIDDEN_PREFIXES = Set.of(".", "~");
+    // Maximum number of files to return to prevent overwhelming output
+    private static final int DEFAULT_LIMIT = 200;
+    private static final int MAX_DEPTH = 10; // Prevent infinite recursion
     private final boolean isRemote;
 
     public ListFilesTool() {
         this(false);
     }
-
     public ListFilesTool(boolean isRemote) {
         this.isRemote = isRemote;
     }
-
-    // Default directories to ignore during recursive listing
-    private static final Set<String> DEFAULT_IGNORE_DIRECTORIES = Set.of(
-        "node_modules", "__pycache__", "env", "venv", "target", "build", 
-        "dist", "out", "bundle", "vendor", "tmp", "temp", "deps", "Pods",
-        ".git", ".svn", ".hg", ".idea", ".vscode", ".gradle", ".m2"
-    );
-
-    // Hidden file/directory prefixes to ignore (unless specifically targeting them)
-    private static final Set<String> HIDDEN_PREFIXES = Set.of(".", "~");
-
-    // Maximum number of files to return to prevent overwhelming output
-    private static final int DEFAULT_LIMIT = 200;
-    private static final int MAX_DEPTH = 10; // Prevent infinite recursion
 
     @Override
     public String getName() {
@@ -112,20 +106,20 @@ public class ListFilesTool implements ITool {
     @Override
     public String usage() {
         String taskProgress = """
-            <task_progress>
-            Checklist here (optional)
-            </task_progress>
-            """;
+                <task_progress>
+                Checklist here (optional)
+                </task_progress>
+                """;
         if (!taskProgress()) {
             taskProgress = "";
         }
         return """
-            <list_files>
-            <path>Directory path here</path>
-            <recursive>true or false (optional)</recursive>
-            %s
-            </list_files>
-            """.formatted(taskProgress);
+                <list_files>
+                <path>Directory path here</path>
+                <recursive>true or false (optional)</recursive>
+                %s
+                </list_files>
+                """.formatted(taskProgress);
     }
 
     @Override
@@ -174,14 +168,43 @@ public class ListFilesTool implements ITool {
             }
 
             String path = inputJson.get("path").getAsString();
-            boolean recursive = inputJson.has("recursive") && 
-                               "true".equalsIgnoreCase(inputJson.get("recursive").getAsString());
+            boolean recursive = inputJson.has("recursive") &&
+                    "true".equalsIgnoreCase(inputJson.get("recursive").getAsString());
 
-            return performListFiles(path, recursive);
+            if (isRemote) {
+                return performRemoteListFiles(path, recursive);
+            } else {
+                return performListFiles(path, recursive);
+            }
 
         } catch (Exception e) {
             log.error("Exception occurred while executing list_files operation", e);
             result.addProperty("error", "Failed to execute list_files operation: " + e.getMessage());
+            return result;
+        }
+    }
+
+    private JsonObject performRemoteListFiles(String path, boolean recursive) {
+        JsonObject result = new JsonObject();
+
+        try {
+            String response = RemoteFileUtils.listFiles(path, recursive);
+
+            // 解析响应并构建结果
+            result.addProperty("result", response);
+            result.addProperty("directoryPath", path);
+            result.addProperty("recursive", recursive);
+
+            log.info("Successfully listed remote files in directory: {}, recursive: {}", path, recursive);
+
+            return result;
+        } catch (IOException e) {
+            log.error("IO exception while listing remote directory: {}", path, e);
+            result.addProperty("error", "Failed to list remote directory: " + e.getMessage());
+            return result;
+        } catch (Exception e) {
+            log.error("Exception while listing remote directory: {}", path, e);
+            result.addProperty("error", "Error listing remote directory: " + e.getMessage());
             return result;
         }
     }
@@ -192,126 +215,99 @@ public class ListFilesTool implements ITool {
     private JsonObject performListFiles(String path, boolean recursive) {
         JsonObject result = new JsonObject();
 
-        if (!isRemote) {
-            try {
-                Path dirPath = Paths.get(path);
-                File directory = dirPath.toFile();
+        try {
+            Path dirPath = Paths.get(path);
+            File directory = dirPath.toFile();
 
-                // Check if directory exists
-                if (!directory.exists()) {
-                    log.error("Directory not found: {}", path);
-                    result.addProperty("error", "Directory not found: " + path);
-                    return result;
-                }
-
-                // Check if path points to a file instead of directory
-                if (!directory.isDirectory()) {
-                    log.error("Path points to a file, not a directory: {}", path);
-                    result.addProperty("error", "Path points to a file, not a directory: " + path +
-                            ". Use this tool only on directories.");
-                    return result;
-                }
-
-                // Check directory permissions
-                if (!directory.canRead()) {
-                    log.error("Directory is not readable: {}", path);
-                    result.addProperty("error", "Directory is not readable: " + path);
-                    return result;
-                }
-
-                // Check for restricted paths (root, home directory)
-                if (isRestrictedPath(dirPath)) {
-                    log.error("Access to restricted path denied: {}", path);
-                    result.addProperty("error", "Access to restricted path denied: " + path);
-                    return result;
-                }
-
-                // List files based on recursive flag
-                List<FileInfo> files = recursive ?
-                        listFilesRecursive(dirPath) :
-                        listFilesTopLevel(dirPath);
-
-                // Sort files for consistent output
-                files.sort(Comparator.comparing(f -> f.relativePath));
-
-                // Build result
-                JsonArray fileArray = new JsonArray();
-                for (FileInfo fileInfo : files) {
-                    JsonObject fileObj = new JsonObject();
-                    fileObj.addProperty("name", fileInfo.name);
-                    fileObj.addProperty("path", fileInfo.relativePath);
-                    fileObj.addProperty("type", fileInfo.isDirectory ? "directory" : "file");
-                    fileObj.addProperty("size", fileInfo.size);
-                    fileObj.addProperty("lastModified", fileInfo.lastModified);
-                    fileObj.addProperty("isDirectory", fileInfo.isDirectory);
-                    fileObj.addProperty("isHidden", fileInfo.isHidden);
-                    if (!fileInfo.isDirectory) {
-                        fileObj.addProperty("extension", getFileExtension(fileInfo.name));
-                    }
-                    fileArray.add(fileObj);
-                }
-
-                result.add("files", fileArray);
-                result.addProperty("totalCount", files.size());
-                result.addProperty("directoryPath", path);
-                result.addProperty("recursive", recursive);
-                result.addProperty("wasLimited", files.size() >= DEFAULT_LIMIT);
-
-                // Add summary statistics
-                long totalSize = files.stream().mapToLong(f -> f.size).sum();
-                long fileCount = files.stream().mapToLong(f -> f.isDirectory ? 0 : 1).sum();
-                long dirCount = files.stream().mapToLong(f -> f.isDirectory ? 1 : 0).sum();
-
-                JsonObject summary = new JsonObject();
-                summary.addProperty("totalFiles", fileCount);
-                summary.addProperty("totalDirectories", dirCount);
-                summary.addProperty("totalSize", totalSize);
-                summary.addProperty("totalSizeFormatted", formatFileSize(totalSize));
-                result.add("summary", summary);
-
-                // Generate formatted output for display
-                String formattedOutput = formatFileList(files, path, recursive);
-                result.addProperty("result", formattedOutput);
-
-                log.info("Successfully listed {} items in directory: {}, recursive: {}",
-                        files.size(), path, recursive);
-
+            // Check if directory exists
+            if (!directory.exists()) {
+                log.error("Directory not found: {}", path);
+                result.addProperty("error", "Directory not found: " + path);
                 return result;
-
-            } catch (IOException e) {
-                log.error("IO exception while listing directory: {}", path, e);
-                result.addProperty("error", "Failed to list directory: " + e.getMessage());
-            } catch (Exception e) {
-                log.error("Exception while listing directory: {}", path, e);
-                result.addProperty("error", "Error listing directory: " + e.getMessage());
             }
+
+            // Check if path points to a file instead of directory
+            if (!directory.isDirectory()) {
+                log.error("Path points to a file, not a directory: {}", path);
+                result.addProperty("error", "Path points to a file, not a directory: " + path +
+                        ". Use this tool only on directories.");
+                return result;
+            }
+
+            // Check directory permissions
+            if (!directory.canRead()) {
+                log.error("Directory is not readable: {}", path);
+                result.addProperty("error", "Directory is not readable: " + path);
+                return result;
+            }
+
+            // Check for restricted paths (root, home directory)
+            if (isRestrictedPath(dirPath)) {
+                log.error("Access to restricted path denied: {}", path);
+                result.addProperty("error", "Access to restricted path denied: " + path);
+                return result;
+            }
+
+            // List files based on recursive flag
+            List<FileInfo> files = recursive ?
+                    listFilesRecursive(dirPath) :
+                    listFilesTopLevel(dirPath);
+
+            // Sort files for consistent output
+            files.sort(Comparator.comparing(f -> f.relativePath));
+
+            // Build result
+            JsonArray fileArray = new JsonArray();
+            for (FileInfo fileInfo : files) {
+                JsonObject fileObj = new JsonObject();
+                fileObj.addProperty("name", fileInfo.name);
+                fileObj.addProperty("path", fileInfo.relativePath);
+                fileObj.addProperty("type", fileInfo.isDirectory ? "directory" : "file");
+                fileObj.addProperty("size", fileInfo.size);
+                fileObj.addProperty("lastModified", fileInfo.lastModified);
+                fileObj.addProperty("isDirectory", fileInfo.isDirectory);
+                fileObj.addProperty("isHidden", fileInfo.isHidden);
+                if (!fileInfo.isDirectory) {
+                    fileObj.addProperty("extension", getFileExtension(fileInfo.name));
+                }
+                fileArray.add(fileObj);
+            }
+
+            result.add("files", fileArray);
+            result.addProperty("totalCount", files.size());
+            result.addProperty("directoryPath", path);
+            result.addProperty("recursive", recursive);
+            result.addProperty("wasLimited", files.size() >= DEFAULT_LIMIT);
+
+            // Add summary statistics
+            long totalSize = files.stream().mapToLong(f -> f.size).sum();
+            long fileCount = files.stream().mapToLong(f -> f.isDirectory ? 0 : 1).sum();
+            long dirCount = files.stream().mapToLong(f -> f.isDirectory ? 1 : 0).sum();
+
+            JsonObject summary = new JsonObject();
+            summary.addProperty("totalFiles", fileCount);
+            summary.addProperty("totalDirectories", dirCount);
+            summary.addProperty("totalSize", totalSize);
+            summary.addProperty("totalSizeFormatted", formatFileSize(totalSize));
+            result.add("summary", summary);
+
+            // Generate formatted output for display
+            String formattedOutput = formatFileList(files, path, recursive);
+            result.addProperty("result", formattedOutput);
+
+            log.info("Successfully listed {} items in directory: {}, recursive: {}",
+                    files.size(), path, recursive);
 
             return result;
+
+        } catch (IOException e) {
+            log.error("IO exception while listing directory: {}", path, e);
+            result.addProperty("error", "Failed to list directory: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Exception while listing directory: {}", path, e);
+            result.addProperty("error", "Error listing directory: " + e.getMessage());
         }
 
-        if (isRemote) {
-            try {
-                String response = RemoteFileUtils.listFiles(path);
-                
-                // 解析响应并构建结果
-                result.addProperty("result", response);
-                result.addProperty("directoryPath", path);
-                result.addProperty("recursive", recursive);
-                
-                log.info("Successfully listed remote files in directory: {}, recursive: {}", path, recursive);
-                
-                return result;
-            } catch (IOException e) {
-                log.error("IO exception while listing remote directory: {}", path, e);
-                result.addProperty("error", "Failed to list remote directory: " + e.getMessage());
-                return result;
-            } catch (Exception e) {
-                log.error("Exception while listing remote directory: {}", path, e);
-                result.addProperty("error", "Error listing remote directory: " + e.getMessage());
-                return result;
-            }
-        }
-        
         return result;
     }
 
@@ -320,19 +316,19 @@ public class ListFilesTool implements ITool {
      */
     private List<FileInfo> listFilesTopLevel(Path dirPath) throws IOException {
         List<FileInfo> files = new ArrayList<>();
-        
+
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dirPath)) {
             for (Path entry : stream) {
                 if (files.size() >= DEFAULT_LIMIT) {
                     break;
                 }
-                
+
                 if (shouldIncludeFile(entry, dirPath, false)) {
                     files.add(createFileInfo(entry, dirPath));
                 }
             }
         }
-        
+
         return files;
     }
 
@@ -342,18 +338,18 @@ public class ListFilesTool implements ITool {
     private List<FileInfo> listFilesRecursive(Path dirPath) throws IOException {
         List<FileInfo> files = new ArrayList<>();
         Set<Path> visited = new HashSet<>(); // Prevent infinite loops with symlinks
-        
+
         walkDirectoryRecursive(dirPath, dirPath, files, visited, 0);
-        
+
         return files;
     }
 
     /**
      * Recursive directory walking with limits
      */
-    private void walkDirectoryRecursive(Path currentPath, Path basePath, List<FileInfo> files, 
-                                      Set<Path> visited, int depth) throws IOException {
-        
+    private void walkDirectoryRecursive(Path currentPath, Path basePath, List<FileInfo> files,
+                                        Set<Path> visited, int depth) throws IOException {
+
         if (files.size() >= DEFAULT_LIMIT || depth > MAX_DEPTH) {
             return;
         }
@@ -373,7 +369,7 @@ public class ListFilesTool implements ITool {
 
                 if (shouldIncludeFile(entry, basePath, true)) {
                     files.add(createFileInfo(entry, basePath));
-                    
+
                     // Recurse into subdirectories
                     if (Files.isDirectory(entry) && !shouldIgnoreDirectory(entry)) {
                         walkDirectoryRecursive(entry, basePath, files, visited, depth + 1);
@@ -391,18 +387,18 @@ public class ListFilesTool implements ITool {
      */
     private FileInfo createFileInfo(Path filePath, Path basePath) throws IOException {
         BasicFileAttributes attrs = Files.readAttributes(filePath, BasicFileAttributes.class);
-        
+
         String relativePath = basePath.relativize(filePath).toString();
         String name = filePath.getFileName().toString();
         boolean isDirectory = attrs.isDirectory();
         long size = isDirectory ? 0 : attrs.size();
         boolean isHidden = name.startsWith(".") || Files.isHidden(filePath);
-        
+
         // Format last modified time
         Instant instant = attrs.lastModifiedTime().toInstant();
         LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
         String lastModified = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        
+
         return new FileInfo(name, relativePath, isDirectory, size, lastModified, isHidden);
     }
 
@@ -411,25 +407,23 @@ public class ListFilesTool implements ITool {
      */
     private boolean shouldIncludeFile(Path filePath, Path basePath, boolean recursive) {
         String fileName = filePath.getFileName().toString();
-        
+
         // Always include if we're specifically targeting a hidden directory
         if (isTargetingHiddenDirectory(basePath)) {
             return true;
         }
-        
+
         // For recursive listing, apply more filtering
         if (recursive) {
             // Skip hidden files unless specifically looking in hidden directory
             if (fileName.startsWith(".")) {
                 return false;
             }
-            
+
             // Skip common ignore directories
-            if (Files.isDirectory(filePath) && shouldIgnoreDirectory(filePath)) {
-                return false;
-            }
+            return !Files.isDirectory(filePath) || !shouldIgnoreDirectory(filePath);
         }
-        
+
         return true;
     }
 
@@ -455,23 +449,23 @@ public class ListFilesTool implements ITool {
     private boolean isRestrictedPath(Path path) {
         try {
             Path absolutePath = path.toAbsolutePath().normalize();
-            
+
             // Check if it's root directory
             Path root = absolutePath.getRoot();
-            if (root != null && absolutePath.equals(root)) {
+            if (absolutePath.equals(root)) {
                 return true;
             }
-            
+
             // Check if it's home directory
             String homeDir = System.getProperty("user.home");
             if (homeDir != null && absolutePath.equals(Paths.get(homeDir))) {
                 return true;
             }
-            
+
         } catch (Exception e) {
             log.debug("Error checking restricted path: {}", e.getMessage());
         }
-        
+
         return false;
     }
 
@@ -506,20 +500,20 @@ public class ListFilesTool implements ITool {
             sb.append(" (recursive)");
         }
         sb.append("\n");
-        
+
         if (files.isEmpty()) {
             sb.append("(empty directory)");
             return sb.toString();
         }
-        
+
         // Group by directories and files
         List<FileInfo> directories = files.stream()
-            .filter(f -> f.isDirectory)
-            .toList();
+                .filter(f -> f.isDirectory)
+                .toList();
         List<FileInfo> regularFiles = files.stream()
-            .filter(f -> !f.isDirectory)
-            .toList();
-        
+                .filter(f -> !f.isDirectory)
+                .toList();
+
         // List directories first
         if (!directories.isEmpty()) {
             sb.append("\nDirectories:\n");
@@ -527,7 +521,7 @@ public class ListFilesTool implements ITool {
                 sb.append("  📁 ").append(dir.relativePath).append("/\n");
             }
         }
-        
+
         // Then list files
         if (!regularFiles.isEmpty()) {
             sb.append("\nFiles:\n");
@@ -538,16 +532,16 @@ public class ListFilesTool implements ITool {
                 sb.append("\n");
             }
         }
-        
+
         // Add summary
         sb.append("\nSummary: ");
         sb.append(directories.size()).append(" directories, ");
         sb.append(regularFiles.size()).append(" files");
-        
+
         if (files.size() >= DEFAULT_LIMIT) {
             sb.append(" (limited to ").append(DEFAULT_LIMIT).append(" items)");
         }
-        
+
         return sb.toString();
     }
 
@@ -556,7 +550,7 @@ public class ListFilesTool implements ITool {
      */
     private String getFileIcon(String fileName) {
         String extension = getFileExtension(fileName);
-        
+
         return switch (extension) {
             case "java" -> "☕";
             case "js", "jsx" -> "🟨";
@@ -577,24 +571,9 @@ public class ListFilesTool implements ITool {
     }
 
     /**
-     * File information container
-     */
-    private static class FileInfo {
-        final String name;
-        final String relativePath;
-        final boolean isDirectory;
-        final long size;
-        final String lastModified;
-        final boolean isHidden;
-
-        FileInfo(String name, String relativePath, boolean isDirectory, 
-                long size, String lastModified, boolean isHidden) {
-            this.name = name;
-            this.relativePath = relativePath;
-            this.isDirectory = isDirectory;
-            this.size = size;
-            this.lastModified = lastModified;
-            this.isHidden = isHidden;
-        }
+         * File information container
+         */
+        private record FileInfo(String name, String relativePath, boolean isDirectory, long size, String lastModified,
+                                boolean isHidden) {
     }
 }
