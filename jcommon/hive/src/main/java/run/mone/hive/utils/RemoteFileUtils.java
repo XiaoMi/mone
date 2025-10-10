@@ -170,6 +170,48 @@ public class RemoteFileUtils {
     }
 
     /**
+     * 搜索远程文件
+     *
+     * @param directoryPath 目录路径
+     * @param regex         正则表达式
+     * @param filePattern   文件模式
+     * @return 搜索结果
+     * @throws IOException 如果搜索失败
+     */
+    public static String searchFiles(String directoryPath, String regex, String filePattern) throws IOException {
+        if (directoryPath == null || directoryPath.isEmpty()) {
+            throw new IOException("目录路径不能为空");
+        }
+
+        if (directoryPath.startsWith(File.separator)) {
+            directoryPath = directoryPath.substring(1);
+        }
+
+        String url = String.format("%s/search?directory=%s&userKey=%s&userSecret=%s&token=%s&regex=%s&filePattern=%s",
+                getHost(),
+                directoryPath,
+                getUserKey(),
+                getUserSecret(),
+                getToken(),
+                regex != null ? regex : "",
+                filePattern != null ? filePattern : "");
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(url);
+
+            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode >= 200 && statusCode < 300) {
+                    HttpEntity entity = response.getEntity();
+                    return entity != null ? EntityUtils.toString(entity) : "";
+                } else {
+                    throw new IOException("搜索文件失败，状态码: " + statusCode);
+                }
+            }
+        }
+    }
+
+    /**
      * 获取API主机地址
      *
      * @return API主机地址
@@ -204,4 +246,5 @@ public class RemoteFileUtils {
     private static String getToken() {
         return System.getenv().getOrDefault("REMOTE_FILE_API_TOKEN", "1");
     }
+
 }
