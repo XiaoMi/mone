@@ -58,6 +58,7 @@
         <module>mcp-remote-file</module>
         <module>mcp-miapi-cursor</module>
         <module>mcp-vue3</module>
+        <module>mcp-vue-temp</module>
     </modules>
 
     <properties>
