@@ -59,7 +59,7 @@ const { setAgentConfig, clearAgentConfig } = useAgentConfigStore()
 const socket = ref<WebSocket | null>(null)
 const uuid = ref<string>(route.query.conversationId as string)
 const messageId = ref<string>('')
-const sendMethod = ref<string>('ws')
+const sendMethod = ref<string>('sse')
 const list = computed(() => {
   return messageList
 })
@@ -815,7 +815,7 @@ onMounted(async () => {
           text: `你好，我是 ${agent.name}，有什么可以帮你的吗？`,
         },
       })
-      toggleSendMethod('ws')
+      // toggleSendMethod('ws')
 
       // 自动发送/create命令
       setTimeout(async () => {

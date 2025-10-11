@@ -3,6 +3,7 @@ package run.mone.hive.mcp.function;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import run.mone.hive.bo.TokenReq;
@@ -35,6 +36,8 @@ public class ChatFunction implements McpFunction {
     private final long timeout;
 
     private CommandManager commandManager;
+
+    private String desc;
 
     //支持权限验证
     private Function<TokenReq, TokenRes> tokenFunc = (req) -> TokenRes.builder().userId(req.getUserId()).success(true).build();
@@ -75,7 +78,7 @@ public class ChatFunction implements McpFunction {
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("chat arguments:{}", arguments);
         //这个agent的拥有者
-        String ownerId = arguments.getOrDefault(Const.OWNER_ID,"owner_id").toString();
+        String ownerId = arguments.getOrDefault(Const.OWNER_ID, "owner_id").toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();
         long timeout = Long.parseLong(arguments.getOrDefault(Const.TIMEOUT, String.valueOf(this.timeout)).toString());
 
@@ -151,8 +154,11 @@ public class ChatFunction implements McpFunction {
     }
 
     public String getDesc() {
-        return "和%s聊天，问问%s问题。支持各种形式如：'%s'、'请%s告诉我'、'让%s帮我看看'、'%s你知道吗'等。支持上下文连续对话。"
-                .formatted(agentName, agentName, agentName, agentName, agentName, agentName);
+        String str = "和%s聊天，问问%s问题。支持各种形式如：'%s'、'请%s告诉我'、'让%s帮我看看'、'%s你知道吗'等。支持上下文连续对话。";
+        if (StringUtils.isNotEmpty(desc)) {
+            str = desc;
+        }
+        return str.formatted(agentName, agentName, agentName, agentName, agentName, agentName);
     }
 
     public String getToolScheme() {

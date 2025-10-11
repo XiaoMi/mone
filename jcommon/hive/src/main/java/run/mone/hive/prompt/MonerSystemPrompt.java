@@ -237,7 +237,7 @@ public class MonerSystemPrompt {
 
                 McpSchema.ListToolsResult tools = value.getClient().listTools();
                 String toolsStr = tools
-                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "descrip tion:" + t.description() + "\n"
+                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
                         .collect(Collectors.joining("\n\n"));
                 server.put("tools", toolsStr);

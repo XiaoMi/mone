@@ -58,4 +58,12 @@ public class Const {
 
     public static final String MCP = "mcp";
 
+    public static final String REPLY = "reply";
+
+    public static final String BLOCK = "block";
+
+    public static final String RES_ID = "resId";
+
+    public static final String CMD = "cmd";
+
 }

@@ -143,6 +143,8 @@ message StreamRequest {
   string name = 1;
   map<string, bytes> arguments = 2;
   string request_id = 3;  // 可选：用于关联请求和响应
+  map<string, string> data = 4;
+  string jsonData = 5;
 }
 
 // 响应消息定义
