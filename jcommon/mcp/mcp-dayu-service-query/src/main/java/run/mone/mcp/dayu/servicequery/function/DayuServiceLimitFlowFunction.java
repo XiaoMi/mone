@@ -331,7 +331,25 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
                 String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 
                 if (statusCode == 200) {
-                    return "限流规则更新成功\n" + formatFlowRuleInfo(flowRule);
+                    // 更新成功后，显示所有限流规则的状态
+                    String result = "限流规则更新成功\n" + formatFlowRuleInfo(flowRule);
+                    try {
+                        // 等待API数据同步，给用户友好提示
+                        result += "\n\n⏳ 正在等待数据同步...";
+                        for (int i = 0; i < 3; i++) {
+                            Thread.sleep(1000);
+                            result += ".";
+                        }
+                        result += "\n🔄 重新获取最新限流规则列表...";
+                        log.info("🔄 更新成功后重新查询限流规则列表...");
+                        // 获取并显示所有限流规则
+                        String allRules = listLimitFlowRules(app);
+                        result += "\n\n📋 当前所有限流规则状态：\n" + allRules;
+                    } catch (Exception e) {
+                        log.warn("获取限流规则列表失败: {}", e.getMessage());
+                        result += "\n\n⚠️ 无法获取当前限流规则列表，请手动查询确认状态";
+                    }
+                    return result;
                 } else {
                     throw new RuntimeException("更新限流规则失败，状态码: " + statusCode + ", 响应: " + responseBody);
                 }
@@ -363,7 +381,25 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
                 String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
 
                 if (statusCode == 200 || statusCode == 204) {
-                    return "限流规则删除成功，规则ID: " + id;
+                    // 删除成功后，显示剩余限流规则的状态
+                    String result = "限流规则删除成功，规则ID: " + id;
+                    try {
+                        // 等待API数据同步，给用户友好提示
+                        result += "\n\n⏳ 正在等待数据同步...";
+                        for (int i = 0; i < 3; i++) {
+                            Thread.sleep(1000);
+                            result += ".";
+                        }
+                        result += "\n🔄 重新获取最新限流规则列表...";
+                        log.info("🔄 删除成功后重新查询限流规则列表...");
+                        // 获取并显示剩余限流规则
+                        String remainingRules = listLimitFlowRules(app);
+                        result += "\n\n📋 当前剩余限流规则状态：\n" + remainingRules;
+                    } catch (Exception e) {
+                        log.warn("获取限流规则列表失败: {}", e.getMessage());
+                        result += "\n\n⚠️ 无法获取当前限流规则列表，请手动查询确认状态";
+                    }
+                    return result;
                 } else {
                     throw new RuntimeException("删除限流规则失败，状态码: " + statusCode + ", 响应: " + responseBody);
                 }

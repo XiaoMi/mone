@@ -237,13 +237,25 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
             }
         }
 
-        // 再兜底：如果整句只包含一个明显的英文/数字 token，则作为应用名
+        // 智能兜底：根据上下文判断是应用名还是资源名
         if (!args.containsKey("appName") && !args.containsKey("serviceName")) {
-            java.util.regex.Matcher only = java.util.regex.Pattern
-                    .compile("([A-Za-z0-9_-]{2,})")
-                    .matcher(userInput);
-            if (only.find()) {
-                args.put("appName", only.group(1));
+            // 如果包含"禁用"、"启用"等操作词，且没有明确的appName，则优先识别为资源名
+            if (userInput.contains("禁用") || userInput.contains("启用") || userInput.contains("关闭") || 
+                userInput.contains("开启") || userInput.contains("enable") || userInput.contains("disable")) {
+                java.util.regex.Matcher resourceMatcher = java.util.regex.Pattern
+                        .compile("([A-Za-z0-9_-]{2,})")
+                        .matcher(userInput);
+                if (resourceMatcher.find()) {
+                    args.put("serviceName", resourceMatcher.group(1));
+                }
+            } else {
+                // 其他情况才作为应用名
+                java.util.regex.Matcher only = java.util.regex.Pattern
+                        .compile("([A-Za-z0-9_-]{2,})")
+                        .matcher(userInput);
+                if (only.find()) {
+                    args.put("appName", only.group(1));
+                }
             }
         }
         
