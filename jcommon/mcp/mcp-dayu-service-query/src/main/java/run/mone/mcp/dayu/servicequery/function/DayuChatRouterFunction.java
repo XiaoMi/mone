@@ -83,7 +83,7 @@ public class DayuChatRouterFunction implements McpFunction {
             }
         }
 
-        String guide = "我还不太确定你的意图，给你几个示例：\n- 查询服务 <服务名>（默认按服务名查）\n- 查询应用 <应用名>\n- 查询包含IP <IPv4地址>\n\n例如：查询服务 inventory-service 或 查询包含IP 192.168.1.1";
+        String guide = "嗨～我是Dayu服务治理助手！\n\n你可以这样问我：\n• 查询服务 <服务名>（如：查询服务 inventory-service）\n• 查询应用 <应用名>（如：查询应用 dayu-app）\n• 查询包含IP <地址>（如：查询包含IP 192.168.1.1）\n• 管理限流规则（如：禁用 com.xiaomi.dayu.HelloWorld 的限流）\n\n有什么需要帮助的吗？";
         return Flux.just(new McpSchema.CallToolResult(
                 java.util.List.of(new McpSchema.TextContent(guide)),
                 false

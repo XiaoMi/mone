@@ -67,7 +67,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
         List<String> thinkingSteps = new ArrayList<>();
         
         // 思考步骤1：分析输入内容
-        thinkingSteps.add("分析用户输入：\"" + text + "\"");
+        thinkingSteps.add("🤔 分析用户输入：\"" + text + "\"");
         
         // 思考步骤2：检查是否包含限流关键词
         boolean hasLimitFlowKeywords = LIMIT_FLOW_PATTERNS.matcher(text).find();
@@ -87,7 +87,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
                 hasLimitFlowKeywords = true;
             }
         }
-        thinkingSteps.add("检查限流关键词：" + (hasLimitFlowKeywords ? "发现限流相关词汇" : "未发现限流相关词汇"));
+        thinkingSteps.add("🔍 检查限流关键词：" + (hasLimitFlowKeywords ? "发现限流相关词汇" : "未发现限流相关词汇"));
         
         if (!hasLimitFlowKeywords) {
             thinkingSteps.add("结论：输入不包含限流相关关键词，返回空结果让其他路由器处理");
@@ -95,7 +95,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
         }
         
         // 思考步骤3：解析用户意图
-        thinkingSteps.add("开始解析用户意图...");
+        thinkingSteps.add("⚙️ 开始解析用户意图...");
         Map<String, Object> limitFlowArgs = parseUserIntent(text);
         // 根据上下文补齐 appName：优先使用本轮解析，其次使用会话记忆
         if (limitFlowArgs.containsKey("appName")) {
@@ -107,11 +107,11 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
                 thinkingSteps.add("从会话上下文补齐 appName=" + remembered);
             }
         }
-        thinkingSteps.add("解析结果：" + limitFlowArgs.toString());
+        thinkingSteps.add("📋 解析结果：" + limitFlowArgs.toString());
         
         // 思考步骤4：确定操作类型
         String operationType = (String) limitFlowArgs.get("operation");
-        thinkingSteps.add("识别操作类型：" + operationType);
+        thinkingSteps.add("🎯 识别操作类型：" + operationType);
         
         // 思考步骤5：验证参数完整性
         // 在缺少 id 但具备 service(+method) 时，尝试自动解析规则ID
@@ -144,7 +144,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
                 "请提供以下缺失信息：" + String.join("、", missingParams));
         }
         
-        thinkingSteps.add("所有参数验证通过，准备执行限流操作");
+        thinkingSteps.add("✅ 所有参数验证通过，准备执行限流操作");
         
         // 将通用意图参数映射为底层工具所需参数
         Map<String, Object> mappedArgs = new HashMap<>();

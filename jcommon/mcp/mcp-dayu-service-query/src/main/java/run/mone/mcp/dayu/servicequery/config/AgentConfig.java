@@ -21,34 +21,32 @@ public class AgentConfig {
     public RoleMeta roleMeta(DayuServiceQueryFunction dayuServiceQueryFunction, 
                            DayuServiceLimitFlowFunction dayuServiceLimitFlowFunction) {
         return RoleMeta.builder()
-                .profile("你是 Dayu 微服务治理助手。工作方式：\n"
-                        + "1) 先分点思考（短句，每步一行），再决定是否调用工具；\n"
-                        + "2) 缺少参数时只追问缺失项，不下结论、不直接执行；\n"
-                        + "3) 一律逐条流式返回（每个思考点单独输出）。\n\n"
-                        + "Few-shot 示例：\n"
-                        + "用户：查询dayu的服务限流\n"
-                        + "思考：\n- 识别为限流查询\n- 可能缺少 app/service 具体名称\n- 追问缺失参数：应用或服务名\n"
-                        + "追问：请提供应用或服务名称。\n\n"
-                        + "用户：为dayu的order-service 创建限流 qps=100\n"
-                        + "思考：\n- 识别为创建限流\n- 抽取 app=dayu service=order-service qps=100\n- 参数完整，可执行\n")
-                .goal("帮助用户以自然语言完成：服务检索、应用/服务的限流规则查询/创建/更新/删除，并在信息不足时进行精准追问")
-                .constraints("仅处理与 Dayu 服务查询与限流相关的问题；严格遵循‘先思考、再工具’与‘缺参先问’；所有输出尽量简短、中文、逐条流式。")
+                .profile("你是Dayu微服务治理专家，擅长服务发现和限流管理")
+                .goal("帮助用户通过自然语言完成服务查询、限流规则管理，提供精准的微服务治理支持")
+                .workflow("""
+                        服务治理流程:
+                        <1>理解用户意图 -> 分析服务/限流需求
+                        <2>参数提取 -> 识别app、service、method等关键信息  
+                        <3>智能推理 -> 根据上下文补全缺失参数
+                        <4>执行操作 -> 调用相应工具完成服务查询或限流管理
+                        """)
+                .constraints("专注Dayu服务治理领域；参数不足时主动追问；输出简洁明了；支持自然语言交互")
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool()
                 ))
-                // 添加服务查询和限流功能的路由器和功能
+                // 优化工具配置：参考优秀MCP项目的最佳实践
                 .mcpTools(Lists.newArrayList(
                         // 1) 先接入通用 ChatFunction，允许 LLM 产生思考/决策
                         new ChatFunction("dayu-service-query", 256),
                         // 2) 限流思考优先：优先捕获“限流/流控/熔断”等自然语言并返回思考过程
                         new ThinkingLimitFlowRouterFunction(dayuServiceLimitFlowFunction),
-                        // 3) 服务查询的思考路由器
+                        // 3) 通用思考路由器 - 处理服务查询思考
                         new RealThinkingRouterFunction(dayuServiceQueryFunction),
-                        // 4) 兜底的聊天路由器（并内置对限流语义的优先转交）
+                        // 4) 兜底聊天路由器 - 处理其他对话
                         new DayuChatRouterFunction(dayuServiceQueryFunction, new ThinkingLimitFlowRouterFunction(dayuServiceLimitFlowFunction)),
-                        // 5) 实际功能
+                        // 5) 核心功能工具
                         dayuServiceQueryFunction,
                         new DayuServiceLimitFlowRouterFunction(dayuServiceLimitFlowFunction),
                         dayuServiceLimitFlowFunction
