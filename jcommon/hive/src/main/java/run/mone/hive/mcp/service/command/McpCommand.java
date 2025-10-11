@@ -68,6 +68,7 @@ public class McpCommand extends RoleBaseCommand {
             String operation = parts[0].toLowerCase();
             
             switch (operation) {
+                //目前当add用的
                 case "refresh":
                     if (parts.length < 2) {
                         sendErrorAndComplete(sink, "refresh操作需要指定服务器名称，格式: /mcp refresh <serverName|all>");
@@ -205,7 +206,7 @@ public class McpCommand extends RoleBaseCommand {
      */
     private void refreshSpecificMcpServer(ReactorRole role, String serverName, Map<String, Object> result) {
         try {
-            this.roleService.refreshMcp(Lists.newArrayList(serverName), role);
+            this.roleService.addMcp(Lists.newArrayList(serverName), role);
             result.put("success", true);
             result.put("message", String.format("MCP服务器 '%s' 刷新成功", serverName));
             log.info("成功刷新MCP服务器: {}", serverName);

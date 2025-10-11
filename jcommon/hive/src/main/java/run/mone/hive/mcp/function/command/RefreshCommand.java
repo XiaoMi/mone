@@ -9,7 +9,7 @@ import run.mone.hive.schema.Message;
 
 /**
  * 刷新配置命令处理类
- * 
+ *
  * @author goodjava@qq.com
  * @date 2025/1/16
  */
@@ -36,9 +36,9 @@ public class RefreshCommand extends BaseCommand {
                     .content("刷新配置")
                     .data(Const.REFRESH_CONFIG)
                     .build();
-            
+
             // 通过roleService刷新配置
-            roleService.refreshConfig(refreshMessage);
+            roleService.refreshConfig(refreshMessage, false);
             return Flux.just(createSuccessResult("🔄 配置已刷新，包括MCP连接和角色设置"));
         } catch (Exception e) {
             log.error("刷新配置失败: {}", e.getMessage(), e);

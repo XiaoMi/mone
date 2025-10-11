@@ -25,6 +25,7 @@ import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
+import run.mone.hive.mcp.hub.McpServer;
 import run.mone.hive.mcp.service.IntentClassificationService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
@@ -298,20 +299,33 @@ public class ReactorRole extends Role {
         return true;
     }
 
+    public void saveMcpConfig() {
+        Safe.run(()->{
+            String mcpNames = "";
+            // 获取并打印连接的MCP名称
+            if (this.mcpHub != null) {
+                List<McpServer> servers = this.mcpHub.getServers();
+                mcpNames = servers.stream()
+                        .map(server -> server.getName())
+                        .collect(Collectors.joining(","));
+                log.info("Connected MCP servers: {}", mcpNames);
+            }
+            roleConfig.put(Const.MCP, mcpNames);
+        });
+    }
+
     @Override
     public void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
-
         // 保存配置到HiveManager
         saveConfigToHiveManager();
-
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
 
     /**
      * 保存配置到HiveManager
      */
-    private void saveConfigToHiveManager() {
+    public void saveConfigToHiveManager() {
         Safe.run(() -> {
             if (hiveManagerService != null) {
                 hiveManagerService.saveRoleConfig(roleConfig, workspacePath, this.getConfg().getAgentId(), this.getConfg().getUserId());
@@ -640,6 +654,13 @@ public class ReactorRole extends Role {
         if (StringUtils.isNotEmpty(contentForUser)) {
             sendToSink(contentForUser, assistantMessage, true);
         }
+
+        String name = "";
+        if (result.getToolName().endsWith("_chat")) {
+            name = result.getToolName().split("_")[1]+":\n";
+        }
+
+        contentForLlm = name + contentForLlm;
 
         // 存档
         assistantMessage.setData(contentForLlm);

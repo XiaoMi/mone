@@ -9,6 +9,7 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
+import run.mone.mcp.mysql.function.MysqlFunction;
 import run.mone.mcp.mysql.function.SqliteFunction;
 
 /**
@@ -33,6 +34,7 @@ public class AgentConfig {
                         new AttemptCompletionTool()))
                 .mcpTools(Lists.newArrayList(
                         new ChatFunction(agentName, 60),
+                        new MysqlFunction("test","123456"),
                         new SqliteFunction()))
                 .build();
     }

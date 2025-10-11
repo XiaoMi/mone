@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.sql.*;
@@ -13,7 +14,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class MysqlFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class MysqlFunction implements McpFunction {
 
     private String name = "stream_mysql_executor";
 
@@ -43,7 +44,7 @@ public class MysqlFunction implements Function<Map<String, Object>, Flux<McpSche
     private Connection connection;
 
 
-    public MysqlFunction(String db,String password) {
+    public MysqlFunction(String db, String password) {
         log.info("Initializing MysqlFunction...");
         this.database = db;
         this.password = password;
@@ -116,6 +117,7 @@ public class MysqlFunction implements Function<Map<String, Object>, Flux<McpSche
             stmt.setMaxRows(100);
             ResultSet rs = stmt.executeQuery(sql);
             StringBuilder result = new StringBuilder();
+            result.append("执行sql:").append(sql).append("\n返回结果:\n");
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
 
@@ -133,7 +135,7 @@ public class MysqlFunction implements Function<Map<String, Object>, Flux<McpSche
                 result.append("\n");
             }
 
-            log.info("Successfully executed query");
+            log.info("Successfully executed query res:{}", result);
 
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(result.toString())),
@@ -185,4 +187,8 @@ public class MysqlFunction implements Function<Map<String, Object>, Flux<McpSche
         }
     }
 
+    @Override
+    public String getToolScheme() {
+        return sqlToolSchema;
+    }
 }
