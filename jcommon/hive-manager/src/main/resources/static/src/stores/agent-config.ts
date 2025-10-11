@@ -56,7 +56,7 @@ export const useAgentConfigStore = defineStore('agentConfig', () => {
     // 默认选择第一个agent
     const agentKeys = Object.keys(config.systemInfo.agentList || {})
     if (agentKeys.length > 0 && !selectedAgentKey.value) {
-      selectedAgentKey.value = config.roleConfig?.agentKey || agentKeys[0]
+      selectedAgentKey.value = config.roleConfig?.__agent_config_key__ || agentKeys[0]
     }
     // 默认选择第一个LLM模型
     const llmKeys = Object.keys(config.llmOptions || {})
