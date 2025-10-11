@@ -318,10 +318,10 @@ public class DayuServiceQueryFunction implements McpFunction {
             if (services == null || services.isEmpty()) {
                 result.append("未找到匹配的数据\n");
             } else {
-                // 使用类似限流列表的表格格式
-                result.append("┌─────┬──────────────────────────────────────┬──────────┬──────┬──────────┬────────┐\n");
-                result.append("│ 序号 │ 服务名                                │ 分组     │ 版本  │ 所属应用  │ 实例数 │\n");
-                result.append("├─────┼──────────────────────────────────────┼──────────┼──────┼──────────┼────────┤\n");
+                // 使用类似限流列表的表格格式，服务名列宽调整为60
+                result.append("┌─────┬────────────────────────────────────────────────────────────────┬──────────┬──────┬──────────┬────────┐\n");
+                result.append("│ 序号 │ 服务名                                                            │ 分组     │ 版本  │ 所属应用  │ 实例数 │\n");
+                result.append("├─────┼────────────────────────────────────────────────────────────────┼──────────┼──────┼──────────┼────────┤\n");
 
                 int idx = 1;
                 for (Map<String, Object> service : services) {
@@ -332,20 +332,20 @@ public class DayuServiceQueryFunction implements McpFunction {
                     String application = firstNonBlank(service, "application", "app", "applicationName", "appName");
                     int instanceCount = safeInt(service.get("instanceCount"), 0);
 
-                    // 截断过长的服务名，但保持可读性
-                    String displayServiceName = serviceName.length() > 40 ? serviceName.substring(0, 37) + "..." : serviceName;
+                    // 完整显示服务名，不进行截断
+                    String displayServiceName = serviceName;
                     String displayGroup = group.length() > 8 ? group.substring(0, 5) + "..." : group;
                     String displayApplication = application.length() > 8 ? application.substring(0, 5) + "..." : application;
 
                     result.append("│ ").append(pad(String.valueOf(idx++), 3)).append(" │ ")
-                            .append(pad(displayServiceName, 40)).append(" │ ")
+                            .append(pad(displayServiceName, 60)).append(" │ ")
                             .append(pad(displayGroup, 8)).append(" │ ")
                             .append(pad(version, 4)).append(" │ ")
                             .append(pad(displayApplication, 8)).append(" │ ")
                             .append(pad(String.valueOf(instanceCount), 6)).append(" │\n");
                 }
                 
-                result.append("└─────┴──────────────────────────────────────┴──────────┴──────┴──────────┴────────┘\n");
+                result.append("└─────┴────────────────────────────────────────────────────────────────┴──────────┴──────┴──────────┴────────┘\n");
             }
 
             return result.toString();

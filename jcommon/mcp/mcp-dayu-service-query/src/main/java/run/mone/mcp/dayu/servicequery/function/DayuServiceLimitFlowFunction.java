@@ -219,26 +219,43 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
         String token = resolveAuthToken();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             String url = baseUrl + "/v2/flow/rules?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8);
+            log.info("🔍 尝试解析规则ID - URL: {}, app: {}, service: {}, method: {}", url, app, service, method);
             HttpGet httpGet = new HttpGet(url);
             addCommonHeaders(httpGet, token);
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
                 int statusCode = response.getCode();
                 String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                log.info("🔍 规则ID解析响应 - 状态码: {}, 响应长度: {}", statusCode, responseBody.length());
+                
                 if (statusCode != 200 || isHtml(responseBody)) {
+                    log.warn("🔍 规则ID解析失败 - 状态码: {}, 是否HTML: {}", statusCode, isHtml(responseBody));
                     return Optional.empty();
                 }
+                
                 Map<String, Object> resp = objectMapper.readValue(responseBody, Map.class);
                 List<Map<String, Object>> rules = (List<Map<String, Object>>) resp.get("data");
-                if (rules == null) return Optional.empty();
+                log.info("🔍 找到规则数量: {}", rules != null ? rules.size() : 0);
+                
+                if (rules == null) {
+                    log.warn("🔍 规则列表为空");
+                    return Optional.empty();
+                }
+                
                 for (Map<String, Object> rule : rules) {
-                    String svc = String.valueOf(rule.getOrDefault("service", ""));
+                    String resource = String.valueOf(rule.getOrDefault("resource", ""));
                     String mth = String.valueOf(rule.getOrDefault("method", ""));
-                    if (svc.equals(service) &&
+                    Object idObj = rule.get("id");
+                    log.info("🔍 检查规则 - resource: {}, method: {}, id: {}, 匹配resource: {}, 匹配method: {}", 
+                            resource, mth, idObj, resource.equals(service), 
+                            method == null || method.isBlank() || mth.equals(method));
+                    
+                    if (resource.equals(service) &&
                             (method == null || method.isBlank() || mth.equals(method))) {
-                        Object idObj = rule.get("id");
+                        log.info("🔍 找到匹配的规则ID: {}", idObj);
                         if (idObj != null) return Optional.of(String.valueOf(idObj));
                     }
                 }
+                log.warn("🔍 未找到匹配的规则 - 目标service: {}, method: {}", service, method);
                 return Optional.empty();
             }
         }
@@ -436,9 +453,9 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
 
             StringBuilder result = new StringBuilder();
             result.append("📊 限流规则 · ").append(app).append("  共").append(rules.size()).append("条\n");
-            result.append("┌─────┬──────┬──────────────────────────────────────┬──────┬────────┬──────────┬────────┐\n");
-            result.append("│ 序号 │ 状态  │ 资源名                                │ 类型  │ 阈值    │ 应用     │ ID     │\n");
-            result.append("├─────┼──────┼──────────────────────────────────────┼──────┼────────┼──────────┼────────┤\n");
+            result.append("┌─────┬──────┬────────────────────────────────────────────────────────────────┬──────┬────────┬──────────┬────────┐\n");
+            result.append("│ 序号 │ 状态  │ 资源名                                                            │ 类型  │ 阈值    │ 应用     │ ID     │\n");
+            result.append("├─────┼──────┼────────────────────────────────────────────────────────────────┼──────┼────────┼──────────┼────────┤\n");
 
             for (int i = 0; i < rules.size(); i++) {
                 Map<String, Object> rule = rules.get(i);
@@ -455,19 +472,19 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
                 String typeText = grade == 0 ? "线程数" : "QPS";
                 String limitAppText = "null".equals(limitApp) || limitApp.isEmpty() ? "default" : limitApp;
 
-                // 截断过长的资源名，但保持可读性
-                String displayResource = resource.length() > 40 ? resource.substring(0, 37) + "..." : resource;
+                // 完整显示资源名，不进行截断
+                String displayResource = resource;
                 
                 result.append("│ ").append(pad(String.valueOf(i + 1), 3)).append(" │ ")
                       .append(pad(statusIcon, 4)).append(" │ ")
-                      .append(pad(displayResource, 40)).append(" │ ")
+                      .append(pad(displayResource, 60)).append(" │ ")
                       .append(pad(typeText, 4)).append(" │ ")
                       .append(pad(String.valueOf(count), 6)).append(" │ ")
                       .append(pad(limitAppText, 8)).append(" │ ")
                       .append(pad(String.valueOf(id), 6)).append(" │\n");
             }
 
-            result.append("└─────┴──────┴──────────────────────────────────────┴──────┴────────┴──────────┴────────┘\n");
+            result.append("└─────┴──────┴────────────────────────────────────────────────────────────────┴──────┴────────┴──────────┴────────┘\n");
             result.append("💡 提示: 发送 '禁用 <资源名> 的限流' 或 '将 <资源名> 的状态改为启用/禁用' 可直接更新状态\n");
             return result.toString();
 
