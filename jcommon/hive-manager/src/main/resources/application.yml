@@ -53,6 +53,8 @@ hive:
 
 # Authentication and security configuration
 auth:
+  filter:
+    enabled: ${AUTH_FILTER_ENABLED:false}  # 控制过滤器是否启用，默认为false
   aegis:
     sdk:
       public:
