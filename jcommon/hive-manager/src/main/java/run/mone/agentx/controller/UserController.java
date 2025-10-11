@@ -114,14 +114,23 @@ public class UserController {
 
     @PostMapping("/internal-account")
     public Mono<ApiResponse<UserDTO>> bindInternalAccount(@RequestBody User user) {
-        return tpcUserService.getUserInfo()
-                .switchIfEmpty(Mono.error(new RuntimeException("无法获取用户信息，请先登录midun")))
-                .flatMap(account -> {
-                    user.setInternalAccount(account.getAccount());
-                    return userService.bindInternalAccount(user);
-                })
-                .map(ApiResponse::success)
-                .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
-                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+        // 如果传入的user中internalAccount为空，才需要从tpcUserService获取用户信息
+        if (user.getInternalAccount() == null || user.getInternalAccount().trim().isEmpty()) {
+            return tpcUserService.getUserInfo()
+                    .switchIfEmpty(Mono.error(new RuntimeException("无法获取用户信息，请先登录midun")))
+                    .flatMap(account -> {
+                        user.setInternalAccount(account.getAccount());
+                        return userService.bindInternalAccount(user);
+                    })
+                    .map(ApiResponse::success)
+                    .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
+                    .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+        } else {
+            // 如果internalAccount不为空，直接使用传入的值进行绑定
+            return userService.bindInternalAccount(user)
+                    .map(ApiResponse::success)
+                    .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
+                    .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+        }
     }
 }

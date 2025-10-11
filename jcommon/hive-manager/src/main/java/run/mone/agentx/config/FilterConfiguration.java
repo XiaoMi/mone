@@ -3,11 +3,12 @@ package run.mone.agentx.config;
 import com.xiaomi.mone.tpc.login.filter.HttpReqUserFilter;
 import com.xiaomi.mone.tpc.login.util.ConstUtil;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-//@Configuration
+@Configuration
 public class FilterConfiguration {
 
     @Value("${auth.aegis.sdk.public.key}")
@@ -23,6 +24,7 @@ public class FilterConfiguration {
     private String innerAuth;
 
     @Bean
+    @ConditionalOnProperty(name = "auth.filter.enabled", havingValue = "true")
     public FilterRegistrationBean filterCasBean() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         registrationBean.setFilter(new HttpReqUserFilter());
