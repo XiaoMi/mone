@@ -33,10 +33,8 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
     private String name = "dayu_service_limit_flow";
     private String desc = "管理 Dayu 微服务治理中心的服务限流规则，支持创建、查询、更新、删除限流规则";
     
-    private static final String DEFAULT_DAYU_BASE_URL = "http://mone.test.mi.com/dayu";
     private String dayuBaseUrl;
     private String authToken;
-    private String cookie;
     private ObjectMapper objectMapper;
 
     // 限流规则查询工具Schema
@@ -188,14 +186,13 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
     private String listLimitFlowRules(String app) throws IOException, ParseException {
         String baseUrl = resolveBaseUrl();
         String token = resolveAuthToken();
-        String cookieHeader = resolveCookie();
         
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String url = baseUrl + "/v2/flow/rules?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8) + "&token=white_token";
+            String url = baseUrl + "/v2/flow/rules?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8);
             log.info("查询限流规则列表URL: {}", url);
 
             HttpGet httpGet = new HttpGet(url);
-            addCommonHeaders(httpGet, token, cookieHeader);
+            addCommonHeaders(httpGet, token);
 
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
                 int statusCode = response.getCode();
@@ -220,11 +217,10 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
             throws IOException, ParseException {
         String baseUrl = resolveBaseUrl();
         String token = resolveAuthToken();
-        String cookieHeader = resolveCookie();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String url = baseUrl + "/v2/flow/rules?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8) + "&token=white_token";
+            String url = baseUrl + "/v2/flow/rules?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8);
             HttpGet httpGet = new HttpGet(url);
-            addCommonHeaders(httpGet, token, cookieHeader);
+            addCommonHeaders(httpGet, token);
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
                 int statusCode = response.getCode();
                 String responseBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
@@ -266,17 +262,15 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
         Map<String, Object> flowRule = buildFlowRuleFromArgs(args);
         String baseUrl = resolveBaseUrl();
         String token = resolveAuthToken();
-        String cookieHeader = resolveCookie();
         
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             String url = baseUrl + "/v2/flow/rule?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8) + 
                        "&method=" + URLEncoder.encode((String) args.getOrDefault("method", ""), StandardCharsets.UTF_8) +
-                       "&service=" + URLEncoder.encode(service, StandardCharsets.UTF_8) +
-                       "&token=white_token";
+                       "&service=" + URLEncoder.encode(service, StandardCharsets.UTF_8);
             log.info("创建限流规则URL: {}", url);
 
             HttpPost httpPost = new HttpPost(url);
-            addCommonHeaders(httpPost, token, cookieHeader);
+            addCommonHeaders(httpPost, token);
             httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(flowRule), StandardCharsets.UTF_8));
 
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
@@ -304,17 +298,15 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
         Map<String, Object> flowRule = buildFlowRuleFromArgs(args);
         String baseUrl = resolveBaseUrl();
         String token = resolveAuthToken();
-        String cookieHeader = resolveCookie();
         
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             String url = baseUrl + "/v2/flow/rule/" + id + "?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8) +
                        "&method=" + URLEncoder.encode((String) args.getOrDefault("method", ""), StandardCharsets.UTF_8) +
-                       "&service=" + URLEncoder.encode((String) args.getOrDefault("service", ""), StandardCharsets.UTF_8) +
-                       "&token=white_token";
+                       "&service=" + URLEncoder.encode((String) args.getOrDefault("service", ""), StandardCharsets.UTF_8);
             log.info("更新限流规则URL: {}", url);
 
             HttpPut httpPut = new HttpPut(url);
-            addCommonHeaders(httpPut, token, cookieHeader);
+            addCommonHeaders(httpPut, token);
             httpPut.setEntity(new StringEntity(objectMapper.writeValueAsString(flowRule), StandardCharsets.UTF_8));
 
             try (CloseableHttpResponse response = httpClient.execute(httpPut)) {
@@ -341,14 +333,13 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
 
         String baseUrl = resolveBaseUrl();
         String token = resolveAuthToken();
-        String cookieHeader = resolveCookie();
         
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String url = baseUrl + "/v2/flow/rule/" + id + "?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8) + "&token=white_token";
+            String url = baseUrl + "/v2/flow/rule/" + id + "?app=" + URLEncoder.encode(app, StandardCharsets.UTF_8);
             log.info("删除限流规则URL: {}", url);
 
             HttpDelete httpDelete = new HttpDelete(url);
-            addCommonHeaders(httpDelete, token, cookieHeader);
+            addCommonHeaders(httpDelete, token);
 
             try (CloseableHttpResponse response = httpClient.execute(httpDelete)) {
                 int statusCode = response.getCode();
@@ -425,18 +416,12 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
         return flowRule;
     }
 
-    // 添加通用请求头 - 调试白名单功能：优先使用白名单token，cookie作为兜底
+    // 添加通用请求头
     private void addCommonHeaders(org.apache.hc.client5.http.classic.methods.HttpUriRequest request, 
-                                 String token, String cookieHeader) {
-        // 调试白名单功能：优先使用白名单token，cookie作为兜底
-        // if (cookieHeader != null && !cookieHeader.trim().isEmpty()) {
-        //     request.setHeader("Cookie", cookieHeader);
-        // }
-        // if (token != null && !token.trim().isEmpty()) {
-        //     request.setHeader("Authorization", "Bearer " + token);
-        // }
+                                 String token) {
         request.setHeader("Content-Type", "application/json");
         request.setHeader("Accept", "application/json");
+        request.setHeader("code", "dubboAdminAccess");
     }
 
     // 格式化限流规则列表响应
@@ -450,42 +435,40 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append("限流规则 · ").append(app).append("  共").append(rules.size()).append("条\n");
-            result.append("────────────────────────────────────────────────────────────────────────\n");
-            // 表头
-            result.append(pad("#", 3)).append(" ")
-                  .append(pad("状态", 4)).append("  ")
-                  .append(pad("服务(方法)", 46)).append("  ")
-                  .append(pad("类型", 4)).append(" ")
-                  .append(pad("阈值", 6)).append("  ")
-                  .append(pad("group", 10)).append("  ")
-                  .append(pad("ID", 8)).append("\n");
-            result.append("────────────────────────────────────────────────────────────────────────\n");
+            result.append("📊 限流规则 · ").append(app).append("  共").append(rules.size()).append("条\n");
+            result.append("┌─────┬──────┬──────────────────────────────────────┬──────┬────────┬──────────┬────────┐\n");
+            result.append("│ 序号 │ 状态  │ 资源名                                │ 类型  │ 阈值    │ 应用     │ ID     │\n");
+            result.append("├─────┼──────┼──────────────────────────────────────┼──────┼────────┼──────────┼────────┤\n");
 
             for (int i = 0; i < rules.size(); i++) {
                 Map<String, Object> rule = rules.get(i);
-                String service = String.valueOf(rule.getOrDefault("service", ""));
-                String method = String.valueOf(rule.getOrDefault("method", ""));
-                String group = String.valueOf(rule.getOrDefault("dubboGroup", ""));
+                String resource = String.valueOf(rule.getOrDefault("resource", ""));
+                String limitApp = String.valueOf(rule.getOrDefault("limitApp", ""));
                 int grade = ((Number) rule.getOrDefault("grade", 1)).intValue();
                 Number count = (Number) rule.getOrDefault("count", 0);
                 int isClose = ((Number) rule.getOrDefault("isClose", 0)).intValue();
                 Object id = rule.get("id");
+                String ip = String.valueOf(rule.getOrDefault("ip", ""));
+                String port = String.valueOf(rule.getOrDefault("port", ""));
 
-                String statusIcon = isClose == 0 ? "✅" : "⛔";
-                String serviceCol = method == null || method.isEmpty() ? service : (service + "(" + method + ")");
+                String statusIcon = isClose == 0 ? "🟢启用" : "🔴禁用";
+                String typeText = grade == 0 ? "线程数" : "QPS";
+                String limitAppText = "null".equals(limitApp) || limitApp.isEmpty() ? "default" : limitApp;
 
-                result.append(pad(String.valueOf(i + 1), 3)).append(" ")
-                      .append(pad(statusIcon, 4)).append("  ")
-                      .append(pad(truncate(serviceCol, 46), 46)).append("  ")
-                      .append(pad(grade == 0 ? "线程" : "QPS", 4)).append(" ")
-                      .append(pad(String.valueOf(count), 6)).append("  ")
-                      .append(pad(truncate(group, 10), 10)).append("  ")
-                      .append(pad(String.valueOf(id), 8)).append("\n");
+                // 截断过长的资源名，但保持可读性
+                String displayResource = resource.length() > 40 ? resource.substring(0, 37) + "..." : resource;
+                
+                result.append("│ ").append(pad(String.valueOf(i + 1), 3)).append(" │ ")
+                      .append(pad(statusIcon, 4)).append(" │ ")
+                      .append(pad(displayResource, 40)).append(" │ ")
+                      .append(pad(typeText, 4)).append(" │ ")
+                      .append(pad(String.valueOf(count), 6)).append(" │ ")
+                      .append(pad(limitAppText, 8)).append(" │ ")
+                      .append(pad(String.valueOf(id), 6)).append(" │\n");
             }
 
-            result.append("────────────────────────────────────────────────────────────────────────\n");
-            result.append("提示: 发送 ‘禁用 <服务全名> 的限流’ 或 ‘将 <服务全名> 的状态改为启用/禁用’ 可直接更新状态\n");
+            result.append("└─────┴──────┴──────────────────────────────────────┴──────┴────────┴──────────┴────────┘\n");
+            result.append("💡 提示: 发送 '禁用 <资源名> 的限流' 或 '将 <资源名> 的状态改为启用/禁用' 可直接更新状态\n");
             return result.toString();
 
         } catch (Exception e) {
@@ -583,7 +566,7 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
             base = System.getenv().getOrDefault("DAYU_BASE_URL", "");
         }
         if (base.isBlank()) {
-            base = DEFAULT_DAYU_BASE_URL;
+            throw new IllegalStateException("Dayu base URL not configured. Please set dayu.limit-flow.base-url in application.properties");
         }
         if (!base.startsWith("http")) {
             base = "http://" + base;
@@ -606,29 +589,10 @@ public class DayuServiceLimitFlowFunction implements McpFunction {
         return token;
     }
 
-    // 解析Cookie
-    private String resolveCookie() {
-        String ck = this.cookie;
-        if (ck == null || ck.isBlank()) {
-            ck = System.getProperty("dayu.cookie", "");
-        }
-        if (ck.isBlank()) {
-            ck = System.getenv().getOrDefault("DAYU_COOKIE", "");
-        }
-        // 兼容 hive.manager.cookie
-        if (ck.isBlank()) {
-            ck = System.getProperty("hive.manager.cookie", "");
-        }
-        if (ck.isBlank()) {
-            ck = System.getenv().getOrDefault("HIVE_MANAGER_COOKIE", "");
-        }
-        return ck;
-    }
 
-    public DayuServiceLimitFlowFunction(String dayuBaseUrl, String authToken, String cookie) {
+    public DayuServiceLimitFlowFunction(String dayuBaseUrl, String authToken) {
         this.dayuBaseUrl = dayuBaseUrl;
         this.authToken = authToken;
-        this.cookie = cookie;
         this.objectMapper = new ObjectMapper();
     }
 

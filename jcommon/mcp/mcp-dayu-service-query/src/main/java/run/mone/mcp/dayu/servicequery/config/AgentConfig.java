@@ -56,22 +56,16 @@ public class AgentConfig {
 
     @Bean
     public DayuServiceQueryFunction dayuServiceQueryFunction(
-            @Value("${dayu.base-url:}") String baseUrl,
-            @Value("${dayu.auth-token:}") String token,
-            @Value("${dayu.cookie:}") String dayuCookie,
-            @Value("${hive.manager.cookie:}") String hiveCookie) {
-        String cookie = (dayuCookie != null && !dayuCookie.isBlank()) ? dayuCookie : hiveCookie;
-        return new DayuServiceQueryFunction(baseUrl, token, cookie);
+            @Value("${dayu.service.base-url:}") String baseUrl,
+            @Value("${dayu.auth-token:}") String token) {
+        return new DayuServiceQueryFunction(baseUrl, token);
     }
 
     @Bean
     public DayuServiceLimitFlowFunction dayuServiceLimitFlowFunction(
-            @Value("${dayu.base-url:}") String baseUrl,
-            @Value("${dayu.auth-token:}") String token,
-            @Value("${dayu.cookie:}") String dayuCookie,
-            @Value("${hive.manager.cookie:}") String hiveCookie) {
-        String cookie = (dayuCookie != null && !dayuCookie.isBlank()) ? dayuCookie : hiveCookie;
-        return new DayuServiceLimitFlowFunction(baseUrl, token, cookie);
+            @Value("${dayu.limit-flow.base-url:}") String baseUrl,
+            @Value("${dayu.auth-token:}") String token) {
+        return new DayuServiceLimitFlowFunction(baseUrl, token);
     }
 }
 

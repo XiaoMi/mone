@@ -159,10 +159,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
 
         // 流式返回思考步骤（接近打字机效果），再执行实际操作
         List<McpSchema.CallToolResult> stepResults = new ArrayList<>();
-        stepResults.add(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("思考过程")), false));
-        for (String step : thinkingSteps) {
-            stepResults.add(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(step)), false));
-        }
+        stepResults.add(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("思考过程\n" + String.join("\n", thinkingSteps))), false));
         stepResults.add(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("执行操作...")), false));
 
         return Flux.concat(
