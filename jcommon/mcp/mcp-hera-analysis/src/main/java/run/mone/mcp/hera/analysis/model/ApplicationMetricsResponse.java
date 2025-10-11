@@ -41,6 +41,21 @@ public class ApplicationMetricsResponse {
          * 最大服务端QPS
          */
         private double maxServerQps;
+        
+        /**
+         * 平均值（用于CPU和Heap）
+         */
+        private double avg;
+        
+        /**
+         * 最大值（用于CPU和Heap）
+         */
+        private double max;
+        
+        /**
+         * 堆内存配额/最大限制（MB，仅用于Heap）
+         */
+        private double heapQuota;
     }
 }
 
