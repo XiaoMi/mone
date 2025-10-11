@@ -105,7 +105,7 @@ public class RoleService {
     //Role命令工厂
     private RoleCommandFactory roleCommandFactory;
 
-    private  final GrpcServerTransport transport;
+    private final GrpcServerTransport transport;
 
     @PostConstruct
     @SneakyThrows
@@ -268,6 +268,7 @@ public class RoleService {
                 if (refreshMcp) {
                     if (configMap.containsKey(Const.MCP) && !configMap.get(Const.MCP).trim().equals("")) {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
+                        log.info("mcp list:{}", list);
                         //更新mcp agent
                         McpHub hub = updateMcpConnections(list, clientId, role);
                         role.setMcpHub(hub);

@@ -143,6 +143,7 @@ public class SwitchAgentCommand extends RoleBaseCommand {
 
                 // 放入到配置中
                 role.getRoleConfig().put(Const.AGENT_CONFIG, GsonUtils.gson.toJson(tmp));
+                role.getRoleConfig().put("agentName", tmp.getName());
 
                 sendMessages(sink,
                         "🔄 正在切换Agent配置...\n",
