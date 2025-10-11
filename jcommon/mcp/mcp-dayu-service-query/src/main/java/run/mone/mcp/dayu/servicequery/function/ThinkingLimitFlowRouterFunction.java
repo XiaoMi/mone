@@ -16,8 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ThinkingLimitFlowRouterFunction implements McpFunction {
 
     private final DayuServiceLimitFlowFunction limitFlowFunction;
+    
+    // 会话上下文存储
+    private static final java.util.concurrent.ConcurrentHashMap<String, String> sessionContext = new java.util.concurrent.ConcurrentHashMap<>();
     // 记忆每个会话最近一次使用的 appName
-    private final Map<String, String> sessionLastApp = new ConcurrentHashMap<>();
+    private static final java.util.concurrent.ConcurrentHashMap<String, String> sessionLastApp = new java.util.concurrent.ConcurrentHashMap<>();
     
     // 限流相关关键词模式
     private static final Pattern LIMIT_FLOW_PATTERNS = Pattern.compile(
@@ -71,15 +74,21 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
         
         // 思考步骤2：检查是否包含限流关键词
         boolean hasLimitFlowKeywords = LIMIT_FLOW_PATTERNS.matcher(text).find();
-        // 放宽触发条件：出现“启用/禁用/关闭”且包含类似 FQCN 的服务名时，也视为限流意图
+        // 放宽触发条件：出现"启用/禁用/关闭"且包含类似 FQCN 的服务名时，也视为限流意图
         if (!hasLimitFlowKeywords) {
             boolean actionWords = text.contains("禁用") || text.contains("启用") || text.contains("开启") || text.contains("关闭")
                     || text.toLowerCase().contains("enable") || text.toLowerCase().contains("disable");
+            boolean qpsWords = text.toLowerCase().contains("qps") || text.contains("阈值") || text.contains("限流值") 
+                    || text.contains("设置") || text.contains("修改") || text.contains("调整");
             boolean looksLikeFqcn = java.util.regex.Pattern
                     .compile("[a-zA-Z_][a-zA-Z0-9_\\.]+\\.[a-zA-Z0-9_]+(?:[:：][a-zA-Z0-9_]+)?")
                     .matcher(text).find();
-            // 只要有动作词就尝试走限流（容忍未出现“限流”二字），提高自然语句的可用性
+            // 只要有动作词就尝试走限流（容忍未出现"限流"二字），提高自然语句的可用性
             if (actionWords) {
+                hasLimitFlowKeywords = true;
+            }
+            // 或者出现QPS相关词汇也放行
+            if (!hasLimitFlowKeywords && qpsWords) {
                 hasLimitFlowKeywords = true;
             }
             // 或者出现看似服务名也放行
@@ -153,7 +162,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
         if (limitFlowArgs.containsKey("appName")) mappedArgs.put("app", limitFlowArgs.get("appName"));
         if (limitFlowArgs.containsKey("serviceName")) mappedArgs.put("service", limitFlowArgs.get("serviceName"));
         if (limitFlowArgs.containsKey("ruleId")) mappedArgs.put("id", limitFlowArgs.get("ruleId"));
-        if (limitFlowArgs.containsKey("qps")) { mappedArgs.put("grade", 1); mappedArgs.put("count", limitFlowArgs.get("qps")); }
+        if (limitFlowArgs.containsKey("count")) { mappedArgs.put("grade", 1); mappedArgs.put("count", limitFlowArgs.get("count")); }
         if (limitFlowArgs.containsKey("enabled")) mappedArgs.put("enabled", limitFlowArgs.get("enabled"));
         mappedArgs.put("action", action);
 
@@ -192,7 +201,7 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
             args.put("operation", "query");
         } else if (input.contains("创建") || input.contains("新增") || input.contains("添加") || input.contains("create")) {
             args.put("operation", "create");
-        } else if (input.contains("更新") || input.contains("修改") || input.contains("编辑") || input.contains("update")) {
+        } else if (input.contains("更新") || input.contains("修改") || input.contains("编辑") || input.contains("设置") || input.contains("调整") || input.contains("update")) {
             args.put("operation", "update");
         } else if (input.contains("删除") || input.contains("移除") || input.contains("delete")) {
             args.put("operation", "delete");
@@ -218,6 +227,14 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
             args.put("serviceName", serviceName);
         }
 
+        // 思考：提取QPS值
+        java.util.regex.Matcher qpsMatcher = java.util.regex.Pattern
+                .compile("(?:QPS|qps|阈值|限流值)\\s*(?:为|为|到|到|设为|设为|设置|设置)?\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(userInput);
+        if (qpsMatcher.find()) {
+            args.put("count", Integer.parseInt(qpsMatcher.group(1)));
+        }
+
         // 直接识别 FQCN（com.xxx.Class 或 com.xxx.Interface:method），便于“将 X 状态改为禁用”
         java.util.regex.Matcher fqcn = java.util.regex.Pattern
                 .compile("([a-zA-Z_][a-zA-Z0-9_\\.]+\\.[a-zA-Z0-9_]+)(?::([a-zA-Z0-9_]+))?")
@@ -239,9 +256,11 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
 
         // 智能兜底：根据上下文判断是应用名还是资源名
         if (!args.containsKey("appName") && !args.containsKey("serviceName")) {
-            // 如果包含"禁用"、"启用"等操作词，且没有明确的appName，则优先识别为资源名
+            // 如果包含操作词（禁用、启用、设置、修改等），优先识别为资源名
             if (userInput.contains("禁用") || userInput.contains("启用") || userInput.contains("关闭") || 
-                userInput.contains("开启") || userInput.contains("enable") || userInput.contains("disable")) {
+                userInput.contains("开启") || userInput.contains("enable") || userInput.contains("disable") ||
+                userInput.contains("设置") || userInput.contains("修改") || userInput.contains("调整") ||
+                userInput.toLowerCase().contains("qps") || userInput.contains("阈值")) {
                 java.util.regex.Matcher resourceMatcher = java.util.regex.Pattern
                         .compile("([A-Za-z0-9_-]{2,})")
                         .matcher(userInput);
@@ -425,5 +444,23 @@ public class ThinkingLimitFlowRouterFunction implements McpFunction {
             if (only != null) return String.valueOf(only).trim();
         }
         return "";
+    }
+    
+    /**
+     * 获取会话中的appName
+     */
+    private String getSessionAppName() {
+        // 这里可以从全局会话存储中获取
+        // 暂时返回null，后续可以扩展
+        return null;
+    }
+    
+    /**
+     * 设置会话中的appName
+     */
+    private void setSessionAppName(String sessionId, String appName) {
+        if (sessionId != null && appName != null && !appName.isBlank()) {
+            sessionContext.put(sessionId, appName);
+        }
     }
 }

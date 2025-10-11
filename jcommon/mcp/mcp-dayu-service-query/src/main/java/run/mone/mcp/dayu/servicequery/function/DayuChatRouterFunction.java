@@ -17,7 +17,7 @@ public class DayuChatRouterFunction implements McpFunction {
     private final ThinkingLimitFlowRouterFunction limitThinkingRouter;
 
     private static final java.util.regex.Pattern LIMIT_FLOW_PATTERNS = java.util.regex.Pattern.compile(
-            "(限流|流控|流量控制|rate.?limit|flow.?control|throttle|熔断|circuit.?breaker|降级|degrade|保护|protection)",
+            "(限流|流控|流量控制|rate.?limit|flow.?control|throttle|熔断|circuit.?breaker|降级|degrade|保护|protection|QPS|qps|阈值|限流值|设置|修改|调整|禁用|启用|开启|关闭)",
             java.util.regex.Pattern.CASE_INSENSITIVE
     );
 
