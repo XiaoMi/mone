@@ -187,18 +187,11 @@ const llmOptions = computed(() => {
 
 const selectedLlmValue = computed({
   get() {
-    const options = llmOptions.value || {}
-    const selectedKey = agentConfigStore.selectedLlmKey
-    return (selectedKey && options[selectedKey]) || ''
+    const selectedKey = agentConfigStore.selectedLlmValue
+    return selectedKey
   },
   set(value: string) {
-    const options = llmOptions.value || {}
-    const matchedEntry = Object.entries(options).find(([, optionValue]) => optionValue === value)
-    if (matchedEntry) {
-      agentConfigStore.setSelectedLlm(matchedEntry[0])
-    } else if (!value) {
-      agentConfigStore.setSelectedLlm('')
-    }
+    agentConfigStore.setSelectedLlm(value)
   }
 })
 
@@ -229,6 +222,10 @@ const props = defineProps({
     required: false,
   },
   onExecuteMcpCommand: {
+    type: Function,
+    required: false,
+  },
+  onExecuteSystemCommand: {
     type: Function,
     required: false,
   },
@@ -276,6 +273,8 @@ const handleClearHistory = () => {
   props.onClearHistory?.()
 }
 
+
+
 // 配置相关
 const configDialogVisible = ref(false)
 const configList = ref<Array<{ key: string; value: string }>>([])
@@ -291,12 +290,32 @@ const handleOpenConfig = async () => {
   loading.value = true
   try {
     const response = await getAgentConfigs(selectedInstance.agentId)
-    if (response.data?.data) {
-      configList.value = response.data.data.map((config) => ({
-        key: config.key,
-        value: config.value,
-      }))
-    }
+    const apiConfigs = response.data?.data || []
+    
+    // 从 roleConfig 获取的配置
+    const roleConfig = agentConfigStore.agentConfig?.roleConfig || {}
+    
+    // 合并配置：优先显示 API 配置，然后添加 roleConfig 中的配置
+    const mergedConfigs = new Map()
+    
+    // 先添加 API 配置
+    apiConfigs.forEach(config => {
+      mergedConfigs.set(config.key, config.value)
+    })
+    
+    // 再添加 roleConfig 中不存在于 API 配置的项
+    Object.entries(roleConfig).forEach(([key, value]) => {
+      if (!mergedConfigs.has(key) && value !== undefined && value !== null) {
+        mergedConfigs.set(key, String(value))
+      }
+    })
+    
+    // 转换为配置列表
+    configList.value = Array.from(mergedConfigs.entries()).map(([key, value]) => ({
+      key,
+      value,
+    }))
+    
     configDialogVisible.value = true
   } catch (error) {
     ElMessage.error('获取配置失败')
@@ -368,6 +387,9 @@ const handleSubmitConfig = async () => {
     await setBatchAgentConfig(selectedInstance.agentId, config)
     ElMessage.success('配置更新成功')
     configDialogVisible.value = false
+    
+    // 配置更新成功后执行 /refresh 命令
+    await sendRefreshCommand()
   } catch (error) {
     ElMessage.error('配置更新失败')
     console.error('配置更新失败:', error)
@@ -385,6 +407,32 @@ const handleAgentChange = (agentKey: string) => {
 const handleLlmChange = (llmValue: string) => {
   console.log('LLM changed to:', llmValue)
   props.onSwitchLlm?.(llmValue)
+}
+
+// 发送 /refresh 命令
+const sendRefreshCommand = async () => {
+  try {
+    if (props.onExecuteSystemCommand) {
+      await props.onExecuteSystemCommand('/refresh', false)
+    } else {
+      console.warn('onExecuteSystemCommand prop is not provided')
+    }
+  } catch (error) {
+    console.error('发送 /refresh 命令失败:', error)
+  }
+}
+
+// 发送 /reload 命令
+const sendReloadCommand = async () => {
+  try {
+    if (props.onExecuteSystemCommand) {
+      await props.onExecuteSystemCommand('/reload', false)
+    } else {
+      console.warn('onExecuteSystemCommand prop is not provided')
+    }
+  } catch (error) {
+    console.error('发送 /reload 命令失败:', error)
+  }
 }
 
 

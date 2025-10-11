@@ -19,6 +19,7 @@
       :onSwitchAgent="sendSwitchAgentCommand"
       :onSwitchLlm="sendSwitchLlmCommand"
       :onExecuteMcpCommand="sendMcpCommand"
+      :onExecuteSystemCommand="sendSystemCommand"
       @pidAction="onPidAction"
       @onClick2Conversion="onClick2Conversion"
     />
@@ -73,11 +74,11 @@ function throttle(
 ): (data: any, uuid: string) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastExecTime = 0;
-  
+
   return (data: any, uuid: string) => {
     catches.set(uuid, (catches.get(uuid) || '') + data)
     const currentTime = Date.now();
-    
+
     if (currentTime - lastExecTime >= delay) {
       // 立即执行
       Array.from(catches.entries()).forEach(([key, value]) => {
@@ -314,7 +315,7 @@ const sendCreateCommand = async () => {
       console.error('Agent not found')
       return
     }
-    
+
     messageId.value = uuidv4()
     const params = {
       message: '/create',
@@ -322,7 +323,7 @@ const sendCreateCommand = async () => {
       __web_search__: functionPanelStore.webSearchEnabled || false,
       __rag__: functionPanelStore.ragEnabled || false,
     }
-    
+
     // sse发送消息
     await streamChat(
       {
@@ -340,7 +341,7 @@ const sendCreateCommand = async () => {
       },
       () => {}
     )
-    
+
     // 发送完/create后，延迟发送/config命令
     setTimeout(() => {
       sendConfigCommand()
@@ -357,14 +358,14 @@ const sendConfigCommand = async () => {
       console.error('Agent not found')
       return
     }
-    
+
     const params = {
       message: '/config',
       __owner_id__: user?.username,
       __web_search__: functionPanelStore.webSearchEnabled || false,
       __rag__: functionPanelStore.ragEnabled || false,
     }
-    
+
     // sse发送消息
     const response = await streamChat(
       {
@@ -393,7 +394,7 @@ const handleConfigResponse = (data: string) => {
   try {
     // 先处理消息显示
     // throttledFluxCodeHandler(data, configMessageId)
-    
+
     // 提取tool_result标签中的JSON数据
     const toolResultMatch = data.match(/<tool_result>([\s\S]*?)<\/tool_result>/)
     if (toolResultMatch) {
@@ -417,7 +418,7 @@ const sendSwitchAgentCommand = async (agentKey: string) => {
       console.error('Agent not found')
       return
     }
-    
+
     messageId.value = uuidv4()
     const params = {
       message: `/switch ${agentKey}`,
@@ -425,7 +426,7 @@ const sendSwitchAgentCommand = async (agentKey: string) => {
       __web_search__: functionPanelStore.webSearchEnabled || false,
       __rag__: functionPanelStore.ragEnabled || false,
     }
-    
+
     // sse发送消息
     await streamChat(
       {
@@ -459,7 +460,7 @@ const sendSwitchLlmCommand = async (llmKey: string) => {
       console.error('Agent not found')
       return
     }
-    
+
     messageId.value = uuidv4()
     const params = {
       message: `/config put llm=${llmKey}`,
@@ -467,7 +468,7 @@ const sendSwitchLlmCommand = async (llmKey: string) => {
       __web_search__: functionPanelStore.webSearchEnabled || false,
       __rag__: functionPanelStore.ragEnabled || false,
     }
-    
+
     // sse发送消息
     await streamChat(
       {
@@ -501,7 +502,7 @@ const sendMcpCommand = async (command: string) => {
       console.error('Agent not found')
       return { success: false, error: 'Agent not found' }
     }
-    
+
     messageId.value = uuidv4()
     const params = {
       message: command,
@@ -509,7 +510,7 @@ const sendMcpCommand = async (command: string) => {
       __web_search__: functionPanelStore.webSearchEnabled || false,
       __rag__: functionPanelStore.ragEnabled || false,
     }
-    
+
     // sse发送消息
     const response = await streamChat(
       {
@@ -529,10 +530,58 @@ const sendMcpCommand = async (command: string) => {
     )
 
     console.log('MCP命令响应>>', response.data || '')
-    
+
     return { success: true, output: response?.data || '' }
   } catch (error) {
     console.error('发送MCP命令失败:', error)
+    return { success: false, error: error instanceof Error ? error.message : '未知错误' }
+  }
+}
+
+// 通用的系统命令发送函数（用于 /refresh、/reload 等命令）
+const sendSystemCommand = async (command: string, showResponse = false) => {
+  try {
+    const agent = getAgent()
+    if (!agent) {
+      console.error('Agent not found')
+      return { success: false, error: 'Agent not found' }
+    }
+
+    messageId.value = uuidv4()
+    const params = {
+      message: command,
+      __owner_id__: user?.username,
+      __web_search__: functionPanelStore.webSearchEnabled || false,
+      __rag__: functionPanelStore.ragEnabled || false,
+    }
+
+    // sse发送消息
+    const response = await streamChat(
+      {
+        mapData: {
+          outerTag: 'use_mcp_tool',
+          server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            getSelectedInstance().ip
+          }:${getSelectedInstance().port}`,
+          tool_name: getAgentName(),
+          arguments: JSON.stringify(params),
+        },
+        conversationId: route.query.conversationId,
+        agentId: route.query.serverAgentId,
+        agentInstance: getSelectedInstance(),
+      },
+      showResponse ? (data: any) => {
+        if (data) {
+          throttledFluxCodeHandler(data, messageId.value)
+        }
+      } : () => {}
+    )
+
+    console.log(`${command} 命令已发送`)
+
+    return { success: true, output: response?.data || '' }
+  } catch (error) {
+    console.error(`发送 ${command} 命令失败:`, error)
     return { success: false, error: error instanceof Error ? error.message : '未知错误' }
   }
 }
@@ -767,7 +816,7 @@ onMounted(async () => {
         },
       })
       // toggleSendMethod('ws')
-      
+
       // 自动发送/create命令
       setTimeout(async () => {
         await sendCreateCommand()

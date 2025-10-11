@@ -25,12 +25,7 @@ public class AgentConfig {
                 .goal("${agentGoal}")
                 .constraints("${agentConstraints}")
                 .tools(Lists.newArrayList(
-                        new ListFilesTool(),
                         new ExecuteCommandToolOptimized(),
-                        new ReadFileTool(),
-                        new SearchFilesTool(),
-                        new ReplaceInFileTool(),
-                        new ListCodeDefinitionNamesTool(),
                         new WriteToFileTool(),
                         new ChatTool(),
                         new AskTool(),

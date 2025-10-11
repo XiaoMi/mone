@@ -51,40 +51,10 @@ public class MonerMcpClient {
                     //内部调用(直接调用本地的mcp)
                     if (serviceName.equals(Const.INTERNAL_SERVER)) {
                         log.info("call internal mcp:{} type:{}", toolName, "stream");
-                        McpFunction function = f.apply(toolName);
-                        Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
-                        flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
-                            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                                //直接返回给前端
-                                s.next(tc.text());
-                                sb.append(tc.text());
-                            }
-                        })).blockLast();
+                        internalCall(sink, f, toolName, toolArguments, sb);
                     } else {
                         //外部的mcp
-                        Safe.run(() -> {
-                            McpHub hub = null;
-                            if (null != role) {
-                                //调用绑定在这个用户的mcp
-                                hub = role.getMcpHub();
-                            } else {
-                                //主要用来调用chat
-                                hub = McpHubHolder.get(from);
-                            }
-                            hub.callToolStream(serviceName, toolName, toolArguments)
-                                    .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
-                                        if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                                            //直接返回给前端
-                                            s.next(tc.text());
-                                            sb.append(tc.text());
-                                        }
-                                    }))
-                                    .doOnError(ex -> {
-                                        sb.append(ex.getMessage());
-                                        sink.next(ex.getMessage());
-                                    })
-                                    .blockLast();
-                        });
+                        call(role, from, sink, serviceName, toolName, toolArguments, sb);
                     }
 
                     log.debug("res:{}", sb);
@@ -120,6 +90,50 @@ public class MonerMcpClient {
                 return McpResult.builder().toolName(toolName).content(textContent).build();
             }
         });
+    }
+
+    private static void call(ReactorRole role, String from, FluxSink sink, String serviceName, String toolName, Map<String, Object> toolArguments, StringBuilder sb) {
+        Safe.run(() -> {
+            McpHub hub = null;
+            if (null != role) {
+                //调用绑定在这个用户的mcp
+                hub = role.getMcpHub();
+            } else {
+                //主要用来调用chat
+                hub = McpHubHolder.get(from);
+            }
+            hub.callToolStream(serviceName, toolName, toolArguments)
+                    .doOnNext(tr -> {
+                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                    Optional.ofNullable(sink).ifPresent(s -> {
+                                        //直接返回给前端
+                                        s.next(tc.text());
+                                        sb.append(tc.text());
+                                    });
+                                    if (null == sink) {
+                                        sb.append(tc.text());
+                                    }
+                                }
+                            }
+                    )
+                    .doOnError(ex -> {
+                        sb.append(ex.getMessage());
+                        sink.next(ex.getMessage());
+                    })
+                    .blockLast();
+        });
+    }
+
+    private static void internalCall(FluxSink sink, Function<String, McpFunction> f, String toolName, Map<String, Object> toolArguments, StringBuilder sb) {
+        McpFunction function = f.apply(toolName);
+        Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
+        flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
+            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                //直接返回给前端
+                s.next(tc.text());
+                sb.append(tc.text());
+            }
+        })).blockLast();
     }
 
 

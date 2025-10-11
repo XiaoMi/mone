@@ -37,10 +37,10 @@ public class AgentConfig {
                         new AskTool(),
                         new TavilySearchTool(),
                         new KnowledgeBaseQueryTool(),
-                        new MemoryTool(RoleMemoryConfig.builder()
-                                .graphStore(RoleMemoryConfig.GraphStoreConfig.builder()
-                                        .llm(RoleMemoryConfig.LlmConfig.builder().providerName(LLMProvider.QWEN.name()).model("qwen3-max").build())
-                                        .build()).build()),
+//                        new MemoryTool(RoleMemoryConfig.builder()
+//                                .graphStore(RoleMemoryConfig.GraphStoreConfig.builder()
+//                                        .llm(RoleMemoryConfig.LlmConfig.builder().providerName(LLMProvider.QWEN.name()).model("qwen3-max").build())
+//                                        .build()).build()),
                         new AttemptCompletionTool()
                         ))
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
