@@ -1,5 +1,6 @@
 package run.mone.mcp.miline.function;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
@@ -93,10 +94,12 @@ public class MilineFunction implements McpFunction {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class ApiResponse<T> {
         private int code;
         private T data;
         private String message;
+        private String detailMsg;
     }
 
     private List<ProjectMember> getProjectMembers(Integer projectId) throws Exception {

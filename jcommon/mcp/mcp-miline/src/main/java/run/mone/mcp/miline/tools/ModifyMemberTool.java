@@ -1,5 +1,6 @@
 package run.mone.mcp.miline.tools;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -33,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class ModifyMemberTool implements ITool {
 
     public static final String name = "modify_member";
-    private static final String BASE_URL = System.getenv("req_base_url");
+    private static final String BASE_URL = System.getenv("req_staging_base_url");
     private static final String GET_MEMBERS_URL = BASE_URL + "/getProjectMembers";
     private static final String MODIFY_MEMBERS_URL = BASE_URL + "/modifyMember";
 
@@ -508,9 +509,11 @@ public class ModifyMemberTool implements ITool {
      * API响应
      */
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class ApiResponse<T> {
         private int code;
         private T data;
         private String message;
+        private String detailMsg;
     }
 }

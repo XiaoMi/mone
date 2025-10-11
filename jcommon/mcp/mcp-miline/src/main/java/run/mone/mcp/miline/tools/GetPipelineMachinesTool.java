@@ -1,6 +1,7 @@
 package run.mone.mcp.miline.tools;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -18,16 +19,16 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class RunPipelineTool implements ITool {
+public class GetPipelineMachinesTool implements ITool {
 
-    public static final String name = "run_pipeline";
+    public static final String name = "get_machines";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL + "/startPipelineWithLatestCommit";
+    private static final String GET_MACHINES_URL = BASE_URL + "/qryDeployInfo";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
-    public RunPipelineTool() {
+    public GetPipelineMachinesTool() {
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
@@ -35,8 +36,6 @@ public class RunPipelineTool implements ITool {
                 .build();
         this.objectMapper = new ObjectMapper();
     }
-
-
 
     @Override
     public String getName() {
@@ -56,12 +55,12 @@ public class RunPipelineTool implements ITool {
     @Override
     public String description() {
         return """
-                运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行。
+                获取流水线运行机器信息的工具，查询指定项目下指定流水线的部署机器信息。
                 
                 **使用场景：**
-                - 需要在CI/CD中触发某个流水线
-                - 验证最近一次提交是否能通过流水线
-                - 集成到自动化流程中进行构建/部署
+                - 查看流水线部署到哪些机器上
+                - 监控流水线的运行环境
+                - 排查部署问题时的环境信息
                 """;
     }
 
@@ -84,22 +83,22 @@ public class RunPipelineTool implements ITool {
             taskProgress = "";
         }
         return """
-                <run_pipeline>
+                <get_machines>
                 <projectId>项目ID</projectId>
                 <pipelineId>流水线ID</pipelineId>
                 %s
-                </run_pipeline>
+                </get_machines>
                 """.formatted(taskProgress);
     }
 
     @Override
     public String example() {
         return """
-                示例: 运行流水线
-                <run_pipeline>
+                示例: 获取流水线机器信息
+                <get_machines>
                 <projectId>12345</projectId>
                 <pipelineId>67890</pipelineId>
-                </run_pipeline>
+                </get_machines>
                 """;
     }
 
@@ -116,49 +115,57 @@ public class RunPipelineTool implements ITool {
                 return result;
             }
 
-            Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
-            Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
+            Long projectId = Long.parseLong(inputJson.get("projectId").getAsString());
+            Long pipelineId = Long.parseLong(inputJson.get("pipelineId").getAsString());
 
-            Map<String, String> userMap = Map.of("baseUserName", "wangmin17");
-            List<Object> requestBody = List.of(userMap, projectId, pipelineId);
-            String requestBodyStr = objectMapper.writeValueAsString(requestBody);
-            log.info("runPipeline request: {}", requestBodyStr);
+            // 构建请求体，将参数作为数组发送
+            JsonArray requestBody = new JsonArray();
+            requestBody.add(projectId);
+            requestBody.add(pipelineId);
+            
+            String requestBodyStr = requestBody.toString();
+            log.info("getMachines request body: {}", requestBodyStr);
 
             RequestBody body = RequestBody.create(
                 requestBodyStr,
-                MediaType.parse("application/json; charset=utf-8")
+                MediaType.parse("application/json")
             );
 
             Request request = new Request.Builder()
-                .url(RUN_PIPELINE_URL)
+                .url(GET_MACHINES_URL)
                 .post(body)
                 .build();
 
-            OkHttpClient pipelineClient = client.newBuilder()
+            OkHttpClient machinesClient = client.newBuilder()
                 .connectTimeout(3, TimeUnit.SECONDS)
                 .readTimeout(3, TimeUnit.SECONDS)
                 .writeTimeout(3, TimeUnit.SECONDS)
                 .build();
 
-            try (Response response = pipelineClient.newCall(request).execute()) {
+            try (Response response = machinesClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
                 }
 
                 String responseBody = response.body().string();
-                log.info("runPipeline response: {}", responseBody);
+                log.info("getMachines response: {}", responseBody);
 
-                ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                ApiResponse<Object> apiResponse = objectMapper.readValue(
                     responseBody,
-                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Object.class)
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                result.addProperty("executionId", apiResponse.getData());
-                result.addProperty("result", String.format("成功触发流水线，执行ID: %d", apiResponse.getData()));
+                String machinesJson = objectMapper.writeValueAsString(apiResponse.getData());
+                result.addProperty("machines", machinesJson);
+                
+                // 提取deployMachines中的所有IP地址
+                List<String> ipList = extractDeployMachineIps(machinesJson);
+                result.addProperty("deployMachineIps", String.join(",", ipList));
+                result.addProperty("result", "成功获取机器信息");
                 return result;
             }
         } catch (NumberFormatException e) {
@@ -166,10 +173,40 @@ public class RunPipelineTool implements ITool {
             result.addProperty("error", "'projectId'与'pipelineId'必须是数字");
             return result;
         } catch (Exception e) {
-            log.error("执行run_pipeline操作时发生异常", e);
+            log.error("执行get_machines操作时发生异常", e);
             result.addProperty("error", "执行操作失败: " + e.getMessage());
             return result;
         }
+    }
+
+    /**
+     * 从机器信息JSON中提取deployMachines的所有IP地址
+     * @param machinesJson 机器信息的JSON字符串
+     * @return IP地址列表
+     */
+    private List<String> extractDeployMachineIps(String machinesJson) {
+        List<String> ipList = new ArrayList<>();
+        try {
+            JsonNode rootNode = objectMapper.readTree(machinesJson);
+            JsonNode deployMachinesNode = rootNode.get("deployMachines");
+            
+            if (deployMachinesNode != null && deployMachinesNode.isArray()) {
+                for (JsonNode machineNode : deployMachinesNode) {
+                    JsonNode ipNode = machineNode.get("ip");
+                    if (ipNode != null && !ipNode.isNull()) {
+                        String ip = ipNode.asText();
+                        if (StringUtils.isNotBlank(ip)) {
+                            ipList.add(ip);
+                        }
+                    }
+                }
+            }
+            
+            log.info("提取到{}个部署机器IP地址: {}", ipList.size(), ipList);
+        } catch (Exception e) {
+            log.error("解析机器信息JSON时发生异常", e);
+        }
+        return ipList;
     }
 
     @Data
