@@ -14,5 +14,8 @@ public class Config {
     }
 
     private String userId;
+
     private String agentId;
+
+    private String clientId;
 }

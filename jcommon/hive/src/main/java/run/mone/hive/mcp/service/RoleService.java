@@ -21,6 +21,7 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.service.command.CreateRoleCommand;
@@ -103,6 +104,8 @@ public class RoleService {
 
     //Role命令工厂
     private RoleCommandFactory roleCommandFactory;
+
+    private  final GrpcServerTransport transport;
 
     @PostConstruct
     @SneakyThrows
@@ -193,7 +196,47 @@ public class RoleService {
         }
         String ip = StringUtils.isEmpty(agentIp) ? NetUtils.getLocalHost() : agentIp;
         //用来和manager通信的agent
-        ReactorRole role = new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, llm, this.toolList, this.mcpToolList, ip) {
+        ReactorRole role = getRole(owner, ip);
+
+        role.setFunctionList(this.functionList);
+        role.setOwner(owner);
+        role.setClientId(clientId);
+
+        // 设置HiveManagerService引用，用于配置保存
+        role.setHiveManagerService(this.hiveManagerService);
+
+        applyRoleMeta(role);
+
+        //加载配置(从 agent manager获取来的)
+        updateRoleConfigAndMcpHub(clientId, userId, agentId, role, true);
+
+        role.getConfg().setAgentId(agentId);
+        role.getConfg().setUserId(userId);
+        role.getConfg().setClientId(clientId);
+        //一直执行不会停下来
+        role.run();
+        return role;
+    }
+
+    private void applyRoleMeta(ReactorRole role) {
+        role.setRoleMeta(roleMeta);
+        role.setProfile(roleMeta.getProfile());
+        role.setGoal(roleMeta.getGoal());
+        role.setConstraints(roleMeta.getConstraints());
+        role.setWorkflow(roleMeta.getWorkflow());
+        role.setOutputFormat(roleMeta.getOutputFormat());
+        role.setActions(roleMeta.getActions());
+        role.setType(roleMeta.getRoleType());
+        if (null != roleMeta.getLlm()) {
+            role.setLlm(roleMeta.getLlm());
+        }
+        if (null != roleMeta.getReactMode()) {
+            role.getRc().setReactMode(roleMeta.getReactMode());
+        }
+    }
+
+    private @NotNull ReactorRole getRole(String owner, String ip) {
+        return new ReactorRole(agentName, agentGroup, agentversion, roleMeta.getProfile(), roleMeta.getGoal(), roleMeta.getConstraints(), grpcPort, llm, this.toolList, this.mcpToolList, ip) {
             @Override
             public void reg(RegInfo info) {
                 if (owner.equals(Const.DEFAULT)) {
@@ -215,38 +258,6 @@ public class RoleService {
                 }
             }
         };
-
-
-        role.setFunctionList(this.functionList);
-        role.setOwner(owner);
-        role.setClientId(clientId);
-
-        // 设置HiveManagerService引用，用于配置保存
-        role.setHiveManagerService(this.hiveManagerService);
-
-        role.setRoleMeta(roleMeta);
-        role.setProfile(roleMeta.getProfile());
-        role.setGoal(roleMeta.getGoal());
-        role.setConstraints(roleMeta.getConstraints());
-        role.setWorkflow(roleMeta.getWorkflow());
-        role.setOutputFormat(roleMeta.getOutputFormat());
-        role.setActions(roleMeta.getActions());
-        role.setType(roleMeta.getRoleType());
-        if (null != roleMeta.getLlm()) {
-            role.setLlm(roleMeta.getLlm());
-        }
-        if (null != roleMeta.getReactMode()) {
-            role.getRc().setReactMode(roleMeta.getReactMode());
-        }
-
-        //加载配置(从 agent manager获取来的)
-        updateRoleConfigAndMcpHub(clientId, userId, agentId, role, true);
-
-        role.getConfg().setAgentId(agentId);
-        role.getConfg().setUserId(userId);
-        //一直执行不会停下来
-        role.run();
-        return role;
     }
 
     private void updateRoleConfigAndMcpHub(String clientId, String userId, String agentId, ReactorRole role, boolean refreshMcp) {

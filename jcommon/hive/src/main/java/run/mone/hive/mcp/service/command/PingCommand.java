@@ -1,10 +1,15 @@
 package run.mone.hive.mcp.service.command;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
+import run.mone.hive.common.Safe;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.service.RoleService;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 
@@ -14,7 +19,7 @@ import java.util.Map;
 /**
  * Ping命令处理类
  * 处理 /ping 命令，返回 pong 响应
- * 
+ *
  * @author goodjava@qq.com
  * @date 2025/1/16
  */
@@ -32,9 +37,9 @@ public class PingCommand extends RoleBaseCommand {
         }
         String content = message.getContent();
         Object data = message.getData();
-        
+
         return (content != null && content.trim().toLowerCase().equals("/ping")) ||
-               (data != null && "PING".equals(data.toString()));
+                (data != null && "PING".equals(data.toString()));
     }
 
     @Override
@@ -53,7 +58,7 @@ public class PingCommand extends RoleBaseCommand {
             response.put("success", true);
             response.put("message", "pong");
             response.put("timestamp", System.currentTimeMillis());
-            
+
             // 添加一些额外的信息
             Map<String, Object> data = new HashMap<>();
             data.put("status", "alive");
@@ -63,6 +68,13 @@ public class PingCommand extends RoleBaseCommand {
                 data.put("roleState", role.getState().get().toString());
             }
             response.put("data", data);
+
+            Safe.run(() -> {
+                Object obj = roleService.getTransport().sendMessage(ImmutableMap.of(Const.CMD, "ping"), role.getClientId()).block();
+                if (obj instanceof StreamRequest req) {
+                    response.put("ping_manager", req.getJsonData());
+                }
+            });
 
             // 格式化输出
             Gson gson = new GsonBuilder().setPrettyPrinting().create();

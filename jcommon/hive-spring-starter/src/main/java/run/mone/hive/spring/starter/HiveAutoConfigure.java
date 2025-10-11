@@ -107,7 +107,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, GrpcServerTransport transport) {
         List<ITool> toolList = roleMeta.getTools();
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
 
@@ -125,7 +125,8 @@ public class HiveAutoConfigure {
                 ).toList(),
                 mcpTools,
                 hiveManagerService,
-                roleMeta
+                roleMeta,
+                transport
         );
     }
 
