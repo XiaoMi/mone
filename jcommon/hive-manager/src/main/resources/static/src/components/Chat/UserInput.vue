@@ -85,14 +85,14 @@
                 <span v-else style="color: aqua">Shift+Enter</span>
               </div>
             </div>
-            <div class="sc-user-input--hcbutton">
+            <!-- <div class="sc-user-input--hcbutton">
               <div>
                 <el-radio-group v-model="sendMethod" @change="toggleSendMethod">
                   <el-radio label="sse">SSE</el-radio>
                   <el-radio label="ws">WebSocket</el-radio>
                 </el-radio-group>
               </div>
-            </div>
+            </div> -->
           </div>
           <div class="sc-user-input--buttons h-100">
             <div class="sc-user-input--button">
@@ -421,7 +421,7 @@ export default {
       gitTimer: 0,
       composerConfig: ['bugfix', 'bizJar', 'Codebase', 'Analyze', 'Knowledge', 'UnitTest'],
       composerList: [],
-      sendMethod: 'sse',
+      sendMethod: 'ws',
     };
   },
   computed: {
