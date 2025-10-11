@@ -29,10 +29,8 @@ public class DayuServiceQueryFunction implements McpFunction {
     private String name = "dayu_service_query";
     private String desc = "查询 Dayu 微服务治理中心的服务列表，支持按服务名搜索";
     
-    private static final String DEFAULT_DAYU_BASE_URL = "http://mone.test.mi.com/dayu";
     private String dayuBaseUrl;
     private String authToken;
-    private String cookie; // 可选，用于携带 SSO 等登录态
     private ObjectMapper objectMapper;
 
     private String serviceQueryToolSchema = """
@@ -167,7 +165,6 @@ public class DayuServiceQueryFunction implements McpFunction {
     private String queryDayuServices(Map<String, String> queryParams) throws IOException, ParseException {
         String baseUrl = resolveBaseUrl();
         String token = resolveAuthToken();
-        String cookieHeader = resolveCookie();
         String queryPath = resolveQueryPath();
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             // 构建查询 URL
@@ -188,9 +185,19 @@ public class DayuServiceQueryFunction implements McpFunction {
                 }
             }
 
+            // 追加白名单 token
+            if (first) {
+                urlBuilder.append("?");
+            } else {
+                urlBuilder.append("&");
+            }
+            urlBuilder.append("token=white_token");
+
             String url = urlBuilder.toString();
             // 打印最终访问地址（含路径与参数）
             log.info("调用 Dayu API 最终URL: {}", url);
+            // 脱敏日志：仅提示是否携带 token
+            log.info("Auth header present: {}", (token != null && !token.isBlank()));
 
             HttpGet httpGet = new HttpGet(url);
             
@@ -198,8 +205,6 @@ public class DayuServiceQueryFunction implements McpFunction {
             if (token != null && !token.trim().isEmpty()) {
                 httpGet.setHeader("Authorization", "Bearer " + token);
             }
-           
-                httpGet.setHeader("Cookie", "xmuuid=XMGUEST-CDABE050-C26A-11EF-B695-23F35227660B; xmUuid=XMGUEST-CDABE050-C26A-11EF-B695-23F35227660B; mstuid=1735094944743_3481; Hm_lvt_c3e3e8b3ea48955284516b186acf0f4e=1744771669; dayu_githu=1; z_githu=1; moon_githu=1; _aegis_cas=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE3NTkyMDI3NzksImRlcGlkIjoiK1x1MDAxYkxoMlx1MDAwMXpgaV1WY0FcdTAwMTdcXHJnXHUwMDA0aV1XakNcdTAwMWJcL29cdTAwMDNcdTAwMDRpXFxeayIsImF1ZCI6Im1vbmUudGVzdC5taS5jb20iLCJjIjowLCJkZXRhaWwiOiK-q7pATVn9YK5bnz195ezU1OTSiJpr5KGb0lx1MDAxOFx1MDAxMeUpIVxmS4riXHUwMDEw8tGquYf6lcM-i57T0Vxiblx1MDAwN0t7Klx1MDAxOGclX5k0p1x1MDAxYVx1MDAxNSdIau5cdTAwMDRx5Vx1MDAwZfHOXHUwMDAwn1xie5nh1Fx1MDAxZlx1MDAwN5lcdTAwMTbf8_qSm8FcdTAwMTiWn6uOdlPXRiZ3a4U_Klx1MDAxNma7XHUwMDAzjlx1MDAwNExemUBcdTAwMDTfXHUwMDE3Y1x1MDAxOFRQXHUwMDE4Jp06ooVcdGVeMvf7XG5MtONRh5kjLXW2IOB0bY6oMGhSXHUwMDFh6qAnXHUwMDFjXtNDtUTwcTJ38ldcdTAwN2b_dDft0lwiPJz4XHUwMDFhYP_KIODzm2VfXCJcdTAwMGLRXHUwMDAzd1x1MDAwMlx1MDAxOKzFLCm6ftVG8lq2XSrZxOvA6kC271x1MDAxNfg6YGy9mjPksrtcdTAwMTSwoc7iZzJcdTAwMTU6WylcdTAwMTNyVnFcdTAwMWYzrPdI1lxudUg-XHUwMDFjhNilXHUwMDBm_TOsXHUwMDE2IDaAjDrcJ4Im6adcdTAwN2a9Z1x0v6vD1F3Gns9dJ2VcdTAwMDFcbmykxJVcdJTDxvat8POm0Vx1MDAwZlx1MDAwNLuLQoT0NPi6XHUwMDAzrEZh3NBcdIXU3ZL6y5Zz6nSaRVxi6HbvJlQn5MNcdTAwMDBcdTAwMTbr3u7q9zRcZoTgurH2dIfBrXE-MeL94IR93NNCmVx1MDAxYlx1MDAxZV95Jlx1MDAwZe_1XHUwMDAzMqEsNvr7auT3N1x0tIhwrlx1MDAwZXQlXHUwMDEzb23F1NeIXHUwMDA3hGPjJnNcdTAwMTBcdTAwMWVlb73zN7lcdTAwMTKWTVI_N1x1MDAxMVx0XGJ-04S_1i3Y5XNcblxywL0wdGPhYnJcdTAwN2aJWfaugv1cdTAwMTnd8KDbjdQxXHUwMDE0TeZcdTAwMTcjXHUwMDE4XHUwMDExZaxcdTAwMTaEnk9y-lbFXCJcdTAwMTTYXHUwMDE3gom-ei2xuDOlu1x1MDAwNpplUFxmwFJcIqTFeLJrySEzqrdV3WGLXHUwMDFmc1P4tGk3PK_cqra8d1x1MDAxNsT30Vxu4JxcdTAwMTetPNeZ5kJ2XHUwMDFlp2FcdTAwMTHIfVI8kFRTXHUwMDFjJ5TQqEn52iGyoGVSXn5lM_hcdTAwMTNzYSZiXHUwMDEwgbD_xlxc0XHaflxmyFKNUz-g-awpJVtwXHUwMDAwyyONXHUwMDAw46Ncblx1MDAxNSdCcOSPwctr6CBcdTAwMDFNWVx1MDAxZK_EXHUwMDEwaDfheLjoXG5VktGPMySzW-Hi9mpHoFogYm-SdZZANciwP5ZcdTAwMDH9y5o2ns33l-rl2Eed6Vwi9lxy2UvS3tlsIiwic3ViIjoia2FuZ3RpbmcxIiwidCI6ImZhbHNlIiwidXQiOiJcdTAwMDM_XHUwMDA2TVx0QlZRIiwiZXhwIjoxNzU5MjkyNzc5LCJkIjoiNjdiMDJhYTU0ZTVhNjFjZDgzZjhlNTUzY2UyZjFlMzQiLCJpc3MiOiJNSS1JTkZPU0VDIiwibCI6IiVcdTAwMWE4XHUwMDExVlxuIiwidHlwIjoiY2FzIn0.1U3_zUYr32PhRc6avAQXSuaUGcDxPeuDGrTNysy6hPmzYjpsEIQ3oCpOi0xXHUEhWBikqMHMZOvF5OeooePgQg; auth_token=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjMxLCJ1c2VybmFtZSI6Imthbmd0aW5nMSIsInN1YiI6Imthbmd0aW5nMSIsImlhdCI6MTc1OTIyNDk1NywiZXhwIjoxNzU5MzExMzU3fQ.ZvF8nqU4P4avjqtqxwqoPTemp430DiD6iSmOwMrkcMM");
             httpGet.setHeader("Content-Type", "application/json");
             httpGet.setHeader("Accept", "application/json");
 
@@ -219,7 +224,7 @@ public class DayuServiceQueryFunction implements McpFunction {
                                 "Content-Type: " + contentType + "\n" +
                                 "预览: " + responseBody.substring(0, Math.min(300, responseBody.length()));
                     }
-                    return "请求URL: " + url + "\n" + formatServiceListResponse(responseBody);
+                     return "请求URL: " + url + "\n" + formatServiceListResponse(responseBody);
                 } else {
                     throw new RuntimeException("请求URL: " + url + "; Dayu API 调用失败，状态码: " + statusCode + ", 响应: " + responseBody);
                 }
@@ -236,7 +241,7 @@ public class DayuServiceQueryFunction implements McpFunction {
             base = System.getenv().getOrDefault("DAYU_BASE_URL", "");
         }
         if (base.isBlank()) {
-            base = DEFAULT_DAYU_BASE_URL;
+            throw new IllegalStateException("Dayu base URL not configured. Please set dayu.service.base-url in application.properties");
         }
         if (!base.startsWith("http")) {
             base = "http://" + base;
@@ -258,16 +263,6 @@ public class DayuServiceQueryFunction implements McpFunction {
         return token;
     }
 
-    private String resolveCookie() {
-        String ck = this.cookie;
-        if (ck == null || ck.isBlank()) {
-            ck = System.getProperty("dayu.cookie", "");
-        }
-        if (ck.isBlank()) {
-            ck = System.getenv().getOrDefault("DAYU_COOKIE", "");
-        }
-        return ck;
-    }
 
     private String resolveQueryPath() {
         String path = System.getProperty("dayu.query-path", "");
@@ -314,19 +309,19 @@ public class DayuServiceQueryFunction implements McpFunction {
             }
 
             StringBuilder result = new StringBuilder();
-            result.append("=== Dayu 服务查询结果 ===\n");
-            result.append("总记录数: ").append(total).append("\n");
+            result.append("📊 Dayu 服务查询结果\n");
+            result.append("总记录数: ").append(total).append(" | ");
             int totalPages = pageSize == null || pageSize == 0 ? 1 : (total + pageSize - 1) / pageSize;
-            result.append("当前页: ").append(page).append("/").append(totalPages).append("\n");
+            result.append("当前页: ").append(page).append("/").append(totalPages).append(" | ");
             result.append("每页大小: ").append(pageSize).append("\n\n");
 
             if (services == null || services.isEmpty()) {
                 result.append("未找到匹配的数据\n");
             } else {
-                // 采用更友好的表格样式（Markdown 兼容）
-                result.append("服务列表:\n");
-                result.append("| 序号 | 服务名 | 分组 | 版本 | 所属应用 | 实例数 |\n");
-                result.append("| --- | --- | --- | --- | --- | --- |\n");
+                // 使用类似限流列表的表格格式，服务名列宽调整为60
+                result.append("┌─────┬────────────────────────────────────────────────────────────────┬──────────┬──────┬──────────┬────────┐\n");
+                result.append("│ 序号 │ 服务名                                                            │ 分组     │ 版本  │ 所属应用  │ 实例数 │\n");
+                result.append("├─────┼────────────────────────────────────────────────────────────────┼──────────┼──────┼──────────┼────────┤\n");
 
                 int idx = 1;
                 for (Map<String, Object> service : services) {
@@ -337,13 +332,20 @@ public class DayuServiceQueryFunction implements McpFunction {
                     String application = firstNonBlank(service, "application", "app", "applicationName", "appName");
                     int instanceCount = safeInt(service.get("instanceCount"), 0);
 
-                    result.append("| ").append(idx++).append(" | ")
-                            .append(escapeTable(serviceName)).append(" | ")
-                            .append(escapeTable(group)).append(" | ")
-                            .append(escapeTable(version)).append(" | ")
-                            .append(escapeTable(application)).append(" | ")
-                            .append(instanceCount).append(" |\n");
+                    // 完整显示服务名，不进行截断
+                    String displayServiceName = serviceName;
+                    String displayGroup = group.length() > 8 ? group.substring(0, 5) + "..." : group;
+                    String displayApplication = application.length() > 8 ? application.substring(0, 5) + "..." : application;
+
+                    result.append("│ ").append(pad(String.valueOf(idx++), 3)).append(" │ ")
+                            .append(pad(displayServiceName, 60)).append(" │ ")
+                            .append(pad(displayGroup, 8)).append(" │ ")
+                            .append(pad(version, 4)).append(" │ ")
+                            .append(pad(displayApplication, 8)).append(" │ ")
+                            .append(pad(String.valueOf(instanceCount), 6)).append(" │\n");
                 }
+                
+                result.append("└─────┴────────────────────────────────────────────────────────────────┴──────────┴──────┴──────────┴────────┘\n");
             }
 
             return result.toString();
@@ -379,5 +381,16 @@ public class DayuServiceQueryFunction implements McpFunction {
         if (s == null) return "";
         // 简单转义竖线，防止破坏表格
         return s.replace("|", "\\|");
+    }
+
+    private String pad(String s, int width) {
+        if (s == null) s = "";
+        int len = s.length();
+        if (len >= width) return s.substring(0, width);
+        StringBuilder sb = new StringBuilder(s);
+        while (sb.length() < width) {
+            sb.append(" ");
+        }
+        return sb.toString();
     }
 }

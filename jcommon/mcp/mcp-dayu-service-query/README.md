@@ -1,14 +1,25 @@
-# Dayu 服务查询 MCP 模块
+# Dayu 服务查询与限流管理 MCP 模块
 
-基于 Dayu 微服务治理中心的服务查询 MCP 模块，提供通过 MCP 协议查询微服务列表的功能。
+基于 Dayu 微服务治理中心的服务查询和限流管理 MCP 模块，提供通过 MCP 协议查询微服务列表和管理服务限流规则的功能。
 
 ## 功能特性
+
+### 服务查询功能
 
 - 🔍 **服务名搜索**: 支持按服务名进行模糊搜索
 - 📊 **服务列表查询**: 获取服务的详细信息，包括分组、版本、所属应用等
 - 🔐 **认证支持**: 支持通过 Token 进行身份验证
 - 📄 **分页查询**: 支持分页查询，避免大量数据一次性返回
 - 🎯 **精确过滤**: 支持按分组、应用等条件进行过滤
+
+### 服务限流管理功能
+
+- 🚦 **限流规则管理**: 支持创建、查询、更新、删除限流规则
+- 🔄 **多种限流类型**: 支持单机限流和集群限流
+- 📈 **灵活限流条件**: 支持 QPS 和线程数两种限流条件
+- ⚡ **多种限流效果**: 支持快速失败、冷启动、排队等待三种限流效果
+- 🛡️ **降级配置**: 支持配置降级服务和降级方法
+- 🎛️ **智能路由**: 支持通过自然语言进行限流管理
 
 ## 配置说明
 
@@ -73,6 +84,84 @@ java -jar target/app.jar
   }
 }
 ```
+
+#### 服务限流管理
+
+##### 查询限流规则列表
+
+```json
+{
+  "name": "dayu_service_limit_flow",
+  "arguments": {
+    "action": "list",
+    "app": "your-app-name"
+  }
+}
+```
+
+##### 创建限流规则
+
+```json
+{
+  "name": "dayu_service_limit_flow",
+  "arguments": {
+    "action": "create",
+    "app": "your-app-name",
+    "service": "your-service-name",
+    "method": "your-method-name",
+    "clusterMode": false,
+    "grade": 1,
+    "count": 100,
+    "controlBehavior": 0,
+    "enabled": true
+  }
+}
+```
+
+##### 更新限流规则
+
+```json
+{
+  "name": "dayu_service_limit_flow",
+  "arguments": {
+    "action": "update",
+    "app": "your-app-name",
+    "id": "rule-id",
+    "count": 200,
+    "enabled": false
+  }
+}
+```
+
+##### 删除限流规则
+
+```json
+{
+  "name": "dayu_service_limit_flow",
+  "arguments": {
+    "action": "delete",
+    "app": "your-app-name",
+    "id": "rule-id"
+  }
+}
+```
+
+#### 自然语言交互
+
+系统支持通过自然语言进行服务查询和限流管理：
+
+**服务查询示例：**
+
+- "查询服务 TeslaGatewayService"
+- "搜索包含 Gateway 的服务"
+- "查看应用 tesla 下的所有服务"
+
+**限流管理示例：**
+
+- "查询应用 myapp 的限流规则"
+- "为服务 userservice 创建 QPS 限流，阈值 100"
+- "更新限流规则，设置集群限流，总体阈值 500"
+- "删除限流规则 ID 12345"
 
 ## 参数说明
 

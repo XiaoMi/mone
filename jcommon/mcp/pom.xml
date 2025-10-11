@@ -60,6 +60,7 @@
         <module>mcp-vue3</module>
         <module>mcp-vue-temp</module>
         <module>mcp-dayu-service-query</module>
+        <module>mcp-yijing</module>
     </modules>
 
     <properties>
