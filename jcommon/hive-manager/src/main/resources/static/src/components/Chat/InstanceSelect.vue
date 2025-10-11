@@ -187,18 +187,11 @@ const llmOptions = computed(() => {
 
 const selectedLlmValue = computed({
   get() {
-    const options = llmOptions.value || {}
-    const selectedKey = agentConfigStore.selectedLlmKey
-    return (selectedKey && options[selectedKey]) || ''
+    const selectedKey = agentConfigStore.selectedLlmValue
+    return selectedKey
   },
   set(value: string) {
-    const options = llmOptions.value || {}
-    const matchedEntry = Object.entries(options).find(([, optionValue]) => optionValue === value)
-    if (matchedEntry) {
-      agentConfigStore.setSelectedLlm(matchedEntry[0])
-    } else if (!value) {
-      agentConfigStore.setSelectedLlm('')
-    }
+    agentConfigStore.setSelectedLlm(value)
   }
 })
 

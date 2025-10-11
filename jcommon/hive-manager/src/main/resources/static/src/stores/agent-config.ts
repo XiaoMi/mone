@@ -33,7 +33,7 @@ export interface AgentConfig {
 export const useAgentConfigStore = defineStore('agentConfig', () => {
   const agentConfig = ref<AgentConfig | null>(null)
   const selectedAgentKey = ref<string>('')
-  const selectedLlmKey = ref<string>('')
+  const selectedLlmValue = ref<string>('')
   
   const agentList = computed(() => {
     return agentConfig.value?.systemInfo?.agentList || {}
@@ -48,7 +48,7 @@ export const useAgentConfigStore = defineStore('agentConfig', () => {
   })
   
   const selectedLlmName = computed(() => {
-    return llmOptions.value[selectedLlmKey.value] || ''
+    return llmOptions.value[selectedLlmValue.value] || ''
   })
   
   const setAgentConfig = (config: AgentConfig) => {
@@ -60,8 +60,8 @@ export const useAgentConfigStore = defineStore('agentConfig', () => {
     }
     // 默认选择第一个LLM模型
     const llmKeys = Object.keys(config.llmOptions || {})
-    if (llmKeys.length > 0 && !selectedLlmKey.value) {
-      selectedLlmKey.value = config.roleConfig?.llm || llmKeys[0]
+    if (llmKeys.length > 0 && !selectedLlmValue.value) {
+      selectedLlmValue.value = config.roleConfig?.llm || config.llmOptions?.[llmKeys[0]] as string || ''
     }
   }
   
@@ -70,19 +70,19 @@ export const useAgentConfigStore = defineStore('agentConfig', () => {
   }
   
   const setSelectedLlm = (key: string) => {
-    selectedLlmKey.value = key
+    selectedLlmValue.value = key
   }
   
   const clearAgentConfig = () => {
     agentConfig.value = null
     selectedAgentKey.value = ''
-    selectedLlmKey.value = ''
+    selectedLlmValue.value = ''
   }
   
   return {
     agentConfig,
     selectedAgentKey,
-    selectedLlmKey,
+    selectedLlmValue,
     agentList,
     llmOptions,
     selectedAgentName,
