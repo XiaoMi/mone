@@ -16,13 +16,13 @@
           </el-input>
         </div>
       </div>
-      <template #footer>
+      <!-- <template #footer>
         <span class="dialog-footer">
           <el-button type="primary" @click="handleBindInner" :disabled="!currentInner">
             绑定
           </el-button>
         </span>
-      </template>
+      </template> -->
     </el-dialog>
   </template>
   
