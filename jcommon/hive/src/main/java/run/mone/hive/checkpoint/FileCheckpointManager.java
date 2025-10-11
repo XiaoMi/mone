@@ -46,6 +46,21 @@ public class FileCheckpointManager {
         }
         addHiveToGitignore();
         initRepository();
+        // Set git user info if not present
+        setGitUserInfo();
+    }
+
+    private void setGitUserInfo() throws IOException, InterruptedException {
+        if (!gitAvailable) {
+            return;
+        }
+        String name = executeGitRepoCommand("config", "--get", "user.name").trim();
+        String email = executeGitRepoCommand("config", "--get", "user.email").trim();
+        if (name.isEmpty() || email.isEmpty()) {
+            log.info("Git user info not set, setting default user.");
+            executeGitRepoCommand("config", "user.name", "hive-bot");
+            executeGitRepoCommand("config", "user.email", "hive-bot@xiaomi.com");
+        }
     }
 
     private boolean checkGitAvailability() {
@@ -182,6 +197,15 @@ public class FileCheckpointManager {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
+            // config --get user.name will return 1 if not set
+            if (command.length > 2 && command[0].equals("config") && command[1].equals("--get")) {
+                return "";
+            }
+            // rev-parse HEAD will return 128 if not set
+            if (command.length > 1 && command[0].equals("rev-parse") && command[1].equals("HEAD")) {
+                log.warn("Git rev-parse HEAD failed, maybe the repository is empty. Output: {}", output);
+                throw new IOException("Git command failed with exit code " + exitCode + ": " + output);
+            }
             log.error("Error executing git command: {}. Output: {}", String.join(" ", command), output);
             throw new IOException("Git command failed with exit code " + exitCode + ": " + output);
         }
