@@ -34,6 +34,10 @@ public class AgentConfig {
 
     @Bean
     public RoleMeta roleMeta() {
+
+        ChatFunction chat = new ChatFunction(agentName, 20);
+        chat.setDesc("");
+
         return RoleMeta.builder()
                 .profile("你是一名优秀的私人助理")
                 .goal("你的目标是更好的帮助用户")
@@ -52,7 +56,7 @@ public class AgentConfig {
                         heraAnalysisTool
                         ))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,20)))
+                .mcpTools(Lists.newArrayList(chat))
                 .build();
     }
 }

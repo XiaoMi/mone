@@ -39,11 +39,11 @@ public class AgentConfig {
                 // 优化工具配置：参考优秀MCP项目的最佳实践
                 .mcpTools(Lists.newArrayList(
                         // 1) 先接入通用 ChatFunction，允许 LLM 产生思考/决策
-                        new ChatFunction("dayu-service-query", 256),
+//                        new ChatFunction("dayu-service-query", 256),
                         // 2) 限流思考优先：优先捕获“限流/流控/熔断”等自然语言并返回思考过程
                         new ThinkingLimitFlowRouterFunction(dayuServiceLimitFlowFunction),
                         // 3) 通用思考路由器 - 处理服务查询思考
-                        new RealThinkingRouterFunction(dayuServiceQueryFunction),
+//                        new RealThinkingRouterFunction(dayuServiceQueryFunction),
                         // 4) 兜底聊天路由器 - 处理其他对话
                         new DayuChatRouterFunction(dayuServiceQueryFunction, new ThinkingLimitFlowRouterFunction(dayuServiceLimitFlowFunction)),
                         // 5) 核心功能工具
