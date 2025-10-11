@@ -266,7 +266,7 @@ public class RoleService {
                 //每个用户的配置是不同的
                 Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
                 if (refreshMcp) {
-                    if (configMap.containsKey(Const.MCP)) {
+                    if (configMap.containsKey(Const.MCP) && !configMap.get(Const.MCP).trim().equals("")) {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
                         //更新mcp agent
                         McpHub hub = updateMcpConnections(list, clientId, role);
