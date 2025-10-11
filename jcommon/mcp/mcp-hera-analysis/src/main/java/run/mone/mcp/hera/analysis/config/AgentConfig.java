@@ -6,15 +6,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
-import run.mone.hive.mcp.service.Rag;
 import run.mone.hive.mcp.service.RoleMeta;
-import run.mone.hive.mcp.service.WebQuery;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.SpeechToTextTool;
 import run.mone.hive.roles.tool.TextToSpeechTool;
-import run.mone.mcp.hera.analysis.function.HeraAnalysisFunction;
+import run.mone.mcp.hera.analysis.tool.ApplicationMetricsTool;
+import run.mone.mcp.hera.analysis.tool.HeraAnalysisTool;
 
 /**
  * @author zhangxiaowei6
@@ -28,7 +27,10 @@ public class AgentConfig {
     private String agentName;
 
     @Autowired
-    private HeraAnalysisFunction heraAnalysisFunction;
+    private HeraAnalysisTool heraAnalysisTool;
+
+    @Autowired
+    private ApplicationMetricsTool applicationMetricsTool;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -45,9 +47,12 @@ public class AgentConfig {
                         new AskTool(),
                         new AttemptCompletionTool(),
                         new SpeechToTextTool(),
-                        new TextToSpeechTool()))
+                        new TextToSpeechTool(),
+                        applicationMetricsTool,
+                        heraAnalysisTool
+                        ))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,20), heraAnalysisFunction))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,20)))
                 .build();
     }
 }
