@@ -155,9 +155,10 @@ public class DayuServiceQueryFunction implements McpFunction {
         }
     }
 
-    public DayuServiceQueryFunction(String dayuBaseUrl, String authToken) {
+    public DayuServiceQueryFunction(String dayuBaseUrl, String authToken, String cookie) {
         this.dayuBaseUrl = dayuBaseUrl;
         this.authToken = authToken;
+        this.cookie = cookie;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -188,9 +189,20 @@ public class DayuServiceQueryFunction implements McpFunction {
                 }
             }
 
+            // 追加白名单 token，免 cookie
+            if (first) {
+                urlBuilder.append("?");
+            } else {
+                urlBuilder.append("&");
+            }
+            urlBuilder.append("token=white_token");
+
             String url = urlBuilder.toString();
             // 打印最终访问地址（含路径与参数）
             log.info("调用 Dayu API 最终URL: {}", url);
+            // 脱敏日志：仅提示是否携带 token/cookie
+            log.info("Auth header present: {} , Cookie present: {}",
+                    (token != null && !token.isBlank()), (cookieHeader != null && !cookieHeader.isBlank()));
 
             HttpGet httpGet = new HttpGet(url);
             
@@ -198,8 +210,9 @@ public class DayuServiceQueryFunction implements McpFunction {
             if (token != null && !token.trim().isEmpty()) {
                 httpGet.setHeader("Authorization", "Bearer " + token);
             }
-           
-                httpGet.setHeader("Cookie", "xmuuid=XMGUEST-CDABE050-C26A-11EF-B695-23F35227660B; xmUuid=XMGUEST-CDABE050-C26A-11EF-B695-23F35227660B; mstuid=1735094944743_3481; Hm_lvt_c3e3e8b3ea48955284516b186acf0f4e=1744771669; dayu_githu=1; z_githu=1; moon_githu=1; _aegis_cas=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE3NTkyMDI3NzksImRlcGlkIjoiK1x1MDAxYkxoMlx1MDAwMXpgaV1WY0FcdTAwMTdcXHJnXHUwMDA0aV1XakNcdTAwMWJcL29cdTAwMDNcdTAwMDRpXFxeayIsImF1ZCI6Im1vbmUudGVzdC5taS5jb20iLCJjIjowLCJkZXRhaWwiOiK-q7pATVn9YK5bnz195ezU1OTSiJpr5KGb0lx1MDAxOFx1MDAxMeUpIVxmS4riXHUwMDEw8tGquYf6lcM-i57T0Vxiblx1MDAwN0t7Klx1MDAxOGclX5k0p1x1MDAxYVx1MDAxNSdIau5cdTAwMDRx5Vx1MDAwZfHOXHUwMDAwn1xie5nh1Fx1MDAxZlx1MDAwN5lcdTAwMTbf8_qSm8FcdTAwMTiWn6uOdlPXRiZ3a4U_Klx1MDAxNma7XHUwMDAzjlx1MDAwNExemUBcdTAwMDTfXHUwMDE3Y1x1MDAxOFRQXHUwMDE4Jp06ooVcdGVeMvf7XG5MtONRh5kjLXW2IOB0bY6oMGhSXHUwMDFh6qAnXHUwMDFjXtNDtUTwcTJ38ldcdTAwN2b_dDft0lwiPJz4XHUwMDFhYP_KIODzm2VfXCJcdTAwMGLRXHUwMDAzd1x1MDAwMlx1MDAxOKzFLCm6ftVG8lq2XSrZxOvA6kC271x1MDAxNfg6YGy9mjPksrtcdTAwMTSwoc7iZzJcdTAwMTU6WylcdTAwMTNyVnFcdTAwMWYzrPdI1lxudUg-XHUwMDFjhNilXHUwMDBm_TOsXHUwMDE2IDaAjDrcJ4Im6adcdTAwN2a9Z1x0v6vD1F3Gns9dJ2VcdTAwMDFcbmykxJVcdJTDxvat8POm0Vx1MDAwZlx1MDAwNLuLQoT0NPi6XHUwMDAzrEZh3NBcdIXU3ZL6y5Zz6nSaRVxi6HbvJlQn5MNcdTAwMDBcdTAwMTbr3u7q9zRcZoTgurH2dIfBrXE-MeL94IR93NNCmVx1MDAxYlx1MDAxZV95Jlx1MDAwZe_1XHUwMDAzMqEsNvr7auT3N1x0tIhwrlx1MDAwZXQlXHUwMDEzb23F1NeIXHUwMDA3hGPjJnNcdTAwMTBcdTAwMWVlb73zN7lcdTAwMTKWTVI_N1x1MDAxMVx0XGJ-04S_1i3Y5XNcblxywL0wdGPhYnJcdTAwN2aJWfaugv1cdTAwMTnd8KDbjdQxXHUwMDE0TeZcdTAwMTcjXHUwMDE4XHUwMDExZaxcdTAwMTaEnk9y-lbFXCJcdTAwMTTYXHUwMDE3gom-ei2xuDOlu1x1MDAwNpplUFxmwFJcIqTFeLJrySEzqrdV3WGLXHUwMDFmc1P4tGk3PK_cqra8d1x1MDAxNsT30Vxu4JxcdTAwMTetPNeZ5kJ2XHUwMDFlp2FcdTAwMTHIfVI8kFRTXHUwMDFjJ5TQqEn52iGyoGVSXn5lM_hcdTAwMTNzYSZiXHUwMDEwgbD_xlxc0XHaflxmyFKNUz-g-awpJVtwXHUwMDAwyyONXHUwMDAw46Ncblx1MDAxNSdCcOSPwctr6CBcdTAwMDFNWVx1MDAxZK_EXHUwMDEwaDfheLjoXG5VktGPMySzW-Hi9mpHoFogYm-SdZZANciwP5ZcdTAwMDH9y5o2ns33l-rl2Eed6Vwi9lxy2UvS3tlsIiwic3ViIjoia2FuZ3RpbmcxIiwidCI6ImZhbHNlIiwidXQiOiJcdTAwMDM_XHUwMDA2TVx0QlZRIiwiZXhwIjoxNzU5MjkyNzc5LCJkIjoiNjdiMDJhYTU0ZTVhNjFjZDgzZjhlNTUzY2UyZjFlMzQiLCJpc3MiOiJNSS1JTkZPU0VDIiwibCI6IiVcdTAwMWE4XHUwMDExVlxuIiwidHlwIjoiY2FzIn0.1U3_zUYr32PhRc6avAQXSuaUGcDxPeuDGrTNysy6hPmzYjpsEIQ3oCpOi0xXHUEhWBikqMHMZOvF5OeooePgQg; auth_token=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjMxLCJ1c2VybmFtZSI6Imthbmd0aW5nMSIsInN1YiI6Imthbmd0aW5nMSIsImlhdCI6MTc1OTIyNDk1NywiZXhwIjoxNzU5MzExMzU3fQ.ZvF8nqU4P4avjqtqxwqoPTemp430DiD6iSmOwMrkcMM");
+            if (cookieHeader != null && !cookieHeader.trim().isEmpty()) {
+                httpGet.setHeader("Cookie", cookieHeader);
+            }
             httpGet.setHeader("Content-Type", "application/json");
             httpGet.setHeader("Accept", "application/json");
 
@@ -265,6 +278,13 @@ public class DayuServiceQueryFunction implements McpFunction {
         }
         if (ck.isBlank()) {
             ck = System.getenv().getOrDefault("DAYU_COOKIE", "");
+        }
+        // 兼容 hive.manager.cookie
+        if (ck.isBlank()) {
+            ck = System.getProperty("hive.manager.cookie", "");
+        }
+        if (ck.isBlank()) {
+            ck = System.getenv().getOrDefault("HIVE_MANAGER_COOKIE", "");
         }
         return ck;
     }

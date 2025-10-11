@@ -14,6 +14,12 @@ import java.util.Map;
 public class DayuChatRouterFunction implements McpFunction {
 
     private final DayuServiceQueryFunction dayuServiceQueryFunction;
+    private final ThinkingLimitFlowRouterFunction limitThinkingRouter;
+
+    private static final java.util.regex.Pattern LIMIT_FLOW_PATTERNS = java.util.regex.Pattern.compile(
+            "(限流|流控|流量控制|rate.?limit|flow.?control|throttle|熔断|circuit.?breaker|降级|degrade|保护|protection)",
+            java.util.regex.Pattern.CASE_INSENSITIVE
+    );
 
     @Override
     public String getName() {
@@ -23,7 +29,7 @@ public class DayuChatRouterFunction implements McpFunction {
 
     @Override
     public String getDesc() {
-        return "路由对话到 dayu_service_query，当用户表达包含查询服务意图时触发";
+        return "聊天兜底路由器：负责自然对话接入与友好引导，必要时交给思考/限流路由器";
     }
 
     @Override
@@ -41,8 +47,12 @@ public class DayuChatRouterFunction implements McpFunction {
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         log.info("DayuChatRouterFunction received args: {}", args);
         String text = extractText(args);
+        // 优先：如果命中限流相关语义，直接交给思考路由器，保证产生“思考过程”
+        if (text != null && !text.isBlank() && LIMIT_FLOW_PATTERNS.matcher(text).find()) {
+            return limitThinkingRouter.apply(Map.of("text", text));
+        }
         if (text.isEmpty()) {
-            String msg = "思考过程\n我们需要一个筛选值（filter）来查询 Dayu，通常来自你的自然语言，如：查询服务 xxx/查询应用 yyy/查询包含IP 1.2.3.4。\n\n追问\n为了继续，请提供具体的查询值（服务名/应用名/IPv4）。";
+            String msg = "嗨，我在呢～想查些什么？\n\n你可以这样说：\n- 查询服务 <服务名>（如：查询服务 order-service）\n- 查询应用 <应用名>（如：查询应用 dayu-app）\n- 查询包含IP <IPv4>（如：查询包含IP 10.0.0.1）";
             return Flux.just(new McpSchema.CallToolResult(
                     java.util.List.of(new McpSchema.TextContent(msg)),
                     false
@@ -73,7 +83,7 @@ public class DayuChatRouterFunction implements McpFunction {
             }
         }
 
-        String guide = "思考过程\n未从你的输入中可靠提取到筛选值（filter）。Dayu 需要 pattern 与 filter 组合：service/application/ip。\n\n追问\n请告知你要查询的类型与值：\n- 查询服务 <服务名>\n- 查询应用 <应用名>\n- 查询包含IP <IPv4地址>";
+        String guide = "我还不太确定你的意图，给你几个示例：\n- 查询服务 <服务名>（默认按服务名查）\n- 查询应用 <应用名>\n- 查询包含IP <IPv4地址>\n\n例如：查询服务 inventory-service 或 查询包含IP 192.168.1.1";
         return Flux.just(new McpSchema.CallToolResult(
                 java.util.List.of(new McpSchema.TextContent(guide)),
                 false
