@@ -205,8 +205,8 @@ public class MonerSystemPrompt {
 
             data.put("name", md.getName());
             data.put("roleDescription", rd);
-            data.put("customInstructions",md.getAgentPrompt());
-            data.put("workflow",md.getWorkflow());
+            data.put("customInstructions", md.getAgentPrompt());
+            data.put("workflow", md.getWorkflow());
         }
 
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
@@ -220,34 +220,26 @@ public class MonerSystemPrompt {
 
     //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
-        final List<Map<String, Object>> serverList = new ArrayList<>();
-        List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
-        if (null != sl) {
-            serverList.addAll(sl);
-        } else {
-            McpHub mcpHub = role.getMcpHub();
-            if (mcpHub == null) {
-                return serverList;
-            }
-            mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
-                Map<String, Object> server = new HashMap<>();
-                server.put("name", key);
-                server.put("args", "");
-                server.put("connection", value);
-
-                McpSchema.ListToolsResult tools = value.getClient().listTools();
-                String toolsStr = tools
-                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
-                                + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
-                        .collect(Collectors.joining("\n\n"));
-                server.put("tools", toolsStr);
-
-                serverList.add(server);
-            }));
-            if (!serverList.isEmpty()) {
-                CacheService.ins().cacheObject(CacheService.tools_key, serverList);
-            }
+        List<Map<String, Object>> serverList = new ArrayList<>();
+        McpHub mcpHub = role.getMcpHub();
+        if (mcpHub == null) {
+            return serverList;
         }
+        mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", key);
+            server.put("args", "");
+            server.put("connection", value);
+            server.put("agent",value.getServer().getServerInfo().meta());
+            McpSchema.ListToolsResult tools = value.getClient().getTools();
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+
+            serverList.add(server);
+        }));
         return serverList;
     }
 
@@ -406,7 +398,15 @@ public class MonerSystemPrompt {
             
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
-            ### Available Tools
+            ## 这个Agent的信息
+            名字:${server.agent["name"]} 
+            proflie:${server.agent["profile"]}    
+            goal:${server.agent["goal"]}    
+            constraints:${server.agent["constraints"]} 
+            workflow:
+            ${server.agent["workflow"]} 
+            
+            ### 这个Agent的Tools
             ${server.tools}
             <% } %>
             

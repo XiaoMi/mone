@@ -1,6 +1,7 @@
 package run.mone.hive.roles;
 
 import com.google.api.client.util.Lists;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -25,7 +26,6 @@ import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
-import run.mone.hive.mcp.hub.McpServer;
 import run.mone.hive.mcp.service.IntentClassificationService;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
@@ -131,6 +131,8 @@ public class ReactorRole extends Role {
 
     // 文件检查点管理器
     private FileCheckpointManager fileCheckpointManager;
+
+    private Set<String> mcpNames = new HashSet<>();
 
     public void addTool(ITool tool) {
         this.tools.add(tool);
@@ -299,41 +301,33 @@ public class ReactorRole extends Role {
         return true;
     }
 
-    public void saveMcpConfig() {
-        Safe.run(()->{
-            String mcpNames = "";
-            // 获取并打印连接的MCP名称
-            if (this.mcpHub != null) {
-                List<McpServer> servers = this.mcpHub.getServers();
-                mcpNames = servers.stream()
-                        .map(server -> server.getName())
-                        .collect(Collectors.joining(","));
-                log.info("Connected MCP servers: {}", mcpNames);
-            }
-            roleConfig.put(Const.MCP, mcpNames);
-        });
-    }
 
     @Override
     public void postReact(ActionContext ac) {
         log.info("role:{} exit", this.name);
         // 保存配置到HiveManager
-        saveConfigToHiveManager();
+        saveConfig();
         this.unreg(RegInfo.builder().name(this.name).group(this.group).ip(NetUtils.getLocalHost()).port(grpcPort).version(this.version).build());
     }
 
     /**
      * 保存配置到HiveManager
      */
-    public void saveConfigToHiveManager() {
+    public void saveConfig() {
         Safe.run(() -> {
             if (hiveManagerService != null) {
+                if (!this.mcpNames.isEmpty()) {
+                    String mcpSet = Joiner.on(",").join(this.mcpNames);
+                    roleConfig.put(Const.MCP, mcpSet);
+                }
                 hiveManagerService.saveRoleConfig(roleConfig, workspacePath, this.getConfg().getAgentId(), this.getConfg().getUserId());
             } else {
                 log.debug("HiveManagerService is null, skipping config save");
             }
         });
     }
+
+
 
 
     @SneakyThrows
@@ -375,6 +369,11 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.take();
         lastReceiveMsgTime = new Date();
         log.info("receive message:{}", msg);
+
+        if (msg.isError()) {
+            log.info("Role 处理发生错误");
+            return 2;
+        }
 
         // 在收到消息后再次检查中断状态
         if (this.interrupted.get()) {
@@ -640,6 +639,10 @@ public class ReactorRole extends Role {
 
         if (content instanceof McpSchema.TextContent textContent) {
             contentForUser = textContent.text();
+            if (null == contentForUser || contentForUser.trim().isEmpty()) {
+                assistantMessage.setError(true);
+            }
+
             contentForLlm = "调用Tool:" + toolName + "\n结果:\n" + contentForUser;
         } else if (content instanceof McpSchema.ImageContent imageContent) {
             contentForUser = "[图片]";
@@ -657,7 +660,7 @@ public class ReactorRole extends Role {
 
         String name = "";
         if (result.getToolName().endsWith("_chat")) {
-            name = result.getToolName().split("_")[1]+":\n";
+            name = result.getToolName().split("_")[1] + ":\n";
         }
 
         contentForLlm = name + contentForLlm;

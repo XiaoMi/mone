@@ -4,12 +4,15 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.GsonUtils;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MCP配置刷新命令处理类
@@ -66,7 +69,7 @@ public class McpCommand extends RoleBaseCommand {
             }
 
             String operation = parts[0].toLowerCase();
-            
+
             switch (operation) {
                 //目前当add用的
                 case "refresh":
@@ -81,11 +84,11 @@ public class McpCommand extends RoleBaseCommand {
                     }
                     handleMcpRefresh(message, sink, from, role, serverName);
                     break;
-                    
+
                 case "list":
                     handleMcpList(message, sink, from, role);
                     break;
-                    
+
                 case "delete":
                     if (parts.length < 2) {
                         sendErrorAndComplete(sink, "delete操作需要指定服务器名称，格式: /mcp delete <serverName>");
@@ -98,7 +101,7 @@ public class McpCommand extends RoleBaseCommand {
                     }
                     handleMcpDelete(message, sink, from, role, deleteServerName);
                     break;
-                    
+
                 default:
                     sendErrorAndComplete(sink, "不支持的操作: " + operation + "，支持的操作: refresh, list, delete");
                     break;
@@ -209,6 +212,8 @@ public class McpCommand extends RoleBaseCommand {
             this.roleService.addMcp(Lists.newArrayList(serverName), role);
             result.put("success", true);
             result.put("message", String.format("MCP服务器 '%s' 刷新成功", serverName));
+            role.getMcpNames().add(serverName);
+            role.saveConfig();
             log.info("成功刷新MCP服务器: {}", serverName);
         } catch (Exception e) {
             result.put("message", String.format("刷新MCP服务器 '%s' 失败: %s", serverName, e.getMessage()));
@@ -250,7 +255,11 @@ public class McpCommand extends RoleBaseCommand {
                 result.put("message", "当前没有配置的MCP服务器");
             } else {
                 java.util.List<Map<String, Object>> serverList = new java.util.ArrayList<>();
+
+                Set<String> set = new HashSet<>(role.getMcpNames());
+
                 for (var server : servers) {
+                    set.remove(server.getName());
                     Map<String, Object> serverInfo = new HashMap<>();
                     serverInfo.put("name", server.getName());
                     serverInfo.put("status", server.getStatus());
@@ -258,6 +267,19 @@ public class McpCommand extends RoleBaseCommand {
                     serverInfo.put("toolsCount", server.getTools() != null ? server.getTools().size() : 0);
                     serverList.add(serverInfo);
                 }
+
+                if (!set.isEmpty()) {
+                    set.forEach(it -> {
+                        Map<String, Object> serverInfo = new HashMap<>();
+                        serverInfo.put("name", it);
+                        serverInfo.put("status", "disconnected");
+                        serverInfo.put("error", "");
+                        serverInfo.put("toolsCount", 0);
+                        serverList.add(serverInfo);
+                    });
+                }
+
+
                 result.put("servers", serverList);
                 result.put("totalCount", servers.size());
             }
@@ -315,6 +337,8 @@ public class McpCommand extends RoleBaseCommand {
                     role.getMcpHub().removeConnection(serverName);
                     result.put("success", true);
                     result.put("message", String.format("MCP服务器 '%s' 删除成功", serverName));
+                    role.getMcpNames().remove(serverName);
+                    role.saveConfig();
                     log.info("成功删除MCP服务器: {}", serverName);
                 } catch (Exception e) {
                     result.put("message", String.format("删除MCP服务器 '%s' 失败: %s", serverName, e.getMessage()));

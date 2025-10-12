@@ -45,6 +45,8 @@ public class Message implements Serializable {
 
     private String agentId;
 
+    private boolean error;
+
     public Message(String content) {
         this(content, "user", null, null);
     }

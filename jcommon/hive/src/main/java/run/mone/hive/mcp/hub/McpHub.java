@@ -290,10 +290,12 @@ public class McpHub {
         connections.put(name, connection);
         try {
             //这里真的会连接过去
-            client.initialize();
+            McpSchema.InitializeResult res = client.initialize();
             server.setStatus("connected");
+            //放入serverInfo
+            server.setServerInfo(res.serverInfo());
             //放入工具(tool)
-            server.setTools(client.listTools().tools());
+            server.setTools(client.getTools().tools());
         } catch (Exception e) {
             log.error("Failed to connect to MCP server {}: ", name, e);
             server.setStatus("disconnected");

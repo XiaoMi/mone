@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.AgentMarkdownDocument;
+import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
@@ -268,6 +268,7 @@ public class RoleService {
                 if (refreshMcp) {
                     if (configMap.containsKey(Const.MCP) && !configMap.get(Const.MCP).trim().equals("")) {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
+                        role.getMcpNames().addAll(list);
                         log.info("mcp list:{}", list);
                         //更新mcp agent
                         McpHub hub = updateMcpConnections(list, clientId, role);
@@ -331,8 +332,7 @@ public class RoleService {
                     roleCommandFactory.executeCommand(message, sink, from, null);
                 });
             } else {
-                existingRole.saveMcpConfig();
-                existingRole.saveConfigToHiveManager();
+                existingRole.saveConfig();
             }
         }
 
@@ -402,7 +402,6 @@ public class RoleService {
         String from = message.getSentFrom().toString();
         ReactorRole agent = roleMap.get(from);
         if (null != agent) {
-            agent.saveMcpConfig();
             message.setData(Const.ROLE_EXIT);
             message.setContent(Const.ROLE_EXIT);
             agent.putMessage(message);

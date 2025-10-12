@@ -27,6 +27,7 @@ public class AgentConfig {
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
+                .name(agentName)
                 .profile("你是一名优秀的Docker管理人员")
                 .goal("你的目标是更好的帮助用户,帮助用户操作Docker")
                 .constraints("不要探讨任何和Docker不相关的内容,如果用户和你讨论,你可以直接拒绝掉")

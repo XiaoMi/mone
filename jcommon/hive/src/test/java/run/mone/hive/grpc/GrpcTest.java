@@ -41,31 +41,31 @@ public class GrpcTest {
     @SneakyThrows
     @Test
     public void testServer() {
-        GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
-        transport.setOpenAuth(true);
-        McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
-
-        server.addTool(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
-            McpSchema.TextContent tc = new McpSchema.TextContent("a", "data:data");
-            return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
-        }));
-        //stream
-        server.addStreamTool(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s", "s", "{}"), (a) -> Flux.create(sink -> {
-            McpSchema.TextContent tc = new McpSchema.TextContent("stream", "data:data");
-            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
-            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
-            sink.complete();
-        })));
-
-
-        //发送消息给123
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-            Safe.run(() -> {
-                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", Const.CLIENT_ID, clientId)));
-            });
-        }, 10, 10, TimeUnit.SECONDS);
-
-        System.in.read();
+//        GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
+//        transport.setOpenAuth(true);
+//        McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
+//
+//        server.addTool(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
+//            McpSchema.TextContent tc = new McpSchema.TextContent("a", "data:data");
+////            return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
+//        }));
+//        //stream
+//        server.addStreamTool(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s", "s", "{}"), (a) -> Flux.create(sink -> {
+//            McpSchema.TextContent tc = new McpSchema.TextContent("stream", "data:data");
+//            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
+//            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
+//            sink.complete();
+//        })));
+//
+//
+//        //发送消息给123
+//        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+//            Safe.run(() -> {
+//                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", Const.CLIENT_ID, clientId)));
+//            });
+//        }, 10, 10, TimeUnit.SECONDS);
+//
+//        System.in.read();
     }
 
 
