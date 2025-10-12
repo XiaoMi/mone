@@ -30,7 +30,8 @@ import java.util.function.Function;
 @Data
 public class RoleMeta {
 
-    protected String name;
+    @Builder.Default
+    protected String name ="ai_agent";
 
     protected String profile;
 

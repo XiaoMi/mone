@@ -15,6 +15,8 @@ public class McpServer {
     private String error;
     private List<McpSchema.Tool> tools;
 
+    private McpSchema.Implementation serverInfo;
+
     private ServerParameters serverParameters;
 
     public McpServer(String name, String config) {
