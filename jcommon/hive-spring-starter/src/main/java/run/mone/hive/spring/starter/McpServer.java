@@ -35,11 +35,14 @@ public class McpServer {
                 .sync();
 
         functionList.forEach(function -> {
-            var toolStreamRegistration = new ToolStreamRegistration(
-                    new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
-            );
-            syncServer.addStreamTool(toolStreamRegistration);
-            syncServer.addTool(new run.mone.hive.mcp.server.McpServer.ToolRegistration(new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function));
+            if (function.getName().startsWith("stream_")) {
+                var toolStreamRegistration = new ToolStreamRegistration(
+                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+                );
+                syncServer.addStreamTool(toolStreamRegistration);
+            } else {
+                syncServer.addTool(new run.mone.hive.mcp.server.McpServer.ToolRegistration(new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function));
+            }
         });
 
         return syncServer;

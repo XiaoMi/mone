@@ -2,6 +2,7 @@
 package run.mone.mpc.redis.function;
 
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import redis.clients.jedis.Jedis;
@@ -63,10 +64,11 @@ public class RedisFunction implements McpFunction {
             }
             """;
 
+    @ToString.Exclude
     private JedisPool jedisPool;
 
     public RedisFunction() {
-        this.jedisPool = new JedisPool("localhost", 6379, "default","123456");
+        this.jedisPool = new JedisPool("127.0.0.1", 6379, "default",System.getenv("REDIS_PASS"));
     }
 
     @Override
@@ -94,7 +96,7 @@ public class RedisFunction implements McpFunction {
                 case "hdel" -> hdelOperation(jedis, key, (List<String>) arguments.get("field"));
                 case "hgetall" -> hgetallOperation(jedis, key);
                 case "keys" -> keysOperation(jedis, (String) arguments.get("pattern"));
-                default -> throw new IllegalArgumentException("Unknown operation: " + operation);
+                default -> "ok";
             };
             return Flux.create(sink->{
                 sink.next(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false));
