@@ -66,4 +66,8 @@ public class Const {
 
     public static final String CMD = "cmd";
 
+    public static final String AGENT_SERVER_NAME = "agent_server_name";
+
+    public static final String AGENT_SERVER_VERSION = "agent_server_version";
+
 }

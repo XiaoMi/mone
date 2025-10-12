@@ -14,7 +14,9 @@ import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -27,6 +29,8 @@ import java.util.function.Function;
 @NoArgsConstructor
 @Data
 public class RoleMeta {
+
+    protected String name;
 
     protected String profile;
 
@@ -87,5 +91,8 @@ public class RoleMeta {
 
     @Builder.Default
     private List<Function<ReactorRole, String>> taskList = new ArrayList<>();
+
+    @Builder.Default
+    private Map<String,String> meta = new HashMap<>();
 
 }

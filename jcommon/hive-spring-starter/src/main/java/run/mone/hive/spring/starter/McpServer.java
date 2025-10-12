@@ -1,6 +1,7 @@
 package run.mone.hive.spring.starter;
 
 import lombok.RequiredArgsConstructor;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
@@ -26,7 +27,7 @@ public class McpServer {
 
     public McpSyncServer start() {
         McpSyncServer syncServer = run.mone.hive.mcp.server.McpServer.using(transport)
-                .serverInfo(meta.getOrDefault("mcp_server_name", "mcp_server"), meta.getOrDefault("mcp_server_version", "0.0.1"))
+                .serverInfo(meta.getOrDefault(Const.AGENT_SERVER_NAME, "ai_agent_server"), meta.getOrDefault(Const.AGENT_SERVER_VERSION, "0.0.1"), meta)
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()

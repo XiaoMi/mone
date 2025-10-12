@@ -572,7 +572,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
             }
 
             if (data instanceof InitializeResponse ir) {
-                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion());
+                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion(), ir.getServerInfo().getMetaMap());
                 return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
             }
 

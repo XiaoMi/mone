@@ -69,6 +69,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
     // 为元数据定义Context键
     private static final Context.Key<Metadata> METADATA_CONTEXT_KEY = Context.key("metadata");
 
+    private McpSchema.Implementation serverInfo;
+
     public GrpcServerTransport(int port) {
         this.port = port;
         this.objectMapper = new ObjectMapper();
@@ -347,11 +349,12 @@ public class GrpcServerTransport implements ServerMcpTransport {
         public void initialize(InitializeRequest request, StreamObserver<InitializeResponse> responseObserver) {
             // 简化的示例实现
             InitializeResponse response = InitializeResponse.newBuilder()
-                    .setProtocolVersion("2024-11-05")
+                    .setProtocolVersion("0.0.1")
                     .setCapabilities(ServerCapabilities.newBuilder().setTools(ToolCapabilities.newBuilder().build()).build())
                     .setServerInfo(Implementation.newBuilder()
-                            .setName("gRPC-MCP-Server")
-                            .setVersion("1.0.0")
+                            .setName(serverInfo.name())
+                            .setVersion(serverInfo.version())
+                            .putAllMeta(serverInfo.meta())
                             .build())
                     .build();
             responseObserver.onNext(response);

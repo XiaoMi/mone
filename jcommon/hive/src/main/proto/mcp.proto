@@ -102,6 +102,7 @@ message ToolCapabilities {
 message Implementation {
   string name = 1;
   string version = 2;
+  map<string,string> meta = 3;
 }
 
 // 工具相关消息

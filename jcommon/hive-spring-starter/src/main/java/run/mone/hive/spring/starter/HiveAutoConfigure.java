@@ -135,6 +135,11 @@ public class HiveAutoConfigure {
     public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, RoleMeta roleMeta) {
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
         mcpTools.forEach(it -> it.setRoleService(roleService));
+        meta.put("profile",roleMeta.getProfile());
+        meta.put("goal",roleMeta.getGoal());
+        meta.put("constraints",roleMeta.getConstraints());
+        meta.put("workflow",roleMeta.getWorkflow());
+        meta.putAll(roleMeta.getMeta());
         return new McpServer(transport, mcpTools, meta);
     }
 
