@@ -524,7 +524,7 @@ export function markdownItMcp(md: MarkdownIt) {
                 </div>
               </div>`;
               html += componentHtml;
-              
+
               // 标记此PID已处理，确保唯一性
               processedPidsInThisParse.add(currentPid);
             } else {
