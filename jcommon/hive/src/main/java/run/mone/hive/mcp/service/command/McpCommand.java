@@ -58,13 +58,13 @@ public class McpCommand extends RoleBaseCommand {
             // 解析命令：/mcp <operation> [serverName]
             String commandPart = content.substring("/mcp".length()).trim();
             if (commandPart.isEmpty()) {
-                sendErrorAndComplete(sink, "请指定MCP操作，格式: /mcp <operation> [serverName]，支持的操作: refresh, list, delete");
+                sendErrorAndComplete(sink, "请指定MCP操作，格式: /mcp <operation> [serverName]，支持的操作: refresh, list, delete, clear");
                 return;
             }
 
             String[] parts = commandPart.split("\\s+");
             if (parts.length < 1) {
-                sendErrorAndComplete(sink, "支持的操作: refresh, list, delete，格式: /mcp <operation> [serverName]");
+                sendErrorAndComplete(sink, "支持的操作: refresh, list, delete, clear，格式: /mcp <operation> [serverName]");
                 return;
             }
 
@@ -102,8 +102,21 @@ public class McpCommand extends RoleBaseCommand {
                     handleMcpDelete(message, sink, from, role, deleteServerName);
                     break;
 
+                case "clear":
+                    if (parts.length < 2) {
+                        sendErrorAndComplete(sink, "clear操作需要指定服务器名称，格式: /mcp clear <serverName>");
+                        return;
+                    }
+                    String clearServerName = parts[1].trim();
+                    if (clearServerName.isEmpty()) {
+                        sendErrorAndComplete(sink, "请指定要清空聊天记录的服务器名称");
+                        return;
+                    }
+                    handleMcpClear(message, sink, from, role, clearServerName);
+                    break;
+
                 default:
-                    sendErrorAndComplete(sink, "不支持的操作: " + operation + "，支持的操作: refresh, list, delete");
+                    sendErrorAndComplete(sink, "不支持的操作: " + operation + "，支持的操作: refresh, list, delete, clear");
                     break;
             }
 
@@ -372,6 +385,93 @@ public class McpCommand extends RoleBaseCommand {
 
     @Override
     public String getCommandDescription() {
-        return "MCP服务器管理命令，支持的操作: refresh <serverName|all>, list, delete <serverName>";
+        return "MCP服务器管理命令，支持的操作: refresh <serverName|all>, list, delete <serverName>, clear <serverName>";
+    }
+
+    /**
+     * 处理MCP清空聊天记录操作
+     */
+    private void handleMcpClear(Message message, FluxSink<String> sink, String from, ReactorRole role, String serverName) {
+        try {
+            if (role == null) {
+                sendErrorAndComplete(sink, "无法获取Role实例，MCP清空聊天记录失败");
+                return;
+            }
+
+            // 检查是否有McpHub实例
+            if (role.getMcpHub() == null) {
+                sendErrorAndComplete(sink, "当前Role未配置McpHub，无法执行MCP清空聊天记录操作");
+                return;
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "");
+            result.put("serverName", serverName);
+            result.put("timestamp", System.currentTimeMillis());
+
+            // 检查服务器是否存在
+            var connections = role.getMcpHub().getConnections();
+            if (connections == null || !connections.containsKey(serverName)) {
+                result.put("message", String.format("MCP服务器 '%s' 不存在或未连接", serverName));
+                String jsonResult = GsonUtils.gson.toJson(result);
+                sink.next(jsonResult);
+                sink.complete();
+                return;
+            }
+
+            try {
+                // 构造工具名称: stream_{mcpName}_chat
+                String toolName = String.format("stream_%s_chat", serverName);
+
+                // 构造工具参数
+                Map<String, Object> toolArguments = new HashMap<>();
+                toolArguments.put("message", "/clear");
+                toolArguments.put(Const.OWNER_ID, role.getConfg().getUserId()+"_"+role.getConfg().getAgentId());
+
+                // 调用callToolStream清空聊天记录
+                role.getMcpHub().callToolStream(serverName, toolName, toolArguments)
+                        .doOnNext(callResult -> {
+                            log.info("清空聊天记录响应: {}", callResult);
+                        })
+                        .doOnComplete(() -> {
+                            result.put("success", true);
+                            result.put("message", String.format("MCP服务器 '%s' 聊天记录清空成功", serverName));
+                            String jsonResult = GsonUtils.gson.toJson(result);
+                            sink.next(jsonResult);
+                            sink.complete();
+                            log.info("成功清空MCP服务器聊天记录: {}", serverName);
+                        })
+                        .doOnError(error -> {
+                            result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, error.getMessage()));
+                            String jsonResult = GsonUtils.gson.toJson(result);
+                            sink.next(jsonResult);
+                            sink.complete();
+                            log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, error.getMessage(), error);
+                        })
+                        .subscribe();
+
+            } catch (Exception e) {
+                result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, e.getMessage()));
+                log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, e.getMessage(), e);
+
+                String jsonResult = GsonUtils.gson.toJson(result);
+                sink.next(jsonResult);
+                sink.complete();
+            }
+
+        } catch (Exception e) {
+            log.error("处理MCP清空聊天记录失败: {}", e.getMessage(), e);
+
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "MCP清空聊天记录失败: " + e.getMessage());
+            errorResult.put("serverName", serverName);
+            errorResult.put("timestamp", System.currentTimeMillis());
+
+            String jsonResult = GsonUtils.gson.toJson(errorResult);
+            sink.next(jsonResult);
+            sink.complete();
+        }
     }
 }

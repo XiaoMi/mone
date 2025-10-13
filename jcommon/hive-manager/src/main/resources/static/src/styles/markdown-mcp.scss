@@ -1123,14 +1123,10 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
   @include block-base;
 
   .tool-result-header {
-    @include header-clickable;
+    @include header-base;
 
     i {
       @include icon-base($accent-cyan);
-
-      &.toggle-icon {
-        @include toggle-icon;
-      }
     }
 
     span {
@@ -1140,8 +1136,29 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
   }
 
   .tool-result-content {
-    @include collapsible-content;
+    @include content-base;
     padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba($text-secondary, 0.1);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba($accent-cyan, 0.6);
+      border-radius: 4px;
+      
+      &:hover {
+        background: rgba($accent-cyan, 0.8);
+      }
+    }
 
     pre {
       margin: 0;

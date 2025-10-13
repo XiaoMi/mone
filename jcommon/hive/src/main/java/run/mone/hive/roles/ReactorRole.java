@@ -631,6 +631,8 @@ public class ReactorRole extends Role {
         });
 
         // 执行mcpCall，但不让它直接写sink，以便我们控制输出
+        it.setUserId(this.getConfg().getUserId());
+        it.setAgentId(this.getConfg().getAgentId());
         McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, null, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
         if (result.isError()) {
             assistantMessage.setError(true);
