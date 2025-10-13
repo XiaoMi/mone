@@ -192,6 +192,7 @@ public class MonerSystemPrompt {
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+        data.put("toolConfig", getToolConfig(role));
 
         //markdown文件会根本上重置这些配置
         if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
@@ -216,6 +217,16 @@ public class MonerSystemPrompt {
                         //可以使用默认值
                         Pair.of("value", new DefaultValueFunction())
                 ));
+    }
+
+    private static String getToolConfig(ReactorRole role) {
+        StringBuilder sb = new StringBuilder();
+        role.getRoleConfig().forEach((key, value) -> {
+            if (key.startsWith("$")) {
+                sb.append(key).append("=").append(value).append("\n");
+            }
+        });
+        return sb.toString();
     }
 
     //获取mcp的信息(主要是tool的信息)
@@ -395,7 +406,11 @@ public class MonerSystemPrompt {
             # Connected MCP Servers
             
             When a server is connected, you can use the server's tools via the `use_mcp_tool` tool, and access the server's resources via the `access_mcp_resource` tool.
-            
+           
+            # 调用这些tool会有一些参数,如果发现用户没提供,可以参考这些用户已经配置好的默认参数
+            用户的默认参数:
+            ${toolConfig}
+             
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
             ## 这个Agent的信息

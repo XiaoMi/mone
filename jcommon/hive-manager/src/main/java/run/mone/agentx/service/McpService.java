@@ -70,6 +70,9 @@ public class McpService {
         //对面的ip和port 服务端的
         String key = AgentKeyUtils.key(agentDto, instance);
 
+        toolDataInfo.setAgentId("" + agentId);
+        toolDataInfo.setUserId("" + user.getId());
+
         try {
             lock.lock();
             McpHub hub = McpHubHolder.get(key);
