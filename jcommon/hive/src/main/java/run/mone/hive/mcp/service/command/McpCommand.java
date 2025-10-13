@@ -330,6 +330,8 @@ public class McpCommand extends RoleBaseCommand {
             // 检查服务器是否存在
             var connections = role.getMcpHub().getConnections();
             if (connections == null || !connections.containsKey(serverName)) {
+                role.getMcpNames().remove(serverName);
+                role.saveConfig();
                 result.put("message", String.format("MCP服务器 '%s' 不存在", serverName));
             } else {
                 try {
