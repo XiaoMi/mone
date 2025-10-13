@@ -15,6 +15,7 @@ import run.mone.hive.roles.ReactorRole;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 @Slf4j
@@ -41,6 +42,7 @@ public class MonerMcpClient {
                 toolArguments.put(Const.ROLE, toolDataInfo.getRole());
             }
 
+            AtomicBoolean error = new AtomicBoolean(false);
             // 调用before方法并检查返回值
             boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
             if (shouldProceed) {
@@ -51,12 +53,11 @@ public class MonerMcpClient {
                     //内部调用(直接调用本地的mcp)
                     if (serviceName.equals(Const.INTERNAL_SERVER)) {
                         log.info("call internal mcp:{} type:{}", toolName, "stream");
-                        internalCall(sink, f, toolName, toolArguments, sb);
+                        internalCall(sink, f, toolName, toolArguments, sb, error);
                     } else {
                         //外部的mcp
-                        call(role, from, sink, serviceName, toolName, toolArguments, sb);
+                        call(role, from, sink, serviceName, toolName, toolArguments, sb, error);
                     }
-
                     log.debug("res:{}", sb);
                     toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                 } else { //非流式调用
@@ -65,7 +66,7 @@ public class MonerMcpClient {
                         McpFunction function = f.apply(toolName);
                         Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
                         String c = function.formatResult(((McpSchema.TextContent) flux.blockLast().content().get(0)).text());
-                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(c)).build();
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(c)).error(error.get()).build();
                     }
                     // 只有当before返回true时才调用工具
                     McpHub hub = null;
@@ -79,11 +80,16 @@ public class MonerMcpClient {
                     if (null == hub) {
                         return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
                     }
-                    toolRes = hub.callTool(serviceName, toolName,
-                            toolArguments);
+                    try {
+                        toolRes = hub.callTool(serviceName, toolName,
+                                toolArguments);
+                    } catch (Throwable ex) {
+                        log.error(ex.getMessage(),ex);
+                        error.set(true);
+                    }
                 }
                 monerMcpInterceptor.after(toolName, toolRes);
-                return McpResult.builder().toolName(toolName).content(toolRes.content().get(0)).build();
+                return McpResult.builder().toolName(toolName).content(toolRes.content().get(0)).error(error.get()).build();
             } else {
                 log.info("工具 {} 执行被拦截，不执行实际调用", toolName);
                 McpSchema.TextContent textContent = new McpSchema.TextContent("操作已取消，可以结束此轮操作。");
@@ -92,7 +98,7 @@ public class MonerMcpClient {
         });
     }
 
-    private static void call(ReactorRole role, String from, FluxSink sink, String serviceName, String toolName, Map<String, Object> toolArguments, StringBuilder sb) {
+    private static void call(ReactorRole role, String from, FluxSink sink, String serviceName, String toolName, Map<String, Object> toolArguments, StringBuilder sb, AtomicBoolean error) {
         Safe.run(() -> {
             McpHub hub = null;
             if (null != role) {
@@ -117,6 +123,7 @@ public class MonerMcpClient {
                             }
                     )
                     .doOnError(ex -> {
+                        error.set(true);
                         sb.append(ex.getMessage());
                         sink.next(ex.getMessage());
                     })
@@ -124,7 +131,7 @@ public class MonerMcpClient {
         });
     }
 
-    private static void internalCall(FluxSink sink, Function<String, McpFunction> f, String toolName, Map<String, Object> toolArguments, StringBuilder sb) {
+    private static void internalCall(FluxSink sink, Function<String, McpFunction> f, String toolName, Map<String, Object> toolArguments, StringBuilder sb, AtomicBoolean error) {
         McpFunction function = f.apply(toolName);
         Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
         flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
@@ -133,7 +140,10 @@ public class MonerMcpClient {
                 s.next(tc.text());
                 sb.append(tc.text());
             }
-        })).blockLast();
+        })).doOnError(e->{
+            error.set(true);
+                })
+                .blockLast();
     }
 
 
