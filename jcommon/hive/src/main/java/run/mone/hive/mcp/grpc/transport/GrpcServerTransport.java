@@ -21,7 +21,6 @@ import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.hive.prompt.MonerSystemPrompt;
 
 import java.io.IOException;
 import java.util.*;
