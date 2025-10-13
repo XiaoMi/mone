@@ -290,9 +290,8 @@ export function markdownItMcp(md: MarkdownIt) {
               <div class="tool-result-header">
                 <i class="fa-solid fa-code"></i>
                 <span>工具结果</span>
-                <i class="toggle-icon fa-solid fa-chevron-up"></i>
               </div>
-              <div class="tool-result-content is-active">`;
+              <div class="tool-result-content">`;
         } else if (name === "pid") {
           html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
         } else if (name === 'hive-msg-id') {

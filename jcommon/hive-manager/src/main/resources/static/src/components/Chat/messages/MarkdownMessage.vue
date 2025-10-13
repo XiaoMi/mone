@@ -327,33 +327,7 @@ const addBoltToggleEvents = () => {
     });
   }
 }
-const addToolResultToggleEvents = () => {
-  if (textRef.value) {
-    const toolResultHeaders = textRef.value.querySelectorAll('.tool-result-header');
-    toolResultHeaders.forEach((header: any) => {
-      const toggleHandler = header._toggleHandler || (() => {
-        const content = header.parentElement.querySelector('.tool-result-content');
-        const toggleIcon = header.querySelector('.toggle-icon');
 
-        if (content.classList.contains('is-active')) {
-          content.classList.remove('is-active');
-          toggleIcon.classList.remove('expanded');
-        } else {
-          content.classList.add('is-active');
-          toggleIcon.classList.add('expanded');
-        }
-      });
-
-      // 先移除旧的事件(如果存在)
-      header.removeEventListener('click', header._toggleHandler);
-      // 添加新的事件
-      header.addEventListener('click', toggleHandler);
-
-      // 将handler存储在DOM元素上,方便之后移除
-      header._toggleHandler = toggleHandler;
-    });
-  }
-}
 const addFileUrlLinkEvents = () => {
   if (textRef.value) {
     const fileLinks = textRef.value.querySelectorAll('.file-url-link');
@@ -557,14 +531,6 @@ const removeEvents = () => {
         delete btn._toggleHandler;
       }
     });
-    // 移除tool-result toggle事件
-    const toolResultHeaders = textRef.value.querySelectorAll('.tool-result-header');
-    toolResultHeaders.forEach((header: any) => {
-      if (header._toggleHandler) {
-        header.removeEventListener('click', header._toggleHandler);
-        delete header._toggleHandler;
-      }
-    });
 
     // 移除file-url-link事件
     const fileLinks = textRef.value.querySelectorAll('.file-url-link');
@@ -628,7 +594,6 @@ onMounted(() => {
   addDiffEvents();
   collapseFn();
   addBoltToggleEvents();
-  addToolResultToggleEvents();
   addFileUrlLinkEvents();
   addPidButtonEvents();
   // addTerminalAppendEvents();
@@ -668,7 +633,6 @@ onUpdated(() => {
   collapseFn();
   bindCollapse();
   addBoltToggleEvents();
-  addToolResultToggleEvents();
   addFileUrlLinkEvents();
   addPidButtonEvents();
   // addTerminalAppendEvents();
