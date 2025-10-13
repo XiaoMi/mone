@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import run.mone.hive.bo.InternalServer;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
@@ -16,6 +17,7 @@ import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.schema.Message;
 import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
@@ -56,17 +58,17 @@ public class MonerSystemPrompt {
     public static String hiveCwd(ReactorRole role) {
         String workspacePath = cwd(role);
         return workspacePath
-                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive";
     }
 
     /**
      * 获取自定义指令
-     * 
+     * <p>
      * 首先尝试从工作目录下的.hive/agent.md文件读取自定义指令
      * 如果文件不存在或读取失败，则从角色配置中获取
-     * 
-     * @param role 反应堆角色
+     *
+     * @param role               反应堆角色
      * @param customInstructions 默认指令（如果文件不存在且配置中无指令时使用）
      * @return 自定义指令内容
      */
@@ -76,10 +78,12 @@ public class MonerSystemPrompt {
             log.warn("工作空间路径为空，使用默认指令");
             return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
         }
-        
+
         // 构建.hive/agent.md文件路径
-        String mdStr = getAllMdFiles(workspacePath);
-        if (mdStr != null) return mdStr;
+        String mdStr = getAgentMd(workspacePath);
+        if (mdStr != null) {
+            return mdStr;
+        }
 
         // 从角色配置中获取自定义指令，如果不存在则使用默认指令
         return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
@@ -87,7 +91,7 @@ public class MonerSystemPrompt {
 
     /**
      * 获取.hive目录下所有md文件的内容并拼接
-     * 
+     *
      * @param workspacePath 工作空间路径
      * @return 拼接后的md内容，如果没有找到任何md文件则返回null
      */
@@ -96,26 +100,26 @@ public class MonerSystemPrompt {
         String hiveDir = workspacePath
                 + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive";
-        
+
         File hiveDirFile = new File(hiveDir);
         if (!hiveDirFile.exists() || !hiveDirFile.isDirectory()) {
             log.debug(".hive目录不存在: {}", hiveDir);
             return null;
         }
-        
+
         // 获取所有.md文件
         File[] mdFiles = hiveDirFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".md"));
         if (mdFiles == null || mdFiles.length == 0) {
             log.debug(".hive目录下没有找到md文件: {}", hiveDir);
             return null;
         }
-        
+
         StringBuilder result = new StringBuilder();
         boolean hasContent = false;
-        
+
         // 按文件名排序，确保输出顺序一致
         Arrays.sort(mdFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));
-        
+
         for (File mdFile : mdFiles) {
             try {
                 String content = FileUtils.readMarkdownFile(mdFile.getAbsolutePath());
@@ -131,13 +135,14 @@ public class MonerSystemPrompt {
                 log.debug("读取md文件失败: {}, 原因: {}", mdFile.getName(), e.getMessage());
             }
         }
-        
+
         return hasContent ? result.toString() : null;
     }
+
     @Nullable
-    private static String getAgentMd(String workspacePath) {
+    public static String getAgentMd(String workspacePath) {
         String filePath = workspacePath
-                +  (workspacePath.endsWith(File.separator) ? "" :  File.separator)
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
                 + ".hive" + File.separator + "agent.md";
 
         try {
@@ -154,14 +159,12 @@ public class MonerSystemPrompt {
     }
 
 
-
-
     // 为了向后兼容，提供不带enableTaskProgress参数的重载方法
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
-        return mcpPrompt(role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
+        return mcpPrompt(message, role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
     }
 
-    public static String mcpPrompt(ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
         Map<String, Object> data = new HashMap<>();
         data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
@@ -170,12 +173,15 @@ public class MonerSystemPrompt {
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
         data.put("cwd", MonerSystemPrompt.cwd(role));
-        data.put("hiveCwd",  MonerSystemPrompt.hiveCwd(role));
+        data.put("hiveCwd", MonerSystemPrompt.hiveCwd(role));
+        //这里也会处理下agent.md的逻辑,需要注意(这个的agent.md的优先级并不高,有可能会被后边的覆盖掉)
         data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
         data.put("roleDescription", roleDescription);
         data.put("enableTaskProgress", enableTaskProgress);
         List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
+        // 添加开关控制,如果serverList为空则不加载MCP相关内容
+        data.put("enableMcp", !serverList.isEmpty());
         if (StringUtils.isEmpty(workFlow)) {
             workFlow = "";
         }
@@ -186,6 +192,23 @@ public class MonerSystemPrompt {
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+
+        //markdown文件会根本上重置这些配置
+        if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
+            String rd = """
+                    \n
+                    profile: %s
+                    goal: %s
+                    constraints: %s
+                    \n
+                    """.formatted(md.getProfile(), md.getGoal(), md.getConstraints());
+
+            data.put("name", md.getName());
+            data.put("roleDescription", rd);
+            data.put("customInstructions", md.getAgentPrompt());
+            data.put("workflow", md.getWorkflow());
+        }
+
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
                 Lists.newArrayList(
                         //反射执行
@@ -197,34 +220,26 @@ public class MonerSystemPrompt {
 
     //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
-        final List<Map<String, Object>> serverList = new ArrayList<>();
-        List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
-        if (null != sl) {
-            serverList.addAll(sl);
-        } else {
-            McpHub mcpHub = role.getMcpHub();
-            if (mcpHub == null) {
-                return serverList;
-            }
-            mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
-                Map<String, Object> server = new HashMap<>();
-                server.put("name", key);
-                server.put("args", "");
-                server.put("connection", value);
-
-                McpSchema.ListToolsResult tools = value.getClient().listTools();
-                String toolsStr = tools
-                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "descrip tion:" + t.description() + "\n"
-                                + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
-                        .collect(Collectors.joining("\n\n"));
-                server.put("tools", toolsStr);
-
-                serverList.add(server);
-            }));
-            if (!serverList.isEmpty()) {
-                CacheService.ins().cacheObject(CacheService.tools_key, serverList);
-            }
+        List<Map<String, Object>> serverList = new ArrayList<>();
+        McpHub mcpHub = role.getMcpHub();
+        if (mcpHub == null) {
+            return serverList;
         }
+        mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", key);
+            server.put("args", "");
+            server.put("connection", value);
+            server.put("agent",value.getServer().getServerInfo().meta());
+            McpSchema.ListToolsResult tools = value.getClient().getTools();
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+
+            serverList.add(server);
+        }));
         return serverList;
     }
 
@@ -259,6 +274,7 @@ public class MonerSystemPrompt {
             
             
             
+            <% if(enableMcp) { %>
             ## use_mcp_tool
             Description: Request to use a tool provided by a connected MCP server. Each MCP server can provide multiple tools with different capabilities. Tools have defined input schemas that specify required and optional parameters.
             Parameters:
@@ -280,6 +296,7 @@ public class MonerSystemPrompt {
             Checklist here (optional)
             </task_progress><% } %>
             </use_mcp_tool>
+            <% } %>
             
             # Tool Use Examples
             
@@ -370,6 +387,7 @@ public class MonerSystemPrompt {
             
             ====
             
+            <% if(enableMcp) { %>
             MCP SERVERS
             
             The Model Context Protocol (MCP) enables communication between the system and locally running MCP servers that provide additional tools and resources to extend your capabilities.
@@ -380,12 +398,27 @@ public class MonerSystemPrompt {
             
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
-            ### Available Tools
+            ## 这个Agent的信息
+            名字:${server.agent["name"]} 
+            proflie:${server.agent["profile"]}    
+            goal:${server.agent["goal"]}    
+            constraints:${server.agent["constraints"]} 
+            workflow:
+            ${server.agent["workflow"]} 
+            
+            ### 这个Agent的Tools
             ${server.tools}
             <% } %>
             
             
+            请记住这三个参数必须提供:  
+            <server_name>
+            <tool_name>
+            <arguments>
+            
+            
             ====
+            <% } %>
             
             RULES
             

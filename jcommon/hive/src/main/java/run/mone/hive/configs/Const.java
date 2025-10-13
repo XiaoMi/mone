@@ -50,4 +50,24 @@ public class Const {
 
     public static final String INTERNAL_SERVER = "internalServer";
 
+    public static final String AGENT_CONFIG = "__agent_config__";
+
+    public static final String SWITCH_AGENT = "__switch_agent__";
+
+    public static final String WORKSPACE_PATH_KEY = "workspacePath";
+
+    public static final String MCP = "mcp";
+
+    public static final String REPLY = "reply";
+
+    public static final String BLOCK = "block";
+
+    public static final String RES_ID = "resId";
+
+    public static final String CMD = "cmd";
+
+    public static final String AGENT_SERVER_NAME = "agent_server_name";
+
+    public static final String AGENT_SERVER_VERSION = "agent_server_version";
+
 }

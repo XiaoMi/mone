@@ -1,14 +1,17 @@
 package run.mone.hive.common.function;
 
+import lombok.extern.slf4j.Slf4j;
 import org.beetl.core.Context;
 import org.beetl.core.Function;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
  * @date 2025/4/10 13:48
  */
+@Slf4j
 public class InvokeMethodFunction implements Function {
     @Override
     public Object call(Object[] paras, Context ctx) {
@@ -21,6 +24,11 @@ public class InvokeMethodFunction implements Function {
 
         if (target == null) {
             return null;
+        }
+
+        //如果是map直接取里边的值
+        if (target instanceof Map<?,?> m) {
+            return m.get(methodName);
         }
 
         try {
@@ -36,10 +44,9 @@ public class InvokeMethodFunction implements Function {
             // 调用方法并返回结果
             return method.invoke(target);
 
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException("未找到方法：" + methodName, e);
         } catch (Exception e) {
-            throw new RuntimeException("调用方法" + methodName + "失败", e);
+            log.error(e.getMessage(),e);
         }
+        return "";
     }
 }

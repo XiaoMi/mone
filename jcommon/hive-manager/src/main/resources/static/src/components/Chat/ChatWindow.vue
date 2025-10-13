@@ -4,6 +4,10 @@
       :onClearHistory="onClearHistory"
       :onOffline="onOffline"
       :onStopMsg="onStopMsg"
+      :onSwitchAgent="onSwitchAgent"
+      :onSwitchLlm="onSwitchLlm"
+      :onExecuteMcpCommand="onExecuteMcpCommand"
+      :onExecuteSystemCommand="onExecuteSystemCommand"
     />
     <MessageList
       :messages="messages"
@@ -136,6 +140,22 @@ export default {
     onStopMsg: {
       type: Function,
       required: true,
+    },
+    onSwitchAgent: {
+      type: Function,
+      required: false,
+    },
+    onSwitchLlm: {
+      type: Function,
+      required: false,
+    },
+    onExecuteMcpCommand: {
+      type: Function,
+      required: false,
+    },
+    onExecuteSystemCommand: {
+      type: Function,
+      required: false,
     },
   },
   data() {

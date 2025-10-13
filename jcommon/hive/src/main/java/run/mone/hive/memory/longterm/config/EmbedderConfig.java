@@ -29,7 +29,8 @@ public class EmbedderConfig {
         GEMINI("gemini"),
         BEDROCK("bedrock"),
         VERTEXAI("vertexai"),
-        TOGETHER("together");
+        TOGETHER("together"),
+        GLM("glm");
         
         private final String value;
         
@@ -167,6 +168,18 @@ public class EmbedderConfig {
                 .model("nomic-embed-text")
                 .baseUrl("http://localhost:11434")
                 .embeddingDims(768)
+                .build();
+    }
+    
+    /**
+     * 获取GLM默认配置
+     */
+    public static EmbedderConfig glmDefault() {
+        return EmbedderConfig.builder()
+                .provider(Provider.GLM)
+                .model("embedding-3")
+                .baseUrl("https://open.bigmodel.cn/api/paas/v4")
+                .embeddingDims(1024)
                 .build();
     }
 }

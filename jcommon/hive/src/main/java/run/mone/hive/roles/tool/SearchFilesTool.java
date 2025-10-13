@@ -14,15 +14,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * File content search tool using regular expressions
- * 
- * This tool performs regex searches across files in a specified directory, providing context-rich results. 
- * It searches for patterns or specific content across multiple files, displaying each match with 
+ * <p>
+ * This tool performs regex searches across files in a specified directory, providing context-rich results.
+ * It searches for patterns or specific content across multiple files, displaying each match with
  * encapsulating context for better understanding and analysis.
- * 
+ * <p>
  * Use this tool when you need to:
  * - Find specific patterns, functions, or content across multiple files
  * - Search for TODO comments, FIXME notes, or other markers
@@ -38,34 +37,38 @@ import java.util.stream.Stream;
 public class SearchFilesTool implements ITool {
 
     public static final String name = "search_files";
-
     // Maximum number of results to prevent overwhelming output
     private static final int MAX_RESULTS = 300;
-    
     // Maximum output size to prevent memory issues (0.25MB)
     private static final int MAX_OUTPUT_BYTES = 256 * 1024;
-    
     // Context lines before and after each match
     private static final int CONTEXT_LINES = 1;
-    
     // Maximum file size to search (1MB)
     private static final long MAX_FILE_SIZE = 1024 * 1024;
-    
     // Common directories to ignore during recursive search
     private static final Set<String> IGNORED_DIRECTORIES = Set.of(
-        "node_modules", "__pycache__", ".git", ".svn", ".hg", 
-        "target", "build", "dist", "out", "vendor", "deps",
-        ".idea", ".vscode", ".gradle", ".m2", "Pods"
+            "node_modules", "__pycache__", ".git", ".svn", ".hg",
+            "target", "build", "dist", "out", "vendor", "deps",
+            ".idea", ".vscode", ".gradle", ".m2", "Pods"
     );
-    
     // Binary file extensions to skip
     private static final Set<String> BINARY_EXTENSIONS = Set.of(
-        "jar", "class", "exe", "dll", "so", "dylib", "a", "lib",
-        "zip", "rar", "tar", "gz", "bz2", "7z",
-        "jpg", "jpeg", "png", "gif", "bmp", "ico", "svg",
-        "mp3", "mp4", "avi", "mov", "wmv", "flv",
-        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"
+            "jar", "class", "exe", "dll", "so", "dylib", "a", "lib",
+            "zip", "rar", "tar", "gz", "bz2", "7z",
+            "jpg", "jpeg", "png", "gif", "bmp", "ico", "svg",
+            "mp3", "mp4", "avi", "mov", "wmv", "flv",
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"
     );
+
+    private final boolean isRemote;
+
+    public SearchFilesTool() {
+        this(false);
+    }
+
+    public SearchFilesTool(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
 
     @Override
     public String getName() {
@@ -128,21 +131,21 @@ public class SearchFilesTool implements ITool {
     @Override
     public String usage() {
         String taskProgress = """
-            <task_progress>
-            Checklist here (optional)
-            </task_progress>
-            """;
+                <task_progress>
+                Checklist here (optional)
+                </task_progress>
+                """;
         if (!taskProgress()) {
             taskProgress = "";
         }
         return """
-            <search_files>
-            <path>Directory path here</path>
-            <regex>Your regex pattern here</regex>
-            <file_pattern>file pattern here (optional)</file_pattern>
-            %s
-            </search_files>
-            """.formatted(taskProgress);
+                <search_files>
+                <path>Directory path here</path>
+                <regex>Your regex pattern here</regex>
+                <file_pattern>file pattern here (optional)</file_pattern>
+                %s
+                </search_files>
+                """.formatted(taskProgress);
     }
 
     @Override
@@ -206,7 +209,12 @@ public class SearchFilesTool implements ITool {
             String regex = inputJson.get("regex").getAsString();
             String filePattern = inputJson.has("file_pattern") ? inputJson.get("file_pattern").getAsString() : null;
 
-            return performFileSearch(path, regex, filePattern);
+            // 根据是否为远程搜索调用不同的方法
+            if (isRemote) {
+                return performRemoteFileSearch(path, regex, filePattern);
+            } else {
+                return performFileSearch(path, regex, filePattern);
+            }
 
         } catch (Exception e) {
             log.error("Exception occurred while executing search_files operation", e);
@@ -214,6 +222,37 @@ public class SearchFilesTool implements ITool {
             return result;
         }
     }
+
+    private JsonObject performRemoteFileSearch(String path, String regex, String filePattern) {
+        JsonObject result = new JsonObject();
+
+        try {
+            // 调用RemoteFileUtils的searchFiles方法进行远程文件搜索
+            String searchResult = run.mone.hive.utils.RemoteFileUtils.searchFiles(path, regex, filePattern);
+            
+            // 构建结果对象
+            result.addProperty("result", searchResult);
+            result.addProperty("searchPath", path);
+            result.addProperty("regex", regex);
+            if (filePattern != null) {
+                result.addProperty("filePattern", filePattern);
+            }
+            
+            log.info("成功在远程目录 {} 中搜索文件，正则表达式: {}, 文件模式: {}", 
+                    path, regex, filePattern != null ? filePattern : "所有文件");
+            
+            return result;
+        } catch (IOException e) {
+            log.error("在远程目录中搜索文件时发生IO异常: {}", path, e);
+            result.addProperty("error", "远程文件搜索失败: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("在远程目录中搜索文件时发生异常: {}", path, e);
+            result.addProperty("error", "远程文件搜索错误: " + e.getMessage());
+        }
+
+        return result;
+    }
+
 
     /**
      * Perform the file search operation
@@ -223,7 +262,7 @@ public class SearchFilesTool implements ITool {
 
         try {
             Path searchPath = Paths.get(path);
-            
+
             // Check if directory exists
             if (!Files.exists(searchPath)) {
                 log.error("Directory not found: {}", path);
@@ -234,8 +273,8 @@ public class SearchFilesTool implements ITool {
             // Check if path points to a file instead of directory
             if (!Files.isDirectory(searchPath)) {
                 log.error("Path points to a file, not a directory: {}", path);
-                result.addProperty("error", "Path points to a file, not a directory: " + path + 
-                                           ". This tool searches directories recursively.");
+                result.addProperty("error", "Path points to a file, not a directory: " + path +
+                        ". This tool searches directories recursively.");
                 return result;
             }
 
@@ -271,7 +310,7 @@ public class SearchFilesTool implements ITool {
 
             // Format results
             String formattedResults = formatSearchResults(searchResults, searchPath, regex, filePattern);
-            
+
             // Build result object
             result.addProperty("result", formattedResults);
             result.addProperty("searchPath", path);
@@ -285,12 +324,12 @@ public class SearchFilesTool implements ITool {
             // Add detailed results for programmatic access
             JsonArray resultsArray = new JsonArray();
             Map<String, List<SearchResult>> groupedResults = groupResultsByFile(searchResults, searchPath);
-            
+
             for (Map.Entry<String, List<SearchResult>> entry : groupedResults.entrySet()) {
                 JsonObject fileResult = new JsonObject();
                 fileResult.addProperty("file", entry.getKey());
                 fileResult.addProperty("matches", entry.getValue().size());
-                
+
                 JsonArray matchesArray = new JsonArray();
                 for (SearchResult match : entry.getValue()) {
                     JsonObject matchObj = new JsonObject();
@@ -313,7 +352,7 @@ public class SearchFilesTool implements ITool {
             summary.addProperty("wasLimited", searchResults.size() >= MAX_RESULTS);
             result.add("summary", summary);
 
-            log.info("Successfully searched {} files in directory: {}, found {} matches", 
+            log.info("Successfully searched {} files in directory: {}, found {} matches",
                     summary.get("filesSearched").getAsInt(), path, searchResults.size());
 
             return result;
@@ -373,7 +412,7 @@ public class SearchFilesTool implements ITool {
 
                     // Search file content
                     List<SearchResult> fileResults = searchInFile(file, regexPattern, searchPath);
-                    
+
                     // Add results up to the limit
                     for (SearchResult result : fileResults) {
                         if (resultCount.get() >= MAX_RESULTS) {
@@ -405,15 +444,15 @@ public class SearchFilesTool implements ITool {
      */
     private List<SearchResult> searchInFile(Path file, Pattern pattern, Path basePath) throws IOException {
         List<SearchResult> results = new ArrayList<>();
-        
+
         try {
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             String relativePath = basePath.relativize(file).toString().replace('\\', '/');
-            
+
             for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
                 String line = lines.get(lineIndex);
                 Matcher matcher = pattern.matcher(line);
-                
+
                 while (matcher.find()) {
                     SearchResult result = new SearchResult();
                     result.filePath = relativePath;
@@ -421,11 +460,11 @@ public class SearchFilesTool implements ITool {
                     result.column = matcher.start() + 1;
                     result.matchText = matcher.group();
                     result.lineContent = line;
-                    
+
                     // Add context lines
                     result.beforeContext = getContextLines(lines, lineIndex, -CONTEXT_LINES, 0);
                     result.afterContext = getContextLines(lines, lineIndex, 1, CONTEXT_LINES + 1);
-                    
+
                     results.add(result);
                 }
             }
@@ -434,11 +473,11 @@ public class SearchFilesTool implements ITool {
             try {
                 List<String> lines = Files.readAllLines(file, StandardCharsets.ISO_8859_1);
                 String relativePath = basePath.relativize(file).toString().replace('\\', '/');
-                
+
                 for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
                     String line = lines.get(lineIndex);
                     Matcher matcher = pattern.matcher(line);
-                    
+
                     while (matcher.find()) {
                         SearchResult result = new SearchResult();
                         result.filePath = relativePath;
@@ -446,11 +485,11 @@ public class SearchFilesTool implements ITool {
                         result.column = matcher.start() + 1;
                         result.matchText = matcher.group();
                         result.lineContent = line;
-                        
+
                         // Add context lines
                         result.beforeContext = getContextLines(lines, lineIndex, -CONTEXT_LINES, 0);
                         result.afterContext = getContextLines(lines, lineIndex, 1, CONTEXT_LINES + 1);
-                        
+
                         results.add(result);
                     }
                 }
@@ -458,7 +497,7 @@ public class SearchFilesTool implements ITool {
                 log.debug("Failed to read file with both UTF-8 and ISO-8859-1: {}", file);
             }
         }
-        
+
         return results;
     }
 
@@ -467,16 +506,16 @@ public class SearchFilesTool implements ITool {
      */
     private List<String> getContextLines(List<String> allLines, int centerLine, int start, int end) {
         List<String> context = new ArrayList<>();
-        
+
         int startLine = Math.max(0, centerLine + start);
         int endLine = Math.min(allLines.size(), centerLine + end);
-        
+
         for (int i = startLine; i < endLine; i++) {
             if (i != centerLine) { // Don't include the match line itself in context
                 context.add(allLines.get(i));
             }
         }
-        
+
         return context;
     }
 
@@ -486,21 +525,21 @@ public class SearchFilesTool implements ITool {
     private boolean isBinaryFile(Path file) {
         String fileName = file.getFileName().toString().toLowerCase();
         int lastDotIndex = fileName.lastIndexOf('.');
-        
+
         if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
             String extension = fileName.substring(lastDotIndex + 1);
             if (BINARY_EXTENSIONS.contains(extension)) {
                 return true;
             }
         }
-        
+
         // Additional check: read first few bytes to detect binary content
         try {
             byte[] bytes = Files.readAllBytes(file);
             if (bytes.length > 1024) {
                 bytes = Arrays.copyOf(bytes, 1024); // Only check first 1KB
             }
-            
+
             // Simple heuristic: if more than 30% of bytes are non-printable, consider it binary
             int nonPrintable = 0;
             for (byte b : bytes) {
@@ -508,9 +547,9 @@ public class SearchFilesTool implements ITool {
                     nonPrintable++;
                 }
             }
-            
+
             return (double) nonPrintable / bytes.length > 0.3;
-            
+
         } catch (Exception e) {
             return false; // If we can't read it, assume it's text
         }
@@ -521,7 +560,7 @@ public class SearchFilesTool implements ITool {
      */
     private int countFilesSearched(Path searchPath, PathMatcher fileMatcher) {
         AtomicInteger count = new AtomicInteger(0);
-        
+
         try {
             Files.walkFileTree(searchPath, new SimpleFileVisitor<Path>() {
                 @Override
@@ -551,7 +590,7 @@ public class SearchFilesTool implements ITool {
         } catch (IOException e) {
             log.debug("Error counting files: {}", e.getMessage());
         }
-        
+
         return count.get();
     }
 
@@ -560,11 +599,11 @@ public class SearchFilesTool implements ITool {
      */
     private Map<String, List<SearchResult>> groupResultsByFile(List<SearchResult> results, Path basePath) {
         Map<String, List<SearchResult>> grouped = new LinkedHashMap<>();
-        
+
         for (SearchResult result : results) {
             grouped.computeIfAbsent(result.filePath, k -> new ArrayList<>()).add(result);
         }
-        
+
         return grouped;
     }
 
@@ -577,10 +616,10 @@ public class SearchFilesTool implements ITool {
         }
 
         StringBuilder output = new StringBuilder();
-        
+
         // Add header with search summary
         if (results.size() >= MAX_RESULTS) {
-            output.append(String.format("Showing first %d of %d+ results. Use a more specific search if necessary.\n\n", 
+            output.append(String.format("Showing first %d of %d+ results. Use a more specific search if necessary.\n\n",
                     MAX_RESULTS, MAX_RESULTS));
         } else {
             String resultText = results.size() == 1 ? "1 result" : String.format("%,d results", results.size());
@@ -589,73 +628,73 @@ public class SearchFilesTool implements ITool {
 
         // Group results by file
         Map<String, List<SearchResult>> groupedResults = groupResultsByFile(results, searchPath);
-        
+
         int currentBytes = output.toString().getBytes(StandardCharsets.UTF_8).length;
         boolean wasLimited = false;
-        
+
         for (Map.Entry<String, List<SearchResult>> entry : groupedResults.entrySet()) {
             String filePath = entry.getKey();
             List<SearchResult> fileResults = entry.getValue();
-            
+
             // Check size limit before adding file header
             String fileHeader = filePath + "\n│----\n";
             if (currentBytes + fileHeader.getBytes(StandardCharsets.UTF_8).length > MAX_OUTPUT_BYTES) {
                 wasLimited = true;
                 break;
             }
-            
+
             output.append(fileHeader);
             currentBytes += fileHeader.getBytes(StandardCharsets.UTF_8).length;
-            
+
             for (int i = 0; i < fileResults.size(); i++) {
                 SearchResult result = fileResults.get(i);
-                
+
                 // Build result block
                 StringBuilder resultBlock = new StringBuilder();
-                
+
                 // Add before context
                 for (String contextLine : result.beforeContext) {
                     resultBlock.append("│").append(contextLine.replaceAll("\\s+$", "")).append("\n");
                 }
-                
+
                 // Add match line
                 resultBlock.append("│").append(result.lineContent.replaceAll("\\s+$", "")).append("\n");
-                
+
                 // Add after context
                 for (String contextLine : result.afterContext) {
                     resultBlock.append("│").append(contextLine.replaceAll("\\s+$", "")).append("\n");
                 }
-                
+
                 // Add separator between results
                 if (i < fileResults.size() - 1) {
                     resultBlock.append("│----\n");
                 }
-                
+
                 // Check size limit
                 if (currentBytes + resultBlock.toString().getBytes(StandardCharsets.UTF_8).length > MAX_OUTPUT_BYTES) {
                     wasLimited = true;
                     break;
                 }
-                
+
                 output.append(resultBlock);
                 currentBytes += resultBlock.toString().getBytes(StandardCharsets.UTF_8).length;
             }
-            
+
             if (wasLimited) {
                 break;
             }
-            
+
             // Add file closing
             String fileClosing = "│----\n\n";
             if (currentBytes + fileClosing.getBytes(StandardCharsets.UTF_8).length > MAX_OUTPUT_BYTES) {
                 wasLimited = true;
                 break;
             }
-            
+
             output.append(fileClosing);
             currentBytes += fileClosing.getBytes(StandardCharsets.UTF_8).length;
         }
-        
+
         // Add truncation warning if needed
         if (wasLimited) {
             String warning = "\n[Results truncated due to exceeding the 0.25MB size limit. Please use a more specific search pattern.]";
@@ -663,7 +702,7 @@ public class SearchFilesTool implements ITool {
                 output.append(warning);
             }
         }
-        
+
         return output.toString().trim();
     }
 

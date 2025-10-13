@@ -25,3 +25,5 @@ nohup*
 selector_config.json
 history.db
 memory-config-local.yml
+
+.hive/

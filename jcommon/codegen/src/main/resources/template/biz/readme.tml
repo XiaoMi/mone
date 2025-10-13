@@ -1,0 +1,174 @@
+# ${projectName}
+
+${description}
+
+## 项目信息
+
+- **项目名称**: ${projectName}
+- **版本**: ${version}
+- **作者**: ${author}
+
+## 技术栈
+
+- Spring Boot ${springBootVersion}
+- Spring Security (JWT认证)
+- Spring Data JPA
+- H2 Database
+- Lombok
+- Logback
+
+## 快速开始
+
+### 1. 环境要求
+
+- JDK ${javaVersion}+
+- Maven 3.6+
+
+### 2. 编译项目
+
+```bash
+mvn clean package
+```
+
+### 3. 运行项目
+
+```bash
+java -jar target/${artifactId}-${version}.jar
+```
+
+或者直接运行：
+
+```bash
+mvn spring-boot:run
+```
+
+### 4. 访问应用
+
+- 应用地址: http://localhost:${serverPort}
+- H2控制台: http://localhost:${serverPort}/h2-console
+
+## 配置说明
+
+主要配置文件: `src/main/resources/application.properties`
+
+### 数据库配置
+```properties
+spring.datasource.url=jdbc:h2:file:./data/${dbName}
+spring.datasource.username=sa
+spring.datasource.password=
+```
+
+### 服务器配置
+```properties
+server.port=${serverPort}
+```
+
+### JWT配置
+```properties
+jwt.secret=${jwtSecret}
+jwt.expiration=${jwtExpiration}
+```
+
+## 项目结构
+
+```
+${projectName}/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── ${package}/
+│   │   │       ├── ${bootstrapClassName}.java    # 启动类
+│   │   │       ├── config/              # 配置类
+│   │   │       ├── controller/          # 控制器
+│   │   │       ├── service/             # 服务层
+│   │   │       ├── repository/          # 数据访问层
+│   │   │       ├── model/               # 实体类
+│   │   │       ├── dto/                 # 数据传输对象
+│   │   │       ├── filter/              # 过滤器
+│   │   │       ├── util/                # 工具类
+│   │   │       ├── aop/                 # AOP切面
+│   │   │       └── exception/           # 异常处理
+│   │   └── resources/
+│   │       ├── application.properties   # 应用配置
+│   │       └── logback.xml             # 日志配置
+│   └── test/
+├── logs/                               # 日志目录
+├── data/                               # 数据库文件
+└── pom.xml
+```
+
+## 核心功能
+
+### 1. JWT认证
+- 用户注册/登录接口
+- JWT Token生成和验证
+- 基于Token的无状态认证
+
+### 2. 日志记录
+- 自动记录所有HTTP请求参数和返回值
+- 记录方法执行时间
+- 错误日志单独输出
+- 日志文件自动滚动
+
+### 3. 异常处理
+- 全局异常处理器
+- AOP统一异常拦截
+- 统一的错误响应格式
+
+### 4. 安全配置
+- Spring Security集成
+- BCrypt密码加密
+- 基于角色的访问控制
+- 静态资源访问控制
+
+## API响应格式
+
+### 成功响应
+```json
+{
+  "code": 200,
+  "data": {...},
+  "message": "操作成功"
+}
+```
+
+### 错误响应
+```json
+{
+  "code": 400,
+  "data": null,
+  "message": "错误信息"
+}
+```
+
+## 日志文件
+
+- 应用日志: `logs/${projectName}.log`
+- 错误日志: `logs/${projectName}-error.log`
+- 日志保留30天，单个文件最大10MB
+
+## 开发指南
+
+### 添加新的Controller
+
+1. 在 `controller` 包下创建Controller类
+2. 使用 `@RestController` 注解
+3. 所有HTTP请求会自动记录日志
+4. 异常会自动被全局异常处理器捕获
+
+### 添加新的实体
+
+1. 在 `model` 包下创建实体类
+2. 使用 `@Entity` 注解
+3. JPA会自动创建对应的数据库表
+
+### 修改JWT配置
+
+在 `application.properties` 中修改：
+- `jwt.secret`: JWT密钥（建议至少32字符）
+- `jwt.expiration`: Token有效期（毫秒）
+
+## 许可证
+
+本项目遵循 Apache License 2.0 许可证。
+

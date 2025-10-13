@@ -1,25 +1,62 @@
 <template>
   <div class="container">
     <div class="instance-select">
-      <el-select
-        v-model="selectedIp"
-        placeholder="请选择实例IP"
-        class="ip-select"
-        popper-class="instance-select-popper"
-      >
-        <el-option
-          v-for="item in list"
-          :key="item.id"
-          :label="`${item.ip}:${item.port}`"
-          :value="item.ip"
-        />
-      </el-select>
+      <div class="selector-group">
+        <el-select
+          v-model="selectedIp"
+          placeholder="请选择实例IP"
+          class="ip-select"
+          popper-class="instance-select-popper"
+        >
+          <el-option
+            v-for="item in list"
+            :key="item.id"
+            :label="`${item.ip}:${item.port}`"
+            :value="item.ip"
+          />
+        </el-select>
+
+        <!-- Agent选择器 -->
+        <el-select
+          v-if="Object.keys(agentList).length > 0"
+          v-model="selectedAgentKey"
+          placeholder="请选择Agent"
+          class="agent-select"
+          popper-class="instance-select-popper"
+          @change="handleAgentChange"
+        >
+          <el-option
+            v-for="(name, key) in agentList"
+            :key="key"
+            :label="name"
+            :value="key"
+          />
+        </el-select>
+
+        <!-- LLM模型选择器 -->
+        <el-select
+          v-if="Object.keys(llmOptions).length > 0"
+          v-model="selectedLlmValue"
+          placeholder="请选择模型"
+          class="llm-select"
+          popper-class="instance-select-popper"
+          @change="handleLlmChange"
+        >
+          <el-option
+            v-for="(name, key) in llmOptions"
+            :key="key"
+            :label="key"
+            :value="name"
+          />
+        </el-select>
+      </div>
       <div class="right-btns">
         <el-tooltip class="instance-select-tooltip" effect="dark" content="配置" placement="top">
           <el-icon size="14px" color="var(--el-color-primary)" @click="handleOpenConfig"
             ><Setting
           /></el-icon>
         </el-tooltip>
+        <McpManager v-if="onExecuteMcpCommand" :onExecuteMcpCommand="onExecuteMcpCommand" />
         <el-tooltip
           class="instance-select-tooltip"
           effect="dark"
@@ -86,6 +123,8 @@
           </span>
         </template>
       </el-dialog>
+
+
     </div>
     <TokenUsage :used-tokens="calToken" :total-tokens="tokenUsage.totalTokens" />
   </div>
@@ -97,16 +136,65 @@ import { useUserStore } from '@/stores/user'
 import { computed, ref, watch, watchEffect } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useChatContextStore } from '@/stores/chat-context'
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, Delete } from '@element-plus/icons-vue'
 import {
   getAgentConfigs,
   setBatchAgentConfig,
-  type AgentConfig,
   deleteAgentConfig,
 } from '@/api/agent'
+import { useAgentConfigStore } from '@/stores/agent-config'
+import McpManager from './McpManager.vue'
+
+// Components
+defineOptions({
+  components: {
+    McpManager,
+  },
+})
+
+// 定义实例接口
+interface Instance {
+  id: string
+  ip: string
+  port: number
+  agentId?: string
+}
 
 const { getInstance, setSelectedInstance } = useUserStore()
 const { setMessageList, tokenUsage, resetTokenUsage } = useChatContextStore()
+const agentConfigStore = useAgentConfigStore()
+
+const selectedAgentKey = computed({
+  get() {
+    return agentConfigStore.selectedAgentKey
+  },
+  set(value) {
+    agentConfigStore.setSelectedAgent(value)
+  }
+})
+
+const agentList = computed(() => {
+  const list = agentConfigStore.agentList
+  console.log('agentList computed:', list)
+  return list
+})
+
+const llmOptions = computed(() => {
+  const options = agentConfigStore.llmOptions
+  console.log('llmOptions computed:', options)
+  return options || {}
+})
+
+const selectedLlmValue = computed({
+  get() {
+    const selectedKey = agentConfigStore.selectedLlmValue
+    return selectedKey
+  },
+  set(value: string) {
+    agentConfigStore.setSelectedLlm(value)
+  }
+})
+
 const selectedIp = ref('')
 const  calToken = computed(() => {
   if (tokenUsage.inputTokens + tokenUsage.outputTokens - tokenUsage.compressedTokens <= 0) return 0
@@ -125,6 +213,22 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  onSwitchAgent: {
+    type: Function,
+    required: false,
+  },
+  onSwitchLlm: {
+    type: Function,
+    required: false,
+  },
+  onExecuteMcpCommand: {
+    type: Function,
+    required: false,
+  },
+  onExecuteSystemCommand: {
+    type: Function,
+    required: false,
+  },
 })
 const list = computed(() => {
   return getInstance()
@@ -133,7 +237,7 @@ const list = computed(() => {
 watch(
   () => selectedIp.value,
   (newIp) => {
-    setSelectedInstance(list.value?.find((item: any) => item.ip === newIp))
+    setSelectedInstance(list.value?.find((item: Instance) => item.ip === newIp))
   }
 )
 
@@ -169,13 +273,15 @@ const handleClearHistory = () => {
   props.onClearHistory?.()
 }
 
+
+
 // 配置相关
 const configDialogVisible = ref(false)
 const configList = ref<Array<{ key: string; value: string }>>([])
 const loading = ref(false)
 
 const handleOpenConfig = async () => {
-  const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value)
+  const selectedInstance = getInstance()?.find((item: Instance) => item.ip === selectedIp.value)
   if (!selectedInstance?.agentId) {
     ElMessage.error('未找到当前实例对应的Agent')
     return
@@ -184,12 +290,32 @@ const handleOpenConfig = async () => {
   loading.value = true
   try {
     const response = await getAgentConfigs(selectedInstance.agentId)
-    if (response.data?.data) {
-      configList.value = response.data.data.map((config) => ({
-        key: config.key,
-        value: config.value,
-      }))
-    }
+    const apiConfigs = response.data?.data || []
+    
+    // 从 roleConfig 获取的配置
+    const roleConfig = agentConfigStore.agentConfig?.roleConfig || {}
+    
+    // 合并配置：优先显示 API 配置，然后添加 roleConfig 中的配置
+    const mergedConfigs = new Map()
+    
+    // 先添加 API 配置
+    apiConfigs.forEach(config => {
+      mergedConfigs.set(config.key, config.value)
+    })
+    
+    // 再添加 roleConfig 中不存在于 API 配置的项
+    Object.entries(roleConfig).forEach(([key, value]) => {
+      if (!mergedConfigs.has(key) && value !== undefined && value !== null) {
+        mergedConfigs.set(key, String(value))
+      }
+    })
+    
+    // 转换为配置列表
+    configList.value = Array.from(mergedConfigs.entries()).map(([key, value]) => ({
+      key,
+      value,
+    }))
+    
     configDialogVisible.value = true
   } catch (error) {
     ElMessage.error('获取配置失败')
@@ -215,7 +341,7 @@ const removeConfig = async (index: number) => {
       type: 'warning',
     })
 
-    const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value)
+    const selectedInstance = getInstance()?.find((item: Instance) => item.ip === selectedIp.value)
     if (!selectedInstance?.agentId) {
       ElMessage.error('未找到当前实例对应的Agent')
       return
@@ -244,7 +370,7 @@ const handleSubmitConfig = async () => {
     return
   }
 
-  const selectedInstance = getInstance()?.find((item: any) => item.ip === selectedIp.value)
+  const selectedInstance = getInstance()?.find((item: Instance) => item.ip === selectedIp.value)
   if (!selectedInstance?.agentId) {
     ElMessage.error('未找到当前实例对应的Agent')
     return
@@ -261,6 +387,9 @@ const handleSubmitConfig = async () => {
     await setBatchAgentConfig(selectedInstance.agentId, config)
     ElMessage.success('配置更新成功')
     configDialogVisible.value = false
+    
+    // 配置更新成功后执行 /refresh 命令
+    await sendRefreshCommand()
   } catch (error) {
     ElMessage.error('配置更新失败')
     console.error('配置更新失败:', error)
@@ -268,28 +397,90 @@ const handleSubmitConfig = async () => {
     loading.value = false
   }
 }
+
+const handleAgentChange = (agentKey: string) => {
+  console.log('Agent changed to:', agentKey)
+  agentConfigStore.setSelectedAgent(agentKey)
+  props.onSwitchAgent?.(agentKey)
+}
+
+const handleLlmChange = (llmValue: string) => {
+  console.log('LLM changed to:', llmValue)
+  props.onSwitchLlm?.(llmValue)
+}
+
+// 发送 /refresh 命令
+const sendRefreshCommand = async () => {
+  try {
+    if (props.onExecuteSystemCommand) {
+      await props.onExecuteSystemCommand('/refresh', false)
+    } else {
+      console.warn('onExecuteSystemCommand prop is not provided')
+    }
+  } catch (error) {
+    console.error('发送 /refresh 命令失败:', error)
+  }
+}
+
+// 发送 /reload 命令
+const sendReloadCommand = async () => {
+  try {
+    if (props.onExecuteSystemCommand) {
+      await props.onExecuteSystemCommand('/reload', false)
+    } else {
+      console.warn('onExecuteSystemCommand prop is not provided')
+    }
+  } catch (error) {
+    console.error('发送 /reload 命令失败:', error)
+  }
+}
+
+
 </script>
 
 <style>
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
 .instance-select {
   width: 100%;
-  height: 48px;
-  background: rgba(20, 20, 50, 0.5);
-  border-top: none;
+  background: rgba(20, 20, 50, 0.55);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #fff;
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
+  gap: 16px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 10px 30px rgba(15, 15, 35, 0.25);
+}
+
+.instance-select .selector-group {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 12px;
+  min-width: 0;
 }
 
 .instance-select .right-btns {
-  position: absolute;
-  right: 12px;
+  margin-left: auto;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  min-width: fit-content;
 }
 
 .instance-select .right-btns .el-icon {
@@ -301,28 +492,82 @@ const handleSubmitConfig = async () => {
   transform: scale(1.2);
 }
 
-.instance-select .ip-select {
-  width: 200px;
-  margin: 6px 12px;
+.instance-select .selector-group .el-select {
+  flex: 1 1 200px;
+  min-width: 180px;
+  max-width: 240px;
+  margin: 0;
   border: none !important;
   background-color: transparent;
 }
 
+.instance-select .el-select {
+  --el-select-border-color-hover: rgba(255, 255, 255, 0.3);
+  --el-select-input-focus-border-color: rgba(64, 158, 255, 0.8);
+}
+
 .instance-select .el-select__wrapper {
-  background-color: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
   box-shadow: none !important;
-  border: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 36px;
 }
 
 .instance-select .el-select__wrapper:hover {
-  border-color: transparent;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.instance-select .el-select__wrapper.is-focused {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(64, 158, 255, 0.8);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .instance-select .el-input__inner {
   color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  height: 34px;
+  line-height: 34px;
 }
+
+.instance-select .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
 .instance-select .el-select__selected-item {
-  color: #fff;
+  color: #fff !important;
+  font-weight: 500;
+}
+
+.instance-select .el-select__selection .el-select__selected-item {
+  color: #fff !important;
+}
+
+.instance-select .el-input__wrapper .el-input__inner {
+  color: #fff !important;
+}
+
+.instance-select .el-select .el-input .el-input__inner {
+  color: #fff !important;
+}
+
+.instance-select .el-select__caret {
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.instance-select .el-select__wrapper:hover .el-select__caret {
+  color: rgba(255, 255, 255, 0.9);
 }
 .instance-select-popper {
   border: none !important;
@@ -354,5 +599,107 @@ const handleSubmitConfig = async () => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+@media (max-width: 1200px) {
+  .container {
+    padding: 0 12px;
+  }
+
+  .instance-select {
+    gap: 12px;
+  }
+
+  .instance-select .selector-group {
+    column-gap: 12px;
+  }
+
+  .instance-select .selector-group .el-select {
+    flex: 1 1 180px;
+    min-width: 160px;
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 992px) {
+  .instance-select {
+    background: rgba(20, 20, 50, 0.6);
+    border-radius: 10px;
+  }
+
+  .instance-select .selector-group {
+    flex: 1 1 100%;
+  }
+
+  .instance-select .selector-group .el-select {
+    flex: 1 1 45%;
+    min-width: 200px;
+    max-width: none;
+  }
+
+  .instance-select .right-btns {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 10px;
+  }
+
+  .instance-select {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .instance-select .selector-group {
+    gap: 10px;
+  }
+
+  .instance-select .selector-group .el-select {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .instance-select .right-btns {
+    gap: 10px;
+  }
+
+  .instance-select .right-btns .el-icon {
+    padding: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 6px;
+    gap: 10px;
+  }
+
+  .instance-select {
+    border-radius: 8px;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .instance-select .right-btns {
+    gap: 8px;
+  }
+
+  .instance-select .right-btns .el-icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+  }
+
+  .instance-select .el-select__wrapper {
+    height: 34px;
+  }
 }
 </style>

@@ -1,0 +1,69 @@
+package ${package}.aop;
+
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StopWatch;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+/**
+ * HTTP接口日志切面
+ * 拦截Controller方法，记录请求参数、返回结果和执行时间
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Aspect
+@Component
+@Slf4j
+public class HttpLoggingAspect {
+
+    /**
+     * 拦截所有controller包下的public方法
+     */
+    @Around("execution(public * ${package}.controller..*(..))")
+    public Object logHttpRequest(ProceedingJoinPoint joinPoint) throws Throwable {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String methodName = signature.getName();
+        
+        // 记录方法参数
+        String params = Arrays.stream(joinPoint.getArgs())
+                .map(arg -> arg != null ? arg.toString() : "null")
+                .collect(Collectors.joining(", "));
+        
+        log.info("=== HTTP接口调用开始 ===");
+        log.info("类: {}, 方法: {}", className, methodName);
+        log.info("参数: [{}]", params);
+        
+        // 计时并执行方法
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        
+        Object result;
+        try {
+            result = joinPoint.proceed();
+            stopWatch.stop();
+            
+            // 记录返回结果和执行时间
+            String resultStr = result != null ? result.toString() : "null";
+            log.info("返回结果: {}", resultStr);
+            log.info("执行时间: {}ms", stopWatch.getTotalTimeMillis());
+            log.info("=== HTTP接口调用结束 ===\n");
+            
+        } catch (Exception e) {
+            stopWatch.stop();
+            log.error("方法执行异常: {}, 执行时间: {}ms", e.getMessage(), stopWatch.getTotalTimeMillis());
+            log.info("=== HTTP接口调用结束(异常) ===\n");
+            throw e;
+        }
+        
+        return result;
+    }
+}
+

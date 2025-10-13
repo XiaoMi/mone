@@ -5,6 +5,7 @@ import { ref } from 'vue'
 interface User {
   id: number
   username: string
+  internalAccount: string
   // 添加其他用户字段
 }
 
@@ -29,7 +30,7 @@ export const useUserStore = defineStore('user', () => {
     agent.value = newAgent
   }
 
-  function getAgent () {
+  function getAgent() {
     return agent.value
   }
 
@@ -47,7 +48,7 @@ export const useUserStore = defineStore('user', () => {
 
   function setSelectedInstance(newInstance: any) {
     selectedInstance.value = newInstance
-  } 
+  }
 
   function clearUser() {
     token.value = ''
@@ -62,6 +63,9 @@ export const useUserStore = defineStore('user', () => {
     if (storedToken && storedUser) {
       token.value = storedToken
       user.value = JSON.parse(storedUser)
+      if (!user.value?.internalAccount) {
+        return false
+      }
       return true
     }
     return false

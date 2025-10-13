@@ -1,16 +1,13 @@
 package run.mone.hive.roles.tool;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import run.mone.hive.common.GsonUtils;
-import run.mone.hive.llm.LLM;
 import run.mone.hive.memory.LongTermMemoryManager;
+import run.mone.hive.memory.config.MemoryConfigConverter;
+import run.mone.hive.mcp.service.RoleMemoryConfig;
 import run.mone.hive.roles.ReactorRole;
 
 import java.util.List;
@@ -26,6 +23,45 @@ import java.util.Map;
 public class MemoryTool implements ITool {
 
     public static LongTermMemoryManager memoryManager;
+    private static RoleMemoryConfig customMemoryConfig;
+
+    /**
+     * 默认构造函数
+     */
+    public MemoryTool() {
+    }
+
+    /**
+     * 使用指定配置的构造函数
+     * 
+     * @param memoryConfig 记忆配置
+     */
+    public MemoryTool(RoleMemoryConfig memoryConfig) {
+        setMemoryConfig(memoryConfig);
+    }
+
+    /**
+     * 设置自定义记忆配置
+     * 
+     * @param memoryConfig 记忆配置
+     */
+    public static void setMemoryConfig(RoleMemoryConfig memoryConfig) {
+        customMemoryConfig = memoryConfig;
+        // 如果已经有实例，需要重新初始化
+        if (memoryManager != null) {
+            log.info("检测到新的记忆配置，将在下次初始化时应用");
+            memoryManager = null;
+        }
+    }
+
+    /**
+     * 获取当前的记忆配置
+     * 
+     * @return 当前的记忆配置，如果没有设置则返回null
+     */
+    public static RoleMemoryConfig getMemoryConfig() {
+        return customMemoryConfig;
+    }
 
     /**
      * 初始化长期记忆管理器
@@ -33,8 +69,17 @@ public class MemoryTool implements ITool {
     private synchronized void initializeMemoryManager(String roleName) {
         if (memoryManager == null) {
             try {
-                memoryManager = new LongTermMemoryManager(roleName);
-                log.info("记忆管理器初始化成功: {}", roleName);
+                if (customMemoryConfig != null) {
+                    // 使用自定义配置
+                    run.mone.hive.memory.longterm.config.MemoryConfig longtermConfig = 
+                        MemoryConfigConverter.convert(customMemoryConfig);
+                    memoryManager = new LongTermMemoryManager(roleName, longtermConfig);
+                    log.info("记忆管理器初始化成功（使用自定义配置）: {}", roleName);
+                } else {
+                    // 使用默认配置
+                    memoryManager = new LongTermMemoryManager(roleName);
+                    log.info("记忆管理器初始化成功（使用默认配置）: {}", roleName);
+                }
             } catch (Exception e) {
                 log.error("记忆管理器初始化失败", e);
             }
@@ -62,6 +107,9 @@ public class MemoryTool implements ITool {
                 A comprehensive memory tool that supports searching, saving, and managing long-term memory information.
                 Use this tool when you need to retrieve relevant information from previous conversations,
                 store new knowledge, or manage user context that might be helpful for current and future tasks.
+                
+                **Configuration:** This tool supports custom configuration through MemoryConfig, which allows you to
+                configure LLM providers, embedding models, vector stores, and graph stores according to your needs.
                 
                 **When to use:** Choose this tool when you need to access historical information,
                 save important context, user preferences, or manage memory from previous interactions.

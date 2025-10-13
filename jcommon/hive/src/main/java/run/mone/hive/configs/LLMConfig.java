@@ -48,6 +48,7 @@ public class LLMConfig {
     private CustomConfig customConfig;
 
     // 在思考模型下，是否返回思考内容，默认返回
+    @Builder.Default
     private boolean reasoningOutPut = true;
 
     @Builder.Default

@@ -1838,3 +1838,241 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
     background: linear-gradient(135deg, #4ecdc4 0%, darken(#4ecdc4, 10%) 100%);
   }
 }
+
+// ===== Hive Checkpoint 样式 - 类似 Cline checkpoint 按钮 =====
+.hive-checkpoint-container {
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.hive-checkpoint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, $accent-purple 0%, $accent-violet 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba($accent-purple, 0.3);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba($accent-purple, 0.4);
+    
+    .checkpoint-copy {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px);
+  }
+
+  // 添加光晕效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+  }
+
+  &:hover::before {
+    left: 100%;
+  }
+
+  .fa-bookmark {
+    font-size: 14px;
+    color: $accent-orange;
+  }
+
+  .checkpoint-text {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .checkpoint-id {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-family: $font-mono;
+    font-size: 11px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+  }
+
+  .checkpoint-copy {
+    font-size: 12px;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+    margin-left: 4px;
+    
+    &:hover {
+      color: $accent-orange;
+    }
+  }
+
+  // 复制成功状态
+  &.copied {
+    background: linear-gradient(135deg, $accent-green 0%, darken($accent-green, 10%) 100%);
+    transform: translateY(-1px) scale(1.05);
+    
+    .fa-bookmark {
+      color: white;
+    }
+    
+    .checkpoint-text {
+      color: white;
+    }
+  }
+
+  // 复制错误状态
+  &.error {
+    background: linear-gradient(135deg, $accent-red 0%, darken($accent-red, 10%) 100%);
+    animation: shake 0.5s ease-in-out;
+    
+    .checkpoint-text {
+      color: white;
+    }
+  }
+}
+
+// 震动动画
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+// Hive 消息ID 相关动画
+@keyframes copySuccess {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba($accent-purple, 0.3);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba($accent-green, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba($accent-purple, 0.3);
+  }
+}
+
+@keyframes copyError {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px) scale(1.02);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px) scale(1.02);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    border-color: rgba($accent-purple, 0.2);
+    box-shadow: 0 4px 12px rgba($accent-purple, 0.2);
+  }
+  50% {
+    border-color: $accent-green;
+    box-shadow: 0 4px 20px rgba($accent-green, 0.4);
+  }
+  100% {
+    border-color: rgba($accent-purple, 0.2);
+    box-shadow: 0 4px 12px rgba($accent-purple, 0.2);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .hive-msg-block {
+    .hive-msg-content {
+      padding: 12px 16px;
+
+      .hive-msg-id-display {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+
+        .hive-msg-label {
+          text-align: center;
+        }
+
+
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .hive-msg-block {
+    .hive-msg-id-display {
+      .hive-msg-value {
+        font-size: 0.8em;
+        padding: 8px;
+      }
+    }
+  }
+}
+
+// 暗色主题优化
+@media (prefers-color-scheme: dark) {
+  .hive-msg-block {
+    .hive-msg-id-display {
+      .hive-msg-value {
+        background: rgba($background-primary, 0.9);
+        border-color: rgba($border-color, 0.4);
+      }
+    }
+  }
+}
+
+// 高对比度模式
+@media (prefers-contrast: high) {
+  .hive-msg-block {
+    border-left-width: 6px;
+
+    .hive-msg-id-display {
+      border-width: 2px;
+
+
+    }
+  }
+}
+
+// 减少动画偏好
+@media (prefers-reduced-motion: reduce) {
+  .hive-msg-block {
+    .hive-msg-id-display {
+      transition: none;
+      animation: none !important;
+
+      &::before,
+      &::after {
+        display: none;
+      }
+
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+}

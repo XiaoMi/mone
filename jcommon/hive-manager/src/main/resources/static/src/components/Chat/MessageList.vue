@@ -52,6 +52,14 @@
         <span></span>
       </div>
     </div>
+    <!-- 永久跟随按钮 -->
+    <!-- <div class="follow-toggle-btn" @click="toggleFollow">
+      <el-tooltip :content="isFollow ? '点击取消自动滚动到底部' : '点击开启自动滚动到底部'" placement="left">
+        <div class="follow-btn" :class="{ active: isFollow }">
+          {{ isFollow ? '跟随' : '停止' }}
+        </div>
+      </el-tooltip>
+    </div> -->
   </div>
 </template>
 
@@ -63,7 +71,6 @@ import type {
 import Message from "./Message.vue";
 
 import { useChatContextStore } from "@/stores/chat-context"
-import { useIdeaInfoStore } from "@/stores/idea-info";
 import { mapState } from "pinia";
 import { useEditStore } from '@/stores/edit'
 
@@ -114,7 +121,7 @@ export default {
   },
   computed: {
     ...mapState(useChatContextStore, ["isLoading"]),
-    ...mapState(useEditStore, ['isFollow', 'setShowFollow']),
+    ...mapState(useEditStore, ['isFollow', 'showFollow']),
 
   },
   mounted() {
@@ -126,12 +133,7 @@ export default {
     clearTimeout(this.timer);
   },
   updated() {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      this.setShowFollow(false);
-      clearTimeout(this.timer);
-    }, 3000);
-    if (this.shouldScrollToBottom()) this.$nextTick(this._scrollDown());
+    if (this.shouldScrollToBottom()) this.$nextTick(() => this._scrollDown());
   },
   methods: {
     _scrollDown() {
@@ -185,6 +187,10 @@ export default {
     handlePidAction(data: { pid: string; action: string }) {
       // 向上传递 pidAction 事件
       this.$emit('pidAction', data);
+    },
+    toggleFollow() {
+      const editStore = useEditStore();
+      editStore.setIsFollow(!this.isFollow);
     },
   },
 };
@@ -284,6 +290,82 @@ export default {
   }
   100% {
     transform: scale(0.9);
+  }
+}
+
+.follow-toggle-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  
+  .follow-btn {
+    min-width: 60px;
+    height: 36px;
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    // 默认状态（停止跟随）
+    background: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.6);
+      color: rgba(255, 255, 255, 0.95);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    // 激活状态（跟随中）
+    &.active {
+      background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+      color: #ffffff;
+      border-color: #00d4ff;
+      box-shadow: 0 2px 12px rgba(0, 212, 255, 0.3);
+      
+      &:hover {
+        background: linear-gradient(135deg, #00b8e6 0%, #0088bb 100%);
+        box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+        transform: translateY(-2px);
+      }
+      
+      &::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        right: -1px;
+        bottom: -1px;
+        background: linear-gradient(135deg, #00d4ff, #0099cc);
+        border-radius: 19px;
+        z-index: -1;
+        opacity: 0.5;
+        animation: pulse-glow 2s infinite;
+      }
+    }
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }
 

@@ -1,0 +1,16 @@
+package ${package}.dto;
+
+import lombok.Data;
+
+/**
+ * 认证响应DTO
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Data
+public class AuthResponse {
+    private String token;
+    private UserDTO user;
+}
+

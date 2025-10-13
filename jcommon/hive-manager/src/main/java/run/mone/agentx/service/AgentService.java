@@ -1,6 +1,7 @@
 package run.mone.agentx.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -33,6 +34,7 @@ import java.util.Map;
 
 import static run.mone.hive.llm.ClaudeProxy.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AgentService {
@@ -45,10 +47,7 @@ public class AgentService {
     private static final long HEARTBEAT_DELETE_TIMEOUT = TimeUnit.MINUTES.toMillis(3);
 
     private static LLM llm = new LLM(LLMConfig.builder()
-            .llmProvider(LLMProvider.CLAUDE_COMPANY)
-            .url(getClaudeUrl())
-            .version(getClaudeVersion())
-            .maxTokens(getClaudeMaxToekns())
+            .llmProvider(LLMProvider.DEEPSEEK)
             .build());
 
     public Mono<Agent> createAgent(Agent agent) {
@@ -328,24 +327,25 @@ public class AgentService {
     public Mono<Void> unregister(RegInfoDto regInfoDto) {
         try {
             // 查找Agent是否存在
-            Agent agent = agentRepository.findByNameAndGroupAndVersion(regInfoDto.getName(), regInfoDto.getGroup(), regInfoDto.getVersion())
-                    .block();
-
-            // 如果Agent不存在，直接返回
-            if (agent == null) {
-                return Mono.empty();
-            }
-
-            // 查找AgentInstance是否存在
-            AgentInstance instance = agentInstanceRepository.findByAgentIdAndIpAndPort(
-                    agent.getId(), regInfoDto.getIp(), regInfoDto.getPort()).block();
-
-            // 如果AgentInstance存在，删除它
-            if (instance != null) {
-                agentInstanceRepository.deleteById(instance.getId()).block();
-            }
-
-            return Mono.empty();
+            return agentRepository.findByNameAndGroupAndVersion(
+                            regInfoDto.getName(),
+                            regInfoDto.getGroup(),
+                            regInfoDto.getVersion())
+                    .flatMap(agent ->
+                            // Agent存在，继续查找AgentInstance
+                            agentInstanceRepository.findByAgentIdAndIpAndPort(
+                                            agent.getId(),
+                                            regInfoDto.getIp(),
+                                            regInfoDto.getPort())
+                                    .flatMap(instance -> {
+                                                // AgentInstance存在，删除它
+                                                log.info("delete instance:{} {} {}", instance.getId(), instance.getIp(), instance.getPort());
+                                                return agentInstanceRepository.deleteById(instance.getId());
+                                            }
+                                    )
+                                    .switchIfEmpty(Mono.empty()) // AgentInstance不存在，什么都不做
+                    )
+                    .then(); // 转换为 Mono<Void>，表示操作完成
         } catch (Exception e) {
             return Mono.error(e);
         }
@@ -465,31 +465,31 @@ public class AgentService {
                     for (AgentWithInstancesDTO agent : agents) {
                         agentsInfo.append("\nAgent ").append(agent.getAgent().getName()).append(":\n");
                         agentsInfo.append("- 描述: ").append(agent.getAgent().getDescription()).append("\n");
-                        if (agent.getAgent().getProfile() != null) {
-                            agentsInfo.append("- 角色: ").append(agent.getAgent().getProfile()).append("\n");
-                        }
+//                        if (agent.getAgent().getProfile() != null) {
+//                            agentsInfo.append("- 角色: ").append(agent.getAgent().getProfile()).append("\n");
+//                        }
                         if (agent.getAgent().getGoal() != null) {
                             agentsInfo.append("- 目标: ").append(agent.getAgent().getGoal()).append("\n");
                         }
-                        if (agent.getAgent().getConstraints() != null) {
-                            agentsInfo.append("- 约束: ").append(agent.getAgent().getConstraints()).append("\n");
-                        }
-                        if (agent.getAgent().getToolMap() != null) {
-                            agentsInfo.append("- 工具: ").append(agent.getAgent().getToolMap()).append("\n");
-                        }
-                        if (agent.getAgent().getMcpToolMap() != null) {
-                            agentsInfo.append("- MCP工具: ").append(agent.getAgent().getMcpToolMap()).append("\n");
-                        }
+//                        if (agent.getAgent().getConstraints() != null) {
+//                            agentsInfo.append("- 约束: ").append(agent.getAgent().getConstraints()).append("\n");
+//                        }
+//                        if (agent.getAgent().getToolMap() != null) {
+//                            agentsInfo.append("- 工具: ").append(agent.getAgent().getToolMap()).append("\n");
+//                        }
+//                        if (agent.getAgent().getMcpToolMap() != null) {
+//                            agentsInfo.append("- MCP工具: ").append(agent.getAgent().getMcpToolMap()).append("\n");
+//                        }
                     }
 
                     // 构建提示词
                     String prompt = String.format("""
                             请根据以下任务描述，从可用的 agents 中选择最合适的一个。请只返回最匹配的 agent 的名称。
-                            在选择时，请考虑每个agent的角色、目标、约束条件以及可用的工具。
+                            在选择时，请考虑每个agent的目标是否和你想要找的Agent匹配。
 
-                            任务描述：%s
+                            需要找的Agent：%s
 
-                            可用的 agents：
+                            可用的 Agents：
                             %s
 
                             请只返回最匹配的 agent 的名称，不要包含其他内容。

@@ -9,6 +9,7 @@ interface LoginRequest {
 interface User {
   id: number
   username: string
+  internalAccount?: string
   // 添加其他用户字段
 }
 
@@ -39,5 +40,13 @@ export const getUserList = () => {
   return Service<IResponse<LoginResponse>>({
     url: '/v1/users/list',
     method: 'get',
+  })
+}
+
+export const bindInner = (data: User) => {
+  return Service<IResponse<LoginResponse>>({
+    url: '/v1/users/internal-account',
+    method: 'post',
+    data
   })
 }

@@ -7,13 +7,16 @@ import lombok.NoArgsConstructor;
 import run.mone.hive.actions.Action;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -26,6 +29,9 @@ import java.util.function.Function;
 @NoArgsConstructor
 @Data
 public class RoleMeta {
+
+    @Builder.Default
+    protected String name ="ai_agent";
 
     protected String profile;
 
@@ -48,7 +54,7 @@ public class RoleMeta {
     protected List<McpFunction> mcpTools = new ArrayList<>();
 
     @Builder.Default
-    private Function<Message, Integer> checkFinishFunc = (msg)-> 1;
+    private Function<Message, Integer> checkFinishFunc = (msg) -> 1;
 
     @Builder.Default
     private List<Action> actions = new ArrayList<>();
@@ -61,9 +67,9 @@ public class RoleMeta {
     @Builder.Default
     private String roleType = "ReactorRole";
 
-    private Function<String,Integer> thinkFunc;
+    private Function<String, Integer> thinkFunc;
 
-    private Function<String,Integer> observeFunc;
+    private Function<String, Integer> observeFunc;
 
     private Function<ActionContext, CompletableFuture<Message>> actFunc;
 
@@ -76,7 +82,6 @@ public class RoleMeta {
     private Rag rag = new Rag();
 
 
-
     //自动打断检测
     @Builder.Default
     private InterruptQuery interruptQuery = new InterruptQuery();
@@ -84,5 +89,11 @@ public class RoleMeta {
     //默认10s
     @Builder.Default
     private long timeout = 10000;
+
+    @Builder.Default
+    private List<Function<ReactorRole, String>> taskList = new ArrayList<>();
+
+    @Builder.Default
+    private Map<String,String> meta = new HashMap<>();
 
 }

@@ -18,11 +18,11 @@ import java.util.List;
 
 /**
  * File reading tool for examining the contents of existing files
- * 
+ * <p>
  * This tool is used to read and examine the contents of files at specified paths.
  * It supports various file types including text files, source code, configuration files,
  * and can handle binary files by returning their Base64 encoded content.
- * 
+ * <p>
  * Use this tool when you need to:
  * - Analyze code in existing files
  * - Review text files or configuration files
@@ -36,7 +36,19 @@ import java.util.List;
 public class ReadFileTool implements ITool {
 
     public static final String name = "read_file";
-
+    // Common text file extensions
+    private static final List<String> TEXT_EXTENSIONS = Arrays.asList(
+            ".txt", ".md", ".json", ".xml", ".yml", ".yaml", ".properties", ".conf", ".config",
+            ".java", ".js", ".ts", ".tsx", ".jsx", ".py", ".rb", ".php", ".go", ".rs", ".c", ".cpp", ".h", ".hpp",
+            ".css", ".scss", ".sass", ".less", ".html", ".htm", ".svg", ".sql", ".sh", ".bat", ".ps1",
+            ".dockerfile", ".gitignore", ".gitattributes", ".editorconfig", ".prettierrc", ".eslintrc"
+    );
+    // Binary file extensions that should be handled as Base64
+    private static final List<String> BINARY_EXTENSIONS = Arrays.asList(
+            ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".ico", ".tiff",
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+            ".zip", ".rar", ".7z", ".tar", ".gz", ".exe", ".dll", ".so", ".dylib"
+    );
     private final boolean isRemote;
 
     public ReadFileTool() {
@@ -46,21 +58,6 @@ public class ReadFileTool implements ITool {
     public ReadFileTool(boolean isRemote) {
         this.isRemote = isRemote;
     }
-
-    // Common text file extensions
-    private static final List<String> TEXT_EXTENSIONS = Arrays.asList(
-        ".txt", ".md", ".json", ".xml", ".yml", ".yaml", ".properties", ".conf", ".config",
-        ".java", ".js", ".ts", ".tsx", ".jsx", ".py", ".rb", ".php", ".go", ".rs", ".c", ".cpp", ".h", ".hpp",
-        ".css", ".scss", ".sass", ".less", ".html", ".htm", ".svg", ".sql", ".sh", ".bat", ".ps1",
-        ".dockerfile", ".gitignore", ".gitattributes", ".editorconfig", ".prettierrc", ".eslintrc"
-    );
-
-    // Binary file extensions that should be handled as Base64
-    private static final List<String> BINARY_EXTENSIONS = Arrays.asList(
-        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".ico", ".tiff",
-        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-        ".zip", ".rar", ".7z", ".tar", ".gz", ".exe", ".dll", ".so", ".dylib"
-    );
 
     @Override
     public String getName() {
@@ -116,19 +113,19 @@ public class ReadFileTool implements ITool {
     @Override
     public String usage() {
         String taskProgress = """
-            <task_progress>
-            Checklist here (optional)
-            </task_progress>
-            """;
+                <task_progress>
+                Checklist here (optional)
+                </task_progress>
+                """;
         if (!taskProgress()) {
             taskProgress = "";
         }
         return """
-            <read_file>
-            <path>File path here</path>
-            %s
-            </read_file>
-            """.formatted(taskProgress);
+                <read_file>
+                <path>File path here</path>
+                %s
+                </read_file>
+                """.formatted(taskProgress);
     }
 
     @Override
@@ -174,7 +171,11 @@ public class ReadFileTool implements ITool {
             }
 
             String path = inputJson.get("path").getAsString();
-            return performReadFile(path);
+            if (isRemote) {
+                return performRemoteReadFile(path);
+            } else {
+                return performReadFile(path);
+            }
 
         } catch (Exception e) {
             log.error("Exception occurred while executing read_file operation", e);
@@ -183,85 +184,85 @@ public class ReadFileTool implements ITool {
         }
     }
 
+    private JsonObject performRemoteReadFile(String path) {
+        JsonObject result = new JsonObject();
+        try {
+            log.info("Reading remote file: {}", path);
+
+            // 获取远程文件内容
+            String content = RemoteFileUtils.getRemoteFileContent(path);
+
+            // 确定文件类型
+            String fileExtension = getFileExtension(path);
+            String fileType = determineFileType(fileExtension);
+
+            // 设置响应结果
+            result.addProperty("result", content);
+            result.addProperty("fileType", fileType);
+            result.addProperty("encoding", "UTF-8");
+
+            log.info("Successfully read remote file: {}, type: {}", path, fileType);
+
+            return result;
+        } catch (IOException e) {
+            log.error("Failed to read remote file: {}", path, e);
+            result.addProperty("error", "Failed to read remote file: " + e.getMessage());
+            return result;
+        }
+
+    }
+
     /**
      * Perform the file reading operation
      */
     private JsonObject performReadFile(String path) {
         JsonObject result = new JsonObject();
 
-        if (!isRemote) {
-            try {
-                Path filePath = Paths.get(path);
-                File file = filePath.toFile();
+        try {
+            Path filePath = Paths.get(path);
+            File file = filePath.toFile();
 
-                // Check if file exists
-                if (!file.exists()) {
-                    log.error("File not found: {}", path);
-                    result.addProperty("error", "File not found: " + path);
-                    return result;
-                }
-
-                // Check if path points to a directory
-                if (file.isDirectory()) {
-                    log.error("Path points to a directory, not a file: {}", path);
-                    result.addProperty("error", "Path points to a directory, not a file: " + path +
-                            ". Use this tool only on files, not directories.");
-                    return result;
-                }
-
-                // Check file permissions
-                if (!file.canRead()) {
-                    log.error("File is not readable: {}", path);
-                    result.addProperty("error", "File is not readable: " + path);
-                    return result;
-                }
-
-                // Get file information
-                long fileSize = file.length();
-                String fileExtension = getFileExtension(path);
-                String fileType = determineFileType(fileExtension);
-
-                // Handle different file types
-                if (isBinaryFile(fileExtension)) {
-                    return handleBinaryFile(filePath, fileSize, fileType, result);
-                } else {
-                    return handleTextFile(filePath, fileSize, fileType, result);
-                }
-
-
-            } catch (IOException e) {
-                log.error("IO exception while reading file: {}", path, e);
-                result.addProperty("error", "Failed to read file: " + e.getMessage());
-            } catch (Exception e) {
-                log.error("Exception while reading file: {}", path, e);
-                result.addProperty("error", "Error reading file: " + e.getMessage());
-            }
-        }
-
-        if (isRemote) {
-            try {
-                log.info("Reading remote file: {}", path);
-
-                // 获取远程文件内容
-                String content = RemoteFileUtils.getRemoteFileContent(path);
-
-                // 确定文件类型
-                String fileExtension = getFileExtension(path);
-                String fileType = determineFileType(fileExtension);
-
-                // 设置响应结果
-                result.addProperty("result", content);
-                result.addProperty("fileType", fileType);
-                result.addProperty("encoding", "UTF-8");
-
-                log.info("Successfully read remote file: {}, type: {}", path, fileType);
-
-                return result;
-            } catch (IOException e) {
-                log.error("Failed to read remote file: {}", path, e);
-                result.addProperty("error", "Failed to read remote file: " + e.getMessage());
+            // Check if file exists
+            if (!file.exists()) {
+                log.error("File not found: {}", path);
+                result.addProperty("error", "File not found: " + path);
                 return result;
             }
+
+            // Check if path points to a directory
+            if (file.isDirectory()) {
+                log.error("Path points to a directory, not a file: {}", path);
+                result.addProperty("error", "Path points to a directory, not a file: " + path +
+                        ". Use this tool only on files, not directories.");
+                return result;
+            }
+
+            // Check file permissions
+            if (!file.canRead()) {
+                log.error("File is not readable: {}", path);
+                result.addProperty("error", "File is not readable: " + path);
+                return result;
+            }
+
+            // Get file information
+            long fileSize = file.length();
+            String fileExtension = getFileExtension(path);
+            String fileType = determineFileType(fileExtension);
+
+            // Handle different file types
+            if (isBinaryFile(fileExtension)) {
+                return handleBinaryFile(filePath, fileSize, fileType, result);
+            } else {
+                return handleTextFile(filePath, fileSize, fileType, result);
+            }
+
+
+        } catch (IOException e) {
+            log.error("IO exception while reading file: {}", path, e);
+            result.addProperty("error", "Failed to read file: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Exception while reading file: {}", path, e);
+            result.addProperty("error", "Error reading file: " + e.getMessage());
         }
 
         return result;
@@ -273,13 +274,13 @@ public class ReadFileTool implements ITool {
     private JsonObject handleTextFile(Path filePath, long fileSize, String fileType, JsonObject result) throws IOException {
         // For very large files, we might want to limit the content
         final long MAX_TEXT_FILE_SIZE = 1024 * 1024; // 1MB
-        
+
         if (fileSize > MAX_TEXT_FILE_SIZE) {
             log.warn("File is quite large ({} bytes), reading anyway but content might be truncated", fileSize);
         }
 
         String content = Files.readString(filePath, StandardCharsets.UTF_8);
-        
+
         // Truncate content if it's extremely large
         final int MAX_CONTENT_LENGTH = 100000; // 100KB of text
         boolean wasTruncated = false;
@@ -295,7 +296,7 @@ public class ReadFileTool implements ITool {
         result.addProperty("wasTruncated", wasTruncated);
         result.addProperty("encoding", "UTF-8");
 
-        log.info("Successfully read text file: {}, type: {}, size: {} bytes", 
+        log.info("Successfully read text file: {}, type: {}, size: {} bytes",
                 filePath, fileType, fileSize);
 
         return result;
@@ -307,11 +308,11 @@ public class ReadFileTool implements ITool {
     private JsonObject handleBinaryFile(Path filePath, long fileSize, String fileType, JsonObject result) throws IOException {
         // For binary files, we provide Base64 encoded content and metadata
         final long MAX_BINARY_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-        
+
         if (fileSize > MAX_BINARY_FILE_SIZE) {
-            result.addProperty("error", 
-                "Binary file is too large to read (" + fileSize + " bytes). " +
-                "Maximum supported size is " + MAX_BINARY_FILE_SIZE + " bytes.");
+            result.addProperty("error",
+                    "Binary file is too large to read (" + fileSize + " bytes). " +
+                            "Maximum supported size is " + MAX_BINARY_FILE_SIZE + " bytes.");
             return result;
         }
 
@@ -325,7 +326,7 @@ public class ReadFileTool implements ITool {
         result.addProperty("isBinary", true);
         result.addProperty("base64Content", base64Content);
 
-        log.info("Successfully read binary file: {}, type: {}, size: {} bytes", 
+        log.info("Successfully read binary file: {}, type: {}, size: {} bytes",
                 filePath, fileType, fileSize);
 
         return result;
@@ -408,17 +409,17 @@ public class ReadFileTool implements ITool {
         if (path == null || path.trim().isEmpty()) {
             return false;
         }
-        
+
         // Check for path traversal attacks
         if (path.contains("..") || path.contains("~")) {
             return false;
         }
-        
+
         // Check for absolute paths (may be unsafe in some contexts)
         if (path.startsWith("/") || (path.length() > 1 && path.charAt(1) == ':')) {
             log.warn("Detected absolute path, consider using relative path: {}", path);
         }
-        
+
         return true;
     }
 
