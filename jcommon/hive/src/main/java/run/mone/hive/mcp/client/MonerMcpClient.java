@@ -38,6 +38,9 @@ public class MonerMcpClient {
             toolArguments.put(Const.USER_ID, toolDataInfo.getUserId());
             toolArguments.put(Const.USER_INTERNAL_NAME, internalName);
             toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
+            Safe.run(() -> {
+                toolArguments.put(Const.OWNER_ID, toolDataInfo.getUserId()+"_"+toolDataInfo.getAgentId());
+            });
             if (null != toolDataInfo.getRole()) {
                 toolArguments.put(Const.ROLE, toolDataInfo.getRole());
             }

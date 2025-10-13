@@ -423,37 +423,38 @@ public class McpCommand extends RoleBaseCommand {
             try {
                 // 构造工具名称: stream_{mcpName}_chat
                 String toolName = String.format("stream_%s_chat", serverName);
-                
+
                 // 构造工具参数
                 Map<String, Object> toolArguments = new HashMap<>();
                 toolArguments.put("message", "/clear");
-                
+                toolArguments.put(Const.OWNER_ID, role.getConfg().getUserId()+"_"+role.getConfg().getAgentId());
+
                 // 调用callToolStream清空聊天记录
                 role.getMcpHub().callToolStream(serverName, toolName, toolArguments)
-                    .doOnNext(callResult -> {
-                        log.info("清空聊天记录响应: {}", callResult);
-                    })
-                    .doOnComplete(() -> {
-                        result.put("success", true);
-                        result.put("message", String.format("MCP服务器 '%s' 聊天记录清空成功", serverName));
-                        String jsonResult = GsonUtils.gson.toJson(result);
-                        sink.next(jsonResult);
-                        sink.complete();
-                        log.info("成功清空MCP服务器聊天记录: {}", serverName);
-                    })
-                    .doOnError(error -> {
-                        result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, error.getMessage()));
-                        String jsonResult = GsonUtils.gson.toJson(result);
-                        sink.next(jsonResult);
-                        sink.complete();
-                        log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, error.getMessage(), error);
-                    })
-                    .subscribe();
-                
+                        .doOnNext(callResult -> {
+                            log.info("清空聊天记录响应: {}", callResult);
+                        })
+                        .doOnComplete(() -> {
+                            result.put("success", true);
+                            result.put("message", String.format("MCP服务器 '%s' 聊天记录清空成功", serverName));
+                            String jsonResult = GsonUtils.gson.toJson(result);
+                            sink.next(jsonResult);
+                            sink.complete();
+                            log.info("成功清空MCP服务器聊天记录: {}", serverName);
+                        })
+                        .doOnError(error -> {
+                            result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, error.getMessage()));
+                            String jsonResult = GsonUtils.gson.toJson(result);
+                            sink.next(jsonResult);
+                            sink.complete();
+                            log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, error.getMessage(), error);
+                        })
+                        .subscribe();
+
             } catch (Exception e) {
                 result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, e.getMessage()));
                 log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, e.getMessage(), e);
-                
+
                 String jsonResult = GsonUtils.gson.toJson(result);
                 sink.next(jsonResult);
                 sink.complete();
