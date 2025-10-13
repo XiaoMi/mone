@@ -25,7 +25,7 @@ public class MonerMcpClient {
         return Safe.call(() -> {
             String serviceName = toolDataInfo.getKeyValuePairs().get("server_name");
             String toolName = toolDataInfo.getKeyValuePairs().get("tool_name");
-            String arguments = toolDataInfo.getKeyValuePairs().get("arguments");
+            String arguments = toolDataInfo.getKeyValuePairs().getOrDefault("arguments", "");
             String internalName = toolDataInfo.getKeyValuePairs().getOrDefault(Const.USER_INTERNAL_NAME, "");
             if (StringUtils.isEmpty(internalName) && role != null) {
                 internalName = role.getRoleConfig().getOrDefault(Const.USER_INTERNAL_NAME, "");
