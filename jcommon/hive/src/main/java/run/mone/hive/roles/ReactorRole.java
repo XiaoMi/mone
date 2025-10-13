@@ -632,6 +632,9 @@ public class ReactorRole extends Role {
 
         // 执行mcpCall，但不让它直接写sink，以便我们控制输出
         McpResult result = MonerMcpClient.mcpCall(this, it, Const.DEFAULT, this.mcpInterceptor, null, (name) -> this.functionList.stream().filter(f -> f.getName().equals(name)).findAny().orElse(null));
+        if (result.isError()) {
+            assistantMessage.setError(true);
+        }
 
         McpSchema.Content content = result.getContent();
         String contentForLlm;
@@ -686,6 +689,8 @@ public class ReactorRole extends Role {
 
         String contentForLlm;
 
+        AtomicBoolean error = new AtomicBoolean(false);
+
         if (tool.needExecute()) {
             Map<String, String> map = it.getKeyValuePairs();
             JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
@@ -694,28 +699,32 @@ public class ReactorRole extends Role {
             PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
 
             ToolInterceptor.before(name, params, extraParam);
-            JsonObject toolRes = this.toolMap.get(name).execute(this, params);
+            contentForLlm ="";
+            try {
+                JsonObject toolRes = this.toolMap.get(name).execute(this, params);
+                String contentForUser;
+                if (toolRes.has("toolMsgType")) {
+                    // 说明需要调用方做特殊处理
+                    contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
+                    contentForUser = toolRes.toString();
+                } else {
+                    contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
+                    contentForUser = tool.formatResult(toolRes);
+                }
 
-            String contentForUser;
-            if (toolRes.has("toolMsgType")) {
-                // 说明需要调用方做特殊处理
-                contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
-                contentForUser = toolRes.toString();
-            } else {
-                contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
-                contentForUser = tool.formatResult(toolRes);
+                if (tool.show()) {
+                    sendToSink(contentForUser, assistantMessage, true);
+                }
+            } catch (Throwable ex) {
+                error.set(true);
             }
-
-            if (tool.show()) {
-                sendToSink(contentForUser, assistantMessage, true);
-            }
-
         } else {
             contentForLlm = res;
         }
 
         assistantMessage.setData(contentForLlm);
         assistantMessage.setContent(contentForLlm);
+        assistantMessage.setError(error.get());
 
         if (tool.completed()) {
             if (null != sink) {
