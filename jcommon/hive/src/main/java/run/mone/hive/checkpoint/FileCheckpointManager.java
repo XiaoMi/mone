@@ -28,7 +28,7 @@ public class FileCheckpointManager {
     private final Map<String, String> checkpointMap;
     private final Gson gson = new Gson();
     private static final String DEFAULT_SHADOW_REPO_SUB_DIR = ".hive/checkpoint";
-    private final boolean gitAvailable;
+    private final boolean gitAvailable = false;
 
     public FileCheckpointManager(String projectPath) throws IOException, InterruptedException {
         this(projectPath, DEFAULT_SHADOW_REPO_SUB_DIR);
@@ -39,7 +39,7 @@ public class FileCheckpointManager {
         this.gitDir = Paths.get(this.projectPath, shadowRepoSubDir).toFile().getCanonicalPath();
         this.checkpointsFile = new File(this.gitDir, "checkpoints.json");
         this.checkpointMap = loadCheckpoints();
-        this.gitAvailable = checkGitAvailability();
+//        this.gitAvailable = checkGitAvailability();
         if (!this.gitAvailable) {
             log.warn("Git command is not available. Skipping git related operations.");
             return;
