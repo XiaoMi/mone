@@ -512,6 +512,10 @@ public class Memory implements MemoryBase {
 
     private List<MemoryItem> addToVectorStore(List<Message> messages, Map<String, Object> metadata,
                                               Map<String, Object> filters, boolean infer) {
+        if (!enableVector || vectorStore == null) {
+            return new ArrayList<>();
+        }
+
         if (!infer) {
             return addDirectly(messages, metadata);
         }
