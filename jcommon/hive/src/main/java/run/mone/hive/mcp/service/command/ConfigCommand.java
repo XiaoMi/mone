@@ -110,6 +110,9 @@ public class ConfigCommand extends RoleBaseCommand {
             if (role != null) {
                 Map<String, String> agentList = getAgentListFromWorkspace(role);
                 systemInfo.put("agentList", agentList);
+
+                int messageSize = role.getRc().getMessageList().size();
+                configMap.put("messageSize", messageSize);
             }
             
             configMap.put("systemInfo", systemInfo);

@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service.command;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.RoleType;
@@ -64,6 +65,7 @@ public class CompressionCommand extends RoleBaseCommand {
     /**
      * 处理压缩命令
      */
+    @SneakyThrows
     private void handleCompressionCommand(Message msg, FluxSink<String> sink, ReactorRole role) {
         if (sink != null) {
             sink.next("🔄 开始压缩对话上下文...\n");
@@ -116,7 +118,7 @@ public class CompressionCommand extends RoleBaseCommand {
                 sink.complete();
             }
             return null;
-        });
+        }).get();
     }
 
     @Override

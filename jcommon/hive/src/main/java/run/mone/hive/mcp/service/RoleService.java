@@ -16,6 +16,7 @@ import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
 import run.mone.hive.common.GsonUtils;
+import run.mone.hive.common.JsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
@@ -401,7 +402,12 @@ public class RoleService {
     private boolean resolveMessageData(Message message, ReactorRole rr, FluxSink sink) {
         // 如果role配置中已有agent配置，则自动加载到消息数据中
         if (rr.getRoleConfig().containsKey(Const.AGENT_CONFIG)) {
-            message.setData(GsonUtils.gson.fromJson(rr.getRoleConfig().get(Const.AGENT_CONFIG), AgentMarkdownDocument.class));
+            Safe.run(() -> {
+                String json = rr.getRoleConfig().get(Const.AGENT_CONFIG);
+                if (JsonUtils.isValidJson(json)) {
+                    message.setData(GsonUtils.gson.fromJson(json, AgentMarkdownDocument.class));
+                }
+            });
         }
         return true;
     }

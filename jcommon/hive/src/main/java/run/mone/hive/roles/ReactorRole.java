@@ -248,8 +248,8 @@ public class ReactorRole extends Role {
         this.contextManager = new ConversationContextManager(this.llm);
         // 配置压缩参数
         this.contextManager.setEnableAiCompression(true);
-        this.contextManager.setEnableRuleBasedOptimization(true);
-        this.contextManager.setMaxMessagesBeforeCompression(15); // 15条消息后开始压缩
+        this.contextManager.setEnableRuleBasedOptimization(false);
+        this.contextManager.setMaxMessagesBeforeCompression(40);
 
         // 初始化意图分类服务
         this.classificationService = new IntentClassificationService();
@@ -326,8 +326,6 @@ public class ReactorRole extends Role {
             }
         });
     }
-
-
 
 
     @SneakyThrows
@@ -695,7 +693,7 @@ public class ReactorRole extends Role {
             PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
 
             ToolInterceptor.before(name, params, extraParam);
-            contentForLlm ="";
+            contentForLlm = "";
             try {
                 JsonObject toolRes = this.toolMap.get(name).execute(this, params);
                 String contentForUser;
@@ -1096,11 +1094,18 @@ public class ReactorRole extends Role {
                     currentMessages,
                     newMessage,
                     this.taskState,
-                    this.focusChainManager.getFocusChainSettings()
+                    this.focusChainManager.getFocusChainSettings(),
+                    sink
             ).thenAccept(result -> {
                 if (result.wasCompressed()) {
                     log.info("上下文已压缩: 原始消息数={}, 压缩后消息数={}",
                             currentMessages.size() + 1, result.getProcessedMessages().size());
+                    sink.next("<chat>上下文压缩结束 原始消息数:" + currentMessages.size() + " 压缩后消息数:" + result.getProcessedMessages().size() + "</chat>");
+                    sink.next("<chat>");
+                    sink.next("压缩后的内容:\n" + result.getProcessedMessages().stream().map(it -> {
+                        return it.getRole() + ":" + it.getContent();
+                    }).collect(Collectors.joining("\n")));
+                    sink.next("</chat>");
 
                     // 更新内存中的消息历史
                     updateMessageHistory(result.getProcessedMessages());
@@ -1121,7 +1126,7 @@ public class ReactorRole extends Role {
             }).exceptionally(throwable -> {
                 log.error("上下文压缩处理异常", throwable);
                 return null;
-            });
+            }).get();
 
         } catch (Exception e) {
             log.error("处理上下文压缩时发生异常", e);

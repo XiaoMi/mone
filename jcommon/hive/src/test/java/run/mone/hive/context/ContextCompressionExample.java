@@ -3,7 +3,6 @@ package run.mone.hive.context;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.hive.task.FocusChainSettings;
 import run.mone.hive.task.SummarizeTaskCommand;
@@ -62,7 +61,7 @@ public class ContextCompressionExample {
             focusChainSettings.setEnabled(true);
             
             CompletableFuture<ConversationContextManager.ContextProcessingResult> future = 
-                contextManager.processNewMessage(messages, createNewMessage("请帮我总结一下我们的对话"), taskState, focusChainSettings);
+                contextManager.processNewMessage(messages, createNewMessage("请帮我总结一下我们的对话"), taskState, focusChainSettings, sink);
             
             future.thenAccept(result -> {
                 log.info("压缩结果: {}", result);
