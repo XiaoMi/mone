@@ -553,7 +553,9 @@ public class ReactorRole extends Role {
             // 解析工具调用(有可能是tool也可能是mcp)
             List<ToolDataInfo> tools = new MultiXmlParser().parse(toolRes);
             if (tools.isEmpty()) {
-                sink.next("当前已无更多Tool可执行\n");
+                String _msg = "没有找到可用的工具\n";
+                this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).error(true).sink(sink).build());
+                sink.next(_msg);
                 sink.complete();
                 return CompletableFuture.completedFuture(Message.builder().build());
             }
@@ -562,8 +564,8 @@ public class ReactorRole extends Role {
             ToolDataInfo it = tools.get(tools.size() - 1);
 
             //带回来的任务进度
-            if (it.getKeyValuePairs().containsKey("task_progress")) {
-                String taskProgress = it.getKeyValuePairs().get("task_progress");
+            if (it.getKeyValuePairs().containsKey(Const.TASK_PROGRESS)) {
+                String taskProgress = it.getKeyValuePairs().get(Const.TASK_PROGRESS);
                 focusChainManager.updateFCListFromToolResponse(taskProgress);
             }
 
