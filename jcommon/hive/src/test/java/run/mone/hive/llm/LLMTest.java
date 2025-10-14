@@ -1612,7 +1612,8 @@ class LLMTest {
         // This test requires DEEPSEEK to be configured
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
 //        config.setModel("deepseek-chat");
-        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+//        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+        config.setLlmProvider(LLMProvider.AZURE_GPT5);
         config.setModel(config.getLlmProvider().getDefaultModel());
         llm = new LLM(config);
 
@@ -1666,7 +1667,8 @@ class LLMTest {
         // Make sure OPENROUTER_AI_GATEWAY environment variable is set
 //        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
 
-        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+//        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+        config.setLlmProvider(LLMProvider.AZURE_GPT5);
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();

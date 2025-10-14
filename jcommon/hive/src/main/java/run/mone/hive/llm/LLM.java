@@ -517,6 +517,7 @@ public class LLM {
                     || this.llmProvider == LLMProvider.QWEN
                     || this.llmProvider == LLMProvider.MIFY
                     || this.llmProvider == LLMProvider.MIFY_GATEWAY
+                    || this.llmProvider == LLMProvider.AZURE_GPT5
             ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -958,7 +959,7 @@ public class LLM {
             requestBody.addProperty("model", model);
             requestBody.addProperty("stream", true);
 
-            if (null != this.config.getTemperature() && this.llmProvider != LLMProvider.AZURE_GPT5_CODEX) {
+            if (null != this.config.getTemperature() && this.llmProvider != LLMProvider.AZURE_GPT5_CODEX && this.llmProvider != LLMProvider.AZURE_GPT5) {
                 requestBody.addProperty("temperature", this.config.getTemperature());
             }
         }
@@ -1036,6 +1037,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.QWEN ||
                     this.llmProvider == LLMProvider.MIFY ||
                     this.llmProvider == LLMProvider.MIFY_GATEWAY ||
+                    this.llmProvider == LLMProvider.AZURE_GPT5 ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
@@ -1059,7 +1061,9 @@ public class LLM {
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
 
         // openai 系列的应该都可以
-        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN) {
+        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN
+                || this.llmProvider == LLMProvider.AZURE_GPT5
+        ) {
             JsonObject usage = new JsonObject();
             usage.addProperty("include_usage", true);
             requestBody.add("stream_options", usage);
