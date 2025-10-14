@@ -19,6 +19,10 @@ public class VectorStoreFactory {
         if (config == null) {
             throw new IllegalArgumentException("Vector store config cannot be null");
         }
+
+        if (!config.isEnable()) {
+            return null; // 如果未启用向量存储，返回null
+        }
         
         switch (config.getProvider()) {
             case CHROMA:
