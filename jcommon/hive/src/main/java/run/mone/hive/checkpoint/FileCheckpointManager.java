@@ -19,9 +19,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Slf4j
 public class FileCheckpointManager {
-
+    @Value("${hive.checkpoint.enable:false}")
+    private boolean enable;
     private final String projectPath;
     private final String gitDir;
     private final File checkpointsFile;
@@ -35,13 +38,13 @@ public class FileCheckpointManager {
     }
 
     public FileCheckpointManager(String projectPath, String shadowRepoSubDir) throws IOException, InterruptedException {
-        if (projectPath.equals("/")) {
+        if (projectPath.equals("/") || !enable) {
             this.projectPath = "/";
             this.gitDir = "";
             this.checkpointsFile = new File("");
             this.checkpointMap = new ConcurrentHashMap<>();
             this.checkpointAvailable = false;
-            log.warn("Project path is '/', checkpoint is disabled.");
+            log.warn("Project path is '/' vs {} or enable is {}, checkpoint is disabled.", projectPath, enable);
         } else {
             this.projectPath = new File(projectPath).getCanonicalPath();
             this.gitDir = Paths.get(this.projectPath, shadowRepoSubDir).toFile().getCanonicalPath();
