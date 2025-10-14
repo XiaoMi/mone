@@ -24,6 +24,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.mcp.service.command.CompressionCommand;
 import run.mone.hive.mcp.service.command.CreateRoleCommand;
 import run.mone.hive.mcp.service.command.RoleCommandFactory;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -334,6 +335,15 @@ public class RoleService {
             } else {
                 existingRole.saveConfig();
             }
+        }
+
+        // 检查是否是压缩命令，如果是则直接处理，无需等待Agent状态
+        if (roleCommandFactory.findCommand(message).isPresent() &&
+                roleCommandFactory.findCommand(message).get() instanceof CompressionCommand) {
+            ReactorRole existingRole = roleMap.get(from);
+            return Flux.create(sink -> {
+                roleCommandFactory.executeCommand(message, sink, from, existingRole);
+            });
         }
 
         roleMap.compute(from, (k, v) -> {

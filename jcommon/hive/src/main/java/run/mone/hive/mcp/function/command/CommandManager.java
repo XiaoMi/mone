@@ -34,6 +34,7 @@ public class CommandManager {
         registerCommand(new CreateCommand(roleService));
         registerCommand(new ConfigCommand(roleService));
         registerCommand(new AgentCommand(roleService));
+        registerCommand(new FindFilesCommand(roleService));
         registerCommand(new HelpCommand(roleService, this));
     }
 
