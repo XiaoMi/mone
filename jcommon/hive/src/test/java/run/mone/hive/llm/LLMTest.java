@@ -1610,8 +1610,11 @@ class LLMTest {
     @Test
     public void testChatCompletionWithUsageForDeepSeek() {
         // This test requires DEEPSEEK to be configured
-        config.setLlmProvider(LLMProvider.DEEPSEEK);
-        config.setModel("deepseek-chat");
+//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+//        config.setModel("deepseek-chat");
+//        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+        config.setLlmProvider(LLMProvider.AZURE_GPT5);
+        config.setModel(config.getLlmProvider().getDefaultModel());
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();
@@ -1634,6 +1637,26 @@ class LLMTest {
     }
 
     @Test
+    public void testImg2() {
+//        llm.getConfig().setTemperature((double) 0);
+        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+        llm = new LLM(config);
+        String img = llm.imageToBase64("/tmp/ddd.png", "png");
+        LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(
+                """
+                        请提取并整理这张截图中内容：
+                        """
+                , Message.builder()
+                        .images(Lists.newArrayList(
+                                img
+                        )).build());
+        compoundMsg.setImageType("png");
+
+        String str = llm.compoundMsgCall(compoundMsg, "你是一名专业的图片分析师,你总是能从图片中分析出我想找的内容  图片中的信息,严格按照上下排序,他们有着严格的顺序").collect(Collectors.joining()).block();
+        System.out.println(str);
+    }
+
+    @Test
     public void testChatCompletionStreamWithUsageForDeepSeek() throws InterruptedException {
         // This test requires DEEPSEEK to be configured
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
@@ -1644,7 +1667,8 @@ class LLMTest {
         // Make sure OPENROUTER_AI_GATEWAY environment variable is set
 //        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
 
-        config.setLlmProvider(LLMProvider.QWEN);
+//        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
+        config.setLlmProvider(LLMProvider.AZURE_GPT5);
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();
