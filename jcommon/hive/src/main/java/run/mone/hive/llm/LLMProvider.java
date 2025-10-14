@@ -47,8 +47,8 @@ public enum LLMProvider {
     MIFY_GATEWAY("XXX", "MIFY_API_KEY", "deepseek-r1", null),
     // url只能从llmConfig里取
     CLOUDML_CLASSIFY("", "xxx", "CLOUDML_CLASSIFY", ""),
-    AZURE_GPT5_CODEX("https://b2c-mione-gpt-o1.openai.azure.com/openai/v1/responses", "AZURE_OPENAI_API_KEY", "gpt-5-codex", null),
-
+    AZURE_GPT5_CODEX("https://b2c-mione-gpt-o1.openai.azure.com/openai/v1/responses", "AZURE_OPENAI_CODEX_API_KEY", "gpt-5-codex", null),
+    AZURE_GPT5("https://b2c-mione-gpt4o.openai.azure.com/openai/v1/chat/completions", "AZURE_OPENAI_API_KEY", "gpt-5", null),
     KNOWLEDGE_BASE("", "xxx", "KNOWLEDGE_BASE", "");
 
     private final String url;
