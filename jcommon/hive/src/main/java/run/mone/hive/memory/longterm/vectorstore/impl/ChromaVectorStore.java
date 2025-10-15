@@ -18,12 +18,15 @@ import tech.amikos.chromadb.Embedding;
 import tech.amikos.chromadb.embeddings.DefaultEmbeddingFunction;
 import tech.amikos.chromadb.embeddings.EmbeddingFunction;
 import tech.amikos.chromadb.embeddings.WithParam;
+import tech.amikos.chromadb.embeddings.ollama.OllamaEmbeddingFunction;
 import tech.amikos.chromadb.embeddings.openai.CreateEmbeddingRequest;
 import tech.amikos.chromadb.embeddings.openai.CreateEmbeddingResponse;
 import tech.amikos.chromadb.handler.ApiException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.google.gson.Gson;
 
@@ -43,6 +46,7 @@ public class ChromaVectorStore implements VectorStoreBase {
 
     public static final String DEFAULT_EMBEDDING_FUNCTION = "default";
     public static final String OPENAI_EMBEDDING_FUNCTION = "openai";
+    public static final String OLLAMA_EMBEDDING_FUNCTION = "ollama";
 
     public ChromaVectorStore(VectorStoreConfig config) {
         this.config = config;
@@ -77,11 +81,11 @@ public class ChromaVectorStore implements VectorStoreBase {
 
     private Collection createOrGetCollection() {
         try {
+            String model = config.getModel();
             String collectionName = config.getCollectionName();
             EmbeddingFunction ef = config.getEmbeddingFunction() != null && config.getEmbeddingFunction().equals(OPENAI_EMBEDDING_FUNCTION)
             ? new OpenAIEmbeddingFunction(WithParam.apiKey(config.getApiKey()), WithParam.model("text-embedding-3-small"), WithParam.baseAPI(config.getBaseUrl()))
-            : new DefaultEmbeddingFunction();
-
+            : new OllamaEmbeddingFunction(WithParam.defaultModel(model));
             try {
                 return chromaClient.getCollection(collectionName, ef);
             } catch (ApiException e) {
@@ -161,15 +165,15 @@ public class ChromaVectorStore implements VectorStoreBase {
 
             for (int i = 0; i < ids.size(); i++) {
                 String id = ids.get(i);
+                // FIY: 这里是余弦距离(取值范围0-2)，越小越相似，这里直接取2 - 余弦距离作为score
                 double distance = distances.get(0).get(i).doubleValue();
-                double similarity = 1.0 - distance;  // Convert distance to similarity
                 Map<String, Object> metadata = metadatas.get(i);
                 String document = documents.get(i);
 
                 MemoryItem item = MemoryItem.builder()
                         .id(id)
                         .memory(document)
-                        .score(similarity)
+                        .score(2 - distance)
                         .userId(getStringFromMetadata(metadata, "user_id"))
                         .agentId(getStringFromMetadata(metadata, "agent_id"))
                         .runId(getStringFromMetadata(metadata, "run_id"))
@@ -183,7 +187,7 @@ public class ChromaVectorStore implements VectorStoreBase {
                 results.add(item);
             }
 
-            log.debug("Found {} similar vectors in Chroma collection {}", results.size(), config.getCollectionName());
+            log.info("Found {} similar vectors in Chroma collection {}", results.size(), config.getCollectionName());
             return results;
         } catch (Exception e) {
             log.error("Failed to search vectors: {}", e.getMessage());
@@ -301,7 +305,7 @@ public class ChromaVectorStore implements VectorStoreBase {
             results.add(item);
         }
 
-        log.debug("Listed {} vectors from Chroma collection {}", results.size(), config.getCollectionName());
+        log.info("Listed {} vectors from Chroma collection {}", results.size(), config.getCollectionName());
         return results;
     }
 
@@ -322,8 +326,8 @@ public class ChromaVectorStore implements VectorStoreBase {
     @Override
     public List<MemoryItem> list(Map<String, Object> filters, int limit) {
         try {
-            Map<String, Object> whereClause = generateWhereClause(filters);
-            GetResult result = collection.get(null, null, whereClause);
+            // no filter when get all
+            GetResult result = collection.get(null, null, null);
             return parseGetResponseList(result);
         } catch (Exception e) {
             log.error("Failed to list vectors: {}", e.getMessage());
@@ -335,15 +339,24 @@ public class ChromaVectorStore implements VectorStoreBase {
     public void update(String vectorId, List<Double> vector, Map<String, Object> payload) {
         try {
             Map<String, Object> metadata = new HashMap<>(payload);
+            Map<String, String> metadataString = new HashMap<>();
+            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                metadataString.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+            }
             metadata.put("timestamp", System.currentTimeMillis());
             metadata.put("collection", config.getCollectionName());
 
-            collection.update(
-                vectorId,
-                metadata
+            String document = payload.get("memory") != null ? payload.get("memory").toString() : "";
+
+
+            collection.updateEmbeddings(
+                List.of(new Embedding(vector)),
+                List.of(metadataString),
+                List.of(document),
+                List.of(vectorId)
             );
 
-            log.debug("Updated vector {} in Chroma collection {}", vectorId, config.getCollectionName());
+            log.info("Updated vector {} in Chroma collection {}", vectorId, config.getCollectionName());
         } catch (Exception e) {
             log.error("Failed to update vector {}: {}", vectorId, e.getMessage());
             throw new RuntimeException("Failed to update vector", e);
@@ -354,7 +367,7 @@ public class ChromaVectorStore implements VectorStoreBase {
     public void delete(String vectorId) {
         try {
             collection.delete(Arrays.asList(vectorId), null, null);
-            log.debug("Deleted vector {} from Chroma collection {}", vectorId, config.getCollectionName());
+            log.info("Deleted vector {} from Chroma collection {}", vectorId, config.getCollectionName());
         } catch (Exception e) {
             log.error("Failed to delete vector {}: {}", vectorId, e.getMessage());
             throw new RuntimeException("Failed to delete vector", e);

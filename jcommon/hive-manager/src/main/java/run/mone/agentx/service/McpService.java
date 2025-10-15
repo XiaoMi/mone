@@ -1,6 +1,7 @@
 package run.mone.agentx.service;
 
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import static run.mone.hive.configs.Const.USER_INTERNAL_NAME;
 @Slf4j
 @Data
 @Service
+@RequiredArgsConstructor
 public class McpService {
 
     private MonerMcpInterceptor mcpInterceptor = new CustomMcpInterceptor();
@@ -40,6 +42,8 @@ public class McpService {
 
     @Autowired
     private InvokeHistoryService invokeHistoryService;
+
+    private final McpMessageHandler handler;
 
     private ReentrantLock lock = new ReentrantLock();
 
@@ -66,6 +70,9 @@ public class McpService {
         //对面的ip和port 服务端的
         String key = AgentKeyUtils.key(agentDto, instance);
 
+        toolDataInfo.setAgentId("" + agentId);
+        toolDataInfo.setUserId("" + user.getId());
+
         try {
             lock.lock();
             McpHub hub = McpHubHolder.get(key);
@@ -82,9 +89,8 @@ public class McpService {
         return MonerMcpClient.mcpCall(null, toolDataInfo, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
-    private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
-        McpHub mcpHub = new McpHub(null, (msg) -> {
-        }, true);
+    private void connectMcp(AgentInstance instance, String clientId, String groupKey) {
+        McpHub mcpHub = new McpHub(null, handler::handleMessage, true);
         ServerParameters parameters = new ServerParameters();
         parameters.setType("grpc");
         parameters.getEnv().put("host", instance.getIp());

@@ -14,13 +14,14 @@ public class GraphUtils {
      * Matches Python EXTRACT_RELATIONS_PROMPT
      */
     public static final String EXTRACT_RELATIONS_PROMPT = """
-
             You are an advanced algorithm designed to extract structured information from text to construct knowledge graphs. Your goal is to capture comprehensive and accurate information. Follow these key principles:
 
             1. Extract only explicitly stated information from the text.
             2. Establish relationships among the entities provided.
             3. Use "USER_ID" as the source entity for any self-references (e.g., "I," "me," "my," etc.) in user messages.
             CUSTOM_PROMPT
+            
+            uid=USER_ID
 
             Relationships:
             - Identify clear, explicit relationships between entities
@@ -33,7 +34,7 @@ public class GraphUtils {
             - Normalize entity names (lowercase, underscore-separated)
             - Map self-references to USER_ID
 
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            You can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -44,7 +45,7 @@ public class GraphUtils {
                 ]
             }
 
-            source: the source entity of the relationship
+            source: the source entity of the relationship(如果uid不为空,则source必须是uid)
             relationship: the relationship between the source and destination entities
             destination: the destination entity of the relationship
             """;
@@ -57,8 +58,8 @@ public class GraphUtils {
             You are a smart assistant who understands entities and their types in a given text.
             If user message contains self reference such as 'I', 'me', 'my' etc. then use USER_ID as the source entity.
             Extract all the entities from the text. ***DO NOT*** answer the question itself if the given text is a question.
-
-            If you cannot response with tool_calls, you can response with the entities in the text with following JSON format:
+            
+            You can response with the entities in the text with following JSON format, and return json only!!!:
             {
                 "entities": [
                     {
@@ -163,6 +164,17 @@ public class GraphUtils {
                 - Be conservative - when in doubt, don't delete
                 - Consider temporal aspects - newer information may supersede older information
                 - Focus on factual contradictions, not subjective differences
+
+                You can response with the relationships to be deleted in the text with following JSON format, and return json only!!!:
+                {
+                    "toBeDeleted": [
+                        {
+                            "source": "The source entity of the relationship to be deleted.",
+                            "relationship": "The relationship between the source and destination entities to be deleted.",
+                            "destination": "The destination entity of the relationship to be deleted."
+                        }
+                    ]
+                }
                 """;
 
         String userPrompt = String.format("""
@@ -233,4 +245,110 @@ public class GraphUtils {
 
         return identity.toString();
     }
-}
+
+    /**
+     * 验证图实体的完整性
+     * 
+     * @param source 源节点
+     * @param destination 目标节点
+     * @param relationship 关系
+     * @return 是否有效
+     */
+    public static boolean validateGraphEntity(String source, String destination, String relationship) {
+        return source != null && !source.trim().isEmpty() &&
+               destination != null && !destination.trim().isEmpty() &&
+               relationship != null && !relationship.trim().isEmpty();
+    }
+    
+    /**
+     * 清理和标准化实体名称
+     * 
+     * @param entityName 原始实体名称
+     * @return 清理后的实体名称
+     */
+    public static String cleanEntityName(String entityName) {
+        if (entityName == null) {
+            return "";
+        }
+        
+        // 移除多余的空格和特殊字符
+        String cleaned = entityName.trim()
+            .replaceAll("\\s+", " ")
+            .replaceAll("[\"'`]", "");
+        
+        return cleaned;
+    }
+    
+    /**
+     * 清理和标准化关系名称
+     * 
+     * @param relationshipName 原始关系名称
+     * @return 清理后的关系名称
+     */
+    public static String cleanRelationshipName(String relationshipName) {
+        if (relationshipName == null) {
+            return "";
+        }
+        
+        // 移除多余的空格，转为小写，用下划线连接
+        String cleaned = relationshipName.trim()
+            .toLowerCase()
+            .replaceAll("\\s+", "_")
+            .replaceAll("[\"'`]", "");
+        
+        return cleaned;
+    }
+    
+    /**
+     * 检查两个图记忆是否重复
+     * 
+     * @param memory1 记忆1
+     * @param memory2 记忆2
+     * @return 是否重复
+     */
+    public static boolean isDuplicateMemory(Map<String, Object> memory1, Map<String, Object> memory2) {
+        if (memory1 == null || memory2 == null) {
+            return false;
+        }
+        
+        String source1 = cleanEntityName((String) memory1.get("source"));
+        String dest1 = cleanEntityName((String) memory1.get("destination"));
+        String rel1 = cleanRelationshipName((String) memory1.get("relationship"));
+        
+        String source2 = cleanEntityName((String) memory2.get("source"));
+        String dest2 = cleanEntityName((String) memory2.get("destination"));
+        String rel2 = cleanRelationshipName((String) memory2.get("relationship"));
+        
+        return source1.equals(source2) && dest1.equals(dest2) && rel1.equals(rel2);
+    }
+    
+    /**
+     * 去重图记忆列表
+     * 
+     * @param memories 原始图记忆列表
+     * @return 去重后的图记忆列表
+     */
+    public static List<Map<String, Object>> deduplicateMemories(List<Map<String, Object>> memories) {
+        if (memories == null || memories.isEmpty()) {
+            return memories;
+        }
+        
+        List<Map<String, Object>> deduplicated = new java.util.ArrayList<>();
+        
+        for (Map<String, Object> memory : memories) {
+            boolean isDuplicate = false;
+            for (Map<String, Object> existing : deduplicated) {
+                if (isDuplicateMemory(memory, existing)) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            
+            if (!isDuplicate) {
+                deduplicated.add(memory);
+            }
+        }
+        
+        return deduplicated;
+    }
+} 

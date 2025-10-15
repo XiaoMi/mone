@@ -38,7 +38,12 @@ type SupportedTag =
   | 'file_pattern'
   | 'working_directory'
   | 'timeout'
-  | 'tool_result';
+  | 'tool_result'
+  | 'list_code_definition_names'
+  | 'pid'
+  | 'terminal_append'
+  | 'process_pid'
+  | 'process_content';
 
 interface Position {
   line: number;    // 行号
@@ -71,6 +76,12 @@ export class SimpleHtmlParser {
   constructor(callbacks: ParserCallbacks) {
     this.callbacks = callbacks;
     this.supportedTags = new Set([
+      'hive-msg-id',
+      'usage',
+      'query',
+      'action',
+      'memory',
+      'metadata',
       'terminal',
       'download_file',
       'use_mcp_tool',
@@ -110,7 +121,12 @@ export class SimpleHtmlParser {
       'file_pattern',
       'working_directory',
       'timeout',
-      'tool_result'
+      'tool_result',
+      'list_code_definition_names',
+      'pid',
+      'terminal_append',
+      'process_pid',
+      'process_content'
     ]);
   }
 

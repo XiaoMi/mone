@@ -1,0 +1,72 @@
+package ${package}.security;
+
+import ${package}.model.User;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * 自定义用户详情实现类
+ * 实现Spring Security的UserDetails接口，封装用户信息
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+public class CustomUserDetails implements UserDetails {
+    private final User user;
+
+    public CustomUserDetails(User user) {
+        this.user = user;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // 将角色转换为Spring Security的GrantedAuthority
+        if ("ADMIN".equals(user.getRole())) {
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public String getPassword() {
+        return user.getPassword();
+    }
+
+    @Override
+    public String getUsername() {
+        return user.getUsername();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return "ACTIVE".equals(user.getStatus());
+    }
+    
+    public Long getUserId() {
+        return user.getId();
+    }
+    
+    public User getUser() {
+        return user;
+    }
+}
+

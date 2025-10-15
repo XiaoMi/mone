@@ -1,0 +1,135 @@
+package ${package}.service;
+
+import ${package}.dto.*;
+import ${package}.model.User;
+import ${package}.repository.UserRepository;
+import ${package}.util.JwtUtil;
+import ${package}.security.CustomUserDetails;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+/**
+ * 用户服务类
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Service
+@RequiredArgsConstructor
+public class UserService {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+
+    public UserDTO register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("用户名已存在");
+        }
+        
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("邮箱已存在");
+        }
+        
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setAddress(request.getAddress());
+        
+        User savedUser = userRepository.save(user);
+        return convertToDTO(savedUser);
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
+        
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("用户名或密码错误");
+        }
+        
+        UserDTO userDTO = convertToDTO(user);
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        String token = jwtUtil.generateToken(userDetails);
+        
+        AuthResponse response = new AuthResponse();
+        response.setToken(token);
+        response.setUser(userDTO);
+        return response;
+    }
+
+    public UserDTO convertToDTO(User user) {
+        UserDTO dto = new UserDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setPhone(user.getPhone());
+        dto.setAddress(user.getAddress());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setStatus(user.getStatus());
+        dto.setRole(user.getRole());
+        return dto;
+    }
+    
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username).orElse(null);
+    }
+    
+    public UserDTO updateUser(String username, UpdateUserRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
+        
+        User savedUser = userRepository.save(user);
+        return convertToDTO(savedUser);
+    }
+    
+    public void deleteUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        userRepository.delete(user);
+    }
+    
+    public UserDTO updateUserStatus(String username, boolean status) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        user.setStatus(status ? "ACTIVE" : "INACTIVE");
+        User savedUser = userRepository.save(user);
+        return convertToDTO(savedUser);
+    }
+    
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
+    }
+    
+    public UserDTO updateUser(Long userId, UpdateUserRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
+        
+        User savedUser = userRepository.save(user);
+        return convertToDTO(savedUser);
+    }
+}
+

@@ -2,11 +2,14 @@ package run.mone.hive.mcp.grpc.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
@@ -22,6 +25,7 @@ import run.mone.hive.mcp.spec.ServerMcpTransport;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -63,6 +67,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
             Metadata.Key.of(Const.TOKEN, Metadata.ASCII_STRING_MARSHALLER);
     // 为元数据定义Context键
     private static final Context.Key<Metadata> METADATA_CONTEXT_KEY = Context.key("metadata");
+
+    private McpSchema.Implementation serverInfo;
 
     public GrpcServerTransport(int port) {
         this.port = port;
@@ -158,7 +164,24 @@ public class GrpcServerTransport implements ServerMcpTransport {
     }
 
 
+    private ConcurrentHashMap<String, CountDownLatch> countDownLatchConcurrentHashMap = new ConcurrentHashMap<>();
+
+    private ConcurrentHashMap<String, Object> resMap = new ConcurrentHashMap<>();
+
+
+    public Mono<Object> sendMessage(Map<String, Object> map, String clientId) {
+        Map<String, Object> req = new HashMap<>(map);
+        ImmutableMap<String, Object> m = ImmutableMap.of(
+                Const.CLIENT_ID, clientId,
+                Const.BLOCK, ""
+        );
+        req.putAll(m);
+        return sendMessage(new McpSchema.JSONRPCNotification("", "", req));
+    }
+
+
     //通知到client
+    @SneakyThrows
     @Override
     public Mono<Object> sendMessage(JSONRPCMessage message) {
         if (message instanceof McpSchema.JSONRPCNotification notification) {
@@ -168,7 +191,22 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 StreamObserver<StreamResponse> observer = userConnections.get(clientId);
                 //直接通知到client
                 if (null != observer) {
-                    observer.onNext(StreamResponse.newBuilder().setCmd(Const.NOTIFY_MSG).setData(GsonUtils.gson.toJson(params)).build());
+                    String reqId = UUID.randomUUID().toString();
+                    observer.onNext(StreamResponse.newBuilder().setRequestId(reqId).setCmd(Const.NOTIFY_MSG).setData(GsonUtils.gson.toJson(params)).build());
+                    //阻塞访问
+                    if (notification.params().containsKey(Const.BLOCK)) {
+                        try {
+                            CountDownLatch cdl = new CountDownLatch(1);
+                            countDownLatchConcurrentHashMap.put(reqId, cdl);
+                            cdl.await(5, TimeUnit.SECONDS);
+                            if (resMap.containsKey(reqId)) {
+                                return Mono.just(resMap.get(reqId));
+                            }
+                        } finally {
+                            countDownLatchConcurrentHashMap.remove(reqId);
+                            resMap.remove(reqId);
+                        }
+                    }
                 }
             }
         }
@@ -259,6 +297,21 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 @Override
                 public void onNext(StreamRequest streamRequest) {
                     String name = streamRequest.getName();
+
+                    //这里有点绕,本质是访问的client,然后client返回的reply(所以返回结果是req -_-!)
+                    if (streamRequest.getDataMap().containsKey(Const.REPLY)) {
+                        log.info("reply:{}", streamRequest);
+                        String id = streamRequest.getRequestId();
+                        CountDownLatch cdl = countDownLatchConcurrentHashMap.get(id);
+                        if (null != cdl) {
+                            //TODO 有泄漏的问题,先这样
+                            resMap.put(id, streamRequest);
+                            cdl.countDown();
+                        }
+                        return;
+                    }
+
+
                     clientId = getClientIdFromContext();
 
                     if (StringUtils.isEmpty(clientId) || clientId.startsWith("mcp_")) {
@@ -295,11 +348,12 @@ public class GrpcServerTransport implements ServerMcpTransport {
         public void initialize(InitializeRequest request, StreamObserver<InitializeResponse> responseObserver) {
             // 简化的示例实现
             InitializeResponse response = InitializeResponse.newBuilder()
-                    .setProtocolVersion("2024-11-05")
+                    .setProtocolVersion("0.0.1")
                     .setCapabilities(ServerCapabilities.newBuilder().setTools(ToolCapabilities.newBuilder().build()).build())
                     .setServerInfo(Implementation.newBuilder()
-                            .setName("gRPC-MCP-Server")
-                            .setVersion("1.0.0")
+                            .setName(serverInfo.name())
+                            .setVersion(serverInfo.version())
+                            .putAllMeta(serverInfo.meta())
                             .build())
                     .build();
             responseObserver.onNext(response);
@@ -345,6 +399,23 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (name.equals(METHOD_TOOLS_CALL)) {
                 DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
                 Object res = rh.handle(request).block();
+
+                if (res instanceof Flux<?> flux) {
+                    McpSchema.CallToolResult r = (McpSchema.CallToolResult) flux.blockLast();
+                    McpSchema.Content it = r.content().get(0);
+                    if (it instanceof McpSchema.TextContent tc) {
+                        TextContent.Builder builder = TextContent.newBuilder();
+                        builder.setData(tc.data());
+                        builder.setText(tc.text());
+                        resBuilder.addContent(Content.newBuilder().setText(builder).build());
+                    }
+                    if (it instanceof McpSchema.ImageContent ic) {
+                        ImageContent.Builder builder = ImageContent.newBuilder();
+                        builder.setData(ic.data());
+                        builder.setMimeType(ic.mimeType());
+                        resBuilder.addContent(Content.newBuilder().setImage(builder).build());
+                    }
+                }
 
                 //支持image 和 text
                 if (res instanceof McpSchema.CallToolResult ctr) {

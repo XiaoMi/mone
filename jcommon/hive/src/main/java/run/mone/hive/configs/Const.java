@@ -43,8 +43,32 @@ public class Const {
     //清空agent记忆
     public static final String CLEAR_HISTORY = "___clear_history___";
 
+    //刷新配置
+    public static final String REFRESH_CONFIG = "___refresh_config___";
+
     public static final String DEFAULT = "default";
 
     public static final String INTERNAL_SERVER = "internalServer";
 
+    public static final String AGENT_CONFIG = "__agent_config__";
+
+    public static final String SWITCH_AGENT = "__switch_agent__";
+
+    public static final String WORKSPACE_PATH_KEY = "workspacePath";
+
+    public static final String MCP = "mcp";
+
+    public static final String REPLY = "reply";
+
+    public static final String BLOCK = "block";
+
+    public static final String RES_ID = "resId";
+
+    public static final String CMD = "cmd";
+
+    public static final String AGENT_SERVER_NAME = "agent_server_name";
+
+    public static final String AGENT_SERVER_VERSION = "agent_server_version";
+
+    public static final String TASK_PROGRESS = "task_progress";
 }

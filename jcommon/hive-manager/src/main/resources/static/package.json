@@ -2,6 +2,7 @@
   "name": "muti-agent-chat",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "run-p type-check \"build-only {@}\" --",
@@ -45,8 +46,7 @@
     "vue-class-component": "^8.0.0-0",
     "vue-clipboard3": "^2.0.0",
     "vue-json-pretty": "^2.4.0",
-    "vue-router": "^4.5.0",
-    "vue3-json-viewer": "^2.4.1"
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.4",

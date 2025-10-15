@@ -6,7 +6,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
 
+import run.mone.hive.memory.longterm.config.EmbedderConfig;
 import run.mone.hive.memory.longterm.config.VectorStoreConfig;
+import run.mone.hive.memory.longterm.embeddings.impl.OllamaEmbedding;
 import run.mone.hive.memory.longterm.vectorstore.VectorStoreFactory;
 import run.mone.hive.memory.longterm.vectorstore.VectorStoreBase;
 import run.mone.hive.memory.longterm.model.MemoryItem;
@@ -19,19 +21,15 @@ public class ChromaLocalTest {
 
     private VectorStoreBase vectorStore;
     private VectorStoreConfig config;
-    private String testPath = "./data/test/chroma_test";
 
     @BeforeEach
     void setUp() {
-        // 清理测试目录
-        cleanupTestDirectory();
-
         config = VectorStoreConfig.builder()
                 .provider(VectorStoreConfig.Provider.CHROMA)
-                .collectionName("test_collection")
+                .collectionName("test_collectionb")
                 .host("localhost")
-                .path(testPath)
-                .embeddingModelDims(384)
+                .port(8000)
+                .embeddingModelDims(768)
                 .build();
 
         vectorStore = VectorStoreFactory.create(config);
@@ -42,29 +40,9 @@ public class ChromaLocalTest {
         if (vectorStore != null) {
             vectorStore.close();
         }
-        cleanupTestDirectory();
     }
 
-    private void cleanupTestDirectory() {
-        File testDir = new File(testPath);
-        if (testDir.exists()) {
-            deleteDirectory(testDir);
-        }
-    }
 
-    private void deleteDirectory(File directory) {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    deleteDirectory(file);
-                } else {
-                    file.delete();
-                }
-            }
-        }
-        directory.delete();
-    }
 
     @Test
     @DisplayName("Should initialize Chroma embedded store successfully")
@@ -88,10 +66,23 @@ public class ChromaLocalTest {
     @Test
     @DisplayName("Should insert and retrieve vectors successfully")
     void testInsertAndRetrieve() {
+        String first = "First test memory";
+        String second = "Second test memory";
+
+        EmbedderConfig embedderConfig = EmbedderConfig.builder()
+                .provider(EmbedderConfig.Provider.OLLAMA)
+                .model("embeddinggemma")
+                .embeddingDims(768)
+                .build();
+
+        List<Double> a = new OllamaEmbedding(embedderConfig).embed(first);
+        List<Double> b = new OllamaEmbedding(embedderConfig).embed(second);
+
+
         // 准备测试数据
         List<List<Double>> vectors = Arrays.asList(
-            Arrays.asList(0.1, 0.2, 0.3, 0.4),
-            Arrays.asList(0.5, 0.6, 0.7, 0.8)
+            a,
+            b
         );
 
         List<String> ids = Arrays.asList("test1", "test2");

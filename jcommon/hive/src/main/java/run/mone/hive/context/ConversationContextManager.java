@@ -1,6 +1,7 @@
 package run.mone.hive.context;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 import run.mone.hive.task.FocusChainSettings;
@@ -25,8 +26,8 @@ public class ConversationContextManager {
     // 配置参数
     private boolean enableAiCompression = true;
     private boolean enableRuleBasedOptimization = true;
-    private int maxMessagesBeforeCompression = 20;
-    
+    private int maxMessagesBeforeCompression = 25;
+
     public ConversationContextManager(LLM llm) {
         this.contextManager = new ContextManager();
         this.aiCompressor = new AiContextCompressor(llm);
@@ -41,10 +42,10 @@ public class ConversationContextManager {
      * 处理新消息并管理上下文
      * 这是主要的入口方法
      */
-    public CompletableFuture<ContextProcessingResult> processNewMessage(List<Message> currentMessages, 
-                                                                       Message newMessage,
-                                                                       TaskState taskState,
-                                                                       FocusChainSettings focusChainSettings) {
+    public CompletableFuture<ContextProcessingResult> processNewMessage(List<Message> currentMessages,
+                                                                        Message newMessage,
+                                                                        TaskState taskState,
+                                                                        FocusChainSettings focusChainSettings, FluxSink sink) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 添加新消息到列表
@@ -56,20 +57,21 @@ public class ConversationContextManager {
                 
                 if (shouldCompress && enableAiCompression && !isCompressing.get()) {
                     log.info("触发上下文压缩，当前消息数: {}", updatedMessages.size());
+                    sink.next("<chat>触发上下文压缩，当前消息数: " + updatedMessages.size()+"</chat>");
                     return performContextCompression(updatedMessages, taskState, focusChainSettings);
                 } else if (enableRuleBasedOptimization) {
                     // 应用规则基础的优化
                     return performRuleBasedOptimization(updatedMessages, taskState);
                 } else {
                     // 不需要处理，直接返回
-                    return new ContextProcessingResult(updatedMessages, false, false, null);
+                    return new ContextProcessingResult(updatedMessages, 0, false, false, null);
                 }
                 
             } catch (Exception e) {
                 log.error("处理新消息时发生异常", e);
                 List<Message> fallbackMessages = new ArrayList<>(currentMessages);
                 fallbackMessages.add(newMessage);
-                return new ContextProcessingResult(fallbackMessages, false, false, "处理异常: " + e.getMessage());
+                return new ContextProcessingResult(fallbackMessages, 0, false, false, "处理异常: " + e.getMessage());
             }
         });
     }
@@ -101,7 +103,7 @@ public class ConversationContextManager {
                                                             FocusChainSettings focusChainSettings) {
         if (!isCompressing.compareAndSet(false, true)) {
             log.warn("上下文压缩正在进行中，跳过本次压缩");
-            return new ContextProcessingResult(messages, false, false, "压缩正在进行中");
+            return new ContextProcessingResult(messages, 0, false, false, "压缩正在进行中");
         }
         
         try {
@@ -130,22 +132,53 @@ public class ConversationContextManager {
                 if (taskState != null) {
                     taskState.incrementApiRequestCount();
                 }
-                
-                log.info("AI上下文压缩成功: {} -> {} 消息", messages.size(), compressedMessages.size());
-                return new ContextProcessingResult(compressedMessages, true, true, null);
+
+                int compressedTokenNum = calCompressedMessagesToken(messages, compressedMessages);
+                log.info("AI上下文压缩成功: {} -> {} 消息, 节省了约 {} tokens", 
+                    messages.size(), compressedMessages.size(), compressedTokenNum);
+                return new ContextProcessingResult(compressedMessages, compressedTokenNum, true, true, null);
                 
             } else {
                 log.warn("AI压缩失败，回退到规则优化: {}", compressionResult.getErrorMessage());
-                return new ContextProcessingResult(optimizedMessages, optimization.hasUpdates(), false, 
+                return new ContextProcessingResult(optimizedMessages, 0, optimization.hasUpdates(), false,
                     "AI压缩失败: " + compressionResult.getErrorMessage());
             }
             
         } catch (Exception e) {
             log.error("AI上下文压缩过程中发生异常", e);
-            return new ContextProcessingResult(messages, false, false, "压缩异常: " + e.getMessage());
+            return new ContextProcessingResult(messages, 0, false, false, "压缩异常: " + e.getMessage());
         } finally {
             isCompressing.set(false);
         }
+    }
+
+    /**
+     * 计算压缩前后消息的token数量变化
+     * @param messages 原始消息列表
+     * @param compressedMessages 压缩后的消息列表
+     * @return 节省的token数量（正值表示减少了token）
+     */
+    private int calCompressedMessagesToken(List<Message> messages, List<Message> compressedMessages) {
+        if (messages == null || compressedMessages == null) {
+            return 0;
+        }
+        
+        // 计算原始消息的总字符数
+        int originalCharCount = messages.stream()
+            .mapToInt(msg -> msg.getContent() != null ? msg.getContent().length() : 0)
+            .sum();
+            
+        // 计算压缩后消息的总字符数
+        int compressedCharCount = compressedMessages.stream()
+            .mapToInt(msg -> msg.getContent() != null ? msg.getContent().length() : 0)
+            .sum();
+            
+        // 使用与其他地方相同的token估算方法（字符数/3.5）
+        int originalTokens = (int) Math.ceil(originalCharCount / 3.5);
+        int compressedTokens = (int) Math.ceil(compressedCharCount / 3.5);
+        
+        // 返回节省的token数量
+        return originalTokens - compressedTokens;
     }
     
     /**
@@ -169,14 +202,16 @@ public class ConversationContextManager {
                 log.info("规则优化完成，优化比例: {:.2%}, 处理消息数: {}", 
                     optimizationRatio, optimization.getUniqueFileReadIndices().size());
                 
-                return new ContextProcessingResult(optimizedMessages, true, false, null);
+                // 计算优化后节省的token数量
+                int optimizedTokenNum = calCompressedMessagesToken(messages, optimizedMessages);
+                return new ContextProcessingResult(optimizedMessages, optimizedTokenNum, true, false, null);
             } else {
-                return new ContextProcessingResult(messages, false, false, null);
+                return new ContextProcessingResult(messages, 0, false, false, null);
             }
             
         } catch (Exception e) {
             log.error("规则优化过程中发生异常", e);
-            return new ContextProcessingResult(messages, false, false, "优化异常: " + e.getMessage());
+            return new ContextProcessingResult(messages, 0, false, false, "优化异常: " + e.getMessage());
         }
     }
     
@@ -231,19 +266,22 @@ public class ConversationContextManager {
      */
     public static class ContextProcessingResult {
         private final List<Message> processedMessages;
+        private final int compressedTokenNum;
         private final boolean wasOptimized;
         private final boolean wasCompressed;
         private final String errorMessage;
-        
-        public ContextProcessingResult(List<Message> processedMessages, boolean wasOptimized, 
+
+        public ContextProcessingResult(List<Message> processedMessages, int compressedTokenNum, boolean wasOptimized,
                                      boolean wasCompressed, String errorMessage) {
             this.processedMessages = processedMessages;
+            this.compressedTokenNum = compressedTokenNum;
             this.wasOptimized = wasOptimized;
             this.wasCompressed = wasCompressed;
             this.errorMessage = errorMessage;
         }
         
         public List<Message> getProcessedMessages() { return processedMessages; }
+        public int getCompressedTokenNum() { return compressedTokenNum; }
         public boolean wasOptimized() { return wasOptimized; }
         public boolean wasCompressed() { return wasCompressed; }
         public String getErrorMessage() { return errorMessage; }
@@ -252,11 +290,12 @@ public class ConversationContextManager {
         @Override
         public String toString() {
             return "ContextProcessingResult{" +
-                   "messageCount=" + (processedMessages != null ? processedMessages.size() : 0) +
-                   ", wasOptimized=" + wasOptimized +
-                   ", wasCompressed=" + wasCompressed +
-                   ", hasError=" + hasError() +
-                   '}';
+                    "messageCount=" + (processedMessages != null ? processedMessages.size() : 0) +
+                    ", compressedTokenNum=" + compressedTokenNum +
+                    ", wasOptimized=" + wasOptimized +
+                    ", wasCompressed=" + wasCompressed +
+                    ", hasError=" + hasError() +
+                    '}';
         }
     }
     

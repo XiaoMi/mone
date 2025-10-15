@@ -24,4 +24,5 @@ import run.mone.hive.mcp.spec.McpSchema;
 public class McpResult {
     private String toolName;
     private McpSchema.Content content;
+    private boolean error;
 }

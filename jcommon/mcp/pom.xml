@@ -24,34 +24,26 @@
         <module>mcp-applescript</module>
         <module>mcp-multimodal</module>
         <module>mcp-memory</module>
-        <module>mcp-solution-assessor</module>
         <module>mcp-filesystem</module>
         <module>mcp-prettier</module>
         <module>mcp-writer</module>
         <module>mcp-fetch</module>
         <module>mcp-gateway</module>
         <module>mcp-coder</module>
+        <module>mcp-codegen</module>
         <module>mcp-excel</module>
         <module>mcp-song</module>
         <module>mcp-sequentialthinking</module>
-        <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
         <module>mcp-nacosconfig</module>
         <module>mcp-terminal</module>
         <module>mcp-feishu</module>
         <module>mcp-chrome</module>
-        <module>mcp-docparsing</module>
-        <module>mcp-email</module>
-        <module>mcp-time</module>
-        <module>mcp-xmind</module>
         <module>mcp-hera-log</module>
         <module>mcp-chaos</module>
         <module>mcp-nacosservice</module>
-        <module>mcp-ali-email</module>
-        <module>mcp-pty4j</module>
         <module>mcp-linux-agent</module>
         <module>mcp-idea-composer</module>
-        <module>mcp-ipinfo</module>
         <module>mcp-novel</module>
         <module>mcp-miapi</module>
         <module>mcp-high-risk-element</module>
@@ -65,6 +57,11 @@
         <module>mcp-image</module>
         <module>mcp-remote-file</module>
         <module>mcp-miapi-cursor</module>
+        <module>mcp-vue3</module>
+        <module>mcp-vue-temp</module>
+        <module>mcp-dayu-service-query</module>
+        <module>mcp-miline</module>
+        <module>mcp-yijing</module>
     </modules>
 
     <properties>

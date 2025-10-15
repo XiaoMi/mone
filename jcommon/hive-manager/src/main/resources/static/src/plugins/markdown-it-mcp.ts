@@ -2,6 +2,11 @@ import MarkdownIt from "markdown-it";
 // import * as htmlparser2 from "htmlparser2";
 import { SimpleHtmlParser } from "./simple-html-parser";
 
+// 全局存储已存在的 PID 组件内容（只存储内容，不直接渲染）
+// export const existingPidComponents = new Map<string, string[]>();
+import { usePidLogStore } from '@/stores/pid-log'
+
+
 export function markdownItMcp(md: MarkdownIt) {
   if (!md.block || !md.block.ruler) {
     console.warn("markdown-it-mcp: block ruler not found");
@@ -23,6 +28,7 @@ export function markdownItMcp(md: MarkdownIt) {
     // 检查当前行是否包含<thinking>等标签
     if (
       !(
+        mcpContent.includes("<hive-msg-id>") ||
         mcpContent.includes("<terminal>") ||
         mcpContent.includes("<download_file") ||
         mcpContent.includes("<use_mcp_tool>") ||
@@ -42,7 +48,10 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<search_files>") ||
         mcpContent.includes("<write_to_file>") ||
         mcpContent.includes("<list_files>") ||
-        mcpContent.includes("<tool_result>")
+        mcpContent.includes("<list_code_definition_names>") ||
+        mcpContent.includes("<tool_result>") ||
+        mcpContent.includes("<pid>") ||
+        mcpContent.includes("<terminal_append>")
       )
     ) {
       return false;
@@ -53,17 +62,20 @@ export function markdownItMcp(md: MarkdownIt) {
     let html = "";
     let isDownloadFile = false;
     const tagStack: string[] = []; // 标签栈，用于跟踪当前正在处理的标签
+    const processedPidsInThisParse = new Set<string>(); // 跟踪当前解析中已处理的PID，确保唯一性
+    const { setLog, addLog } = usePidLogStore();
+
+    // 用于 terminal_append 功能的变量
+    let currentPid = "";
+    let currentContent = "";
 
     // 辅助函数：获取当前标签栈顶的标签
     const getCurrentTag = () => tagStack[tagStack.length - 1];
-    // // 辅助函数：获取父级标签
-    // const getParentTag = () => tagStack[tagStack.length - 2];
-    // // 辅助函数：检查是否在指定标签内
-    // const isInsideTag = (tagName: string) => tagStack.includes(tagName);
 
     const parser = new SimpleHtmlParser({
       onopentag(name, attributes) {
-        console.log("onopentag", name, attributes);
+        // console.log('namenamenamename', name);
+        // console.log("onopentag", name, attributes);
         tagStack.push(name); // 将标签推入栈中
         /*
          * This fires when a new tag is opened.
@@ -87,7 +99,23 @@ export function markdownItMcp(md: MarkdownIt) {
               <span>聊天</span>
             </div>
             <div class="thinking-content is-active">`;
+        } else if (name === "memory") {
+          html += `
+          <div class="thinking-block">
+            <div class="thinking-header">
+              <i class="fa-solid fa-lightbulb"></i>
+              <span>记忆过程</span>
+            </div>
+            <div class="thinking-content is-active">`;
         } else if (name === "message") {
+        } else if (name === "action") {
+          html+= `<div style="display:none;">`;
+        } else if (name === "usage") {
+          // html+= `<div style="display:none;">`;
+        } else if (name === "query") {
+          html+= `<div>`;
+        } else if (name === "metadata") {
+          html+= `<div style="display:none;">`;
         } else if (name === "terminal") {
           html += `
             <div class="terminal">`;
@@ -223,6 +251,16 @@ export function markdownItMcp(md: MarkdownIt) {
                 <span>文件列表</span>
               </div>
               <div class="list-files-content">`;
+        } else if (name === "list_code_definition_names") {
+          html += `
+            <div class="list-code-definition-names-block">
+              <div class="list-code-definition-names-header">
+                <i class="fa-solid fa-code"></i>
+                <span>代码定义列表</span>
+              </div>
+              <div class="list-code-definition-names-content">
+                <div class="path-section">
+                  <pre><code>`;
         } else if (name === "recursive") {
           html += `<div class="recursive-section">
             <span class="recursive-label">递归：</span>
@@ -254,6 +292,17 @@ export function markdownItMcp(md: MarkdownIt) {
                 <span>工具结果</span>
               </div>
               <div class="tool-result-content">`;
+        } else if (name === "pid") {
+          html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
+        } else if (name === 'hive-msg-id') {
+          html += `<div class="hive-checkpoint-container">`;
+        }else if (name === "terminal_append") {
+          // terminal_append 标签开始，准备处理进程追加
+          // html += `<!-- terminal_append_start -->`;
+        } else if (name === "process_pid") {
+          // process_pid 标签，暂时不输出内容，等待获取 PID 值
+        } else if (name === "process_content") {
+          // process_content 标签，暂时不输出内容，等待获取内容
         } else if (name === "operation" || name === "path" || name === "content" || name === "r" || name === "working_directory" || name === "timeout") {
           html += `<div class="${name}-section">`;
         } else if (name === "download_file") {
@@ -277,16 +326,60 @@ export function markdownItMcp(md: MarkdownIt) {
       ontext(text) {
         const tagName = getCurrentTag();
         if (tagName === "tool_result") {
-          try {
-            // 验证是否为有效的 JSON
-            JSON.parse(text);
-            // 生成一个特殊的标记，包含原始 JSON 数据
-            html += `<div class="vue3-json-viewer-placeholder" data-json="${md.utils.escapeHtml(text).replace(/"/g, '&quot;')}"></div>`;
-          } catch (e) {
-            // 不是合法 JSON，作为普通文本处理
-            console.warn("tool_result 解析 JSON 失败，作为普通文本处理", e);
-            html += `<pre><code class="language-json">${md.utils.escapeHtml(text)}</code></pre>`;
-          }
+          html += `${md.utils.escapeHtml(text)}`
+          // try {
+          //   // 验证是否为有效的 JSON
+          //   console.log("tool_result text:", text);
+          //   const parsedJson = JSON.parse(text);
+          //   // 直接显示格式化的 JSON 代码块
+          //   html += `${md.utils.escapeHtml(JSON.stringify(parsedJson, null, 2))}`;
+          // } catch (e) {
+          //   // 不是合法 JSON，作为普通文本处理
+          //   console.warn("tool_result 解析 JSON 失败，作为普通文本处理", e);
+          //   html += `${md.utils.escapeHtml(text)}`;
+          // }
+          return;
+        } else if (tagName === "pid") {
+          // 处理 pid 标签内容，生成三个按钮
+          const pidValue = text.trim();
+          html = html.replace('data-pid=""', `data-pid="${md.utils.escapeHtml(pidValue)}"`);
+          html += `
+            <button class="pid-kill-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="kill" title="终止进程 PID: ${md.utils.escapeHtml(pidValue)}">
+              <i class="fa-solid fa-power-off"></i>
+              <span>杀死进程</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
+            </button>
+            <button class="pid-detach-button" data-pid="${md.utils.escapeHtml(pidValue)}" data-action="detach" title="将进程 PID: ${md.utils.escapeHtml(pidValue)} 转为后台运行">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <span>后台运行</span>
+              <small>${md.utils.escapeHtml(pidValue)}</small>
+            </button>
+          `;
+          return;
+        } else if (tagName === "process_pid") {
+          // 获取进程 PID
+          currentPid = text.trim();
+          return;
+        } else if (tagName === "process_content") {
+          // 获取进程内容
+          currentContent = text.trim();
+          return;
+        } else if (tagName === "task_progress") {
+          // 处理任务进度内容，转换为列表
+          html += md.render(text);
+          return;
+        } else if (tagName === "hive-msg-id") {
+          const msgId = text.trim();
+          html += `
+            <button class="hive-checkpoint-btn" data-msg-id="${msgId}" title="消息检查点: ${msgId}">
+              <i class="fa-solid fa-bookmark"></i>
+              <span class="checkpoint-text">Checkpoint</span>
+              <code class="checkpoint-id">${msgId}</code>
+            </button>`;
+          return;
+        }  else if (tagName === "usage") {
+          // 处理任务进度内容，转换为列表
+          // html += '';
           return;
         }
         if (isDownloadFile) {
@@ -331,18 +424,31 @@ export function markdownItMcp(md: MarkdownIt) {
          * opening tags will be ignored.
          */
         const poppedTag = tagStack.pop(); // 从栈中弹出标签
-        console.log("onclosetag", tagname, "popped:", poppedTag, "stack:", tagStack);
+        if (tagname !== poppedTag) {
+          console.warn(`标签不匹配: expected </${poppedTag}>, but got </${tagname}>`);
+        }
+        // console.log("onclosetag", tagname, "popped:", poppedTag, "stack:", tagStack);
 
         if (tagname === "thinking") {
           html += `</div></div>`;
         } else if (tagname === "chat") {
+          html += `</div></div>`;
+        } else if (tagname === "memory") {
           html += `</div></div>`;
         } else if (tagname === "message") {
         } else if (tagname === "terminal") {
           html += `</div>`;
         } else if (tagname === "use_mcp_tool") {
           html += `</div>`;
-        } else if (tagname === "server_name") {
+        } else if (tagname === "action") {
+           html += `</div>`;
+        } else if (tagname === "metadata") {
+           html += `</div>`;
+        } else if (tagname === "query") {
+           html += `</div>`;
+        }else if (tagname === "usage") {
+          // html += `</div>`;
+        }else if (tagname === "server_name") {
           html += `</span>`;
         } else if (tagname === "tool_name") {
           html += `</span></div>`;
@@ -362,6 +468,8 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "file") {
           html += `</div></div>`;
+        } else if (tagname === 'hive-msg-id') {
+          html += `</div>`;
         } else if (tagname === "file_operation") {
           html += `</div></div>`;
         } else if (tagname === "execute") {
@@ -382,6 +490,8 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</span></div>`;
         } else if (tagname === "list_files") {
           html += `</div></div>`;
+        } else if (tagname === "list_code_definition_names") {
+          html += `</code></pre></div></div></div>`;
         } else if (tagname === "recursive") {
           html += `</span></div>`;
         } else if (tagname === "execute_command") {
@@ -392,7 +502,47 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === "tool_result") {
           html += `</div></div>`;
-        } else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
+        } else if (tagname === "pid") {
+          html += `</span>`;
+        } else if (tagname === "terminal_append") {
+          // 处理 terminal_append 标签关闭 - 确保PID唯一性
+          if (currentPid && currentContent) {
+            // 检查当前PID是否已经在本次解析中处理过
+            if (!processedPidsInThisParse.has(currentPid)) {
+              const contentLines = currentContent.split('\n');
+              setLog(currentPid, contentLines);
+
+              const componentHtml = `
+              <div class="terminal-process-block" data-pid="${md.utils.escapeHtml(currentPid)}">
+                <div class="terminal-process-header">
+                  <i class="fa-solid fa-terminal"></i>
+                  <span>进程 ${md.utils.escapeHtml(currentPid)}</span>
+                </div>
+                <div id="process-${currentPid}" class="terminal-process-content">
+                  ${md.utils.escapeHtml(contentLines.join('\n'))}
+                </div>
+              </div>`;
+              html += componentHtml;
+
+              // 标记此PID已处理，确保唯一性
+              processedPidsInThisParse.add(currentPid);
+            } else {
+              const contentLines = currentContent.split('\n');
+              addLog(currentPid, contentLines);
+            }
+
+            // 重置变量
+            currentPid = "";
+            currentContent = "";
+          }
+        } else if (tagname === "process_pid") {
+          // process_pid 标签关闭，不需要额外处理
+        } else if (tagname === "process_content") {
+          // process_content 标签关闭，不需要额外处理
+        } else if (tagname === "usage") {
+          // html += `</div>`;
+          // process_content 标签关闭，不需要额外处理
+        }else if (tagname === "operation" || tagname === "path" || tagname === "content" || tagname === "r" || tagname === "working_directory" || tagname === "timeout") {
           html += `</div>`;
         } else if (tagname === "download_file") {
           isDownloadFile = false;
@@ -410,7 +560,8 @@ export function markdownItMcp(md: MarkdownIt) {
     parser.write(mcpContent);
     parser.end();
 
-    console.log("Generated HTML:", html);
+    // 不再清空映射，保持内容在内存中
+    // console.log("Generated HTML:", html);
 
     const token = state.push("html_block", "", 0);
     token.content = html;

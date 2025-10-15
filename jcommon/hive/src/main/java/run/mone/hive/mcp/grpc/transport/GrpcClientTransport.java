@@ -13,6 +13,7 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -45,6 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -189,18 +191,18 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     // 改进后的 observer 方法
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
-        log.info("=========>observer"+ observer);
+        log.info("=========>observer" + observer);
         // 确保连接已经建立再创建双向流
         waitForChannelReady();
         return createObserverWithReconnect(observer, 0);
     }
-    
+
     // 等待 Channel 准备就绪
     private void waitForChannelReady() {
         if (channel == null) {
             throw new IllegalStateException("Channel not initialized. Call connect() first.");
         }
-        
+
         // 等待连接就绪，最多等待5秒
         try {
             boolean ready = channel.getState(true) != io.grpc.ConnectivityState.READY;
@@ -236,16 +238,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
             public void onNext(StreamResponse response) {
                 isReconnecting = false; // 连接成功，重置重连状态
                 Safe.run(() -> {
-                    if (response.getCmd().equals(Const.NOTIFY_MSG)) {
-                        String data = response.getData();
-                        Type typeOfT = new TypeToken<Map<String, String>>() {
-                        }.getType();
-                        Map map = GsonUtils.gson.fromJson(data, typeOfT);
-                        consumer.accept(map);
-                    }
-                    // 直接转发响应
-                    String data = response.getData();
-                    consumer.accept(data);
+                    consumer.accept(Pair.of(response, req));
                     observer.onNext(response);
                 });
             }
@@ -293,7 +286,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
             if (channel == null || channel.isShutdown() || channel.isTerminated()) {
                 throw new IllegalStateException("Channel is not available for creating stream");
             }
-            
+
             req = getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver);
 
             // 构建请求时添加 token
@@ -318,9 +311,9 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
         // 计算重连延迟（指数退避，最大30秒）
         long delay = Math.min(5 * (1L << Math.min(attemptCount - 1, 3)), 30);
-        
+
         log.info("{}秒后进行第{}次重连...", delay, attemptCount);
-        
+
         reconnectExecutor.schedule(() -> {
             if (!close.get()) {
                 try {
@@ -337,7 +330,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     // 改进 recreateChannel 方法
     private synchronized void recreateChannel() {
         log.info("开始重建gRPC通道...");
-        
+
         // 关闭旧的连接
         if (channel != null && !channel.isShutdown()) {
             try {
@@ -365,10 +358,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 // 添加重试配置
                 .maxRetryAttempts(3)
                 .build();
-                
+
         this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
         this.asyncStub = McpServiceGrpc.newStub(channel);
-        
+
         log.info("gRPC通道重建完成");
     }
 
@@ -378,7 +371,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         System.out.println("closeGracefully");
         close.set(true);
         isReconnecting = false;
-        
+
         return Mono.fromRunnable(() -> {
             try {
                 // 关闭重连执行器
@@ -388,7 +381,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                         reconnectExecutor.shutdownNow();
                     }
                 }
-                
+
                 // 关闭当前连接
                 if (req != null) {
                     try {
@@ -397,7 +390,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                         System.err.println("关闭req时出错: " + e.getMessage());
                     }
                 }
-                
+
                 if (channel != null) {
                     channel.shutdown();
                     if (!channel.awaitTermination(5, TimeUnit.SECONDS)) {
@@ -412,10 +405,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     // 添加连接状态检查方法
     public boolean isConnected() {
-        return channel != null && 
-               !channel.isShutdown() && 
-               !channel.isTerminated() &&
-               !isReconnecting;
+        return channel != null &&
+                !channel.isShutdown() &&
+                !channel.isTerminated() &&
+                !isReconnecting;
     }
 
 
@@ -463,6 +456,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
     private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
+
+        objectMap.remove(Const.ROLE);
 
         Map<String, String> stringMap = objectMap.entrySet().stream()
                 .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
@@ -577,7 +572,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
             }
 
             if (data instanceof InitializeResponse ir) {
-                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion());
+                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion(), ir.getServerInfo().getMetaMap());
                 return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
             }
 

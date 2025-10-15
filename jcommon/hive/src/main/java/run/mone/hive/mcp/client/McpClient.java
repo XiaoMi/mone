@@ -134,7 +134,7 @@ public interface McpClient {
 
         private ClientCapabilities capabilities;
 
-        private Implementation clientInfo = new Implementation("Spring AI MCP Client", "0.3.1");
+        private Implementation clientInfo = new Implementation("Hive AI Agent Client", "0.3.1", new HashMap<>());
 
         private Map<String, Root> roots = new HashMap<>();
 

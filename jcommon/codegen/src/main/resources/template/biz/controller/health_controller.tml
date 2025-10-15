@@ -1,0 +1,62 @@
+package ${package}.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import ${package}.dto.ApiResponse;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * 健康检查控制器
+ * 提供服务健康状态检查和接口列表查询
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@RestController
+@RequestMapping("/health")
+public class HealthController {
+
+    @Autowired
+    private RequestMappingHandlerMapping requestMappingHandlerMapping;
+
+    /**
+     * 健康检查接口
+     * 
+     * @return 服务状态
+     */
+    @GetMapping
+    public ApiResponse<Map<String, String>> healthCheck() {
+        return ApiResponse.success(Collections.singletonMap("status", "UP"));
+    }
+
+    /**
+     * 获取所有接口端点信息
+     * 
+     * @return 接口列表
+     */
+    @GetMapping("/endpoints")
+    public ApiResponse<List<Map<String, String>>> getAllEndpoints() {
+        List<Map<String, String>> endpoints = requestMappingHandlerMapping.getHandlerMethods().entrySet().stream()
+                .map(entry -> {
+                    RequestMappingInfo mappingInfo = entry.getKey();
+                    HandlerMethod handlerMethod = entry.getValue();
+                    return Map.of(
+                            "path", mappingInfo.getPatternsCondition().getPatterns().stream().collect(Collectors.joining(",")),
+                            "method", mappingInfo.getMethodsCondition().getMethods().stream().map(Enum::name).collect(Collectors.joining(",")),
+                            "handler", handlerMethod.getBeanType().getName() + "." + handlerMethod.getMethod().getName()
+                    );
+                })
+                .collect(Collectors.toList());
+        return ApiResponse.success(endpoints);
+    }
+}
+

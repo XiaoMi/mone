@@ -121,7 +121,7 @@ public class OllamaEmbedding implements EmbeddingBase {
         // 根据模型返回默认维度
         String model = config.getModel().toLowerCase();
         if (model.contains("embeddinggemma")) {
-            return 3584;
+            return 768;
         } else if (model.contains("nomic-embed-text")) {
             return 768;
         } else if (model.contains("mxbai-embed-large")) {
@@ -264,7 +264,7 @@ public class OllamaEmbedding implements EmbeddingBase {
     public static int getModelDimensions(String model) {
         switch (model.toLowerCase()) {
             case "embeddinggemma":
-                return 3584;
+                return 768;
             case "nomic-embed-text":
             case "bge-base":
                 return 768;

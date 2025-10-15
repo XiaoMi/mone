@@ -161,7 +161,12 @@ const handleLogin = async () => {
       userStore.setUser({
         id: response.data.data.userId,
         username: response.data.data.username,
+        internalAccount: response.data.data.internalAccount || ""
       })
+      if (!response.data.data.internalAccount) {
+        router.push('/bindInner')
+        return
+      }
       ElMessage.success('登录成功')
       router.push('/agents')
     } else {

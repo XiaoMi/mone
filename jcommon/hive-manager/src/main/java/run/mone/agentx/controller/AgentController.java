@@ -183,6 +183,8 @@ public class AgentController {
                 .map(ApiResponse::success);
     }
 
+
+    //agent 获取配置
     @PostMapping("/config")
     public Mono<ApiResponse<Map<String, String>>> getAgentConfig(@RequestBody Map<String, Long> request) {
         Long agentId = request.get("agentId");
@@ -209,6 +211,45 @@ public class AgentController {
                 })
                 .map(ApiResponse::success)
                 .defaultIfEmpty(ApiResponse.success(Map.of()));
+    }
+
+    @PostMapping("/config/save")
+    public Mono<ApiResponse<String>> saveConfig(@RequestBody Map<String, Object> request) {
+        Object agentIdObj = request.get("agentId");
+        Object userIdObj = request.get("userId");
+        Object configsObj = request.get("configs");
+
+        if (agentIdObj == null || userIdObj == null || configsObj == null) {
+            return Mono.just(ApiResponse.error(400, "Missing required parameters: agentId, userId and configs"));
+        }
+
+        Long agentId;
+        Long userId;
+        try {
+            agentId = Long.valueOf(agentIdObj.toString());
+            userId = Long.valueOf(userIdObj.toString());
+        } catch (NumberFormatException e) {
+            return Mono.just(ApiResponse.error(400, "Invalid agentId or userId format"));
+        }
+
+        if (!(configsObj instanceof Map)) {
+            return Mono.just(ApiResponse.error(400, "configs must be a Map"));
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> configsMap = (Map<String, Object>) configsObj;
+        Map<String, String> configs = configsMap.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue() != null ? entry.getValue().toString() : ""
+                ));
+
+        return agentConfigService.setBatchConfig(agentId, userId, configs)
+                .thenReturn(ApiResponse.success("Configuration saved successfully"))
+                .onErrorResume(e -> {
+                    log.error("Failed to save agent config, agentId: {}, userId: {}", agentId, userId, e);
+                    return Mono.just(ApiResponse.error(500, "Failed to save configuration: " + e.getMessage()));
+                });
     }
 
     @PostMapping("/instances/by-names")
