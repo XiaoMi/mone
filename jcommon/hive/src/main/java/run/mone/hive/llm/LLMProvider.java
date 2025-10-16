@@ -23,6 +23,7 @@ public enum LLMProvider {
     //openai/gpt-4o-2024-11-20 anthropic/claude-3.5-sonnet:beta anthropic/claude-3.7-sonnet
     OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-3.7-sonnet", null),
     OPENROUTER_CLAUDE_SONNET_45("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-sonnet-4.5", null),
+    OPENROUTER_CLAUDE_HAIKU_45("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-haiku-4.5", null),
     OPENROUTER_OPENAI_CODEX_MINI("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/codex-mini", null),
     OPENROUTER_OPENAI_CODEX("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/gpt-5-codex", null),
     OPENROUTER_GEMINI_25_FLUSH("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-flash", null),

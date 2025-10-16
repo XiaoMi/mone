@@ -125,7 +125,8 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-        config.setLlmProvider(LLMProvider.OPENROUTER_OPENAI_CODEX);
+//        config.setLlmProvider(LLMProvider.OPENROUTER_OPENAI_CODEX);
+        config.setLlmProvider(LLMProvider.OPENROUTER_CLAUDE_HAIKU_45);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);

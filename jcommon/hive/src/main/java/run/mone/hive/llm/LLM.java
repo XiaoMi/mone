@@ -1017,7 +1017,8 @@ public class LLM {
         }
 
         for (AiMessage message : messages) {
-            if ((this.llmProvider == LLMProvider.OPENROUTER ||
+            if ((   this.llmProvider.name().startsWith("OPENROUTER") ||
+                    this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.GLM_45_AIR ||
                     this.llmProvider == LLMProvider.GLM_45_V ||
