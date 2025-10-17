@@ -266,6 +266,7 @@ public class ChromeAgent extends Role {
                 consumer.accept(content);
             }
         }
+        handleMemoryAction(result);
         return CompletableFuture.completedFuture(Message.builder().build());
     }
 
@@ -319,5 +320,65 @@ public class ChromeAgent extends Role {
     private String getSystemPrompt(){
         String prompt = MonerSystemPrompt.mcpPrompt(FromType.CHROME.getValue());
         return prompt + rolePrompt;
+    }
+
+    /**
+     * 如果有memory动作，则处理
+     */
+    private void handleMemoryAction(Result result) {
+        try {
+            if (result == null || result.getKeyValuePairs() == null) {
+                return;
+            }
+
+            String messageContent = null;
+
+            // Case 1: top-level <memory> tag
+            if ("memory".equalsIgnoreCase(result.getTag())) {
+                // Wrap as a JSON object expected by MemoryTool: {"memory": {...}}
+                // The values here come from parsed key-value pairs; they may already be JSON strings.
+                // We pass through as-is; MemoryAction will parse the JSON from content.
+                messageContent = GsonUtils.gson.toJson(ImmutableMap.of("memory", result.getKeyValuePairs()));
+            }
+
+            // Case 2: memory embedded inside a chat/message payload
+            if (messageContent == null) {
+                String msg = result.getKeyValuePairs().get("message");
+                if (StringUtils.isNotBlank(msg) && msg.toLowerCase().contains("memory")) {
+                    // Pass the inner message content directly to MemoryAction
+                    messageContent = msg;
+                }
+            }
+
+            if (StringUtils.isBlank(messageContent)) {
+                return;
+            }
+
+            // Find the existing MemoryAction instance from our action list
+            Optional<Action> memoryActionOpt = this.actionList.stream()
+                    .filter(a -> a instanceof MemoryAction)
+                    .findFirst();
+            if (memoryActionOpt.isEmpty()) {
+                log.warn("MemoryAction not found; skip memory handling");
+                return;
+            }
+
+            Action memoryAction = memoryActionOpt.get();
+
+            // Build a minimal ActionReq: put the message content and a dummy arguments payload
+            ActionReq req = new ActionReq();
+            req.setRole(Role.builder().name("user").build());
+            // Provide a minimal Result with empty arguments so MemoryAction.jsonToXml won't NPE
+            Result dummy = new Result("use_mcp_tool", Map.of("arguments", "{}"));
+            req.setMessage(Message.builder().data(dummy).content(messageContent).build());
+
+            try {
+                memoryAction.run(req, null).join();
+            } catch (Exception e) {
+                log.warn("Invoke MemoryAction.run failed", e);
+            }
+        } catch (Exception e) {
+            log.warn("handleMemoryAction error", e);
+        }
     }
 }

@@ -21,7 +21,8 @@ public class MemoryAction extends Action {
         if (memoryTool != null) {
             memoryActionPrompt = "\n\n#.记忆工具定义:\n" + memoryTool.description() 
                 + "\n记忆工具参数:\n" + memoryTool.parameters()
-                + "\n记忆工具使用示例:\n" + memoryTool.usage();
+                + "\n记忆工具使用示例:\n" + memoryTool.usage()
+                + "\n如果你在在chat工具中返回对本工具的使用，则要参考使用示例，返回xml格式在chat的内层";
         }
         setName(memoryTool.getName());
         setDescription(memoryActionPrompt);

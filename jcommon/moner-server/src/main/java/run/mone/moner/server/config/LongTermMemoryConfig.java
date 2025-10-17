@@ -14,7 +14,7 @@ public class LongTermMemoryConfig {
     
     @Bean
     public MemoryTool memoryTool() {
-        // need setup befor run
+        // FIXME: setup before run
         return new MemoryTool(RoleMemoryConfig.builder().build());
     }
 }
