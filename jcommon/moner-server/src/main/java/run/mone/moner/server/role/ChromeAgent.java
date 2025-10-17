@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +60,8 @@ public class ChromeAgent extends Role {
 
     private List<Action> actionList = Lists.newArrayList(new OpenTabAction(""), new OperationAction(), new ScrollAction(),
             new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new CodeAction());
+
+    private Map<String, Action> actionMap = actionList.stream().collect(Collectors.toMap(a -> a.getName(), Function.identity()));
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
     }.getType();
@@ -258,7 +261,7 @@ public class ChromeAgent extends Role {
                 log.info("toolName:{}", tooleName);
                 ActionReq req = new ActionReq();
                 req.setRole(Role.builder().name("user").build());
-                req.setMessage(Message.builder().data(result).build());
+                req.setMessage(Message.builder().data(result).content(res).build());
                 String content = optional.get().run(req, context).join().getContent();
                 consumer.accept(content);
             }
