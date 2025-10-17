@@ -59,7 +59,7 @@ public class ChromeAgent extends Role {
     private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer(), new Summarizer(), new Miliner());
 
     private List<Action> actionList = Lists.newArrayList(new OpenTabAction(""), new OperationAction(), new ScrollAction(),
-            new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new CodeAction());
+            new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new CodeAction(), new MemoryAction());
 
     private Map<String, Action> actionMap = actionList.stream().collect(Collectors.toMap(a -> a.getName(), Function.identity()));
 

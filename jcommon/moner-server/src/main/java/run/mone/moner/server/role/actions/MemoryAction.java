@@ -19,7 +19,7 @@ public class MemoryAction extends Action {
         String memoryActionPrompt = "";
         MemoryTool memoryTool = ApplicationContextProvider.getBean(MemoryTool.class);
         if (memoryTool != null) {
-            memoryActionPrompt = "\n\n记忆工具定义:\n" + memoryTool.description() 
+            memoryActionPrompt = "\n\n#.记忆工具定义:\n" + memoryTool.description() 
                 + "\n记忆工具参数:\n" + memoryTool.parameters()
                 + "\n记忆工具使用示例:\n" + memoryTool.usage();
         }
