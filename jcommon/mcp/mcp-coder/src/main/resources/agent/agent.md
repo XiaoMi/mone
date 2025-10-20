@@ -9,7 +9,7 @@
 ## Constraints
 - 必须使用java21版本和maven管理项目
 - 使用的类库包含:gson springboot lombok
-- 数据库使用:h2
+- 数据库使用:Mysql
 - 权限验证使用jwt
 - 编写的代码要简单易懂(代码不是给机器看的,而是给人看的)
 - 包路径必须使用:run.mone.shop

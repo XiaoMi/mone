@@ -28,11 +28,11 @@ import java.util.stream.Collectors;
  * @date 2025/1/16
  */
 @Slf4j
-public class GetConfigCommand extends RoleBaseCommand {
+public class ConfigCommand extends RoleBaseCommand {
 
     private final MarkdownService markdownService = new MarkdownService();
 
-    public GetConfigCommand(RoleService roleService) {
+    public ConfigCommand(RoleService roleService) {
         super(roleService);
     }
 
@@ -110,6 +110,9 @@ public class GetConfigCommand extends RoleBaseCommand {
             if (role != null) {
                 Map<String, String> agentList = getAgentListFromWorkspace(role);
                 systemInfo.put("agentList", agentList);
+
+                int messageSize = role.getRc().getMessageList().size();
+                configMap.put("messageSize", messageSize);
             }
             
             configMap.put("systemInfo", systemInfo);
@@ -202,6 +205,8 @@ public class GetConfigCommand extends RoleBaseCommand {
                     role.setRoleConfig(roleConfig);
                 }
                 roleConfig.put(key, value);
+
+                role.saveConfig();
                 
                 // 构建JSON响应
                 Map<String, Object> response = new HashMap<>();

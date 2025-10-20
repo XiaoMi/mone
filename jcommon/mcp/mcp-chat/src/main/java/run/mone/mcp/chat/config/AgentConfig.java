@@ -1,15 +1,14 @@
 package run.mone.mcp.chat.config;
 
 import com.google.common.collect.Lists;
+
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.Rag;
-import run.mone.hive.mcp.service.RoleMemoryConfig;
 import run.mone.hive.mcp.service.RoleMeta;
-import run.mone.hive.mcp.service.WebQuery;
 import run.mone.hive.roles.tool.*;
 
 /**

@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 public class ContextManager {
     
-    private static final int DEFAULT_MAX_TOKENS = 100000;
-    private static final int DEFAULT_COMPRESSION_THRESHOLD = 80000;
+    private static final int DEFAULT_MAX_TOKENS = 1000000;
+    private static final int DEFAULT_COMPRESSION_THRESHOLD = 800000;
     private static final double COMPRESSION_RATIO_THRESHOLD = 0.8;
     
     private final Gson gson = new Gson();
