@@ -251,8 +251,11 @@ class UserServiceTest {
         assertNotNull(savedUser);
 
         String internalAccount = "internal123";
-        StepVerifier.create(userService.bindInternalAccount(savedUser, internalAccount))
-                .expectNext(internalAccount)
+        savedUser.setInternalAccount(internalAccount);
+        StepVerifier.create(userService.bindInternalAccount(savedUser))
+                .assertNext(userDTO -> {
+                    assertEquals(internalAccount, userDTO.getInternalAccount());
+                })
                 .verifyComplete();
 
         // 验证绑定成功
@@ -268,7 +271,11 @@ class UserServiceTest {
         User nonExistentUser = new User();
         nonExistentUser.setUsername("nonExistentUser");
 
-        StepVerifier.create(userService.bindInternalAccount(nonExistentUser, "internal123"))
+        nonExistentUser.setInternalAccount("internal123");
+        StepVerifier.create(userService.bindInternalAccount(nonExistentUser))
+                .assertNext(userDTO -> {
+                    assertEquals(nonExistentUser.getInternalAccount(), userDTO.getInternalAccount());
+                })
                 .verifyComplete();
     }
 

@@ -2,10 +2,7 @@ package run.mone.hive.llm;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -468,8 +465,8 @@ public class LLM {
         if (this.config.isStream()) {
             requestBody.addProperty("stream", true);
         }
-        //使用json格式返回
-        if (clientConfig.isJson()) {
+        //使用json格式返回 AZURE_GPT5_CODEX 查看stream版的煮食
+        if (clientConfig.isJson() && llmProvider != LLMProvider.AZURE_GPT5_CODEX) {
             JsonObject rf = new JsonObject();
             rf.addProperty("type", "json_object");
             requestBody.add("response_format", rf);
@@ -507,6 +504,11 @@ public class LLM {
             requestBody.addProperty("max_tokens", this.config.getMaxTokens());
         }
 
+        // response api 的system prompt可以放在instructions里面也可以放在input列表里面
+        if (llmProvider == LLMProvider.AZURE_GPT5_CODEX && StringUtils.isNotEmpty(systemPrompt)) {
+            requestBody.addProperty("instructions", systemPrompt);
+        }
+
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER
@@ -515,10 +517,13 @@ public class LLM {
                     || this.llmProvider == LLMProvider.QWEN
                     || this.llmProvider == LLMProvider.MIFY
                     || this.llmProvider == LLMProvider.MIFY_GATEWAY
+                    || this.llmProvider == LLMProvider.AZURE_GPT5
             ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message));
+            } else if (this.llmProvider == LLMProvider.AZURE_GPT5_CODEX) {
+                msgArray.add(createMessageObjectForResponseAPI(message));
             } else {
                 msgArray.add(createMessageObject(message.getRole(), message.getContent()));
             }
@@ -585,6 +590,34 @@ public class LLM {
             if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
                 res = jsonResponse.get("content").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
                 return LLMChatCompletionResult.builder().result(res).usage(null).build();
+            }
+            if (llmProvider == LLMProvider.AZURE_GPT5_CODEX) {
+                StringBuilder sb = new StringBuilder();
+                LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+                jsonResponse.get("output").getAsJsonArray().forEach(it -> {
+                    if (!it.isJsonObject()) {
+                        return;
+                    }
+                    if (!it.getAsJsonObject().has("content")) {
+                        return;
+                    }
+                    it.getAsJsonObject().get("content").getAsJsonArray().forEach(it2 -> {
+                        if (it2.getAsJsonObject().has("text")) {
+                            sb.append(it2.getAsJsonObject().getAsJsonPrimitive("text").getAsString());
+                        }
+                    });
+                });
+                if (jsonResponse.has("usage") && jsonResponse.get("usage").isJsonObject()) {
+                    JsonObject usageObj = jsonResponse.get("usage").getAsJsonObject();
+                    if (usageObj.has("input_tokens") && usageObj.get("input_tokens").getAsJsonPrimitive().isNumber()) {
+                        usageBuilder.inputTokens(usageObj.get("input_tokens").getAsInt());
+                    }
+                    if (usageObj.has("output_tokens") && usageObj.get("output_tokens").getAsJsonPrimitive().isNumber()) {
+                        usageBuilder.outputTokens(usageObj.get("output_tokens").getAsInt());
+                    }
+                }
+                //.get(0).getAsJsonObject().get("content").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
+                return LLMChatCompletionResult.builder().result(sb.toString()).usage(usageBuilder.build()).build();
             }
 
             //openai那个流派的
@@ -669,6 +702,9 @@ public class LLM {
 
 
     public String getContentsName() {
+        if (this.llmProvider == LLMProvider.AZURE_GPT5_CODEX) {
+            return "input";
+        }
         return this.llmProvider == LLMProvider.GOOGLE_2 ? "contents" : "messages";
     }
 
@@ -777,6 +813,23 @@ public class LLM {
         obj.addProperty("text", am.getContent());
         array.add(obj);
         message.add("parts", array);
+
+        return message;
+    }
+
+    private JsonObject createMessageObjectForResponseAPI(AiMessage am) {
+        if (null != am.getJsonContent()) {
+            return am.getJsonContent();
+        }
+
+        JsonObject message = new JsonObject();
+        message.addProperty("role", am.getRole());
+        JsonArray array = new JsonArray();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("text", am.getContent());
+        obj.addProperty("type", "input_text");
+        array.add(obj);
+        message.add("content", array);
 
         return message;
     }
@@ -906,7 +959,7 @@ public class LLM {
             requestBody.addProperty("model", model);
             requestBody.addProperty("stream", true);
 
-            if (null != this.config.getTemperature()) {
+            if (null != this.config.getTemperature() && this.llmProvider != LLMProvider.AZURE_GPT5_CODEX && this.llmProvider != LLMProvider.AZURE_GPT5) {
                 requestBody.addProperty("temperature", this.config.getTemperature());
             }
         }
@@ -921,6 +974,7 @@ public class LLM {
         JsonArray msgArray = new JsonArray();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.AZURE_GPT5_CODEX //response 的json返回需要text字段显式指定格式
                 && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             if (this.config.isJson()) {
                 String jsonSystemPrompt = """
@@ -935,6 +989,10 @@ public class LLM {
                     msgArray.add(createMessageObject("system", systemPrompt));
                 }
             }
+        }
+        // response api 的system prompt可以放在instructions里面也可以放在input列表里面
+        if (llmProvider == LLMProvider.AZURE_GPT5_CODEX && StringUtils.isNotEmpty(systemPrompt)) {
+            requestBody.addProperty("instructions", systemPrompt);
         }
 
         //claude的系统提示词
@@ -959,7 +1017,8 @@ public class LLM {
         }
 
         for (AiMessage message : messages) {
-            if ((this.llmProvider == LLMProvider.OPENROUTER ||
+            if ((   this.llmProvider.name().startsWith("OPENROUTER") ||
+                    this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.GLM_45_AIR ||
                     this.llmProvider == LLMProvider.GLM_45_V ||
@@ -979,10 +1038,13 @@ public class LLM {
                     this.llmProvider == LLMProvider.QWEN ||
                     this.llmProvider == LLMProvider.MIFY ||
                     this.llmProvider == LLMProvider.MIFY_GATEWAY ||
+                    this.llmProvider == LLMProvider.AZURE_GPT5 ||
                     this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
+            } else if (this.llmProvider == LLMProvider.AZURE_GPT5_CODEX) {
+                msgArray.add(createMessageObjectForResponseAPI(message));
             } else {
                 if (StringUtils.isNotEmpty(message.getContent())) {
                     msgArray.add(createMessageObject(message.getRole(), message.getContent()));
@@ -1000,7 +1062,9 @@ public class LLM {
         requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
 
         // openai 系列的应该都可以
-        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN) {
+        if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN
+                || this.llmProvider == LLMProvider.AZURE_GPT5
+        ) {
             JsonObject usage = new JsonObject();
             usage.addProperty("include_usage", true);
             requestBody.add("stream_options", usage);
@@ -1185,6 +1249,69 @@ public class LLM {
                                     if (null != sink) {
                                         sink.next(content);
                                     }
+                                }
+                            }
+                        } else if (llmProvider == LLMProvider.AZURE_GPT5_CODEX) {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                /*
+                                 * response.output_item.added 是增量
+                                 * response.output_item.done 是全量，避免重复消费
+                                 * */
+                                // reasoning 只取一个最后的汇总，应该只有一个id
+                                if (jsonResponse.has("type") && jsonResponse.get("type").isJsonPrimitive() &&
+                                        jsonResponse.get("type").getAsString().equals("response.output_item.done")) {
+                                    if (jsonResponse.has("item") && jsonResponse.get("item").isJsonObject() &&
+                                            jsonResponse.get("item").getAsJsonObject().has("type")
+                                            && jsonResponse.get("item").getAsJsonObject().get("type").isJsonPrimitive()
+                                            && jsonResponse.get("item").getAsJsonObject().get("type").getAsJsonPrimitive().isString()
+                                            && jsonResponse.get("item").getAsJsonObject().get("type").getAsString().equals("reasoning")) {
+                                        messageHandler.accept("", jsonResponse);
+                                    }
+                                }
+                                // chat 只取增量
+                                if (jsonResponse.has("type") && jsonResponse.get("type").isJsonPrimitive() &&
+                                        jsonResponse.get("type").getAsString().equals("response.output_text.delta")) {
+                                    if (jsonResponse.has("delta") && jsonResponse.get("delta").isJsonPrimitive() &&
+                                            jsonResponse.get("delta").getAsJsonPrimitive().isString()) {
+                                        messageHandler.accept(jsonResponse.get("delta").getAsString(), jsonResponse);
+                                    }
+                                }
+                                // 退出逻辑
+                                if (jsonResponse.has("type") && jsonResponse.get("type").isJsonPrimitive() &&
+                                        (
+                                                jsonResponse.get("type").getAsString().equals("response.completed")
+                                                        || jsonResponse.get("type").getAsString().equals("response.failed")
+                                                        || jsonResponse.get("type").getAsString().equals("response.incomplete")
+                                        )) {
+                                    // usage
+                                    if (jsonResponse.has("response") && jsonResponse.get("response").isJsonObject()) {
+                                        JsonObject responseObj = jsonResponse.get("response").getAsJsonObject();
+                                        if (responseObj.has("usage") && responseObj.get("usage").isJsonObject()) {
+                                            JsonObject usageObj = responseObj.get("usage").getAsJsonObject();
+                                            LLMUsage.LLMUsageBuilder usageBuilder = LLMUsage.builder();
+                                            if (usageObj.has("input_tokens") && usageObj.get("input_tokens").getAsJsonPrimitive().isNumber()) {
+                                                usageBuilder.inputTokens(usageObj.get("input_tokens").getAsInt());
+                                            }
+                                            if (usageObj.has("output_tokens") && usageObj.get("output_tokens").getAsJsonPrimitive().isNumber()) {
+                                                usageBuilder.outputTokens(usageObj.get("output_tokens").getAsInt());
+                                            }
+                                            LLMUsage usage = usageBuilder.build();
+                                            if (null != usageConsumer) {
+                                                usageConsumer.accept(usage);
+                                            }
+                                        }
+                                    }
+                                    //退出
+                                    jsonResponse.addProperty("type", "finish");
+                                    jsonResponse.addProperty("content", "[DONE]");
+                                    messageHandler.accept("[DONE]", jsonResponse);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
+                                    break;
                                 }
                             }
                         } else {
@@ -2259,6 +2386,25 @@ public class LLM {
                     source.addProperty("media_type", part.getMimeType());
                     source.addProperty("data", part.getData());
                     obj2.add("source", source);
+                    contentJsons.add(obj2);
+                });
+            }
+            req.add("content", contentJsons);
+        } else if (llm.getConfig().getLlmProvider() == LLMProvider.AZURE_GPT5_CODEX) {
+
+            req.addProperty("role", ROLE_USER);
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "input_text");
+            obj1.addProperty("text", msg.getContent());
+            contentJsons.add(obj1);
+
+            if (msg.getParts() != null && !msg.getParts().isEmpty()) {
+                msg.getParts().forEach(part -> {
+                    JsonObject obj2 = new JsonObject();
+                    obj2.addProperty("type", "input_image");
+                    obj2.add("image_url",new JsonPrimitive( String.format("data:%s;base64,%s",part.getMimeType(),part.getData())));
                     contentJsons.add(obj2);
                 });
             }

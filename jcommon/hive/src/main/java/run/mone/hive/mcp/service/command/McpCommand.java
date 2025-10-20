@@ -2,6 +2,7 @@ package run.mone.hive.mcp.service.command;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.configs.Const;
@@ -263,7 +264,18 @@ public class McpCommand extends RoleBaseCommand {
             // 获取所有服务器列表
             var servers = role.getMcpHub().getServers();
             if (servers == null || servers.isEmpty()) {
-                result.put("servers", new java.util.ArrayList<>());
+                java.util.List<Map<String, Object>> serverList = new java.util.ArrayList<>();
+                if (!role.getMcpNames().isEmpty()) {
+                    role.getMcpNames().forEach(it -> {
+                        Map<String, Object> serverInfo = new HashMap<>();
+                        serverInfo.put("name", it);
+                        serverInfo.put("status", "disconnected");
+                        serverInfo.put("error", "");
+                        serverInfo.put("toolsCount", 0);
+                        serverList.add(serverInfo);
+                    });
+                }
+                result.put("servers", serverList);
                 result.put("totalCount", 0);
                 result.put("message", "当前没有配置的MCP服务器");
             } else {
@@ -427,7 +439,7 @@ public class McpCommand extends RoleBaseCommand {
                 // 构造工具参数
                 Map<String, Object> toolArguments = new HashMap<>();
                 toolArguments.put("message", "/clear");
-                toolArguments.put(Const.OWNER_ID, role.getConfg().getUserId()+"_"+role.getConfg().getAgentId());
+                toolArguments.put(Const.OWNER_ID, role.getConfg().getUserId() + "_" + role.getConfg().getAgentId());
 
                 // 调用callToolStream清空聊天记录
                 role.getMcpHub().callToolStream(serverName, toolName, toolArguments)

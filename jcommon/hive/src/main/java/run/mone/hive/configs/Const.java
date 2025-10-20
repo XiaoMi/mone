@@ -70,4 +70,5 @@ public class Const {
 
     public static final String AGENT_SERVER_VERSION = "agent_server_version";
 
+    public static final String TASK_PROGRESS = "task_progress";
 }

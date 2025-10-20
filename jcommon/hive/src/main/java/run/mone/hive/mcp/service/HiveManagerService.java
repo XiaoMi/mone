@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.*;
+import run.mone.hive.configs.Const;
 
 import java.util.HashMap;
 import java.util.List;
@@ -285,7 +286,7 @@ public class HiveManagerService {
             // 添加一些运行时信息
             configsToSave.put("lastExitTime", String.valueOf(System.currentTimeMillis()));
             if (workspacePath != null && !workspacePath.isEmpty()) {
-                configsToSave.put("workspacePath", workspacePath);
+                configsToSave.put(Const.WORKSPACE_PATH_KEY, workspacePath);
             }
 
             // 调用保存配置方法
