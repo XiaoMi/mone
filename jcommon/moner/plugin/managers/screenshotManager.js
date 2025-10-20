@@ -9,6 +9,108 @@ class ScreenshotManager {
         };
     }
 
+    // 在页面注入辅助工具（固定元素处理与状态提示）
+    async injectHelper(tabId) {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => {
+                if (window.__imgshotHelper) return;
+                window.__imgshotHelper = (() => {
+                    const helper = {
+                        fixed: [],
+                        ensureStatusHost() {
+                            let host = document.getElementById('longScreenshotStatus');
+                            if (!host) {
+                                host = document.createElement('div');
+                                host.id = 'longScreenshotStatus';
+                                host.style.cssText = [
+                                    'position: fixed',
+                                    'top: 20px',
+                                    'right: 20px',
+                                    'background: rgba(0,0,0,0.8)',
+                                    'color: #fff',
+                                    'padding: 12px 16px',
+                                    'border-radius: 6px',
+                                    'font: 14px/1.5 Arial, sans-serif',
+                                    'z-index: 2147483647',
+                                    'box-shadow: 0 4px 12px rgba(0,0,0,0.3)'
+                                ].join(';');
+                                document.documentElement.appendChild(host);
+                            }
+                            return host;
+                        },
+                        showStatus(msg, duration = 0) {
+                            const host = helper.ensureStatusHost();
+                            host.textContent = msg;
+                            if (duration > 0) {
+                                clearTimeout(host.__hideTimer);
+                                host.__hideTimer = setTimeout(() => helper.hideStatus(), duration);
+                            }
+                        },
+                        hideStatus() {
+                            const host = document.getElementById('longScreenshotStatus');
+                            if (host && host.parentNode) host.parentNode.removeChild(host);
+                        },
+                        collectFixed() {
+                            helper.fixed = [];
+                            const nodes = document.querySelectorAll('*:not(#longScreenshotStatus)');
+                            nodes.forEach(el => {
+                                const style = getComputedStyle(el);
+                                if (style.position === 'fixed' || style.position === 'sticky') {
+                                    helper.fixed.push({ el, style: el.getAttribute('style') || '', rect: el.getBoundingClientRect() });
+                                }
+                            });
+                        },
+                        hideFixed() {
+                            if (!helper.fixed.length) helper.collectFixed();
+                            helper.fixed.forEach(({ el, rect }) => {
+                                el.style.visibility = 'hidden';
+                                // 保留占位，减少重排引起的抖动
+                                el.style.height = rect.height + 'px';
+                            });
+                        },
+                        restoreFixed() {
+                            helper.fixed.forEach(({ el, style }) => {
+                                if (style) el.setAttribute('style', style); else el.removeAttribute('style');
+                            });
+                            helper.fixed = [];
+                        }
+                    };
+                    return helper;
+                })();
+            }
+        });
+    }
+
+    async pageShowStatus(tabId, msg, duration = 0) {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (m, d) => window.__imgshotHelper && window.__imgshotHelper.showStatus(m, d),
+            args: [msg, duration]
+        });
+    }
+
+    async pageHideStatus(tabId) {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => window.__imgshotHelper && window.__imgshotHelper.hideStatus()
+        });
+    }
+
+    async pageHideFixed(tabId) {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => window.__imgshotHelper && window.__imgshotHelper.hideFixed()
+        });
+    }
+
+    async pageRestoreFixed(tabId) {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => window.__imgshotHelper && window.__imgshotHelper.restoreFixed()
+        });
+    }
+
     // 捕获完整页面的截图
     async captureFullPage(download = true) {
         try {
@@ -38,6 +140,10 @@ class ScreenshotManager {
 
             const activeTab = tabs[0];
 
+            // 注入帮助器与初始状态提示
+            await this.injectHelper(activeTab.id);
+            await this.pageShowStatus(activeTab.id, '正在准备长截图...');
+
             // 注入测量页面尺寸和滚动位置的脚本
             const [{result}] = await chrome.scripting.executeScript({
                 target: { tabId: activeTab.id },
@@ -65,6 +171,8 @@ class ScreenshotManager {
             
             // 分段截图
             for (let currentPosition = 0; currentPosition < totalHeight; currentPosition += viewportHeight) {
+                await this.pageShowStatus(activeTab.id, `正在截图... ${Math.min(currentPosition + viewportHeight, totalHeight)}/${totalHeight}`);
+                await this.pageHideFixed(activeTab.id);
                 // 添加重试逻辑
                 let retryCount = 0;
                 const maxRetries = 3;
@@ -106,6 +214,10 @@ class ScreenshotManager {
                 }
             }
 
+            // 清理状态与固定元素
+            await this.pageShowStatus(activeTab.id, '正在合并图片...');
+            await this.pageRestoreFixed(activeTab.id);
+
             // 恢复原始滚动位置
             await chrome.scripting.executeScript({
                 target: { tabId: activeTab.id },
@@ -142,6 +254,7 @@ class ScreenshotManager {
 
             // 下载合并后的图片
             if (download && response.success) {
+                await this.pageShowStatus(activeTab.id, '长截图完成，正在下载...', 1500);
                 await chrome.downloads.download({
                     url: response.dataUrl,
                     filename: 't.jpeg',
@@ -152,6 +265,9 @@ class ScreenshotManager {
 
             // 关闭offscreen文档
             await chrome.offscreen.closeDocument();
+
+            // 隐藏状态提示
+            await this.pageHideStatus(activeTab.id);
 
             // 根据download参数返回不同的值
             return download ? true : response.dataUrl;

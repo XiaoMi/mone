@@ -11,6 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -59,7 +60,7 @@ public class LLMService {
             .content(text)
             .parts(imgTexts == null
                     ? new ArrayList<>()
-                    : imgTexts.stream().map(it -> LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build()).collect(Collectors.toList())).build(), systemPrompt);
+                    : imgTexts.stream().map(it -> LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build()).collect(Collectors.toList())).build(), systemPrompt, llm.getConfig().getCustomConfig());
         log.info("{}", result);
         return result;
 
@@ -72,6 +73,7 @@ public class LLMService {
         String selectedProvider = setting.getSelectedProvider();
         String apiKey = "";
         String model = "";
+        String mifyProvider = "";
 
         if (StringUtils.isNotBlank(selectedProvider)) {
             selectedProvider = selectedProvider.toLowerCase(Locale.ROOT);
@@ -120,9 +122,11 @@ public class LLMService {
                 }
                 case "mify": {
                     McpModelSettingDTO.Mify mify = setting.getMify();
-                    provider = LLMProvider.valueOf("MIFY");
+                    provider = LLMProvider.valueOf("MIFY_GATEWAY");
                     apiKey = mify.getApiKey();
                     url = mify.getBaseUrl();
+                    model = mify.getModel();
+                    mifyProvider = mify.getProvider();
                     break;
                 }
                 default: {
@@ -139,12 +143,12 @@ public class LLMService {
         if (provider.equals(LLMProvider.OPENROUTER)
                 || provider.equals(LLMProvider.GOOGLE_2)
                 || provider.equals(LLMProvider.OPENAICOMPATIBLE)
-                || provider.equals(LLMProvider.MIFY)) {
+                || provider.equals(LLMProvider.MIFY_GATEWAY)) {
             if (StringUtils.isNotEmpty(url)) {
                 configBuilder.url(url);
             }
         }
-        LLMConfig config = configBuilder.llmProvider(provider).token(apiKey).build();
+        LLMConfig config = configBuilder.llmProvider(provider).token(apiKey).customConfig(CustomConfig.DUMMY).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2
                 && StringUtils.isNotEmpty(System.getenv("GOOGLE_AI_GATEWAY"))) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
@@ -153,6 +157,13 @@ public class LLMService {
         if (config.getLlmProvider() == LLMProvider.OPENROUTER
                 && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
             config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        }
+
+        if (config.getLlmProvider() == LLMProvider.MIFY_GATEWAY) {
+            CustomConfig customConfig = new CustomConfig();
+            customConfig.setModel(model);
+            customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, mifyProvider);
+            config.setCustomConfig(customConfig);
         }
 
         return Pair.of(new LLM(config), new McpModel(apiKey, model));
