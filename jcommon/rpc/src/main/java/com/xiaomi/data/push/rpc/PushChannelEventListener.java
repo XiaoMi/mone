@@ -120,19 +120,19 @@ public class PushChannelEventListener implements ChannelEventListener {
         AgentChannel ac = new AgentChannel();
         ac.setChannel(channel);
         ac.setRemoteAddr(remoteAddr);
-        AgentContext.ins().map.put(remoteAddr, ac);
+        AgentContext.ins().put(remoteAddr, ac);
     }
 
     @Override
     public void onChannelClose(String remoteAddr, Channel channel) {
         logger.info("onChannelClose:{}", remoteAddr);
-        AgentContext.ins().map.remove(remoteAddr);
+        AgentContext.ins().remove(remoteAddr);
     }
 
     @Override
     public void onChannelException(String remoteAddr, Channel channel) {
         logger.info("onChannelException:{}",remoteAddr);
-        AgentContext.ins().map.remove(remoteAddr);
+        AgentContext.ins().remove(remoteAddr);
         RemotingUtil.closeChannel(channel);
     }
 
