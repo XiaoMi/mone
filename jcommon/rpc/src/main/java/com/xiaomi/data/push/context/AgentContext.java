@@ -24,6 +24,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author goodjava@qq.com
@@ -32,7 +33,7 @@ public class AgentContext {
 
     public ConcurrentHashMap<String, AgentChannel> map = new ConcurrentHashMap<>();
 
-    private static final List<AgentEventListener> listeners = new ArrayList<>();
+    private static final List<AgentEventListener> LISTENERS = new CopyOnWriteArrayList<>();
 
     private AgentContext() {
 
@@ -53,20 +54,20 @@ public class AgentContext {
     }
 
     public void addListener(AgentEventListener listener) {
-        listeners.add(listener);
+        LISTENERS.add(listener);
     }
 
     public void put(String remoteAddr, AgentChannel agentChannel) {
         map.put(remoteAddr, agentChannel);
-        if (!CollectionUtils.isEmpty(listeners)) {
-            listeners.forEach(lis -> SafeRun.run(() -> lis.onPut(remoteAddr, agentChannel)));
+        if (!CollectionUtils.isEmpty(LISTENERS)) {
+            LISTENERS.forEach(lis -> SafeRun.run(() -> lis.onPut(remoteAddr, agentChannel)));
         }
     }
 
     public AgentChannel remove(String remoteAddr) {
         AgentChannel agentChannel = map.remove(remoteAddr);
-        if (!CollectionUtils.isEmpty(listeners)) {
-            listeners.forEach(lis -> SafeRun.run(() -> lis.onRemove(remoteAddr, agentChannel)));
+        if (!CollectionUtils.isEmpty(LISTENERS)) {
+            LISTENERS.forEach(lis -> SafeRun.run(() -> lis.onRemove(remoteAddr, agentChannel)));
         }
         return agentChannel;
     }
