@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.annotation.DubboReference;
 import org.apache.dubbo.annotation.DubboService;
 import org.apache.dubbo.common.utils.ClassHelper;
+import org.apache.dubbo.common.utils.ClassUtils;
 import org.apache.dubbo.config.*;
 
 import java.lang.annotation.Annotation;
@@ -66,8 +67,8 @@ public class DubboServerLessPlugin implements IPlugin {
         log.info("init dubbo plugin");
         this.config = ioc.getBean(Config.class);
         serverLess = Boolean.valueOf(this.config.get("serverless", "false"));
-        ClassHelper.classLoaderFunSet.clear();
-        ClassHelper.classLoaderFunSet.add(s -> {
+        ClassUtils.classLoaderFunSet.clear();
+        ClassUtils.classLoaderFunSet.add(s -> {
             if (s.equals("serverless")) {
                 return ioc.getClassLoader();
             }
