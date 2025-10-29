@@ -84,6 +84,16 @@ public class HiveAutoConfigure {
             config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
             return new LLM(config);
         }
+        if (LLMProvider.MIF_GATEWAY.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE).build();
+            config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
+            config.setToken(System.getenv("MIFY_API_KEY"));
+            CustomConfig customConfig = new CustomConfig();
+            customConfig.setModel(System.getenv("MIFY_MODEL"));
+            customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
+            config.setCustomConfig(customConfig);
+            return new LLM(config);
+        }
 
         return new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmType.toUpperCase(Locale.ROOT))).build());
     }
