@@ -256,11 +256,12 @@ function connectWebSocket() {
                                         func: (selector, value) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
+                                                element.focus();
+                                                element.click();
                                                 element.value = value;
                                                 element.dispatchEvent(new Event('input', { bubbles: true }));
                                                 element.dispatchEvent(new Event('change', { bubbles: true }));
-                                                if (true) element.focus();
-                                                if (true) element.blur();
+                                                element.blur();
                                             }
                                         },
                                         args: [selector, action.attributes.value]
