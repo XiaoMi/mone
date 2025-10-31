@@ -137,13 +137,22 @@ public class MonerMcpClient {
     private static void internalCall(FluxSink sink, Function<String, McpFunction> f, String toolName, Map<String, Object> toolArguments, StringBuilder sb, AtomicBoolean error) {
         McpFunction function = f.apply(toolName);
         Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
-        flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
-            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                //直接返回给前端
-                s.next(tc.text());
-                sb.append(tc.text());
-            }
-        })).doOnError(e->{
+        flux.doOnNext(tr -> {
+                            Optional.ofNullable(sink).ifPresent(s -> {
+                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                    //直接返回给前端
+                                    s.next(tc.text());
+                                    sb.append(tc.text());
+                                }
+                            });
+                            if (Optional.ofNullable(sink).isEmpty()) {
+                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                    sb.append(tc.text());
+                                }
+                            }
+                        }
+
+                ).doOnError(e->{
             error.set(true);
                 })
                 .blockLast();

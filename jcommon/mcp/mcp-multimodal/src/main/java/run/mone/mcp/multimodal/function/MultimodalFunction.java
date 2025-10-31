@@ -141,6 +141,7 @@ public class MultimodalFunction implements McpFunction {
             return Flux.error(new IllegalArgumentException("Instruction cannot be empty"));
         }
         return Flux.create(sink -> {
+            sink.next("run gui agent\n");
             guiAgent.run(instruction, sink);
         });
 
