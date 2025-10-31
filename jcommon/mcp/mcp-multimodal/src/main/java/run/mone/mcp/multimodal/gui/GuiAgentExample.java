@@ -17,7 +17,7 @@ import javax.annotation.PostConstruct;
  * Run with VM argument: -Dspring.profiles.active=gui-agent-example
  */
 @RequiredArgsConstructor
-@Service
+//@Service
 public class GuiAgentExample {
 
 

@@ -285,7 +285,7 @@ public class GuiAgentService {
                 case "type":
                     if (json.has("content") && !json.get("content").isNull()) {
                         String content = json.get("content").asText("");
-                        return multimodalService.typeText(content);
+                        return multimodalService.typeTextV2(content);
                     }
                     break;
 

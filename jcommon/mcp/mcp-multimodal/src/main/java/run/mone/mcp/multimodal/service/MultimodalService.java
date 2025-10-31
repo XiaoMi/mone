@@ -8,6 +8,8 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.AiMessage;
 
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Clipboard;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -255,6 +257,57 @@ public class MultimodalService {
             return Flux.just("成功输入文本：" + text);
         } catch (Exception e) {
             return Flux.just("文本输入失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 执行键盘输入 - 版本2：基于剪贴板的复制粘贴方式
+     * 优势：能够更好地支持中文、特殊字符和长文本输入
+     * 
+     * @param text 要输入的文本
+     * @return 操作结果
+     */
+    public Flux<String> typeTextV2(String text) {
+        try {
+            // 获取系统剪贴板
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            
+            // 保存当前剪贴板内容（可选，用于恢复）
+            // 注意：这里为了简单起见，不保存原内容，如果需要可以添加
+            
+            // 将文本复制到剪贴板
+            StringSelection stringSelection = new StringSelection(text);
+            clipboard.setContents(stringSelection, null);
+            
+            // 短暂延迟，确保剪贴板内容已设置
+            robot.delay(100);
+            
+            // 检测操作系统，使用对应的粘贴快捷键
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (osName.contains("mac")) {
+                // macOS: Cmd+V
+                robot.keyPress(KeyEvent.VK_META);
+                robot.keyPress(KeyEvent.VK_V);
+                robot.delay(50);
+                robot.keyRelease(KeyEvent.VK_V);
+                robot.keyRelease(KeyEvent.VK_META);
+            } else {
+                // Windows/Linux: Ctrl+V
+                robot.keyPress(KeyEvent.VK_CONTROL);
+                robot.keyPress(KeyEvent.VK_V);
+                robot.delay(50);
+                robot.keyRelease(KeyEvent.VK_V);
+                robot.keyRelease(KeyEvent.VK_CONTROL);
+            }
+            
+            // 等待粘贴完成
+            robot.delay(200);
+            
+            log.info("成功使用剪贴板方式输入文本，长度: " + text.length());
+            return Flux.just("成功使用剪贴板方式输入文本：" + (text.length() > 50 ? text.substring(0, 50) + "..." : text));
+        } catch (Exception e) {
+            log.error("剪贴板方式文本输入失败", e);
+            return Flux.just("剪贴板方式文本输入失败：" + e.getMessage());
         }
     }
 

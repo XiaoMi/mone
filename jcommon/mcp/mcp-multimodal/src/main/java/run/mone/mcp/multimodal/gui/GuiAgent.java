@@ -15,6 +15,10 @@ import run.mone.mcp.multimodal.service.MultimodalService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author goodjava@qq.com
@@ -34,7 +38,7 @@ public class GuiAgent {
 
     public String taskList(String instruction) {
         String imagePath = multimodalService.captureScreenshotWithRobot(null).blockFirst();
-        log.info("image path:{}",imagePath);
+        log.info("image path:{}", imagePath);
         String prompt = """
                 根据图片和需求帮我拆分下操作列表.
                 
@@ -49,7 +53,7 @@ public class GuiAgent {
                 //滚动屏幕
                 scroll(start_box='[x1, y1, x2, y2]', direction='down or up or right or left')
                 //代表结束
-                finished()
+                finished(content='finished')
                 //主要是根据你分析图片返回给用户一些信息
                 message(content='')
                 
@@ -97,6 +101,7 @@ public class GuiAgent {
 
     /**
      * 从字符串中提取一个JSON数组（格式: [ ... ]），如果没有找到，返回null。
+     *
      * @param input 输入字符串
      * @return 提取到的JSON数组字符串，或者null
      */
@@ -120,7 +125,51 @@ public class GuiAgent {
         return null;
     }
 
+    /**
+     * 从模型输出中解析多个 Action
+     * 支持格式：
+     * Action: click(point='<point>317 582</point>')
+     * type(content='你好')
+     *
+     * @param modelOutput 模型输出文本
+     * @return Action 列表
+     */
+    private List<String> parseMultipleActions(String modelOutput) {
+        List<String> actions = new ArrayList<>();
 
+        if (modelOutput == null || modelOutput.isEmpty()) {
+            return actions;
+        }
+
+        // 提取 Action: 后面的内容
+        Pattern actionSectionPattern = Pattern.compile("Action:\\s*(.+?)(?=\\n\\n|$)", Pattern.DOTALL);
+        Matcher actionSectionMatcher = actionSectionPattern.matcher(modelOutput);
+
+        if (actionSectionMatcher.find()) {
+            String actionSection = actionSectionMatcher.group(1).trim();
+
+            // 匹配所有的 action，支持多种格式
+            // 匹配格式：action_name(param1='value1', param2='value2')
+            Pattern actionPattern = Pattern.compile(
+                    "(\\w+)\\s*\\([^)]*(?:<point>[^<]*</point>)[^)]*\\)|" +  // 包含 <point> 的 action
+                            "(\\w+)\\s*\\([^)]+\\)|" +  // 普通的 action
+                            "(\\w+)\\s*\\(\\)",  // 无参数的 action
+                    Pattern.DOTALL
+            );
+
+            Matcher actionMatcher = actionPattern.matcher(actionSection);
+
+            while (actionMatcher.find()) {
+                String action = actionMatcher.group().trim();
+                if (!action.isEmpty()) {
+                    actions.add(action);
+                    log.info("Parsed action: {}", action);
+                }
+            }
+        }
+
+        return actions;
+    }
 
 
     public void run2(String instruction, FluxSink<String> sink) {
@@ -154,48 +203,72 @@ public class GuiAgent {
 
             String modelOutput = guiAgentService.run(imagePath, instruction, Prompt.systemPrompt).block();
 
-//                String modelOutput = """
-//                        Thought: 我看到搜索框里已经有了"上海一民警受贿200余万获刑"这个关键词，现在只需要点击右边那个蓝色的"百度一下"按钮就能开始搜索了。这个按钮就在搜索框的右侧，很容易找到。
-//                        Action: click(start_box='<bbox>637 354 637 354</bbox>')
-//                        """;
-
             System.out.println("\nModel output:\n" + modelOutput);
 
-            // Step 2: Parse the action output
-            System.out.println("\nStep 2: Parsing action...");
-            String parsedOutput = guiAgentService.parseActionOutput(modelOutput);
-            System.out.println("\nParsed action:\n" + parsedOutput);
+            // Step 2: Parse multiple actions from model output
+            System.out.println("\nStep 2: Parsing actions...");
+            List<String> actionList = parseMultipleActions(modelOutput);
 
-            // Step 3: Visualize the action
-            System.out.println("\nStep 3: Creating visualization...");
-            String outputImagePath = path.getParent().resolve("output_" + path.getFileName()).toString();
-            //标完红点的图像
-            String visualizedPath = guiAgentService.visualizeAction(imagePath, parsedOutput, outputImagePath);
-            System.out.println("\nVisualization saved to: " + visualizedPath);
+            if (actionList.isEmpty()) {
+                log.warn("No actions found in model output, fallback to single action parsing");
+                // 如果没有解析到多个 action，使用原来的单个 action 解析方式
+                String parsedOutput = guiAgentService.parseActionOutput(modelOutput);
+                actionList.add(parsedOutput);
+            }
 
-            //判断红点是否在正确的位置 (通过两次确定,让x,y 更准)
-            //String modelOutput2 = guiAgentService.run(visualizedPath, "我的鼠标现在就是那个红点,你帮我计算下是否在正确的位置上,根据你的判断返回新的click信息   \n原始需求:"+instruction).block();
-            //parsedOutput = guiAgentService.parseActionOutput(modelOutput2);
-            // Step 4: Execute action (if requested)
+            System.out.println("\nFound " + actionList.size() + " action(s) to execute");
+            sink.next("解析到 " + actionList.size() + " 个操作\n");
 
-            sink.next(parsedOutput + "\n");
+            // Step 3 & 4: 对每个 action 进行可视化和执行
+            for (int i = 0; i < actionList.size(); i++) {
+                String actionText = actionList.get(i);
+                System.out.println("\n========== Executing Action " + (i + 1) + "/" + actionList.size() + " ==========");
+                System.out.println("Action text: " + actionText);
+                sink.next("\n" + actionText + "\n");
 
-            JsonNode parsedJson = objectMapper.readTree(parsedOutput);
-            String action = parsedJson.get("action").asText("");
+                // 构造完整的模型输出格式进行解析
+                String fullActionOutput = "Thought: Executing action " + (i + 1) + "\nAction: " + actionText;
+                String parsedOutput = guiAgentService.parseActionOutput(fullActionOutput);
+                System.out.println("Parsed action:\n" + parsedOutput);
 
-            System.out.println("\nStep 4: Action detected: " + action);
-            System.out.println("\nExecuting action...");
+                // 可视化 action（只对第一个或最后一个 action 进行可视化，避免生成太多图片）
+                if (i == 0 || i == actionList.size() - 1) {
+                    try {
+                        String outputImagePath = path.getParent().resolve("output_action" + (i + 1) + "_" + path.getFileName()).toString();
+                        String visualizedPath = guiAgentService.visualizeAction(imagePath, parsedOutput, outputImagePath);
+                        System.out.println("Visualization saved to: " + visualizedPath);
+                    } catch (Exception e) {
+                        log.warn("Failed to visualize action: " + e.getMessage());
+                    }
+                }
 
-            String res = guiAgentService.executeAction(parsedOutput)
-                    .doOnNext(System.out::println)
-                    .blockLast();
+                // 执行 action
+                sink.next("\n执行第 " + (i + 1) + " 个操作:\n" + parsedOutput + "\n");
 
-            sink.next(res);
+                JsonNode parsedJson = objectMapper.readTree(parsedOutput);
+                String action = parsedJson.get("action").asText("");
 
-            System.out.println("\nGUI agent process completed.");
+                System.out.println("Action type: " + action);
+                System.out.println("Executing...");
+
+                String res = guiAgentService.executeAction(parsedOutput)
+                        .doOnNext(System.out::println)
+                        .blockLast();
+
+                sink.next("结果: " + res + "\n");
+
+                // 在多个 action 之间添加延迟，确保操作完成
+                if (i < actionList.size() - 1) {
+                    Thread.sleep(500);
+                }
+            }
+
+            System.out.println("\nGUI agent process completed. Total actions executed: " + actionList.size());
+            sink.next("所有操作执行完成！\n");
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
+            sink.next("执行失败: " + e.getMessage() + "\n");
         }
     }
 

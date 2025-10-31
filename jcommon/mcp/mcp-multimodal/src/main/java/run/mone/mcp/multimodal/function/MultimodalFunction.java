@@ -17,10 +17,10 @@ public class MultimodalFunction implements McpFunction {
 
     private final MultimodalService multimodalService;
     private final GuiAgent guiAgent;
-    
+
     @Autowired
-    public MultimodalFunction(MultimodalService multimodalService, 
-                            GuiAgent guiAgent) {
+    public MultimodalFunction(MultimodalService multimodalService,
+                              GuiAgent guiAgent) {
         this.multimodalService = multimodalService;
         this.guiAgent = guiAgent;
     }
@@ -89,66 +89,61 @@ public class MultimodalFunction implements McpFunction {
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String operation = (String) arguments.get("operation");
-
-        Flux.create(sink->{});
-
-        return Flux.defer(() -> {
-            try {
-                Flux<String> result = switch (operation) {
-                    case "analyzeScreenshot" -> multimodalService.analyzeScreenshot(
-                            (String) arguments.get("imageBase64"),
-                            (String) arguments.get("instruction"));
-                    case "click" -> multimodalService.click(
-                            Integer.parseInt((String) arguments.get("x")),
-                            Integer.parseInt((String) arguments.get("y")));
-                    case "doubleClick" -> multimodalService.doubleClick(
-                            Integer.parseInt((String) arguments.get("x")),
-                            Integer.parseInt((String) arguments.get("y")));
-                    case "rightClick" -> multimodalService.rightClick(
-                            Integer.parseInt((String) arguments.get("x")),
-                            Integer.parseInt((String) arguments.get("y")));
-                    case "dragAndDrop" -> multimodalService.dragAndDrop(
-                            Integer.parseInt((String) arguments.get("startX")),
-                            Integer.parseInt((String) arguments.get("startY")),
-                            Integer.parseInt((String) arguments.get("endX")),
-                            Integer.parseInt((String) arguments.get("endY")));
-                    case "typeText" -> multimodalService.typeText(
-                            (String) arguments.get("text"));
-                    case "pressHotkey" -> {
-                        Object keysObj = arguments.get("keys");
-                        List<String> keys;
-                        if (keysObj instanceof String) {
-                            // Handle case where keys is a comma-separated string
-                            keys = List.of(((String) keysObj).split(","));
-                        } else {
-                            // Handle case where keys is already a list
-                            keys = (List<String>) keysObj;
-                        }
-                        yield multimodalService.pressHotkey(keys != null ? keys : Collections.emptyList());
+        try {
+            Flux<String> result = switch (operation) {
+                case "analyzeScreenshot" -> multimodalService.analyzeScreenshot(
+                        (String) arguments.get("imageBase64"),
+                        (String) arguments.get("instruction"));
+                case "click" -> multimodalService.click(
+                        Integer.parseInt((String) arguments.get("x")),
+                        Integer.parseInt((String) arguments.get("y")));
+                case "doubleClick" -> multimodalService.doubleClick(
+                        Integer.parseInt((String) arguments.get("x")),
+                        Integer.parseInt((String) arguments.get("y")));
+                case "rightClick" -> multimodalService.rightClick(
+                        Integer.parseInt((String) arguments.get("x")),
+                        Integer.parseInt((String) arguments.get("y")));
+                case "dragAndDrop" -> multimodalService.dragAndDrop(
+                        Integer.parseInt((String) arguments.get("startX")),
+                        Integer.parseInt((String) arguments.get("startY")),
+                        Integer.parseInt((String) arguments.get("endX")),
+                        Integer.parseInt((String) arguments.get("endY")));
+                case "typeText" -> multimodalService.typeTextV2(
+                        (String) arguments.get("text"));
+                case "pressHotkey" -> {
+                    Object keysObj = arguments.get("keys");
+                    List<String> keys;
+                    if (keysObj instanceof String) {
+                        // Handle case where keys is a comma-separated string
+                        keys = List.of(((String) keysObj).split(","));
+                    } else {
+                        // Handle case where keys is already a list
+                        keys = (List<String>) keysObj;
                     }
-                    case "takeScreenshot" -> multimodalService.captureScreenshotWithRobot(
-                            (String) arguments.getOrDefault("filePath", null));
+                    yield multimodalService.pressHotkey(keys != null ? keys : Collections.emptyList());
+                }
+                case "takeScreenshot" -> multimodalService.captureScreenshotWithRobot(
+                        (String) arguments.getOrDefault("filePath", null));
 
-                    //执行指令(用户的需求)
-                    case "runGuiAgent" -> runGuiAgent((String) arguments.get("instruction"));
-                    default -> throw new IllegalArgumentException("Unknown operation: " + operation);
-                };
-                return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
-            } catch (Exception e) {
-                return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
-            }
-        });
+                //执行指令(用户的需求)
+                case "runGuiAgent" -> runGuiAgent((String) arguments.get("instruction"));
+                default -> throw new IllegalArgumentException("Unknown operation: " + operation);
+            };
+            return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+        } catch (Exception e) {
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
+        }
     }
-    
+
     private Flux<String> runGuiAgent(String instruction) {
         if (instruction == null || instruction.isEmpty()) {
             return Flux.error(new IllegalArgumentException("Instruction cannot be empty"));
         }
-        return Flux.create(sink->{
-            guiAgent.run(instruction,sink);
+        return Flux.create(sink -> {
+            guiAgent.run(instruction, sink);
         });
-        
+
     }
 
     @Override
