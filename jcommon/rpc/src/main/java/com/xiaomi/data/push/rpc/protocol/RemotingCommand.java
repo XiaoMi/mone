@@ -43,6 +43,16 @@ public class RemotingCommand {
 
     // 0, RPC
     private static final int RPC_ONEWAY = 1;
+    
+    /**
+     * 压缩标志的键
+     */
+    public static final String COMPRESSION_KEY = "compression";
+    
+    /**
+     * 压缩类型：GZIP
+     */
+    public static final String COMPRESSION_TYPE_GZIP = "gzip";
 
     private static volatile int configVersion = 1;
 
@@ -446,5 +456,30 @@ public class RemotingCommand {
 
     public void setServiceName(String serviceName) {
         this.addExtField("serviceName", serviceName);
+    }
+    
+    /**
+     * 启用 GZIP 压缩
+     */
+    public void enableCompression() {
+        this.addExtField(COMPRESSION_KEY, COMPRESSION_TYPE_GZIP);
+    }
+    
+    /**
+     * 检查是否启用了压缩
+     * 
+     * @return true 如果启用了压缩
+     */
+    public boolean isCompressionEnabled() {
+        return extFields != null && COMPRESSION_TYPE_GZIP.equals(extFields.get(COMPRESSION_KEY));
+    }
+    
+    /**
+     * 获取压缩类型
+     * 
+     * @return 压缩类型，如果未启用压缩则返回 null
+     */
+    public String getCompressionType() {
+        return extFields != null ? extFields.get(COMPRESSION_KEY) : null;
     }
 }

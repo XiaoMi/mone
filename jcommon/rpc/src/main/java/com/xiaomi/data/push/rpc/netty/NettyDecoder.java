@@ -16,6 +16,7 @@
 
 package com.xiaomi.data.push.rpc.netty;
 
+import com.xiaomi.data.push.rpc.common.CompressionUtil;
 import com.xiaomi.data.push.rpc.common.RemotingHelper;
 import com.xiaomi.data.push.rpc.common.RemotingUtil;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
@@ -51,7 +52,18 @@ public class NettyDecoder extends LengthFieldBasedFrameDecoder {
 
             ByteBuffer byteBuffer = frame.nioBuffer();
 
-            return RemotingCommand.decode(byteBuffer);
+            RemotingCommand cmd = RemotingCommand.decode(byteBuffer);
+            
+            // 如果启用了压缩，则解压缩 body 数据
+            if (cmd != null && cmd.isCompressionEnabled() && cmd.getBody() != null) {
+                byte[] compressedBody = cmd.getBody();
+                byte[] decompressedBody = CompressionUtil.decompress(compressedBody);
+                cmd.setBody(decompressedBody);
+                log.debug("Body decompressed for opaque: {}, compressed size: {}, decompressed size: {}", 
+                         cmd.getOpaque(), compressedBody.length, decompressedBody.length);
+            }
+            
+            return cmd;
         } catch (Exception e) {
             log.error("decode exception, " + RemotingHelper.parseChannelRemoteAddr(ctx.channel()), e);
             RemotingUtil.closeChannel(ctx.channel());
