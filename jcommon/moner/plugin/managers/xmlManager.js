@@ -11,17 +11,30 @@ export class XMLManager {
      */
     parseActions(xmlString) {
         try {
-            // 匹配 action 标签及其属性和内容
-            const actionPattern = /<action\s+([^>]*)(?:>(.*?)<\/action>|\/?>)/g;
             const actions = [];
-            let match;
 
+            // 1) 解析 <chat> 消息（支持多个 <message>）
+            const chatBlockRegex = /<chat[^>]*>([\s\S]*?)<\/chat>/i;
+            const chatBlockMatch = xmlString.match(chatBlockRegex);
+            if (chatBlockMatch) {
+                const chatInner = chatBlockMatch[1] || '';
+                const messageRegex = /<message[^>]*>([\s\S]*?)<\/message>/gi;
+                let msgMatch;
+                while ((msgMatch = messageRegex.exec(chatInner)) !== null) {
+                    const msgText = (msgMatch[1] || '').trim();
+                    if (msgText) {
+                        actions.push({ type: 'chat', attributes: { message: msgText } });
+                    }
+                }
+            }
+
+            // 2) 解析 <action ...> 标签（原有逻辑）
+            const actionPattern = /<action\s+([^>]*)(?:>([\s\S]*?)<\/action>|\/?>)/gi;
+            let match;
             while ((match = actionPattern.exec(xmlString)) !== null) {
                 const [, attributesStr, content] = match;
                 const action = this.parseActionAttributes(attributesStr);
-                
                 if (action) {
-                    // 如果有内容，添加到action对象
                     if (content && content.trim()) {
                         action.content = content.trim();
                     }

@@ -6,7 +6,7 @@ public class MemoryActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "MemoryAction";
+        return "memory";
     }
 
     @Override
@@ -35,6 +35,17 @@ public class MemoryActionTool implements ITool {
                   <action>save</action>
                   <content>用户喜欢Python做数据分析</content>
                   <metadata>{"category":"preference","domain":"programming"}</metadata>
+                </memory>
+
+                Example: Search info
+                <memory>
+                  <action>search</action>
+                  <query>用户熟悉的语言</query>
+                </memory>
+
+                Example: Get all memories
+                <memory>
+                  <action>get_all</action>
                 </memory>
                 """;
     }

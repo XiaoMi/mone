@@ -22,7 +22,7 @@ const MAX_MESSAGES = 100; // 最多存储100条消息
 let isAutoMode = false;
 
 // ws地址
-let wsUrl = 'ws://localhost:8181/ws';
+let wsUrl = 'ws://localhost:8181/mcp/ws';
 
 // config地址
 let configUrl = 'http://localhost:8181/config/list';
@@ -174,8 +174,12 @@ function connectWebSocket() {
         // 连接成功后重置重连计数
         reconnectAttempts = 0;
         isReconnecting = false;
-        // 连接成功后发送 ping
-        ws.send('client_connected');
+        // 连接成功后发送 ping（starter 协议）
+        try {
+            ws.send(JSON.stringify({ type: 'ping' }));
+        } catch (e) {
+            console.warn('Failed to send initial ping', e);
+        }
     };
 
     ws.onmessage = async (event) => {
@@ -189,13 +193,43 @@ function connectWebSocket() {
             //当前的tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-            if (data && 'data' in data) {
-                if (typeof data.data === 'string') {
-                    const xmlString = data.data;
+            // 兼容 starter 协议（type + data.content），以及旧协议（content 或 data 为纯字符串）
+            const type = data.type || '';
+            if (type === 'connected' || type === 'pong' || type === 'heartbeat') {
+                // 连接确认或心跳，直接忽略
+                return;
+            }
+
+            let contentStr = '';
+            if (data && data.data && typeof data.data.content === 'string') {
+                contentStr = data.data.content;
+            } else if (typeof data.content === 'string') {
+                contentStr = data.content;
+            } else if (typeof data.data === 'string') {
+                contentStr = data.data;
+            }
+            if (contentStr) {
+                    const xmlString = contentStr;
                     console.log('XML string:', xmlString);
-                    // 这里可以继续处理 xmlString  
+                    // 解析 XML 为动作列表
                     let actions = xmlManager.parseActions(xmlString);
                     console.log('actions:', actions);
+
+                    // 若是 chat 消息，优先展示并结束处理
+                    if (Array.isArray(actions) && actions.length > 0 && actions[0].type === 'chat') {
+                        const chatMsg = actions[0].attributes?.message || '';
+                        if (chatMsg) {
+                            addMessageToHistory(chatMsg);
+                            // 弹出系统通知（可选）
+                            try {
+                                await notificationManager.info('助手', chatMsg, { duration: 5000 });
+                            } catch (e) {
+                                console.debug('Notification skipped:', e);
+                            }
+                            // 直接返回，不再按动作流处理
+                            return;
+                        }
+                    }
 
                     //添加一个context(map),用来记录action的执行状态
                     let context = new Map();
@@ -427,7 +461,7 @@ function connectWebSocket() {
                         //通知服务器
                         if (action.type === 'notification') {
                             console.log('notification:', action);
-                            sendWebSocketMessage("notification", action.attributes.message);
+                            sendWebSocketMessage(action.attributes.message);
                         }
 
                         //创建tab页面
@@ -476,7 +510,7 @@ function connectWebSocket() {
                                         code: code,
                                         img: [screenshot]
                                     };
-                                    await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                                    await sendWebSocketMessage(JSON.stringify(messageData));
                                 }
 
                                 await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
@@ -559,7 +593,7 @@ function connectWebSocket() {
                                         img: [screenshot],
                                         tabs: tabInfo ? await getAllTabsInfo() : undefined
                                     };
-                                    await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                                    await sendWebSocketMessage(JSON.stringify(messageData));
                                 }
 
                                 await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
@@ -649,9 +683,6 @@ function connectWebSocket() {
 
 
                 }
-            }
-
-
 
             messageWithTimestamp = {
                 timestamp: new Date().toLocaleTimeString(),
@@ -738,7 +769,11 @@ function startPingCheck() {
         }
 
         try {
-            ws.send('ping');
+            try {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            } catch (e) {
+                console.warn('Failed to send ping', e);
+            }
             console.log('Sent ping to server');
         } catch (error) {
             console.error('Error sending ping:', error);
@@ -869,10 +904,12 @@ chrome.tabs.onCreated.addListener((tab) => {
 function sendWebSocketMessage(message, cmd = '') {
     return new Promise((resolve, reject) => {
         if (ws && ws.readyState === WebSocket.OPEN) {
+            // 统一使用 starter 协议：type=agent，并在 data.content 中放置字符串内容
             const jsonMessage = {
-                from: "chrome",
-                data: message,
-                cmd: cmd
+                type: 'agent',
+                data: {
+                    content: message
+                }
             };
             try {
                 console.log('sendWebSocketMessage:', JSON.stringify(jsonMessage));
@@ -897,7 +934,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Promise.resolve().then(async () => {
         try {
             if (message.type === 'getMessageHistory') {
-                sendResponse(messageHistory);
+                sendResponse({ messages: messageHistory });
             } else if (message.type === 'sendWebSocketMessage') {
                 await sendWebSocketMessage(message.text);
                 sendResponse({ success: true });
@@ -1377,6 +1414,20 @@ function addMessageToHistory(message) {
     // 如果消息数量超过最大限制，删除最早的消息
     if (messageHistory.length > MAX_MESSAGES) {
         messageHistory.shift();
+    }
+
+    // 实时广播给前端 UI（统一 newWebSocketMessage 格式）
+    try {
+        chrome.runtime.sendMessage({
+            type: 'newWebSocketMessage',
+            message: {
+                type: 'json',
+                data: { type: 'chat', data: message },
+                timestamp: new Date().toLocaleTimeString()
+            }
+        });
+    } catch (e) {
+        // 无需处理
     }
 }
 

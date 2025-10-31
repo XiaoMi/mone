@@ -6,7 +6,7 @@ public class CodeActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "CodeAction";
+        return "code_action";
     }
 
     @Override
@@ -25,16 +25,14 @@ public class CodeActionTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>CodeAction</tool_name>
+                <code_action>
                 <arguments>
                 {
                   "name": "自定义脚本",
                   "code": "alert(123);"
                 }
                 </arguments>
-                </use_mcp_tool>
+                </code_action>
                 """;
     }
 }

@@ -6,7 +6,7 @@ public class ProcessActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "ProcessAction";
+        return "process";
     }
 
     @Override

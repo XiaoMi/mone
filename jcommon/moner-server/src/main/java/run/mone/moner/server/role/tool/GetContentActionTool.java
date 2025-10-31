@@ -6,7 +6,7 @@ public class GetContentActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "GetContentAction";
+        return "get_content";
     }
 
     @Override
@@ -22,14 +22,12 @@ public class GetContentActionTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>GetContentAction</tool_name>
+                <get_content>
                 <arguments>
                 {
                 }
                 </arguments>
-                </use_mcp_tool>
+                </get_content>
                 """;
     }
 }

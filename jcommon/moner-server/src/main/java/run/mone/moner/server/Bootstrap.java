@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.moner.server")
+@ComponentScan(basePackages = {"run.mone.moner.server", "run.mone.hive"})
 @Slf4j
 public class Bootstrap {
     public static void main(String[] args) {

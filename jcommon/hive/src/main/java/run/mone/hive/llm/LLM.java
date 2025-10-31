@@ -933,7 +933,7 @@ public class LLM {
     }
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
-        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
+        chatCompletionStream(apiKey, this.config.getCustomConfig() != null ? this.config.getCustomConfig() : CustomConfig.DUMMY, messages, model,
                 messageHandler, lineConsumer, systemPrompt, sink,
                 u -> {
                     if (null != sink) {
