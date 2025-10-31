@@ -2,6 +2,8 @@ package run.mone.mcp.multimodal.gui;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
@@ -43,17 +45,15 @@ public class GuiAgent {
                 根据图片和需求帮我拆分下操作列表.
                 
                 支持的操作:
-                click(start_box='[x1, y1, x2, y2]')
-                left_double(start_box='[x1, y1, x2, y2]')
-                right_single(start_box='[x1, y1, x2, y2]')
-                drag(start_box='[x1, y1, x2, y2]', end_box='[x3, y3, x4, y4]')
-                hotkey(key='')
-                //输入内容
-                type(content='') #If you want to submit your input, use "\\n" at the end of `content`.
-                //滚动屏幕
-                scroll(start_box='[x1, y1, x2, y2]', direction='down or up or right or left')
-                //代表结束
-                finished(content='finished')
+                click(point='<point>x1 y1</point>')
+                left_double(point='<point>x1 y1</point>')
+                right_single(point='<point>x1 y1</point>')
+                drag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')
+                hotkey(key='ctrl c') # Split keys with a space and use lowercase. Also, do not use more than 3 keys in one hotkey action.
+                type(content='xxx') # Use escape characters \\\\', \\\\\\", and \\\\n in content part to ensure we can parse the content in normal python string format. If you want to submit your input, use \\\\n at the end of content.\s
+                scroll(point='<point>x1 y1</point>', direction='down or up or right or left') # Show more information on the `direction` side.
+                wait() #Sleep for 5s and take a screenshot to check for any changes.
+                                   finished(content='xxx') # Use escape characters \\\\', \\\\", and \\\\n in content part to ensure we can parse the content in normal python string format.
                 //主要是根据你分析图片返回给用户一些信息
                 message(content='')
                 
@@ -67,7 +67,7 @@ public class GuiAgent {
                 返回:(一定要是json格式)
                 [
                 "1.点击Terminal图标 (click)",
-                "2.finished()"
+                "2.finished(content='finish')"
                 ]
                 
                 例子2:
@@ -76,14 +76,14 @@ public class GuiAgent {
                 [
                 "1.点击idea的Code编辑区域 (click)",
                 "2.在编辑界面滑动滚轮 (scroll)"
-                "3.finished()"
+                "3.finished(content='finish')"
                 ]
                 
                 例子3:
                 需求:识别下打开的是什么软件
                 [
                 "1.在当前截图中,识别下打开的是什么软件 (message)",
-                "2.finished()"
+                "2.finished(content='finish')"
                 ]
                 
                 
@@ -174,7 +174,8 @@ public class GuiAgent {
 
     public void run2(String instruction, FluxSink<String> sink) {
         if (instruction.contains(".finished")) {
-            guiAgentService.executeAction("finished")
+
+            guiAgentService.executeAction(new Gson().toJson(ImmutableMap.of("action","finished")))
                     .doOnNext(System.out::println)
                     .blockLast();
             return;
