@@ -34,6 +34,7 @@ public class GuiAgent {
 
     public String taskList(String instruction) {
         String imagePath = multimodalService.captureScreenshotWithRobot(null).blockFirst();
+        log.info("image path:{}",imagePath);
         String prompt = """
                 根据图片和需求帮我拆分下操作列表.
                 
@@ -85,13 +86,41 @@ public class GuiAgent {
                 
                 -----
                 需求:%s
-                返回:(一定要是json格式)
+                返回:(一定要是json<json array>格式)
                 
                 
                 """.formatted(instruction);
         String modelOutput = guiAgentService.run(imagePath, prompt, "").block();
+        modelOutput = extractJsonArray(modelOutput);
         return modelOutput;
     }
+
+    /**
+     * 从字符串中提取一个JSON数组（格式: [ ... ]），如果没有找到，返回null。
+     * @param input 输入字符串
+     * @return 提取到的JSON数组字符串，或者null
+     */
+    public static String extractJsonArray(String input) {
+        if (input == null) return null;
+        int start = input.indexOf('[');
+        while (start != -1) {
+            int count = 0;
+            for (int i = start; i < input.length(); i++) {
+                char c = input.charAt(i);
+                if (c == '[') count++;
+                else if (c == ']') count--;
+                if (count == 0 && c == ']') {
+                    // Found a matched JSON array
+                    return input.substring(start, i + 1);
+                }
+            }
+            // There could be another [ after this, try again
+            start = input.indexOf('[', start + 1);
+        }
+        return null;
+    }
+
+
 
 
     public void run2(String instruction, FluxSink<String> sink) {
