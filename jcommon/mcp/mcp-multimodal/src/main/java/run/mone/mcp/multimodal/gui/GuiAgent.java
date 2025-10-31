@@ -174,7 +174,6 @@ public class GuiAgent {
 
     public void run2(String instruction, FluxSink<String> sink) {
         if (instruction.contains(".finished")) {
-
             guiAgentService.executeAction(new Gson().toJson(ImmutableMap.of("action","finished")))
                     .doOnNext(System.out::println)
                     .blockLast();
@@ -274,7 +273,7 @@ public class GuiAgent {
     }
 
 
-    public void run(String instruction, FluxSink<String> sink) {
+    public String run(String instruction, FluxSink<String> sink) {
         String s = taskList(instruction);
         System.out.println(s);
 
@@ -286,7 +285,9 @@ public class GuiAgent {
             log.info("run:{}", str);
             run2(str, sink);
         });
+        sink.next("所有任务执行结束");
         sink.complete();
+        return "finish";
     }
 
 }
