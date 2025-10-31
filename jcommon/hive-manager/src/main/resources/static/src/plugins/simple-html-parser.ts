@@ -18,14 +18,32 @@ type SupportedTag =
   | 'arguments'
   | 'file'
   | 'operation'
+  | 'list_files'
+  | 'recursive'
+  | 'task_progress'
   | 'path'
   | 'content'
   | 'r'
   | 'file_operation'
   | 'result'
   | 'execute'
+  | 'execute_command'
+  | 'requires_approval'
+  | 'read_file'
+  | 'replace_in_file'
+  | 'diff'
+  | 'search_files'
+  | 'write_to_file'
+  | 'regex'
+  | 'file_pattern'
   | 'working_directory'
-  | 'timeout';
+  | 'timeout'
+  | 'tool_result'
+  | 'list_code_definition_names'
+  | 'pid'
+  | 'terminal_append'
+  | 'process_pid'
+  | 'process_content';
 
 interface Position {
   line: number;    // 行号
@@ -58,6 +76,12 @@ export class SimpleHtmlParser {
   constructor(callbacks: ParserCallbacks) {
     this.callbacks = callbacks;
     this.supportedTags = new Set([
+      'hive-msg-id',
+      'usage',
+      'query',
+      'action',
+      'memory',
+      'metadata',
       'terminal',
       'download_file',
       'use_mcp_tool',
@@ -77,14 +101,32 @@ export class SimpleHtmlParser {
       'arguments',
       'file',
       'operation',
+      'list_files',
+      'recursive',
+      'task_progress',
       'path',
       'content',
       'r',
       'file_operation',
       'result',
       'execute',
+      'execute_command',
+      'requires_approval',
+      'read_file',
+      'replace_in_file',
+      'diff',
+      'search_files',
+      'write_to_file',
+      'regex',
+      'file_pattern',
       'working_directory',
-      'timeout'
+      'timeout',
+      'tool_result',
+      'list_code_definition_names',
+      'pid',
+      'terminal_append',
+      'process_pid',
+      'process_content'
     ]);
   }
 

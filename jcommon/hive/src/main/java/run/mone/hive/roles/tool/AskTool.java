@@ -30,10 +30,19 @@ public class AskTool implements ITool{
 
     @Override
     public String usage() {
+        String taskProgress = """
+            <task_progress>
+            Checklist here (optional)
+            </task_progress>
+            """;
+        if (!taskProgress()) {
+            taskProgress = "";
+        }
         return """
             <ask_followup_question>
             <question>Your question here</question>
+            %s
             </ask_followup_question>
-            """;
+            """.formatted(taskProgress);
     }
 }

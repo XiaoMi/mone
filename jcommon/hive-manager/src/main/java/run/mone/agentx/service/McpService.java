@@ -1,6 +1,7 @@
 package run.mone.agentx.service;
 
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import reactor.core.publisher.FluxSink;
 import run.mone.agentx.dto.AgentWithInstancesDTO;
 import run.mone.agentx.entity.AgentInstance;
 import run.mone.agentx.entity.InvokeHistory;
+import run.mone.agentx.entity.User;
 import run.mone.agentx.interceptor.CustomMcpInterceptor;
 import run.mone.agentx.utils.AgentKeyUtils;
 import run.mone.hive.common.McpResult;
@@ -22,9 +24,12 @@ import run.mone.hive.utils.SafeRun;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static run.mone.hive.configs.Const.USER_INTERNAL_NAME;
+
 @Slf4j
 @Data
 @Service
+@RequiredArgsConstructor
 public class McpService {
 
     private MonerMcpInterceptor mcpInterceptor = new CustomMcpInterceptor();
@@ -33,7 +38,12 @@ public class McpService {
     private AgentService agentService;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
     private InvokeHistoryService invokeHistoryService;
+
+    private final McpMessageHandler handler;
 
     private ReentrantLock lock = new ReentrantLock();
 
@@ -53,13 +63,15 @@ public class McpService {
         log.info("user:{} call mcp tool", userName);
         //记录调用
         recordInvoke(userName, agentId, requestBody);
-
+        User user = userService.findByUsername(userName).block();
+        toolDataInfo.getKeyValuePairs().put(USER_INTERNAL_NAME, user.getInternalAccount());
         AgentWithInstancesDTO agentDto = agentService.findAgentWithInstances(agentId).block();
-        //这个需要那个用户就传他的id (需要从前端拿过来)
-        String clientId = AgentKeyUtils.getAgentKey(agentDto.getAgent());
 
         //对面的ip和port 服务端的
         String key = AgentKeyUtils.key(agentDto, instance);
+
+        toolDataInfo.setAgentId("" + agentId);
+        toolDataInfo.setUserId("" + user.getId());
 
         try {
             lock.lock();
@@ -77,9 +89,8 @@ public class McpService {
         return MonerMcpClient.mcpCall(null, toolDataInfo, key, this.mcpInterceptor, sink, (name) -> null);
     }
 
-    private static void connectMcp(AgentInstance instance, String clientId, String groupKey) {
-        McpHub mcpHub = new McpHub(null, (msg) -> {
-        }, true);
+    private void connectMcp(AgentInstance instance, String clientId, String groupKey) {
+        McpHub mcpHub = new McpHub(null, handler::handleMessage, true);
         ServerParameters parameters = new ServerParameters();
         parameters.setType("grpc");
         parameters.getEnv().put("host", instance.getIp());

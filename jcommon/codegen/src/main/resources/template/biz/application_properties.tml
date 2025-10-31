@@ -1,0 +1,26 @@
+# Database Configuration
+spring.datasource.url=jdbc:h2:file:./data/${dbName};DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# H2 Console
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# JPA Configuration
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.format_sql=true
+
+# Server Port
+server.port=${serverPort}
+
+# JWT Configuration
+jwt.secret=${jwtSecret}
+jwt.expiration=${jwtExpiration}
+
+# Logging Configuration
+logging.file.name=logs/application.log
+logging.pattern.file=%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+

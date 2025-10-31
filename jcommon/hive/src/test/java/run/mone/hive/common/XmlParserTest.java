@@ -52,6 +52,31 @@ public class XmlParserTest {
 
         List<ToolDataInfo> tools = new MultiXmlParser().parse(data);
         System.out.println(tools);
-
     }
+
+
+    @Test
+    public void test3() {
+        String data = """
+                 <use_mcp_tool>
+            <server_name>weather-server</server_name>
+            <tool_name>get_forecast</tool_name>
+            <arguments>
+            {
+              "city": "San Francisco",
+              "days": 5
+            }
+            </arguments>
+            <task_progress>
+            - [x] Set up project structure
+            - [x] Install dependencies
+            - [ ] Get weather data
+            - [ ] Test application
+            </task_progress>
+            </use_mcp_tool>
+            """;
+        List<ToolDataInfo> tools = new MultiXmlParser().parse(data);
+        System.out.println(tools);
+    }
+
 }

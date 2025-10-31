@@ -3,6 +3,7 @@ build_info.properties
 .classpath
 dependency-reduced-pom.xml
 *.diff
+*.db
 .DS_Store
 .idea/
 .vscode/
@@ -22,3 +23,7 @@ nohup*
 .sbtserver*
 .vscode/settings.json
 selector_config.json
+history.db
+memory-config-local.yml
+
+.hive/

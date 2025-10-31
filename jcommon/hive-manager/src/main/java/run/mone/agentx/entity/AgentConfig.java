@@ -20,4 +20,5 @@ public class AgentConfig extends BaseEntity {
     
     @Column("config_value")
     private String value;
+
 } 

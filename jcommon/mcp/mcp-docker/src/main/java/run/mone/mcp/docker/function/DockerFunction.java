@@ -9,15 +9,16 @@ import com.github.dockerjava.core.DockerClientBuilder;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Data
 @Slf4j
-public class DockerFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class DockerFunction  implements McpFunction {
 
     private String name = "dockerOperation";
 
@@ -60,7 +61,7 @@ public class DockerFunction implements Function<Map<String, Object>, McpSchema.C
     }
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String operation = (String) arguments.get("operation");
 
         log.info("operation: {}", operation);
@@ -77,10 +78,9 @@ public class DockerFunction implements Function<Map<String, Object>, McpSchema.C
                 case "removeImage" -> removeImage((String) arguments.get("imageId"));
                 default -> throw new IllegalArgumentException("Unknown operation: " + operation);
             };
-
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false));
         } catch (Exception e) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(("Error: " + e.getMessage()))), true));
         }
     }
 

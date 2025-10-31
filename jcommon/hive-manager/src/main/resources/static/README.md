@@ -18,6 +18,10 @@ pnpm dev
 pnpm build
 ```
 
+```sh
+pnpm run build-only
+```
+
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh

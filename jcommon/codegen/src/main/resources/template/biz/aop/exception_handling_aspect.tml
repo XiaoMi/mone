@@ -1,0 +1,69 @@
+package ${package}.aop;
+
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import ${package}.dto.ApiResponse;
+
+/**
+ * 异常处理切面
+ * 拦截Controller方法异常，统一返回JSON格式响应
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Aspect
+@Component
+@Slf4j
+public class ExceptionHandlingAspect {
+
+    /**
+     * 拦截所有controller包下的public方法，处理异常并返回统一格式
+     */
+    @Around("execution(public * ${package}.controller..*(..))")
+    public Object handleExceptions(ProceedingJoinPoint joinPoint) throws Throwable {
+        try {
+            // 正常执行方法
+            Object result = joinPoint.proceed();
+            
+            // 如果返回值已经是ApiResponse，直接返回（避免重复包装）
+            if (result instanceof ApiResponse) {
+                return result;
+            }
+
+            // 包装正常响应为ApiResponse格式
+            return ApiResponse.success(result);
+            
+        } catch (Exception e) {
+            // 记录异常日志
+            log.error("HTTP接口调用异常: {}", e.getMessage(), e);
+            
+            // 根据异常类型确定HTTP状态码和错误码
+            HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            int errorCode = 500;
+            String errorMessage = "系统内部错误，请稍后再试";
+            
+            // 处理常见的异常类型
+            if (e instanceof IllegalArgumentException || e instanceof IllegalStateException) {
+                httpStatus = HttpStatus.BAD_REQUEST;
+                errorCode = 400;
+                errorMessage = e.getMessage();
+            } else if (e instanceof SecurityException) {
+                httpStatus = HttpStatus.UNAUTHORIZED;
+                errorCode = 401;
+                errorMessage = "未授权访问";
+            } else if (e.getMessage() != null && !e.getMessage().isEmpty()) {
+                errorMessage = e.getMessage();
+            }
+            
+            // 创建错误响应
+            ApiResponse<String> errorResponse = ApiResponse.error(errorCode, errorMessage);
+            
+            return errorResponse;
+        }
+    }
+}
+

@@ -1,0 +1,23 @@
+package ${package}.dto;
+
+import lombok.Data;
+import java.time.LocalDateTime;
+
+/**
+ * 用户DTO
+ * 
+ * @author ${author}
+ * @date ${date}
+ */
+@Data
+public class UserDTO {
+    private Long id;
+    private String username;
+    private String email;
+    private String phone;
+    private String address;
+    private LocalDateTime createdAt;
+    private String status;
+    private String role;
+}
+

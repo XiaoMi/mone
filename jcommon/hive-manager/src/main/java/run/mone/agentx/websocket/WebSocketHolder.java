@@ -17,6 +17,10 @@ public class WebSocketHolder {
         sessions.put(conversationId, session);
     }
 
+    public static WebSocketSession getSession(String id) {
+        return sessions.get(id);
+    }
+
     // 移除连接
     public static void removeSession(String conversationId) {
         sessions.remove(conversationId);

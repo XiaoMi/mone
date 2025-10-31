@@ -11,9 +11,10 @@ import run.mone.agentx.entity.User;
 public class LoginResponse {
     private Long userId;
     private String username;
+    private String internalAccount;
     private String token;
     
     public static LoginResponse fromUser(User user, String token) {
-        return new LoginResponse(user.getId(), user.getUsername(), token);
+        return new LoginResponse(user.getId(), user.getUsername(), user.getInternalAccount(), token);
     }
 } 

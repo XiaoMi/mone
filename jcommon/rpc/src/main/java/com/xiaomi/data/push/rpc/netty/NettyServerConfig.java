@@ -28,7 +28,7 @@ public class NettyServerConfig implements Cloneable {
     private int serverWorkerThreads = 8;
     private int serverCallbackExecutorThreads = 0;
     private int serverSelectorThreads = 3;
-    private int serverOnewaySemaphoreValue = 256;
+    private int serverOnewaySemaphoreValue = 65535;
     private int serverAsyncSemaphoreValue = 64;
     private int serverChannelMaxIdleTimeSeconds = 120;
 

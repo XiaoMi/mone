@@ -3,11 +3,9 @@ package run.mone.mcp.feishu.function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.lark.oapi.service.docx.v1.enums.BlockTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.feishu.model.*;
@@ -26,7 +24,7 @@ import static org.mockito.Mockito.when;
 @Slf4j
 class FeishuDocFunctionTest {
 
-    @Mock
+
     private FeishuDocService docService;
 
     private FeishuDocFunction feishuDocFunction;
@@ -169,6 +167,8 @@ class FeishuDocFunctionTest {
         assertFalse(result.isError());
     }
 
+
+
     @Test
     void testGetDocument() throws Exception {
         // 准备测试数据
@@ -181,7 +181,7 @@ class FeishuDocFunctionTest {
                 .setOwner("user_123");
 
         // 设置mock行为
-        when(docService.getDocument(anyString())).thenReturn(mockDoc);
+//        when(docService.getDocument(anyString())).thenReturn(mockDoc);
 
         // 准备请求参数
         Map<String, Object> args = new HashMap<>();
@@ -209,4 +209,76 @@ class FeishuDocFunctionTest {
         assertNotNull(result);
         assertTrue(result.isError());
     }
+
+    @Test
+    void testGetFileContent() throws Exception {
+        // 准备请求参数
+        Map<String, Object> args = new HashMap<>();
+        args.put("operation", "getFileContent");
+        args.put("documentId", "123456");
+
+        // 执行测试
+        McpSchema.CallToolResult result = feishuDocFunction.apply(args);
+
+        // 验证结果
+        assertNotNull(result);
+        assertFalse(result.isError());
+    }
+
+    @Test
+    void testGetFileBaseInfo() throws Exception {
+        // 准备请求参数
+        Map<String, Object> args = new HashMap<>();
+        args.put("operation", "getFileBaseInfo");
+        args.put("documentId", "123456");
+
+        // 执行测试
+        McpSchema.CallToolResult result = feishuDocFunction.apply(args);
+
+        System.out.println(result);
+    }
+
+    @Test
+    void testCreateDocument2() throws Exception {
+        // 准备请求参数
+        Map<String, Object> args = new HashMap<>();
+        args.put("operation", "createDocument");
+        args.put("title", "测试标题123");
+        args.put("userAccessToken", "u-123");
+
+        // 执行测试
+        McpSchema.CallToolResult result = feishuDocFunction.apply(args);
+
+        System.out.println(result);
+    }
+
+    @Test
+    void testAddBlock2() throws Exception {
+        // 准备请求参数
+        Map<String, Object> args = new HashMap<>();
+        args.put("operation", "createDocument");
+        args.put("title", "测试标题123");
+        args.put("userAccessToken", "u-133");
+
+        // 执行测试
+        McpSchema.CallToolResult result = feishuDocFunction.apply(args);
+
+        System.out.println(result);
+    }
+
+    @Test
+    void testGetFiles() throws Exception {
+        // 准备请求参数
+        Map<String, Object> args = new HashMap<>();
+        args.put("operation", "getDocuments");
+        args.put("userAccessToken", "u-123");
+
+
+        // 执行测试
+        McpSchema.CallToolResult result = feishuDocFunction.apply(args);
+
+        System.out.println(result);
+    }
+
+
 } 

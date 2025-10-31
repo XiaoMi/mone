@@ -36,6 +36,8 @@ import run.mone.hive.bo.RegInfoDto;
 import run.mone.hive.common.ToolDataInfo;
 import run.mone.agentx.service.UserService;
 
+import static run.mone.hive.configs.Const.USER_INTERNAL_NAME;
+
 @RestController
 @RequestMapping("/api/v1/agents")
 @RequiredArgsConstructor
@@ -181,6 +183,8 @@ public class AgentController {
                 .map(ApiResponse::success);
     }
 
+
+    //agent 获取配置
     @PostMapping("/config")
     public Mono<ApiResponse<Map<String, String>>> getAgentConfig(@RequestBody Map<String, Long> request) {
         Long agentId = request.get("agentId");
@@ -190,9 +194,62 @@ public class AgentController {
             return Mono.just(ApiResponse.error(400, "Missing required parameters: agentId and userId"));
         }
 
-        return agentConfigService.getUserConfigsAsMap(agentId, userId)
+        // 首先获取配置
+        Mono<Map<String, String>> configMapMono = agentConfigService.getUserConfigsAsMap(agentId, userId);
+        
+        // 获取用户信息
+        Mono<User> userMono = userService.findById(userId);
+        
+        // 合并两个Mono的结果
+        return Mono.zip(configMapMono, userMono)
+                .map(tuple -> {
+                    Map<String, String> configMap = tuple.getT1();
+                    // 将用户名和内部账号添加到配置映射中
+                    User user = tuple.getT2();
+                    configMap.put(USER_INTERNAL_NAME, user.getInternalAccount());
+                    return configMap;
+                })
                 .map(ApiResponse::success)
                 .defaultIfEmpty(ApiResponse.success(Map.of()));
+    }
+
+    @PostMapping("/config/save")
+    public Mono<ApiResponse<String>> saveConfig(@RequestBody Map<String, Object> request) {
+        Object agentIdObj = request.get("agentId");
+        Object userIdObj = request.get("userId");
+        Object configsObj = request.get("configs");
+
+        if (agentIdObj == null || userIdObj == null || configsObj == null) {
+            return Mono.just(ApiResponse.error(400, "Missing required parameters: agentId, userId and configs"));
+        }
+
+        Long agentId;
+        Long userId;
+        try {
+            agentId = Long.valueOf(agentIdObj.toString());
+            userId = Long.valueOf(userIdObj.toString());
+        } catch (NumberFormatException e) {
+            return Mono.just(ApiResponse.error(400, "Invalid agentId or userId format"));
+        }
+
+        if (!(configsObj instanceof Map)) {
+            return Mono.just(ApiResponse.error(400, "configs must be a Map"));
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> configsMap = (Map<String, Object>) configsObj;
+        Map<String, String> configs = configsMap.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue() != null ? entry.getValue().toString() : ""
+                ));
+
+        return agentConfigService.setBatchConfig(agentId, userId, configs)
+                .thenReturn(ApiResponse.success("Configuration saved successfully"))
+                .onErrorResume(e -> {
+                    log.error("Failed to save agent config, agentId: {}, userId: {}", agentId, userId, e);
+                    return Mono.just(ApiResponse.error(500, "Failed to save configuration: " + e.getMessage()));
+                });
     }
 
     @PostMapping("/instances/by-names")

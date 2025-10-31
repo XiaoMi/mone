@@ -2,6 +2,7 @@ package run.mone.hive.roles.tool;
 
 import com.google.gson.JsonObject;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.JsonUtils;
 
 /**
  * @author goodjava@qq.com
@@ -17,6 +18,10 @@ public interface ITool {
     String parameters();
 
     String usage();
+
+    default boolean taskProgress() {
+        return true;
+    }
 
     default String example() {
         return "";
@@ -35,6 +40,10 @@ public interface ITool {
     //是否回显
     default boolean show() {
         return false;
+    }
+
+    default String formatResult(JsonObject res) {
+        return JsonUtils.toolResult(res.toString());
     }
 
     default JsonObject execute(ReactorRole role, JsonObject req) {

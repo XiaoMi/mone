@@ -33,8 +33,8 @@ public class AgentConfig {
     public RoleMeta roleMeta() {
         String ideaPort = System.getenv().getOrDefault("IDEA_PORT", "30000");
         return RoleMeta.builder()
-                .profile("你是一名优秀的编程助手")
-                .goal("你的目标是更好的帮助程序员完成任务")
+                .profile("你是一名优秀的软件工程师")
+                .goal("你的目标是更好的完成编程任务")
                 .constraints("不要探讨任何和编码不相关的问题,如果用户问你,你可以直接拒绝掉")
                 //内部工具
                 .tools(Lists.newArrayList(

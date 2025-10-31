@@ -324,3 +324,9 @@
 .vjs-tree-node.is-highlight, .vjs-tree-node:hover {
   background-color: transparent !important;
 }
+
+.instance-select-popper+.el-popper .el-popper__arrow::before {
+  border-bottom-color: rgb(13, 17, 23) !important;
+  border-right-color: rgb(13, 17, 23) !important;
+  background-color: rgb(13, 17, 23) !important;
+}
