@@ -80,6 +80,10 @@ public class MultimodalFunction implements McpFunction {
                     "filePath": {
                         "type": "string",
                         "description": "The file path to save the screenshot"
+                    },
+                    "appName": {
+                        "type": "string",
+                        "description": "应用名称或别名（可选）。如果提供，会在执行 runGuiAgent 操作前先激活该应用窗口并自动切换到应用所在的Space，确保截图和操作针对正确的窗口。支持的别名：chrome/谷歌浏览器、微信/wechat/wx、华泰证券/华泰/huatai、cursor、idea、终端/terminal、访达/finder等。注意：此功能仅支持 macOS 系统"
                     }
                 },
                 "required": ["operation"]
@@ -122,11 +126,22 @@ public class MultimodalFunction implements McpFunction {
                     }
                     yield multimodalService.pressHotkey(keys != null ? keys : Collections.emptyList());
                 }
-                case "takeScreenshot" -> multimodalService.captureScreenshotWithRobot(
-                        (String) arguments.getOrDefault("filePath", null));
+                case "takeScreenshot" -> {
+                    String filePath = (String) arguments.getOrDefault("filePath", null);
+                    String appName = (String) arguments.get("appName");
+                    
+                    // 如果指定了应用名，则先激活应用再截图
+                    if (appName != null && !appName.isEmpty()) {
+                        yield multimodalService.captureScreenshotWithAppActivation(appName, filePath);
+                    } else {
+                        yield multimodalService.captureScreenshotWithRobot(filePath);
+                    }
+                }
 
                 //执行指令(用户的需求)
-                case "runGuiAgent" -> runGuiAgent((String) arguments.get("instruction"));
+                case "runGuiAgent" -> runGuiAgent(
+                        (String) arguments.get("instruction"),
+                        (String) arguments.get("appName"));
                 default -> throw new IllegalArgumentException("Unknown operation: " + operation);
             };
             return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
@@ -136,15 +151,39 @@ public class MultimodalFunction implements McpFunction {
         }
     }
 
-    private Flux<String> runGuiAgent(String instruction) {
+    private Flux<String> runGuiAgent(String instruction, String appName) {
         if (instruction == null || instruction.isEmpty()) {
             return Flux.error(new IllegalArgumentException("Instruction cannot be empty"));
         }
+        
         return Flux.create(sink -> {
-            sink.next("run gui agent\n");
-            guiAgent.run(instruction, sink);
+            try {
+                sink.next("准备执行 GUI Agent\n");
+                
+                // 如果提供了应用名称，先激活应用窗口
+                if (appName != null && !appName.isEmpty()) {
+                    sink.next("正在激活应用: " + appName + "\n");
+                    String activationResult = multimodalService.activateApplication(appName).blockFirst();
+                    sink.next(activationResult + "\n");
+                    
+                    if (activationResult != null && activationResult.contains("成功")) {
+                        sink.next("应用激活成功，等待窗口稳定...\n");
+                        // 额外等待确保窗口完全显示和稳定
+                        Thread.sleep(500);
+                    } else {
+                        sink.next("应用激活失败或不支持，继续执行截图分析...\n");
+                    }
+                }
+                
+                sink.next("开始执行 GUI Agent 任务\n");
+                guiAgent.run(instruction, sink);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // 重新设置中断状态
+                sink.error(new RuntimeException("窗口激活被中断: " + e.getMessage(), e));
+            } catch (Exception e) {
+                sink.error(new RuntimeException("执行失败: " + e.getMessage(), e));
+            }
         });
-
     }
 
     @Override
@@ -154,7 +193,7 @@ public class MultimodalFunction implements McpFunction {
 
     @Override
     public String getDesc() {
-        return "Execute UI operations including analyzing screenshots, clicking, double-clicking, right-clicking, dragging and dropping, typing text, pressing hotkeys, and running GuiAgent with instructions.";
+        return "Execute UI operations including analyzing screenshots, clicking, double-clicking, right-clicking, dragging and dropping, typing text, pressing hotkeys, and running GuiAgent with instructions. Supports optional application window activation before operations (macOS only).";
     }
 
     @Override
