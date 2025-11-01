@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -95,6 +96,7 @@ public class GuiAgent {
                 
                 """.formatted(instruction);
         String modelOutput = guiAgentService.run(imagePath, prompt, "").block();
+        log.warn("modelOutput:{}", modelOutput);
         modelOutput = extractJsonArray(modelOutput);
         return modelOutput;
     }
@@ -284,6 +286,12 @@ public class GuiAgent {
             String str = it.getAsString();
             log.info("run:{}", str);
             run2(str, sink);
+
+            try {
+                TimeUnit.MILLISECONDS.sleep(500);
+            } catch (InterruptedException e) {
+                log.warn("sleep 500ms Interrupted", e);
+            }
         });
         sink.next("所有任务执行结束");
         sink.complete();
