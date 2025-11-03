@@ -509,6 +509,20 @@ public class LLM {
             requestBody.addProperty("instructions", systemPrompt);
         }
 
+        if (llmProvider == LLMProvider.DOUBAO_VISION) {
+            if (StringUtils.isNotEmpty(systemPrompt)) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("role", "system");
+                obj.addProperty("content", systemPrompt);
+                msgArray.add(obj);
+            }
+            if (!config.isThinking()) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("type", "disabled");
+                requestBody.add("thinking", obj);
+            }
+        }
+
         if (llmProvider == LLMProvider.DOUBAO_VISION && StringUtils.isNotEmpty(systemPrompt)) {
             JsonObject obj = new JsonObject();
             obj.addProperty("role", "system");
