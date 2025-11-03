@@ -6,7 +6,7 @@ public class FullPageActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "FullPageAction";
+        return "full_page";
     }
 
     @Override
@@ -22,15 +22,13 @@ public class FullPageActionTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>FullPageAction</tool_name>
+                <full_page>
                 <arguments>
                 {
                   "name": "全屏信息获取"
                 }
                 </arguments>
-                </use_mcp_tool>
+                </full_page>
                 """;
     }
 }
