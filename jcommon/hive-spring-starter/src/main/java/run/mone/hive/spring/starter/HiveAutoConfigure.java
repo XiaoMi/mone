@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.McpFunction;
@@ -84,8 +85,9 @@ public class HiveAutoConfigure {
             config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
             return new LLM(config);
         }
-        if (LLMProvider.MIF_GATEWAY.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE).build();
+
+        if (LLMProvider.MIFY_GATEWAY.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.MIFY_GATEWAY).build();
             config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
             config.setToken(System.getenv("MIFY_API_KEY"));
             CustomConfig customConfig = new CustomConfig();

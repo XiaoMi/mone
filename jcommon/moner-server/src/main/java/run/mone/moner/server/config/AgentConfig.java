@@ -10,6 +10,7 @@ import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.Rag;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.moner.server.role.tool.*;
 
 /**
  * @author goodjava@qq.com
@@ -32,15 +33,22 @@ public class AgentConfig {
                 //内部工具(意图识别的小模型)
                 .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
                 .tools(Lists.newArrayList(
+                        // 通用会话与流程工具
                         new ChatTool(),
                         new AskTool(),
+                        new AttemptCompletionTool(),
                         new TavilySearchTool(),
                         new KnowledgeBaseQueryTool(),
-//                        new MemoryTool(RoleMemoryConfig.builder()
-//                                .graphStore(RoleMemoryConfig.GraphStoreConfig.builder()
-//                                        .llm(RoleMemoryConfig.LlmConfig.builder().providerName(LLMProvider.QWEN.name()).model("qwen3-max").build())
-//                                        .build()).build()),
-                        new AttemptCompletionTool()
+                        // Chrome 专用内部工具（用于在系统提示中展示，用法返回 XML，让前端执行）
+                        new OpenTabActionTool(),
+                        new OperationActionTool(),
+                        new ScrollActionTool(),
+                        new GetContentActionTool(),
+                        new FullPageActionTool(),
+                        new CodeActionTool(),
+                        new ClickAfterRefreshTool(),
+                        new MemoryActionTool(),
+                        new ProcessActionTool()
                         ))
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
                 .build();

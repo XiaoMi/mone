@@ -8,14 +8,19 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.AiMessage;
 
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Clipboard;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
@@ -33,6 +38,34 @@ public class MultimodalService {
     private LLM llm;
 
     private Robot robot;
+
+    /**
+     * 应用名称映射表
+     * key: 简称/别名, value: macOS中的实际应用名称
+     */
+    private static final Map<String, String> APP_NAME_MAPPING = new HashMap<>() {{
+        // 浏览器
+        put("chrome", "Google Chrome");
+        put("谷歌浏览器", "Google Chrome");
+        
+        // 微信
+        put("微信", "WeChat");
+        put("wechat", "WeChat");
+        put("wx", "WeChat");
+        
+        // 华泰证券
+        put("华泰证券", "专业版Ⅲ(MAC)");
+        put("华泰", "专业版Ⅲ(MAC)");
+        put("huatai", "专业版Ⅲ(MAC)");
+        
+        // 其他常用应用
+        put("cursor", "Cursor");
+        put("idea", "IntelliJ IDEA");
+        put("终端", "Terminal");
+        put("terminal", "Terminal");
+        put("访达", "Finder");
+        put("finder", "Finder");
+    }};
 
     public MultimodalService() {
         try {
@@ -259,6 +292,57 @@ public class MultimodalService {
     }
 
     /**
+     * 执行键盘输入 - 版本2：基于剪贴板的复制粘贴方式
+     * 优势：能够更好地支持中文、特殊字符和长文本输入
+     * 
+     * @param text 要输入的文本
+     * @return 操作结果
+     */
+    public Flux<String> typeTextV2(String text) {
+        try {
+            // 获取系统剪贴板
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            
+            // 保存当前剪贴板内容（可选，用于恢复）
+            // 注意：这里为了简单起见，不保存原内容，如果需要可以添加
+            
+            // 将文本复制到剪贴板
+            StringSelection stringSelection = new StringSelection(text);
+            clipboard.setContents(stringSelection, null);
+            
+            // 短暂延迟，确保剪贴板内容已设置
+            robot.delay(100);
+            
+            // 检测操作系统，使用对应的粘贴快捷键
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (osName.contains("mac")) {
+                // macOS: Cmd+V
+                robot.keyPress(KeyEvent.VK_META);
+                robot.keyPress(KeyEvent.VK_V);
+                robot.delay(50);
+                robot.keyRelease(KeyEvent.VK_V);
+                robot.keyRelease(KeyEvent.VK_META);
+            } else {
+                // Windows/Linux: Ctrl+V
+                robot.keyPress(KeyEvent.VK_CONTROL);
+                robot.keyPress(KeyEvent.VK_V);
+                robot.delay(50);
+                robot.keyRelease(KeyEvent.VK_V);
+                robot.keyRelease(KeyEvent.VK_CONTROL);
+            }
+            
+            // 等待粘贴完成
+            robot.delay(200);
+            
+            log.info("成功使用剪贴板方式输入文本，长度: " + text.length());
+            return Flux.just("成功使用剪贴板方式输入文本：" + (text.length() > 50 ? text.substring(0, 50) + "..." : text));
+        } catch (Exception e) {
+            log.error("剪贴板方式文本输入失败", e);
+            return Flux.just("剪贴板方式文本输入失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 输入单个字符
      */
     private void typeChar(char c) {
@@ -420,5 +504,240 @@ public class MultimodalService {
                 }
             }
         };
+    }
+
+    /**
+     * 激活指定的应用程序窗口（会自动切换到应用所在的Space）
+     * 注意：此功能仅支持 macOS 系统
+     * 
+     * @param appNameOrAlias 应用名称或别名（如 "chrome", "微信", "华泰证券"）
+     * @return 操作结果消息
+     */
+    public Flux<String> activateApplication(String appNameOrAlias) {
+        try {
+            // 检查操作系统
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (!osName.contains("mac")) {
+                log.warn("应用激活功能仅支持 macOS 系统，当前系统: {}", osName);
+                return Flux.just("应用激活功能仅支持 macOS 系统，当前系统: " + osName);
+            }
+            
+            // 从映射表中获取实际的应用名称
+            String actualAppName = APP_NAME_MAPPING.getOrDefault(
+                appNameOrAlias.toLowerCase(), 
+                appNameOrAlias
+            );
+            
+            log.info("准备激活应用: {} (实际名称: {})", appNameOrAlias, actualAppName);
+            
+            // 首先检查应用是否正在运行
+            if (!isApplicationRunning(actualAppName)) {
+                log.warn("应用 {} 未运行，尝试启动", actualAppName);
+                // 可以选择启动应用或返回错误
+                return Flux.just("应用 " + actualAppName + " 未运行，请先启动应用");
+            }
+            
+            // 使用 AppleScript 激活应用（会自动切换Space）
+            String script = String.format("tell application \"%s\" to activate", actualAppName);
+            ProcessBuilder pb = new ProcessBuilder("osascript", "-e", script);
+            pb.redirectErrorStream(true);
+            
+            Process process = pb.start();
+            
+            // 读取输出
+            StringBuilder output = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
+            }
+            
+            int exitCode = process.waitFor();
+            
+            if (exitCode == 0) {
+                // 等待窗口切换完成
+                robot.delay(800);
+                log.info("成功激活应用: {}", actualAppName);
+                return Flux.just("成功激活应用: " + actualAppName);
+            } else {
+                log.error("激活应用失败: {}, 输出: {}", actualAppName, output);
+                return Flux.just("激活应用失败: " + actualAppName + ", 错误: " + output);
+            }
+        } catch (IOException | InterruptedException e) {
+            log.error("激活应用异常", e);
+            return Flux.just("激活应用异常: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 检查应用是否正在运行
+     * 注意：此功能仅支持 macOS 系统
+     * 
+     * @param appName 应用名称
+     * @return true 如果应用正在运行
+     */
+    public boolean isApplicationRunning(String appName) {
+        try {
+            // 检查操作系统
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (!osName.contains("mac")) {
+                log.warn("应用检查功能仅支持 macOS 系统，当前系统: {}", osName);
+                return false;
+            }
+            
+            String script = String.format(
+                "tell application \"System Events\" to (name of processes) contains \"%s\"",
+                appName
+            );
+            ProcessBuilder pb = new ProcessBuilder("osascript", "-e", script);
+            Process process = pb.start();
+            
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream())
+            );
+            String result = reader.readLine();
+            
+            return "true".equalsIgnoreCase(result);
+        } catch (IOException e) {
+            log.error("检查应用运行状态失败", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 获取当前运行的所有应用列表
+     * 注意：此功能仅支持 macOS 系统
+     * 
+     * @return 运行中的应用名称列表
+     */
+    public Flux<List<String>> getRunningApplications() {
+        try {
+            // 检查操作系统
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (!osName.contains("mac")) {
+                log.warn("获取运行应用列表功能仅支持 macOS 系统，当前系统: {}", osName);
+                return Flux.just(new ArrayList<>());
+            }
+            
+            String script = "tell application \"System Events\" to get name of every application process whose background only is false";
+            ProcessBuilder pb = new ProcessBuilder("osascript", "-e", script);
+            Process process = pb.start();
+            
+            BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream())
+            );
+            String result = reader.readLine();
+            
+            if (result != null && !result.isEmpty()) {
+                // 输出格式为: "App1, App2, App3"
+                List<String> apps = Arrays.stream(result.split(","))
+                    .map(String::trim)
+                    .toList();
+                
+                log.info("当前运行的应用: {}", apps);
+                return Flux.just(apps);
+            }
+            
+            return Flux.just(new ArrayList<>());
+        } catch (IOException e) {
+            log.error("获取运行应用列表失败", e);
+            return Flux.just(new ArrayList<>());
+        }
+    }
+    
+    /**
+     * 获取系统已安装的应用列表
+     * 注意：此功能仅支持 macOS 系统
+     * 
+     * @return 已安装的应用名称列表
+     */
+    public Flux<List<String>> getInstalledApplications() {
+        try {
+            // 检查操作系统
+            String osName = System.getProperty("os.name").toLowerCase();
+            if (!osName.contains("mac")) {
+                log.warn("获取已安装应用列表功能仅支持 macOS 系统，当前系统: {}", osName);
+                return Flux.just(new ArrayList<>());
+            }
+            
+            List<String> apps = new ArrayList<>();
+            
+            // 扫描 /Applications 目录
+            File applicationsDir = new File("/Applications");
+            if (applicationsDir.exists() && applicationsDir.isDirectory()) {
+                File[] appFiles = applicationsDir.listFiles((dir, name) -> name.endsWith(".app"));
+                if (appFiles != null) {
+                    for (File app : appFiles) {
+                        String appName = app.getName().replace(".app", "");
+                        apps.add(appName);
+                    }
+                }
+            }
+            
+            // 扫描用户 Applications 目录
+            String userHome = System.getProperty("user.home");
+            File userAppsDir = new File(userHome, "Applications");
+            if (userAppsDir.exists() && userAppsDir.isDirectory()) {
+                File[] appFiles = userAppsDir.listFiles((dir, name) -> name.endsWith(".app"));
+                if (appFiles != null) {
+                    for (File app : appFiles) {
+                        String appName = app.getName().replace(".app", "");
+                        if (!apps.contains(appName)) {
+                            apps.add(appName);
+                        }
+                    }
+                }
+            }
+            
+            apps.sort(String::compareTo);
+            log.info("找到 {} 个已安装的应用", apps.size());
+            return Flux.just(apps);
+        } catch (Exception e) {
+            log.error("获取已安装应用列表失败", e);
+            return Flux.just(new ArrayList<>());
+        }
+    }
+    
+    /**
+     * 带应用激活的截图方法（推荐使用）
+     * 在截图前先激活指定应用，确保截取到正确的窗口
+     * 注意：应用激活功能仅支持 macOS 系统
+     * 
+     * @param appNameOrAlias 应用名称或别名
+     * @param filePath 保存路径（可选）
+     * @return 保存的图片文件路径
+     */
+    public Flux<String> captureScreenshotWithAppActivation(String appNameOrAlias, String filePath) {
+        try {
+            // 检查操作系统
+            String osName = System.getProperty("os.name").toLowerCase();
+            boolean isMacOS = osName.contains("mac");
+            
+            if (!isMacOS) {
+                log.warn("应用激活功能仅支持 macOS 系统，当前系统: {}，将使用普通截图方式", osName);
+                return captureScreenshotWithRobot(filePath);
+            }
+            
+            // macOS 系统：先激活应用
+            String activationResult = activateApplication(appNameOrAlias).blockFirst();
+            log.info("应用激活结果: {}", activationResult);
+            
+            if (activationResult != null && activationResult.contains("成功")) {
+                // 额外等待确保窗口完全显示
+                robot.delay(500);
+                
+                // 执行截图
+                return captureScreenshotWithRobot(filePath);
+            } else {
+                log.warn("应用 {} 激活失败，使用普通截图方式: {}", appNameOrAlias, activationResult);
+                // 降级：执行普通截图
+                return captureScreenshotWithRobot(filePath);
+            }
+        } catch (Exception e) {
+            log.error("带应用激活的截图失败", e);
+            return Flux.just("截图失败: " + e.getMessage());
+        }
     }
 } 

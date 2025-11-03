@@ -509,10 +509,32 @@ public class LLM {
             requestBody.addProperty("instructions", systemPrompt);
         }
 
+        if (llmProvider == LLMProvider.DOUBAO_VISION) {
+            if (StringUtils.isNotEmpty(systemPrompt)) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("role", "system");
+                obj.addProperty("content", systemPrompt);
+                msgArray.add(obj);
+            }
+            if (!config.isThinking()) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("type", "disabled");
+                requestBody.add("thinking", obj);
+            }
+        }
+
+        if (llmProvider == LLMProvider.DOUBAO_VISION && StringUtils.isNotEmpty(systemPrompt)) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("role", "system");
+            obj.addProperty("content", systemPrompt);
+            msgArray.add(obj);
+        }
+
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER
                     || this.llmProvider == LLMProvider.MOONSHOT
+                    || this.llmProvider == LLMProvider.DOUBAO_VISION
                     || this.llmProvider == LLMProvider.DOUBAO
                     || this.llmProvider == LLMProvider.QWEN
                     || this.llmProvider == LLMProvider.MIFY
@@ -933,7 +955,7 @@ public class LLM {
     }
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
-        chatCompletionStream(apiKey, CustomConfig.DUMMY, messages, model,
+        chatCompletionStream(apiKey, this.config.getCustomConfig() != null ? this.config.getCustomConfig() : CustomConfig.DUMMY, messages, model,
                 messageHandler, lineConsumer, systemPrompt, sink,
                 u -> {
                     if (null != sink) {
@@ -1017,7 +1039,7 @@ public class LLM {
         }
 
         for (AiMessage message : messages) {
-            if ((   this.llmProvider.name().startsWith("OPENROUTER") ||
+            if ((this.llmProvider.name().startsWith("OPENROUTER") ||
                     this.llmProvider == LLMProvider.OPENROUTER ||
                     this.llmProvider == LLMProvider.MOONSHOT ||
                     this.llmProvider == LLMProvider.GLM_45_AIR ||
@@ -2404,7 +2426,7 @@ public class LLM {
                 msg.getParts().forEach(part -> {
                     JsonObject obj2 = new JsonObject();
                     obj2.addProperty("type", "input_image");
-                    obj2.add("image_url",new JsonPrimitive( String.format("data:%s;base64,%s",part.getMimeType(),part.getData())));
+                    obj2.add("image_url", new JsonPrimitive(String.format("data:%s;base64,%s", part.getMimeType(), part.getData())));
                     contentJsons.add(obj2);
                 });
             }

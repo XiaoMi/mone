@@ -6,7 +6,7 @@ public class ClickAfterRefreshTool implements ITool {
 
     @Override
     public String getName() {
-        return "ClickAfterRefresh";
+        return "click_after_refresh";
     }
 
     @Override
@@ -22,15 +22,13 @@ public class ClickAfterRefreshTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>ClickAfterRefresh</tool_name>
+                <click_after_refresh>
                 <arguments>
                 {
                   "elementId": "12"
                 }
                 </arguments>
-                </use_mcp_tool>
+                </click_after_refresh>
                 """;
     }
 }

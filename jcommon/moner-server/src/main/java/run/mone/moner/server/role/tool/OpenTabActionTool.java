@@ -6,7 +6,7 @@ public class OpenTabActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "OpenTabAction";
+        return "open_tab";
     }
 
     @Override
@@ -28,9 +28,7 @@ public class OpenTabActionTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>OpenTabAction</tool_name>
+                <open_tab>
                 <arguments>
                 {
                   "action": {
@@ -41,7 +39,7 @@ public class OpenTabActionTool implements ITool {
                   }
                 }
                 </arguments>
-                </use_mcp_tool>
+                </open_tab>
                 """;
     }
 }

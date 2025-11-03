@@ -49,15 +49,15 @@ public class GuiAgentService {
                     "You need to perform the next action to complete the task.\n" +
                     "## Output Format\n```\nThought: ...\nAction: ...\n```\n" +
                     "## Action Space\n" +
-                    "click(start_box='[x1, y1, x2, y2]')\n" +
-                    "left_double(start_box='[x1, y1, x2, y2]')\n" +
-                    "right_single(start_box='[x1, y1, x2, y2]')\n" +
-                    "drag(start_box='[x1, y1, x2, y2]', end_box='[x3, y3, x4, y4]')\n" +
-                    "hotkey(key='')\n" +
-                    "type(content='') #If you want to submit your input, use \"\\n\" at the end of `content`.\n" +
-                    "scroll(start_box='[x1, y1, x2, y2]', direction='down or up or right or left')\n" +
-                    "wait() #Sleep for 5s and take a screenshot to check for any changes.\n" +
-                    "finished(content='xxx') # Use escape characters \\\\', \\\\\", and \\\\n in content part to ensure we can parse the content in normal string format.\n" +
+                    "click(point='<point>x1 y1</point>')\n" +
+                    "left_double(point='<point>x1 y1</point>')\n" +
+                    "right_single(point='<point>x1 y1</point>')\n" +
+                    "drag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')\n" +
+                    "hotkey(key='ctrl c') # Split keys with a space and use lowercase. Also, do not use more than 3 keys in one hotkey action.\n" +
+                    "type(content='xxx') # Use escape characters \\\\', \\\\\", and \\\\n in content part to ensure we can parse the content in normal python string format. If you want to submit your input, use \\\\n at the end of content.\n" +
+                    "scroll(point='<point>x1 y1</point>', direction='down or up or right or left') # Show more information on the `direction` side.\n" +
+                    "wait() # Sleep for 5s and take a screenshot to check for any changes.\n" +
+                    "finished(content='xxx') # Use escape characters \\\\', \\\\\", and \\\\n in content part to ensure we can parse the content in normal python string format.\n" +
                     "## Note\n" +
                     "- Use Chinese in `Thought` part.\n" +
                     "- Write a small plan and finally summarize your next action (with its target element) in one sentence in `Thought` part.";
@@ -97,7 +97,7 @@ public class GuiAgentService {
     }
 
     /**
-     * Visualize the action by drawing boxes and arrows on the image
+     * Visualize the action by drawing points and arrows on the image
      *
      * @param imagePath       Path to the original image
      * @param parsedOutput    Parsed output JSON string from parseActionOutput
@@ -114,26 +114,33 @@ public class GuiAgentService {
         Dimension imageSize = new Dimension(image.getWidth(), image.getHeight());
 
         // Get coordinates and direction
-        int[] startBox = null;
-        int[] endBox = null;
+        int[] startPoint = null;
+        int[] endPoint = null;
         String direction = null;
 
-        if (json.has("start_box") && !json.get("start_box").isNull()) {
-            // Convert from relative [0-1000] to absolute coordinates
-            int[] relativeStartBox = new int[4];
-            for (int i = 0; i < 4; i++) {
-                relativeStartBox[i] = json.get("start_box").get(i).asInt();
+        // Handle single point (for click, scroll, etc.)
+        if (json.has("point") && !json.get("point").isNull()) {
+            int[] relativePoint = getPointCoordinates(json.get("point"));
+            if (relativePoint != null) {
+                // Convert from relative coordinates to absolute coordinates
+                startPoint = convertPointToBox(relativePoint, imageSize);
             }
-            startBox = ImageProcessingUtil.coordinatesConvert(relativeStartBox, imageSize);
         }
 
-        if (json.has("end_box") && !json.get("end_box").isNull()) {
-            // Convert from relative [0-1000] to absolute coordinates
-            int[] relativeEndBox = new int[4];
-            for (int i = 0; i < 4; i++) {
-                relativeEndBox[i] = json.get("end_box").get(i).asInt();
+        // Handle start_point (for drag)
+        if (json.has("start_point") && !json.get("start_point").isNull()) {
+            int[] relativePoint = getPointCoordinates(json.get("start_point"));
+            if (relativePoint != null) {
+                startPoint = convertPointToBox(relativePoint, imageSize);
             }
-            endBox = ImageProcessingUtil.coordinatesConvert(relativeEndBox, imageSize);
+        }
+
+        // Handle end_point (for drag)
+        if (json.has("end_point") && !json.get("end_point").isNull()) {
+            int[] relativePoint = getPointCoordinates(json.get("end_point"));
+            if (relativePoint != null) {
+                endPoint = convertPointToBox(relativePoint, imageSize);
+            }
         }
 
         if (json.has("direction") && !json.get("direction").isNull()) {
@@ -141,7 +148,7 @@ public class GuiAgentService {
         }
 
         // Draw boxes and arrows
-        BufferedImage resultImage = ImageProcessingUtil.drawBoxAndArrow(image, startBox, endBox, direction);
+        BufferedImage resultImage = ImageProcessingUtil.drawBoxAndArrow(image, startPoint, endPoint, direction);
 
         // Save the image
         File outputFile = new File(outputImagePath);
@@ -150,6 +157,33 @@ public class GuiAgentService {
         ImageIO.write(resultImage, format, outputFile);
 
         return outputImagePath;
+    }
+
+    /**
+     * Convert a point [x, y] to a small box [x1, y1, x2, y2] for visualization
+     * Point coordinates are in relative [0-1000] range
+     * 
+     * @param point [x, y] in relative coordinates
+     * @param imageSize The size of the image
+     * @return [x1, y1, x2, y2] box coordinates in absolute pixels
+     */
+    private int[] convertPointToBox(int[] point, Dimension imageSize) {
+        if (point == null || point.length != 2) {
+            return null;
+        }
+        
+        // Convert from [0-1000] to actual image coordinates
+        int x = (int) (point[0] * imageSize.width / 1000.0);
+        int y = (int) (point[1] * imageSize.height / 1000.0);
+        
+        // Create a small box around the point (10x10 pixels)
+        int boxSize = 10;
+        return new int[]{
+            Math.max(0, x - boxSize / 2),
+            Math.max(0, y - boxSize / 2),
+            Math.min(imageSize.width, x + boxSize / 2),
+            Math.min(imageSize.height, y + boxSize / 2)
+        };
     }
 
     /**
@@ -170,67 +204,88 @@ public class GuiAgentService {
                         return Flux.just(content);
                     }
                     break;
+                    
                 case "scroll":
-                    if (json.has("start_box") && !json.get("start_box").isNull()) {
-                        int[] coords = getBoxCenter(json.get("start_box"));
-                        return multimodalService.scrollWheel(coords[0]);
+                    if (json.has("point") && !json.get("point").isNull()) {
+                        int[] coords = getPointCoordinates(json.get("point"));
+                        if (coords != null && json.has("direction") && !json.get("direction").isNull()) {
+                            String direction = json.get("direction").asText("");
+                            // Convert to screen coordinates
+                            Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(
+                                    new Point(coords[0], coords[1]), 
+                                    new Dimension(1000, 1000));
+                            // Determine scroll direction value
+                            int scrollAmount = direction.equals("down") || direction.equals("right") ? -3 : 3;
+                            return multimodalService.scrollWheel(scrollAmount);
+                        }
                     }
                     break;
+                    
                 case "click":
-                    if (json.has("start_box") && !json.get("start_box").isNull()) {
-                        int[] coords = getBoxCenter(json.get("start_box"));
-                        // Get screen dimensions
-                        // Convert relative coordinates to screen coordinates
-                        Point imagePoint = new Point(coords[0], coords[1]);
-                        // Use 1000x1000 as the image reference size since coordinates are in [0-1000] range
-                        Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(imagePoint, new Dimension(1000, 1000));
-                        return multimodalService.click(screenPoint.x, screenPoint.y);
+                    if (json.has("point") && !json.get("point").isNull()) {
+                        int[] coords = getPointCoordinates(json.get("point"));
+                        if (coords != null) {
+                            // Convert to screen coordinates
+                            Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(
+                                    new Point(coords[0], coords[1]), 
+                                    new Dimension(1000, 1000));
+                            return multimodalService.click(screenPoint.x, screenPoint.y);
+                        }
                     }
                     break;
 
                 case "left_double":
-                    if (json.has("start_box") && !json.get("start_box").isNull()) {
-                        int[] coords = getBoxCenter(json.get("start_box"));
-                        // Convert relative coordinates to screen coordinates
-                        Point imagePoint = new Point(coords[0], coords[1]);
-                        Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(imagePoint, new Dimension(1000, 1000));
-                        return multimodalService.doubleClick(screenPoint.x, screenPoint.y);
+                    if (json.has("point") && !json.get("point").isNull()) {
+                        int[] coords = getPointCoordinates(json.get("point"));
+                        if (coords != null) {
+                            // Convert to screen coordinates
+                            Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(
+                                    new Point(coords[0], coords[1]), 
+                                    new Dimension(1000, 1000));
+                            return multimodalService.doubleClick(screenPoint.x, screenPoint.y);
+                        }
                     }
                     break;
 
                 case "right_single":
-                    if (json.has("start_box") && !json.get("start_box").isNull()) {
-                        int[] coords = getBoxCenter(json.get("start_box"));
-                        // Convert relative coordinates to screen coordinates
-                        Point imagePoint = new Point(coords[0], coords[1]);
-                        Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(imagePoint, new Dimension(1000, 1000));
-                        return multimodalService.rightClick(screenPoint.x, screenPoint.y);
+                    if (json.has("point") && !json.get("point").isNull()) {
+                        int[] coords = getPointCoordinates(json.get("point"));
+                        if (coords != null) {
+                            // Convert to screen coordinates
+                            Point screenPoint = ImageProcessingUtil.imageToScreenCoordinates(
+                                    new Point(coords[0], coords[1]), 
+                                    new Dimension(1000, 1000));
+                            return multimodalService.rightClick(screenPoint.x, screenPoint.y);
+                        }
                     }
                     break;
 
                 case "drag":
-                    if (json.has("start_box") && json.has("end_box") &&
-                            !json.get("start_box").isNull() && !json.get("end_box").isNull()) {
-                        int[] startCoords = getBoxCenter(json.get("start_box"));
-                        int[] endCoords = getBoxCenter(json.get("end_box"));
+                    if (json.has("start_point") && json.has("end_point") &&
+                            !json.get("start_point").isNull() && !json.get("end_point").isNull()) {
+                        int[] startCoords = getPointCoordinates(json.get("start_point"));
+                        int[] endCoords = getPointCoordinates(json.get("end_point"));
                         
-                        // Convert relative coordinates to screen coordinates
-                        Point startImagePoint = new Point(startCoords[0], startCoords[1]);
-                        Point endImagePoint = new Point(endCoords[0], endCoords[1]);
-                        
-                        Point startScreenPoint = ImageProcessingUtil.imageToScreenCoordinates(startImagePoint, new Dimension(1000, 1000));
-                        Point endScreenPoint = ImageProcessingUtil.imageToScreenCoordinates(endImagePoint, new Dimension(1000, 1000));
-                        
-                        return multimodalService.dragAndDrop(
-                                startScreenPoint.x, startScreenPoint.y,
-                                endScreenPoint.x, endScreenPoint.y);
+                        if (startCoords != null && endCoords != null) {
+                            // Convert to screen coordinates
+                            Point startScreenPoint = ImageProcessingUtil.imageToScreenCoordinates(
+                                    new Point(startCoords[0], startCoords[1]), 
+                                    new Dimension(1000, 1000));
+                            Point endScreenPoint = ImageProcessingUtil.imageToScreenCoordinates(
+                                    new Point(endCoords[0], endCoords[1]), 
+                                    new Dimension(1000, 1000));
+                            
+                            return multimodalService.dragAndDrop(
+                                    startScreenPoint.x, startScreenPoint.y,
+                                    endScreenPoint.x, endScreenPoint.y);
+                        }
                     }
                     break;
 
                 case "type":
                     if (json.has("content") && !json.get("content").isNull()) {
                         String content = json.get("content").asText("");
-                        return multimodalService.typeText(content);
+                        return multimodalService.typeTextV2(content);
                     }
                     break;
 
@@ -268,16 +323,19 @@ public class GuiAgentService {
     }
 
     /**
-     * Get the center coordinates of a bounding box
+     * Get point coordinates from JSON array [x, y]
+     * 
+     * @param pointNode JSON node containing [x, y] array
+     * @return Array with [x, y] coordinates, or null if invalid
      */
-    private int[] getBoxCenter(JsonNode boxNode) {
-        // These are already relative coordinates [0-1000]
-        int x1 = boxNode.get(0).asInt();
-        int y1 = boxNode.get(1).asInt();
-        int x2 = boxNode.get(2).asInt();
-        int y2 = boxNode.get(3).asInt();
-
-        // Return center point in relative coordinates
-        return new int[]{(x1 + x2) / 2, (y1 + y2) / 2};
+    private int[] getPointCoordinates(JsonNode pointNode) {
+        if (pointNode == null || !pointNode.isArray() || pointNode.size() != 2) {
+            return null;
+        }
+        
+        int x = pointNode.get(0).asInt();
+        int y = pointNode.get(1).asInt();
+        
+        return new int[]{x, y};
     }
 } 

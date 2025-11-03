@@ -6,7 +6,7 @@ public class OperationActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "OperationAction";
+        return "operation";
     }
 
     @Override
@@ -38,9 +38,7 @@ public class OperationActionTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>OperationAction</tool_name>
+                <operation>
                 <arguments>
                 {
                   "action1": {
@@ -87,7 +85,7 @@ public class OperationActionTool implements ITool {
                   }
                 }
                 </arguments>
-                </use_mcp_tool>
+                </operation>
                 """;
     }
 }
