@@ -358,7 +358,6 @@ function connectWebSocket() {
                                         },
                                         args: [selector]
                                     });
-                                }
                                 } else if (action.attributes.name === 'clickBlank' || action.attributes.name === 'clickOutside') {
                                     await chrome.scripting.executeScript({
                                         target: { tabId: tab.id },
