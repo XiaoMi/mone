@@ -42,6 +42,16 @@ public interface ITool {
         return false;
     }
 
+    //是否由调用方处理后触发下一轮执行
+    default boolean callerRunTrigger() {
+        return false;
+    }
+
+    // 是否在调用工具时将toolInfo作为参数
+    default boolean toolInfoAsParam() {
+        return false;
+    }
+
     default String formatResult(JsonObject res) {
         return JsonUtils.toolResult(res.toString());
     }

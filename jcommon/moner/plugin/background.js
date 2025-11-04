@@ -470,11 +470,11 @@ function connectWebSocket() {
                                 isAutoMode = action.attributes.auto === 'true';
                                 await tabManager.createNewTab(action.attributes.url);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'createNewTab',
-                                    success: true,
-                                    url: action.attributes.url
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'createNewTab',
+                                //     success: true,
+                                //     url: action.attributes.url
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('CreateNewTab failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -895,6 +895,7 @@ chrome.tabs.onCreated.addListener((tab) => {
     
     // 如果是auto模式，设置监听器
     if (isAutoMode) {
+        console.log('auto mode setupTabListener for tab:', tab.id);
         setupTabListener(tab.id, machineId);
     }
 });
@@ -1345,11 +1346,26 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
 
-        //截屏的数据
-        const screenshot = await chrome.tabs.captureVisibleTab(null, {
-            format: 'jpeg',
-            quality: 10
-        });
+        // 截屏的数据
+        // 使用目标 tab 的 windowId 来避免在 DevTools 窗口聚焦时触发
+        // “Cannot access contents of url \"devtools://devtools\"”错误。
+        let screenshot = null;
+        try {
+            const targetTab = await chrome.tabs.get(stateUpdate.tabId);
+            const url = targetTab?.url || '';
+            const isRestricted = /^(chrome|devtools|chrome-extension|edge|about):/i.test(url);
+
+            if (!isRestricted) {
+                screenshot = await chrome.tabs.captureVisibleTab(targetTab.windowId, {
+                    format: 'jpeg',
+                    quality: 10
+                });
+            } else {
+                console.warn('Skipping screenshot for restricted URL:', url);
+            }
+        } catch (e) {
+            console.error('captureVisibleTab failed, window-bound attempt:', e);
+        }
 
         await removeHighlightIfNeeded(stateUpdate.tabId, autoRemoveHighlight);
 
@@ -1368,17 +1384,17 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         const messageData = {
             code: domTreeString,
-            img: [screenshot],
+            img: screenshot ? [screenshot] : undefined,
             tabs: await getAllTabsInfo()
         };
         console.log('messageData:', messageData);
         //通知服务器,这个tab发生了变化
-        await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+        await sendWebSocketMessage(JSON.stringify(messageData));
 
-        await sendWebSocketMessage(JSON.stringify({
-            actionType: 'buildDomTree',
-            success: true
-        }), 'reply');
+        // await sendWebSocketMessage(JSON.stringify({
+        //     actionType: 'buildDomTree',
+        //     success: true
+        // }), 'reply');
     } catch (error) {
         console.error('Error handling state change:', error);
     }
