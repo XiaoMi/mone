@@ -72,7 +72,11 @@ public class GuiAgentService {
     public Mono<String> run(String imagePath, String userPrompt, String systemPrompt) {
         try {
             String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
-            LLM llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_UI_TARS).temperature(Prompt.temperature).build());
+            LLM llm = new LLM(LLMConfig.builder()
+                    .llmProvider(LLMProvider.DOUBAO_UI_TARS)
+                    .temperature(Prompt.temperature)
+                    .thinking(true)
+                    .build());
             LLM.LLMCompoundMsg m = LLM.getLlmCompoundMsg(userPrompt,
                     Message.builder()
                             .images(Lists.newArrayList(base64Image))
