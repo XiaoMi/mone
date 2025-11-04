@@ -28,9 +28,23 @@ public class GetContentActionTool implements ITool {
     @Override
     public String usage() {
         return """
+                When you want to get the content of the page, you can use this tool.
+                and the content you generate will ALWAYS be the same as the content below:
                 <get_content>
                 <arguments>
                 {
+                  "action1": { "type": "pause" },
+                  "action2": { "type": "cancelBuildDomTree" },
+                  "action3": { "type": "pause" },
+                  "action4": { "type": "buildDomTree" },
+                  "action5": { "type": "pause" },
+                  "action6": {
+                    "type": "screenshot",
+                    "send": "true",
+                    "test": "true",
+                    "removeDomTree": "true",
+                    "desc": "截图并且把截图回传回来"
+                  }
                 }
                 </arguments>
                 </get_content>

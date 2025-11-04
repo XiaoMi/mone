@@ -24,7 +24,7 @@ public class ScrollAction extends Action {
                 </use_mcp_tool>
                 """);
         setFunction((req,action,ctx)-> Message.builder().content("""
-                 //滚动屏幕
+                //滚动屏幕
                 <action type="scrollOneScreen">
                 </action>
                 //暂停

@@ -7,6 +7,19 @@ import moneyEffect from './moneyEffect.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
+// Helper: get active tab from the last focused normal window (avoids DevTools)
+async function getActiveNormalTab() {
+    try {
+        const win = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
+        const [tab] = await chrome.tabs.query({ active: true, windowId: win.id });
+        if (tab) return tab;
+    } catch (e) {
+        console.warn('getActiveNormalTab fell back to currentWindow:', e);
+    }
+    const [fallbackTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return fallbackTab;
+}
+
 // WebSocket 连接
 let ws = null;
 let reconnectAttempts = 0;
@@ -32,7 +45,19 @@ let autoRemoveHighlight = false; // 默认关闭自动取消重绘
 
 
 const urlChangePromise = new Promise(async (resolve) => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tab = await getActiveNormalTab();
+    if (!tab) {
+        console.warn('No active normal tab found when initializing urlChangePromise');
+        resolve({
+            urlChanged: false,
+            contentChanged: false,
+            loadingComplete: false,
+            oldUrl: '',
+            newUrl: '',
+            mutations: []
+        });
+        return;
+    }
     const currentUrl = tab.url;
     let changes = {
         urlChanged: false,
@@ -190,8 +215,8 @@ function connectWebSocket() {
             const data = JSON.parse(event.data);
             console.log('Received message:', data);
 
-            //当前的tab
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            // 当前的tab（忽略 DevTools 窗口）
+            const tab = await getActiveNormalTab();
 
             // 兼容 starter 协议（type + data.content），以及旧协议（content 或 data 为纯字符串）
             const type = data.type || '';
@@ -290,12 +315,18 @@ function connectWebSocket() {
                                         func: (selector, value) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
-                                                element.focus();
-                                                element.click();
-                                                element.value = value;
-                                                element.dispatchEvent(new Event('input', { bubbles: true }));
-                                                element.dispatchEvent(new Event('change', { bubbles: true }));
-                                                element.blur();
+                                                const href = (typeof location !== 'undefined' && location && location.href) ? location.href : '';
+                                                if (href === 'https://www.jd.com' || href === 'https://www.jd.com/') {
+                                                    console.log('[Moner] Filling element on JD homepage:', element);
+                                                    document.getElementById('key').value = value;
+                                                } else {
+                                                    element.focus();
+                                                    element.click();
+                                                    element.value = value;
+                                                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                                                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                                                    element.blur();
+                                                }
                                             }
                                         },
                                         args: [selector, action.attributes.value]
@@ -306,11 +337,89 @@ function connectWebSocket() {
                                         func: (selector) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
-                                                element.focus();
-                                                element.click();
+                                                // Log on JD homepage during click
+                                                const href = (typeof location !== 'undefined' && location && location.href) ? location.href : '';
+                                                if (href === 'https://www.jd.com' || href === 'https://www.jd.com/') {
+                                                    console.log('[Moner] Clicking element on JD homepage:', element);
+                                                     if (typeof search === 'function') {
+                                                        search('key', document.getElementById('key').value);
+                                                    }
+                                                } else {
+                                                    element.focus();
+                                                    element.click();
+                                                }
+                                                
                                             }
                                         },
                                         args: [selector]
+                                    });
+                                } else if (action.attributes.name === 'clickBlank' || action.attributes.name === 'clickOutside') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: () => {
+                                            // Blur active element and commit any change
+                                            const active = document.activeElement;
+                                            if (active) {
+                                                try {
+                                                    // If it's a text input/textarea, ensure change event fires
+                                                    const tag = (active.tagName || '').toLowerCase();
+                                                    if (tag === 'input' || tag === 'textarea' || active.isContentEditable) {
+                                                        try { active.dispatchEvent(new Event('input', { bubbles: true, composed: true })); } catch {}
+                                                        try { active.dispatchEvent(new Event('change', { bubbles: true, composed: true })); } catch {}
+                                                    }
+                                                } catch {}
+                                                try { active.blur(); } catch {}
+                                            }
+
+                                            // Choose a safe viewport point not on interactive elements
+                                            const within = (x, y) => {
+                                                let node = document.elementFromPoint(x, y);
+                                                if (!node) return { node: document.body, x, y };
+                                                // skip obvious interactive nodes
+                                                const interactive = node.closest('input,textarea,select,button,[role="button"],[contenteditable="true"],a[href]');
+                                                if (interactive) return null;
+                                                // avoid clicking the previously active element again
+                                                if (active && node === active) return null;
+                                                return { node, x, y };
+                                            };
+                                            const candidates = [
+                                                { x: 10, y: 10 },
+                                                { x: window.innerWidth - 10, y: 10 },
+                                                { x: 10, y: window.innerHeight - 10 },
+                                                { x: window.innerWidth - 10, y: window.innerHeight - 10 },
+                                                { x: Math.floor(window.innerWidth / 2), y: Math.floor(window.innerHeight / 2) }
+                                            ];
+                                            let point = null;
+                                            for (const p of candidates) {
+                                                point = within(p.x, p.y);
+                                                if (point) break;
+                                            }
+                                            if (!point) point = { node: document.body, x: Math.floor(window.innerWidth/2), y: Math.floor(window.innerHeight/2) };
+                                            const { node: target, x, y } = point;
+
+                                            const fire = (type) => {
+                                                const evtInit = { bubbles: true, cancelable: true, clientX: x, clientY: y, view: window }; 
+                                                let evt;
+                                                try {
+                                                    if (type.startsWith('pointer')) {
+                                                        evt = new PointerEvent(type, { ...evtInit, pointerId: 1, isPrimary: true, pointerType: 'mouse' });
+                                                    } else {
+                                                        evt = new MouseEvent(type, evtInit);
+                                                    }
+                                                } catch {
+                                                    evt = document.createEvent('MouseEvents');
+                                                    evt.initMouseEvent(type, true, true, window, 1, x, y, x, y, false, false, false, false, 0, null);
+                                                }
+                                                target.dispatchEvent(evt);
+                                            };
+
+                                            // Mimic a full click sequence
+                                            try { fire('pointerdown'); } catch {}
+                                            try { fire('mousedown'); } catch {}
+                                            try { fire('pointerup'); } catch {}
+                                            try { fire('mouseup'); } catch {}
+                                            try { fire('click'); } catch {}
+                                        }
                                     });
                                 } else if (action.attributes.name === 'focus') {
                                     await chrome.scripting.executeScript({
@@ -737,8 +846,8 @@ function connectWebSocket() {
 
         // 如果是JSON消息且需要DOM操作
         if (messageWithTimestamp.type === 'json') {
-            // 获取当前活动标签页
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            // 获取当前活动标签页（忽略 DevTools 窗口）
+            const tab = await getActiveNormalTab();
             if (!tab) return;
         }
     };

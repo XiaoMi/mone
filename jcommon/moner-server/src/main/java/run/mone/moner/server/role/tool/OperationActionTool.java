@@ -52,6 +52,9 @@ public class OperationActionTool implements ITool {
             taskProgress = "";
         }
         return """
+                Construct the operation refer to the following example, remember to replace the value of the "tabId" and "elementId" with the actual values.
+                and keep in mind that the type should ALWAYS be "action", but the name should be the name of the action you want to perform:
+
                 <operation>
                 <arguments>
                 {
