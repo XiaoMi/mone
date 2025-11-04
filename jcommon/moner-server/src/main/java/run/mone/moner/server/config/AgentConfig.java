@@ -47,7 +47,7 @@ public class AgentConfig {
                         new FullPageActionTool(),
                         new CodeActionTool(),
                         new ClickAfterRefreshTool(),
-                        new MemoryActionTool(),
+                        // new MemoryActionTool(),
                         new ProcessActionTool()
                         ))
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
