@@ -315,18 +315,22 @@ function connectWebSocket() {
                                         func: (selector, value) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
-                                                const href = (typeof location !== 'undefined' && location && location.href) ? location.href : '';
-                                                if (href === 'https://www.jd.com' || href === 'https://www.jd.com/') {
-                                                    console.log('[Moner] Filling element on JD homepage:', element);
-                                                    document.getElementById('key').value = value;
-                                                } else {
-                                                    element.focus();
-                                                    element.click();
-                                                    element.value = value;
-                                                    element.dispatchEvent(new Event('input', { bubbles: true }));
-                                                    element.dispatchEvent(new Event('change', { bubbles: true }));
-                                                    element.blur();
+                                                // 激活并选中元素
+                                                element.focus();
+                                                element.click();
+                                                element.value = value;
+
+                                                // 选中文本内容，使其处于选中状态
+                                                if (element.select && typeof element.select === 'function') {
+                                                    element.select();
+                                                } else if (element.setSelectionRange && typeof element.setSelectionRange === 'function') {
+                                                    element.setSelectionRange(0, element.value.length);
                                                 }
+
+                                                // 触发相关事件以确保框架能检测到变化
+                                                element.dispatchEvent(new Event('input', { bubbles: true }));
+                                                element.dispatchEvent(new Event('change', { bubbles: true }));
+                                                element.dispatchEvent(new Event('focus', { bubbles: true }));
                                             }
                                         },
                                         args: [selector, action.attributes.value]
@@ -337,22 +341,24 @@ function connectWebSocket() {
                                         func: (selector) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
-                                                // Log on JD homepage during click
-                                                const href = (typeof location !== 'undefined' && location && location.href) ? location.href : '';
-                                                if (href === 'https://www.jd.com' || href === 'https://www.jd.com/') {
-                                                    console.log('[Moner] Clicking element on JD homepage:', element);
-                                                     if (typeof search === 'function') {
-                                                        search('key', document.getElementById('key').value);
-                                                    }
-                                                } else {
-                                                    element.focus();
-                                                    element.click();
-                                                }
-                                                
+                                                element.click();
+                                                // // Log on JD homepage during click
+                                                // const href = (typeof location !== 'undefined' && location && location.href) ? location.href : '';
+                                                // if (href === 'https://www.jd.com' || href === 'https://www.jd.com/') {
+                                                //     console.log('[Moner] Clicking element on JD homepage:', element);
+                                                //      if (typeof search === 'function') {
+                                                //         search('key', document.getElementById('key').value);
+                                                //     }
+                                                // } else {
+                                                //     element.focus();
+                                                //     element.click();
+                                                // }
+
                                             }
                                         },
                                         args: [selector]
                                     });
+                                }
                                 } else if (action.attributes.name === 'clickBlank' || action.attributes.name === 'clickOutside') {
                                     await chrome.scripting.executeScript({
                                         target: { tabId: tab.id },
@@ -616,6 +622,7 @@ function connectWebSocket() {
                                         code = generateHtmlString(domTreeData);
                                     }
                                     const messageData = {
+                                        text: '页面的源代码内容和截图如下(在code字段和img字段中分别展示)',
                                         code: code,
                                         img: [screenshot]
                                     };
@@ -624,10 +631,10 @@ function connectWebSocket() {
 
                                 await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'screenshot',
-                                    success: true
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'screenshot',
+                                //     success: true
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('Screenshot failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -707,10 +714,10 @@ function connectWebSocket() {
 
                                 await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'screenshotFullPage',
-                                    success: true
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'screenshotFullPage',
+                                //     success: true
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('ScreenshotFullPage failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -756,10 +763,10 @@ function connectWebSocket() {
 
                                 context.set('domTreeData', domTreeData);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'buildDomTree',
-                                    success: true
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'buildDomTree',
+                                //     success: true
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('BuildDomTree failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
