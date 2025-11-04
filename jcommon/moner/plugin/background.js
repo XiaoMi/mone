@@ -185,6 +185,8 @@ const urlChangePromise = new Promise(async (resolve) => {
     }, 5000); // 5秒超时
 });
 
+var xmlString = "";
+
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
     // 如果已经有连接，先关闭
@@ -234,7 +236,7 @@ function connectWebSocket() {
                 contentStr = data.data;
             }
             if (contentStr) {
-                    const xmlString = contentStr;
+                    xmlString += contentStr;
                     console.log('XML string:', xmlString);
                     // 解析 XML 为动作列表
                     let actions = xmlManager.parseActions(xmlString);
@@ -1029,6 +1031,7 @@ function sendWebSocketMessage(message, cmd = '') {
             };
             try {
                 console.log('sendWebSocketMessage:', JSON.stringify(jsonMessage));
+                xmlString = "";
                 ws.send(JSON.stringify(jsonMessage));
                 console.log('Message sent:', jsonMessage);
                 resolve();
