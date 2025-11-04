@@ -29,6 +29,7 @@ public enum LLMProvider {
     OPENROUTER_GEMINI_25_FLUSH("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-flash", null),
     OPENROUTER_GEMINI_25_PRO("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-pro", null),
     OPENROUTER_GROK_CODE_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-code-fast-1", null),
+    OPENROUTER_GROK_4_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-4-fast", null),
     OPENAICOMPATIBLE("", "", "", null),
     OPENAI_MULTIMODAL_COMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
