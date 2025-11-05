@@ -5,6 +5,7 @@ public enum McpType {
     STDIO,
     GRPC,
     SSE,
+    HTTP,
     STREAMABLE;
 
     public static McpType fromString(String type) {

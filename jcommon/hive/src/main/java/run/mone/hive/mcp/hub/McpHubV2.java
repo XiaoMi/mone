@@ -266,7 +266,7 @@ public class McpHubV2 {
 
     public void connectToServer(String name, ServerParameters config) {
         // 做mcphub的套壳崽,此处只处理streamable http类型
-        if (McpType.STREAMABLE.equals(config.getType())) {
+        if (McpType.HTTP.name().toLowerCase(Locale.ROOT).equals(config.getType())) {
             McpClientTransport transport = HttpClientStreamableHttpTransport
                             .builder(config.getUrl())
                             .build();
