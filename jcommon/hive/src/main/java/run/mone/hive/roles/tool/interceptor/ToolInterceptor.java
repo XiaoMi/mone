@@ -17,6 +17,10 @@ package run.mone.hive.roles.tool.interceptor;
 
 import com.google.gson.JsonObject;
 
+import run.mone.hive.common.JsonUtils;
+import run.mone.hive.common.ToolDataInfo;
+import run.mone.hive.roles.tool.ITool;
+
 import java.util.Map;
 
 /**
@@ -24,14 +28,19 @@ import java.util.Map;
  */
 public class ToolInterceptor {
 
-    public static void before(String name, JsonObject parameters, Map<String, String> extraParam){
-        switch (name){
+    public static void before(ITool tool, ToolDataInfo toolDataInfo, JsonObject parameters,
+            Map<String, String> extraParam) {
+        switch (tool.getName()) {
             case "speech_to_text":
                 parameters.addProperty("base64", extraParam.get("voiceBase64"));
         }
+
+        if (tool.toolInfoAsParam()) {
+            parameters.add("_tool_info_as_param_", JsonUtils.gson.toJsonTree(toolDataInfo));
+        }
     }
 
-    public void after(){
+    public void after() {
 
     }
 }

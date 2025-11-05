@@ -8,6 +8,7 @@
     <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-dubbo</artifactId>
+  <version>1.6.0-jdk21-v1-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
@@ -24,11 +25,6 @@
       <groupId>run.mone</groupId>
       <artifactId>nacos-client</artifactId>
       <version>1.2.1-mone-v3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>run.mone</groupId>
-      <artifactId>dubbo-registry-nacos</artifactId>
-      <version>1.2.1-mone-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>

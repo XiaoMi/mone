@@ -28,6 +28,65 @@ export class XMLManager {
                 }
             }
 
+            // 1.1) 解析 <attempt_completion>（提取 <result>、<usage>、<command>）
+            const attemptBlockRegex = /<attempt_completion[^>]*>([\s\S]*?)<\/attempt_completion>/gi;
+            let attemptMatch;
+            while ((attemptMatch = attemptBlockRegex.exec(xmlString)) !== null) {
+                const attemptInner = attemptMatch[1] || '';
+
+                // 提取 <result>
+                const resultRegex = /<result[^>]*>([\s\S]*?)<\/result>/i;
+                const resultMatch = attemptInner.match(resultRegex);
+
+                // 提取 <usage>（嵌套在 result 内或外都尝试）
+                const usageRegex = /<usage[^>]*>([\s\S]*?)<\/usage>/i;
+                let usageRaw = null;
+                let usage = null;
+                let resultText = '';
+
+                if (resultMatch) {
+                    let resultInner = resultMatch[1] || '';
+                    const usageInResult = resultInner.match(usageRegex);
+                    if (usageInResult) {
+                        usageRaw = (usageInResult[1] || '').trim();
+                        // 从结果里移除 <usage> 块，保留纯文本
+                        resultInner = resultInner.replace(usageRegex, '').trim();
+                    }
+                    resultText = resultInner.trim();
+                }
+
+                // 如果 result 外还有独立的 <usage>
+                if (!usageRaw) {
+                    const usageOutside = attemptInner.match(usageRegex);
+                    if (usageOutside) {
+                        usageRaw = (usageOutside[1] || '').trim();
+                    }
+                }
+
+                // 尝试解析 usage JSON
+                if (usageRaw) {
+                    try {
+                        usage = JSON.parse(usageRaw);
+                    } catch (e) {
+                        usage = usageRaw; // 解析失败则原样返回字符串
+                    }
+                }
+
+                // 提取 <command>（可选）
+                const commandRegex = /<command[^>]*>([\s\S]*?)<\/command>/i;
+                const commandMatch = attemptInner.match(commandRegex);
+                const commandText = commandMatch ? (commandMatch[1] || '').trim() : undefined;
+
+                // 仅在存在 result 或 usage/command 时推入
+                if (resultText || usage !== null || commandText) {
+                    const attributes = {};
+                    if (resultText) attributes.result = resultText;
+                    if (usage !== null) attributes.usage = usage;
+                    if (commandText) attributes.command = commandText;
+                    actions.push({ type: 'attempt_completion', attributes });
+                }
+            }
+
             // 2) 解析 <action ...> 标签（原有逻辑）
             const actionPattern = /<action\s+([^>]*)(?:>([\s\S]*?)<\/action>|\/?>)/gi;
             let match;

@@ -6,7 +6,7 @@ public class ScrollActionTool implements ITool {
 
     @Override
     public String getName() {
-        return "ScrollAction";
+        return "scroll_action";
     }
 
     @Override
@@ -22,15 +22,25 @@ public class ScrollActionTool implements ITool {
     @Override
     public String usage() {
         return """
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>ScrollAction</tool_name>
+                <scroll_action>
                 <arguments>
                 {
+                  "action1": { "type": "scrollOneScreen", "desc": "滚动屏幕" },
+                  "action2": { "type": "pause" },
+                  "action3": { "type": "cancelBuildDomTree" },
+                  "action4": { "type": "pause" },
+                  "action5": { "type": "buildDomTree" },
+                  "action6": { "type": "pause" },
+                  "action7": {
+                    "type": "screenshot",
+                    "send": "true",
+                    "test": "true",
+                    "removeDomTree": "true",
+                    "desc": "截图并且把截图回传回来"
+                  }
                 }
                 </arguments>
-                </use_mcp_tool>
+                </scroll_action>
                 """;
     }
 }
-

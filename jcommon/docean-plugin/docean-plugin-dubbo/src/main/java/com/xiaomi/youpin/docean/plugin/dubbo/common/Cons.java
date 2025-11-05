@@ -24,6 +24,8 @@ public interface Cons {
     String DUBBO_APP_NAME = "dubbo_app_name";
 
     String DUBBO_REG_ADDRESS = "dubbo_reg_address";
+    String DUBBO_REG_META_ADDRESS = "dubbo_reg_meta_address";
+    String DUBBO_REG_CFG_ADDRESS = "dubbo_reg_cfg_address";
 
     String DUBBO_REG_CHECK = "dubbo_reg_check";
 

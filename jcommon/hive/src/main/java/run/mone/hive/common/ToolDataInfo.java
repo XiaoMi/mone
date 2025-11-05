@@ -18,7 +18,7 @@ public class ToolDataInfo {
 
     private String agentId;
 
-    private ReactorRole role;
+    private transient ReactorRole role;
 
     public ToolDataInfo(String tag, Map<String, String> keyValuePairs) {
         this.tag = tag;

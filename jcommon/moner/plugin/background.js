@@ -7,6 +7,19 @@ import moneyEffect from './moneyEffect.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
+// Helper: get active tab from the last focused normal window (avoids DevTools)
+async function getActiveNormalTab() {
+    try {
+        const win = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
+        const [tab] = await chrome.tabs.query({ active: true, windowId: win.id });
+        if (tab) return tab;
+    } catch (e) {
+        console.warn('getActiveNormalTab fell back to currentWindow:', e);
+    }
+    const [fallbackTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return fallbackTab;
+}
+
 // WebSocket 连接
 let ws = null;
 let reconnectAttempts = 0;
@@ -32,7 +45,19 @@ let autoRemoveHighlight = false; // 默认关闭自动取消重绘
 
 
 const urlChangePromise = new Promise(async (resolve) => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tab = await getActiveNormalTab();
+    if (!tab) {
+        console.warn('No active normal tab found when initializing urlChangePromise');
+        resolve({
+            urlChanged: false,
+            contentChanged: false,
+            loadingComplete: false,
+            oldUrl: '',
+            newUrl: '',
+            mutations: []
+        });
+        return;
+    }
     const currentUrl = tab.url;
     let changes = {
         urlChanged: false,
@@ -160,6 +185,8 @@ const urlChangePromise = new Promise(async (resolve) => {
     }, 5000); // 5秒超时
 });
 
+var xmlString = "";
+
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
     // 如果已经有连接，先关闭
@@ -190,8 +217,8 @@ function connectWebSocket() {
             const data = JSON.parse(event.data);
             console.log('Received message:', data);
 
-            //当前的tab
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            // 当前的tab（忽略 DevTools 窗口）
+            const tab = await getActiveNormalTab();
 
             // 兼容 starter 协议（type + data.content），以及旧协议（content 或 data 为纯字符串）
             const type = data.type || '';
@@ -209,7 +236,7 @@ function connectWebSocket() {
                 contentStr = data.data;
             }
             if (contentStr) {
-                    const xmlString = contentStr;
+                    xmlString += contentStr;
                     console.log('XML string:', xmlString);
                     // 解析 XML 为动作列表
                     let actions = xmlManager.parseActions(xmlString);
@@ -290,12 +317,22 @@ function connectWebSocket() {
                                         func: (selector, value) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
+                                                // 激活并选中元素
                                                 element.focus();
                                                 element.click();
                                                 element.value = value;
+
+                                                // 选中文本内容，使其处于选中状态
+                                                if (element.select && typeof element.select === 'function') {
+                                                    element.select();
+                                                } else if (element.setSelectionRange && typeof element.setSelectionRange === 'function') {
+                                                    element.setSelectionRange(0, element.value.length);
+                                                }
+
+                                                // 触发相关事件以确保框架能检测到变化
                                                 element.dispatchEvent(new Event('input', { bubbles: true }));
                                                 element.dispatchEvent(new Event('change', { bubbles: true }));
-                                                element.blur();
+                                                element.dispatchEvent(new Event('focus', { bubbles: true }));
                                             }
                                         },
                                         args: [selector, action.attributes.value]
@@ -306,11 +343,90 @@ function connectWebSocket() {
                                         func: (selector) => {
                                             const element = document.querySelector(selector);
                                             if (element) {
-                                                element.focus();
                                                 element.click();
+                                                // // Log on JD homepage during click
+                                                // const href = (typeof location !== 'undefined' && location && location.href) ? location.href : '';
+                                                // if (href === 'https://www.jd.com' || href === 'https://www.jd.com/') {
+                                                //     console.log('[Moner] Clicking element on JD homepage:', element);
+                                                //      if (typeof search === 'function') {
+                                                //         search('key', document.getElementById('key').value);
+                                                //     }
+                                                // } else {
+                                                //     element.focus();
+                                                //     element.click();
+                                                // }
+
                                             }
                                         },
                                         args: [selector]
+                                    });
+                                } else if (action.attributes.name === 'clickBlank' || action.attributes.name === 'clickOutside') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: () => {
+                                            // Blur active element and commit any change
+                                            const active = document.activeElement;
+                                            if (active) {
+                                                try {
+                                                    // If it's a text input/textarea, ensure change event fires
+                                                    const tag = (active.tagName || '').toLowerCase();
+                                                    if (tag === 'input' || tag === 'textarea' || active.isContentEditable) {
+                                                        try { active.dispatchEvent(new Event('input', { bubbles: true, composed: true })); } catch {}
+                                                        try { active.dispatchEvent(new Event('change', { bubbles: true, composed: true })); } catch {}
+                                                    }
+                                                } catch {}
+                                                try { active.blur(); } catch {}
+                                            }
+
+                                            // Choose a safe viewport point not on interactive elements
+                                            const within = (x, y) => {
+                                                let node = document.elementFromPoint(x, y);
+                                                if (!node) return { node: document.body, x, y };
+                                                // skip obvious interactive nodes
+                                                const interactive = node.closest('input,textarea,select,button,[role="button"],[contenteditable="true"],a[href]');
+                                                if (interactive) return null;
+                                                // avoid clicking the previously active element again
+                                                if (active && node === active) return null;
+                                                return { node, x, y };
+                                            };
+                                            const candidates = [
+                                                { x: 10, y: 10 },
+                                                { x: window.innerWidth - 10, y: 10 },
+                                                { x: 10, y: window.innerHeight - 10 },
+                                                { x: window.innerWidth - 10, y: window.innerHeight - 10 },
+                                                { x: Math.floor(window.innerWidth / 2), y: Math.floor(window.innerHeight / 2) }
+                                            ];
+                                            let point = null;
+                                            for (const p of candidates) {
+                                                point = within(p.x, p.y);
+                                                if (point) break;
+                                            }
+                                            if (!point) point = { node: document.body, x: Math.floor(window.innerWidth/2), y: Math.floor(window.innerHeight/2) };
+                                            const { node: target, x, y } = point;
+
+                                            const fire = (type) => {
+                                                const evtInit = { bubbles: true, cancelable: true, clientX: x, clientY: y, view: window }; 
+                                                let evt;
+                                                try {
+                                                    if (type.startsWith('pointer')) {
+                                                        evt = new PointerEvent(type, { ...evtInit, pointerId: 1, isPrimary: true, pointerType: 'mouse' });
+                                                    } else {
+                                                        evt = new MouseEvent(type, evtInit);
+                                                    }
+                                                } catch {
+                                                    evt = document.createEvent('MouseEvents');
+                                                    evt.initMouseEvent(type, true, true, window, 1, x, y, x, y, false, false, false, false, 0, null);
+                                                }
+                                                target.dispatchEvent(evt);
+                                            };
+
+                                            // Mimic a full click sequence
+                                            try { fire('pointerdown'); } catch {}
+                                            try { fire('mousedown'); } catch {}
+                                            try { fire('pointerup'); } catch {}
+                                            try { fire('mouseup'); } catch {}
+                                            try { fire('click'); } catch {}
+                                        }
                                     });
                                 } else if (action.attributes.name === 'focus') {
                                     await chrome.scripting.executeScript({
@@ -470,11 +586,11 @@ function connectWebSocket() {
                                 isAutoMode = action.attributes.auto === 'true';
                                 await tabManager.createNewTab(action.attributes.url);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'createNewTab',
-                                    success: true,
-                                    url: action.attributes.url
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'createNewTab',
+                                //     success: true,
+                                //     url: action.attributes.url
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('CreateNewTab failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -507,6 +623,7 @@ function connectWebSocket() {
                                         code = generateHtmlString(domTreeData);
                                     }
                                     const messageData = {
+                                        text: '页面的源代码内容和截图如下(在code字段和img字段中分别展示)',
                                         code: code,
                                         img: [screenshot]
                                     };
@@ -515,10 +632,10 @@ function connectWebSocket() {
 
                                 await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'screenshot',
-                                    success: true
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'screenshot',
+                                //     success: true
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('Screenshot failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -598,10 +715,10 @@ function connectWebSocket() {
 
                                 await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'screenshotFullPage',
-                                    success: true
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'screenshotFullPage',
+                                //     success: true
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('ScreenshotFullPage failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -647,10 +764,10 @@ function connectWebSocket() {
 
                                 context.set('domTreeData', domTreeData);
 
-                                await sendWebSocketMessage(JSON.stringify({
-                                    actionType: 'buildDomTree',
-                                    success: true
-                                }), 'reply');
+                                // await sendWebSocketMessage(JSON.stringify({
+                                //     actionType: 'buildDomTree',
+                                //     success: true
+                                // }), 'reply');
                             } catch (error) {
                                 console.error('BuildDomTree failed:', error);
                                 await sendWebSocketMessage(JSON.stringify({
@@ -737,8 +854,8 @@ function connectWebSocket() {
 
         // 如果是JSON消息且需要DOM操作
         if (messageWithTimestamp.type === 'json') {
-            // 获取当前活动标签页
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            // 获取当前活动标签页（忽略 DevTools 窗口）
+            const tab = await getActiveNormalTab();
             if (!tab) return;
         }
     };
@@ -895,6 +1012,7 @@ chrome.tabs.onCreated.addListener((tab) => {
     
     // 如果是auto模式，设置监听器
     if (isAutoMode) {
+        console.log('auto mode setupTabListener for tab:', tab.id);
         setupTabListener(tab.id, machineId);
     }
 });
@@ -913,6 +1031,7 @@ function sendWebSocketMessage(message, cmd = '') {
             };
             try {
                 console.log('sendWebSocketMessage:', JSON.stringify(jsonMessage));
+                xmlString = "";
                 ws.send(JSON.stringify(jsonMessage));
                 console.log('Message sent:', jsonMessage);
                 resolve();
@@ -1345,11 +1464,26 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
 
-        //截屏的数据
-        const screenshot = await chrome.tabs.captureVisibleTab(null, {
-            format: 'jpeg',
-            quality: 10
-        });
+        // 截屏的数据
+        // 使用目标 tab 的 windowId 来避免在 DevTools 窗口聚焦时触发
+        // “Cannot access contents of url \"devtools://devtools\"”错误。
+        let screenshot = null;
+        try {
+            const targetTab = await chrome.tabs.get(stateUpdate.tabId);
+            const url = targetTab?.url || '';
+            const isRestricted = /^(chrome|devtools|chrome-extension|edge|about):/i.test(url);
+
+            if (!isRestricted) {
+                screenshot = await chrome.tabs.captureVisibleTab(targetTab.windowId, {
+                    format: 'jpeg',
+                    quality: 10
+                });
+            } else {
+                console.warn('Skipping screenshot for restricted URL:', url);
+            }
+        } catch (e) {
+            console.error('captureVisibleTab failed, window-bound attempt:', e);
+        }
 
         await removeHighlightIfNeeded(stateUpdate.tabId, autoRemoveHighlight);
 
@@ -1368,17 +1502,17 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         const messageData = {
             code: domTreeString,
-            img: [screenshot],
+            img: screenshot ? [screenshot] : undefined,
             tabs: await getAllTabsInfo()
         };
         console.log('messageData:', messageData);
         //通知服务器,这个tab发生了变化
-        await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+        await sendWebSocketMessage(JSON.stringify(messageData));
 
-        await sendWebSocketMessage(JSON.stringify({
-            actionType: 'buildDomTree',
-            success: true
-        }), 'reply');
+        // await sendWebSocketMessage(JSON.stringify({
+        //     actionType: 'buildDomTree',
+        //     success: true
+        // }), 'reply');
     } catch (error) {
         console.error('Error handling state change:', error);
     }
