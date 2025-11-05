@@ -18,7 +18,7 @@ import java.nio.file.Paths;
  */
 public class CompressionUtilTest {
     
-    private static final String TEST_FILE_PATH = "/tmp/abc.txt";
+    private static final String TEST_FILE_PATH = "D://采集进度.txt";
 
 //    @Before
     public void setUp() throws IOException {
