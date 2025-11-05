@@ -9,7 +9,7 @@
   </parent>
   <artifactId>rpc</artifactId>
 <!--  <version>${submodule-release.version}</version>-->
-  <version>1.6.3-jdk21-SNAPSHOT</version>
+  <version>1.6.4-jdk21-SNAPSHOT</version>
   
   <!-- 默认属性，适用于JDK 8 -->
   <properties>

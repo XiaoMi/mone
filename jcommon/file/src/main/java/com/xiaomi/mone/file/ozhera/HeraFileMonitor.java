@@ -45,6 +45,8 @@ public class HeraFileMonitor {
 
     private Gson gson = new Gson();
 
+    private static final String MAX_FILE_SIZE_KEY = "max_file_size";
+
     public HeraFileMonitor() {
         this(TimeUnit.SECONDS.toMillis(30));
     }
@@ -79,7 +81,23 @@ public class HeraFileMonitor {
     }
 
     public void reg(String path, Predicate<String> predicate) throws IOException, InterruptedException {
-        this.reg(path, predicate, 10);
+        this.reg(path, predicate, getMaxFiles());
+    }
+
+    private int getMaxFiles() {
+        int defaultMaxFiles = 1000;
+        String raw = System.getenv(MAX_FILE_SIZE_KEY);
+        if (null == raw || raw.isEmpty()) {
+            raw = System.getProperty(MAX_FILE_SIZE_KEY);
+        }
+        if (null != raw && !raw.isEmpty()) {
+            try {
+                defaultMaxFiles = Integer.parseInt(raw);
+            } catch (Exception e) {
+                log.error("parse {} error,use default value:{},config value:{}", MAX_FILE_SIZE_KEY, defaultMaxFiles, raw);
+            }
+        }
+        return defaultMaxFiles;
     }
 
     public void reg(String path, Predicate<String> predicate, Integer maxFiles) throws IOException {
@@ -148,6 +166,12 @@ public class HeraFileMonitor {
             } catch (Exception e) {
                 log.error("watchService error", e);
             }
+        }
+        try {
+            watchService.close();
+            log.info("watchService closed for directory {},path:{}", directory, path);
+        } catch (IOException e) {
+            log.error("failed to close watchService,directory {},path:{}", directory, path, e);
         }
     }
 
