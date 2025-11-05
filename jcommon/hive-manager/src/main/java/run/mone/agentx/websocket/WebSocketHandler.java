@@ -21,6 +21,8 @@ import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.ToolDataInfo;
 
 import java.net.URI;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Component
 @Slf4j
@@ -30,6 +32,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final McpService mcpService;
     private final AgentAccessService agentAccessService;
     private final AgentService agentService;
+
+    private ExecutorService pool = Executors.newFixedThreadPool(200);
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -94,14 +98,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 }
             }
 
-            // 创建消息适配器并直接调用MCP服务
-            McpMessageSink sink = new McpMessageSink(session);
-            String userName = session.getAttributes().getOrDefault("userName", "").toString();
-            mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), payload, toolData, sink);
-            sink.complete();
+            pool.submit(()->{
+                // 创建消息适配器并直接调用MCP服务
+                McpMessageSink sink = new McpMessageSink(session);
+                String userName = session.getAttributes().getOrDefault("userName", "").toString();
+                mcpService.callMcp(userName, request.getAgentId(), request.getAgentInstance(), payload, toolData, sink);
+                sink.complete();
+            });
+
         } catch (Exception e) {
             log.error("Error processing MCP request", e);
             session.sendMessage(new TextMessage("{\"error\": \"" + e.getMessage() + "\"}"));
+        } finally {
+            log.info("finish");
         }
     }
 

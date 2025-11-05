@@ -10,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +20,7 @@ import run.mone.agentx.dto.LoginResponse;
 import run.mone.agentx.dto.UserDTO;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.JwtService;
+import run.mone.agentx.service.TpcUserService;
 import run.mone.agentx.service.UserService;
 
 import java.util.List;
@@ -33,6 +33,8 @@ public class UserController {
     private final UserService userService;
     private final JwtService jwtService;
     private static final String TOKEN_COOKIE_NAME = "auth_token";
+
+    private final TpcUserService tpcUserService;
     
     @Value("${jwt.expiration}")
     private Long jwtExpiration;
@@ -111,12 +113,24 @@ public class UserController {
     }
 
     @PostMapping("/internal-account")
-    public Mono<ApiResponse<String>> bindInternalAccount(
-            @AuthenticationPrincipal User user,
-            @RequestParam String internalAccount) {
-        return userService.bindInternalAccount(user, internalAccount)
-                .map(ApiResponse::success)
-                .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
-                .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+    public Mono<ApiResponse<UserDTO>> bindInternalAccount(@RequestBody User user) {
+        // 如果传入的user中internalAccount为空，才需要从tpcUserService获取用户信息
+        if (user.getInternalAccount() == null || user.getInternalAccount().trim().isEmpty()) {
+            return tpcUserService.getUserInfo()
+                    .switchIfEmpty(Mono.error(new RuntimeException("无法获取用户信息，请先登录midun")))
+                    .flatMap(account -> {
+                        user.setInternalAccount(account.getAccount());
+                        return userService.bindInternalAccount(user);
+                    })
+                    .map(ApiResponse::success)
+                    .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
+                    .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+        } else {
+            // 如果internalAccount不为空，直接使用传入的值进行绑定
+            return userService.bindInternalAccount(user)
+                    .map(ApiResponse::success)
+                    .doOnError(error -> log.error("绑定内部账号时发生错误: {}", error.getMessage(), error))
+                    .onErrorResume(e -> Mono.just(ApiResponse.error(500, e.getMessage())));
+        }
     }
 }

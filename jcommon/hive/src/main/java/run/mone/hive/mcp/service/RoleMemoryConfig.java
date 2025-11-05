@@ -1,5 +1,8 @@
 package run.mone.hive.mcp.service;
 
+import java.util.Map;
+import java.util.HashMap;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -46,6 +49,15 @@ public class RoleMemoryConfig {
         private String model = "";
 
         @Builder.Default
+        private String baseUrl = "";
+
+        @Builder.Default
+        private String apiKey = "";
+
+        @Builder.Default
+        private Map<String, String> customHeaders = new HashMap<>();
+
+        @Builder.Default
         private boolean responseJsonFormat = true;
     }
 
@@ -59,6 +71,15 @@ public class RoleMemoryConfig {
 
         @Builder.Default
         private String model = "qwen3-embedding:4b";
+
+        @Builder.Default
+        private String baseUrl = "";
+
+        @Builder.Default
+        private String apiKey = "";
+
+        @Builder.Default
+        private Map<String, String> customHeaders = new HashMap<>();
 
         @Builder.Default
         private int embeddingDims = 2560;
@@ -107,6 +128,12 @@ public class RoleMemoryConfig {
 
         @Builder.Default
         private LlmConfig llm = LlmConfig.builder().build();
+
+        @Builder.Default
+        private String username = "neo4j";
+
+        @Builder.Default
+        private String password = "password";
 
         @Builder.Default
         private EmbedderConfig embedder = EmbedderConfig.builder().build();

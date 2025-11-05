@@ -95,8 +95,20 @@ public class MemoryConfigConverter {
             builder.model(mcpLlmConfig.getModel());
         }
 
+        if (mcpLlmConfig.getBaseUrl() != null) {
+            builder.baseUrl(mcpLlmConfig.getBaseUrl());
+        }
+
+        if (mcpLlmConfig.getApiKey() != null) {
+            builder.apiKey(mcpLlmConfig.getApiKey());
+        }
+
+        if (mcpLlmConfig.getCustomHeaders() != null) {
+            builder.customHeaders(mcpLlmConfig.getCustomHeaders());
+        }
+
         // 设置响应格式
-        builder.responseJsonFormat(mcpLlmConfig.isResponseJsonFormat() ? "json" : "text");
+        builder.responseJsonFormat(String.valueOf(mcpLlmConfig.isResponseJsonFormat()));
 
         return builder.build();
     }
@@ -128,6 +140,18 @@ public class MemoryConfigConverter {
 
         if (mcpEmbedderConfig.getEmbeddingDims() > 0) {
             builder.embeddingDims(mcpEmbedderConfig.getEmbeddingDims());
+        }
+
+        if (mcpEmbedderConfig.getBaseUrl() != null) {
+            builder.baseUrl(mcpEmbedderConfig.getBaseUrl());
+        }
+
+        if (mcpEmbedderConfig.getApiKey() != null) {
+            builder.apiKey(mcpEmbedderConfig.getApiKey());
+        }
+
+        if (mcpEmbedderConfig.getCustomHeaders() != null) {
+            builder.customHeaders(mcpEmbedderConfig.getCustomHeaders());
         }
 
         return builder.build();
@@ -201,6 +225,14 @@ public class MemoryConfigConverter {
         }
 
         builder.enabled(mcpGraphConfig.isEnabled());
+
+        if (mcpGraphConfig.getUsername() != null) {
+            builder.username(mcpGraphConfig.getUsername());
+        }
+
+        if (mcpGraphConfig.getPassword() != null) {
+            builder.password(mcpGraphConfig.getPassword());
+        }
 
         if (mcpGraphConfig.getUrl() != null) {
             builder.url(mcpGraphConfig.getUrl());

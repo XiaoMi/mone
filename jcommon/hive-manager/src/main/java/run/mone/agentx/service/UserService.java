@@ -105,14 +105,15 @@ public class UserService {
                 .doOnError(error -> log.error("获取用户信息失败: {}", error.getMessage(), error));
     }
 
-    public Mono<String> bindInternalAccount(User user, String internalAccount) {
+    public Mono<UserDTO> bindInternalAccount(User user) {
+        String internalAccount = user.getInternalAccount();
         return findByUsername(user.getUsername())
                 .flatMap(existingUser -> {
                     existingUser.setInternalAccount(internalAccount);
                     return userRepository.save(existingUser)
-                            .thenReturn(internalAccount);
+                            .map(UserDTO::fromUser);
                 })
-                .doOnSuccess(t -> log.info("为用户 {} 绑定内部账号成功", user.getUsername()))
+                .doOnSuccess(userDTO -> log.info("为用户 {} 绑定内部账号成功", user.getUsername()))
                 .doOnError(error -> log.error("绑定内部账号失败: {}", error.getMessage(), error));
     }
 

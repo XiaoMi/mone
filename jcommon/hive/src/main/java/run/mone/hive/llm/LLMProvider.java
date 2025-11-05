@@ -23,11 +23,13 @@ public enum LLMProvider {
     //openai/gpt-4o-2024-11-20 anthropic/claude-3.5-sonnet:beta anthropic/claude-3.7-sonnet
     OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-3.7-sonnet", null),
     OPENROUTER_CLAUDE_SONNET_45("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-sonnet-4.5", null),
+    OPENROUTER_CLAUDE_HAIKU_45("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-haiku-4.5", null),
     OPENROUTER_OPENAI_CODEX_MINI("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/codex-mini", null),
     OPENROUTER_OPENAI_CODEX("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/gpt-5-codex", null),
     OPENROUTER_GEMINI_25_FLUSH("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-flash", null),
     OPENROUTER_GEMINI_25_PRO("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-pro", null),
     OPENROUTER_GROK_CODE_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-code-fast-1", null),
+    OPENROUTER_GROK_4_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-4-fast", null),
     OPENAICOMPATIBLE("", "", "", null),
     OPENAI_MULTIMODAL_COMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
@@ -47,7 +49,8 @@ public enum LLMProvider {
     MIFY_GATEWAY("XXX", "MIFY_API_KEY", "deepseek-r1", null),
     // url只能从llmConfig里取
     CLOUDML_CLASSIFY("", "xxx", "CLOUDML_CLASSIFY", ""),
-
+    AZURE_GPT5_CODEX("https://b2c-mione-gpt-o1.openai.azure.com/openai/v1/responses", "AZURE_OPENAI_CODEX_API_KEY", "gpt-5-codex", null),
+    AZURE_GPT5("https://b2c-mione-gpt4o.openai.azure.com/openai/v1/chat/completions", "AZURE_OPENAI_API_KEY", "gpt-5", null),
     KNOWLEDGE_BASE("", "xxx", "KNOWLEDGE_BASE", "");
 
     private final String url;

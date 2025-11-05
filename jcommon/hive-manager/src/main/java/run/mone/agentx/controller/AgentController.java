@@ -183,6 +183,8 @@ public class AgentController {
                 .map(ApiResponse::success);
     }
 
+
+    //agent 获取配置
     @PostMapping("/config")
     public Mono<ApiResponse<Map<String, String>>> getAgentConfig(@RequestBody Map<String, Long> request) {
         Long agentId = request.get("agentId");

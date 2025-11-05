@@ -24,7 +24,7 @@ public class LlmTest {
     public void test1() {
         LLM llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_UI_TARS).temperature(Prompt.temperature).build());
         String img = llm.imageToBase64("/tmp/abc.png", "png");
-        LLM.LLMCompoundMsg m = LLM.getLlmCompoundMsg("帮我点击下页面截图中的 <开始使用>",
+        LLM.LLMCompoundMsg m = LLM.getLlmCompoundMsg("帮我把鼠标移动到deepseek-v3 thx",
                 Message.builder()
                         .images(Lists.newArrayList(img))
                         .build());

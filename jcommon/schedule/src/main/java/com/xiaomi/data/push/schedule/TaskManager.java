@@ -27,10 +27,7 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author goodjava@qq.com
@@ -52,6 +49,8 @@ public class TaskManager implements ApplicationContextAware, PushService {
     @Value("${michedule_group}")
     private int micheduleGroup;
 
+    @Value("${task.virtual.thread.enabled:false}")
+    private boolean virtualThreadEnabled;
 
     @Autowired
     private TaskMapper taskMapper;
@@ -67,10 +66,72 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
     public TaskManager() {
         logger.info("version:{}", new ScheduleVersion());
-        this.pool = new ThreadPoolExecutor(500, 500, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue(50000));
-        this.callbackPool = new ThreadPoolExecutor(500, 500, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue(50000));
-        this.listeningExecutor = MoreExecutors.listeningDecorator(this.pool);
-        this.timeLimiter = SimpleTimeLimiter.create(Executors.newCachedThreadPool());
+        initThreadPool();
+    }
+
+    /**
+     * 初始化线程池
+     * 支持虚拟线程和传统线程池两种模式
+     */
+    private void initThreadPool() {
+        if (virtualThreadEnabled) {
+            logger.info("启用虚拟线程模式");
+            // 设置虚拟线程调度器的并行度为200
+            System.setProperty("jdk.virtualThreadScheduler.parallelism", "200");
+            
+            // 创建虚拟线程池
+            ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+            this.pool = (ThreadPoolExecutor) wrapAsThreadPoolExecutor(virtualThreadExecutor);
+            
+            ExecutorService virtualCallbackExecutor = Executors.newVirtualThreadPerTaskExecutor();
+            this.callbackPool = (ThreadPoolExecutor) wrapAsThreadPoolExecutor(virtualCallbackExecutor);
+            
+            this.listeningExecutor = MoreExecutors.listeningDecorator(virtualThreadExecutor);
+            this.timeLimiter = SimpleTimeLimiter.create(Executors.newVirtualThreadPerTaskExecutor());
+        } else {
+            logger.info("使用传统线程池模式");
+            this.pool = new ThreadPoolExecutor(500, 500, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue(50000));
+            this.callbackPool = new ThreadPoolExecutor(500, 500, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue(50000));
+            this.listeningExecutor = MoreExecutors.listeningDecorator(this.pool);
+            this.timeLimiter = SimpleTimeLimiter.create(Executors.newCachedThreadPool());
+        }
+    }
+
+    /**
+     * 将ExecutorService包装为ThreadPoolExecutor以保持兼容性
+     */
+    private ExecutorService wrapAsThreadPoolExecutor(ExecutorService executor) {
+        if (executor instanceof ThreadPoolExecutor) {
+            return executor;
+        }
+        // 对于虚拟线程ExecutorService，创建一个包装类来模拟ThreadPoolExecutor的行为
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0L, TimeUnit.MILLISECONDS, 
+                new LinkedBlockingQueue<>()) {
+            @Override
+            public void execute(Runnable command) {
+                executor.execute(command);
+            }
+            
+            @Override
+            public Future<?> submit(Runnable task) {
+                return executor.submit(task);
+            }
+            
+            @Override
+            public <T> Future<T> submit(Callable<T> task) {
+                return executor.submit(task);
+            }
+            
+            @Override
+            public void shutdown() {
+                executor.shutdown();
+            }
+            
+            @Override
+            public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+                return executor.awaitTermination(timeout, unit);
+            }
+        };
     }
 
     public void schedule() {

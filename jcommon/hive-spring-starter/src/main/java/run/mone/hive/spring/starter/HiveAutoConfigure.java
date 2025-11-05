@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.McpFunction;
@@ -85,6 +86,17 @@ public class HiveAutoConfigure {
             return new LLM(config);
         }
 
+        if (LLMProvider.MIFY_GATEWAY.name().toLowerCase(Locale.ROOT).equals(llmType)) {
+            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.MIFY_GATEWAY).build();
+            config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
+            config.setToken(System.getenv("MIFY_API_KEY"));
+            CustomConfig customConfig = new CustomConfig();
+            customConfig.setModel(System.getenv("MIFY_MODEL"));
+            customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
+            config.setCustomConfig(customConfig);
+            return new LLM(config);
+        }
+
         return new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmType.toUpperCase(Locale.ROOT))).build());
     }
 
@@ -107,7 +119,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, GrpcServerTransport transport) {
         List<ITool> toolList = roleMeta.getTools();
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
 
@@ -125,7 +137,8 @@ public class HiveAutoConfigure {
                 ).toList(),
                 mcpTools,
                 hiveManagerService,
-                roleMeta
+                roleMeta,
+                transport
         );
     }
 
@@ -134,6 +147,12 @@ public class HiveAutoConfigure {
     public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, RoleMeta roleMeta) {
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
         mcpTools.forEach(it -> it.setRoleService(roleService));
+        meta.put("name", roleMeta.getName());
+        meta.put("profile", roleMeta.getProfile());
+        meta.put("goal", roleMeta.getGoal());
+        meta.put("constraints", roleMeta.getConstraints());
+        meta.put("workflow", roleMeta.getWorkflow());
+        meta.putAll(roleMeta.getMeta());
         return new McpServer(transport, mcpTools, meta);
     }
 

@@ -56,4 +56,19 @@ public class Const {
 
     public static final String WORKSPACE_PATH_KEY = "workspacePath";
 
+    public static final String MCP = "mcp";
+
+    public static final String REPLY = "reply";
+
+    public static final String BLOCK = "block";
+
+    public static final String RES_ID = "resId";
+
+    public static final String CMD = "cmd";
+
+    public static final String AGENT_SERVER_NAME = "agent_server_name";
+
+    public static final String AGENT_SERVER_VERSION = "agent_server_version";
+
+    public static final String TASK_PROGRESS = "task_progress";
 }

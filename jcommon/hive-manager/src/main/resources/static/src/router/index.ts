@@ -16,6 +16,11 @@ const router = createRouter({
       redirect: "/login"
     },
     {
+      path: "/bindInner",
+      name: "BindInner",
+      component: () => import("@/views/BindInner.vue")
+    },
+    {
       path: "/",
       component: () => import("@/components/Header.vue"),
       children: [
@@ -76,6 +81,8 @@ router.beforeEach((to, from, next) => {
   if (!userStore.initUser()) {
     if (to.path === "/login") {
       userStore.clearUser();
+      next();
+    } else if (to.path === "/bindInner") {
       next();
     } else {
       next("/login");

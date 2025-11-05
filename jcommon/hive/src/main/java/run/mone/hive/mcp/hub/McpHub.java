@@ -95,7 +95,7 @@ public class McpHub {
                         String name = conn.getServer().getName();
                         ServerParameters params = conn.getServer().getServerParameters();
                         log.info("reconnect:{}", name);
-                        updateServerConnections(ImmutableMap.of(name,params));
+                        updateServerConnections(ImmutableMap.of(name,params),true);
                     }
                 }
             })));
@@ -156,7 +156,7 @@ public class McpHub {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
             Map<String, ServerParameters> config = parseServerConfig(content);
-            updateServerConnections(config);
+            updateServerConnections(config,true);
         } catch (IOException e) {
             log.error("Failed to initialize MCP servers: ", e);
         }
@@ -174,22 +174,24 @@ public class McpHub {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
             Map<String, ServerParameters> newConfig = parseServerConfig(content);
-            updateServerConnections(newConfig);
+            updateServerConnections(newConfig,true);
         } catch (IOException e) {
             System.err.println("Failed to process MCP settings change: " + e.getMessage());
         }
     }
 
-    public synchronized void updateServerConnections(Map<String, ServerParameters> newServers) {
+    public synchronized void updateServerConnections(Map<String, ServerParameters> newServers, boolean removeOld) {
         isConnecting = true;
         Set<String> currentNames = new HashSet<>(connections.keySet());
         Set<String> newNames = new HashSet<>(newServers.keySet());
 
-        // Delete removed servers
-        for (String name : currentNames) {
-            if (!newNames.contains(name)) {
-                deleteConnection(name);
-                log.info("Deleted MCP server: " + name);
+        if (removeOld) {
+            // Delete removed servers
+            for (String name : currentNames) {
+                if (!newNames.contains(name)) {
+                    deleteConnection(name);
+                    log.info("Deleted MCP server: " + name);
+                }
             }
         }
 
@@ -288,10 +290,12 @@ public class McpHub {
         connections.put(name, connection);
         try {
             //这里真的会连接过去
-            client.initialize();
+            McpSchema.InitializeResult res = client.initialize();
             server.setStatus("connected");
+            //放入serverInfo
+            server.setServerInfo(res.serverInfo());
             //放入工具(tool)
-            server.setTools(client.listTools().tools());
+            server.setTools(client.getTools().tools());
         } catch (Exception e) {
             log.error("Failed to connect to MCP server {}: ", name, e);
             server.setStatus("disconnected");

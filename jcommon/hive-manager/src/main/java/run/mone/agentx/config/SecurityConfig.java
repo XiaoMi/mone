@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .antMatchers("/api/v1/agents/instances/by-names","/api/v1/agents/health", "/api/v1/agents/unregister", "/api/v1/agents/register", "/api/v1/tasks/execute"
                         , "/api/v1/agents/config"
                         , "/api/v1/agents/config/save"
+                        , "/api/v1/users/internal-account"
                 ).permitAll()
                 .antMatchers("/scripts/**").permitAll()
                 .anyRequest().authenticated()

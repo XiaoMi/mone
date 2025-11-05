@@ -211,7 +211,7 @@ public class AiContextCompressor {
         compressedMessages.add(summaryMessage);
         
         // 保留最后几条消息以维持对话连续性
-        int keepLastCount = Math.min(4, originalMessages.size() - 1); // 保留最后4条消息
+        int keepLastCount = Math.min(5, originalMessages.size() - 1); // 保留最后4条消息
         if (keepLastCount > 0) {
             List<Message> lastMessages = originalMessages.subList(
                 originalMessages.size() - keepLastCount, 

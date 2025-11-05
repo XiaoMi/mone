@@ -192,6 +192,7 @@ public class MonerSystemPrompt {
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+        data.put("toolConfig", getToolConfig(role));
 
         //markdown文件会根本上重置这些配置
         if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
@@ -205,8 +206,8 @@ public class MonerSystemPrompt {
 
             data.put("name", md.getName());
             data.put("roleDescription", rd);
-            data.put("customInstructions",md.getAgentPrompt());
-            data.put("workflow",md.getWorkflow());
+            data.put("customInstructions", md.getAgentPrompt());
+            data.put("workflow", md.getWorkflow());
         }
 
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
@@ -218,36 +219,38 @@ public class MonerSystemPrompt {
                 ));
     }
 
+    private static String getToolConfig(ReactorRole role) {
+        StringBuilder sb = new StringBuilder();
+        role.getRoleConfig().forEach((key, value) -> {
+            if (key.startsWith("$")) {
+                sb.append(key).append("=").append(value).append("\n");
+            }
+        });
+        return sb.toString();
+    }
+
     //获取mcp的信息(主要是tool的信息)
     public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
-        final List<Map<String, Object>> serverList = new ArrayList<>();
-        List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
-        if (null != sl) {
-            serverList.addAll(sl);
-        } else {
-            McpHub mcpHub = role.getMcpHub();
-            if (mcpHub == null) {
-                return serverList;
-            }
-            mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
-                Map<String, Object> server = new HashMap<>();
-                server.put("name", key);
-                server.put("args", "");
-                server.put("connection", value);
-
-                McpSchema.ListToolsResult tools = value.getClient().listTools();
-                String toolsStr = tools
-                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "descrip tion:" + t.description() + "\n"
-                                + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
-                        .collect(Collectors.joining("\n\n"));
-                server.put("tools", toolsStr);
-
-                serverList.add(server);
-            }));
-            if (!serverList.isEmpty()) {
-                CacheService.ins().cacheObject(CacheService.tools_key, serverList);
-            }
+        List<Map<String, Object>> serverList = new ArrayList<>();
+        McpHub mcpHub = role.getMcpHub();
+        if (mcpHub == null) {
+            return serverList;
         }
+        mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", key);
+            server.put("args", "");
+            server.put("connection", value);
+            server.put("agent",value.getServer().getServerInfo().meta());
+            McpSchema.ListToolsResult tools = value.getClient().getTools();
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+
+            serverList.add(server);
+        }));
         return serverList;
     }
 
@@ -403,10 +406,22 @@ public class MonerSystemPrompt {
             # Connected MCP Servers
             
             When a server is connected, you can use the server's tools via the `use_mcp_tool` tool, and access the server's resources via the `access_mcp_resource` tool.
-            
+           
+            # 调用这些tool会有一些参数,如果发现用户没提供,可以参考这些用户已经配置好的默认参数
+            用户的默认参数:
+            ${toolConfig}
+             
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
-            ### Available Tools
+            ## 这个Agent的信息
+            名字:${server.agent["name"]} 
+            proflie:${server.agent["profile"]}    
+            goal:${server.agent["goal"]}    
+            constraints:${server.agent["constraints"]} 
+            workflow:
+            ${server.agent["workflow"]} 
+            
+            ### 这个Agent的Tools
             ${server.tools}
             <% } %>
             

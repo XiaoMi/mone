@@ -80,6 +80,15 @@
                 <div class="server-actions">
                   <el-button
                     size="small"
+                    type="warning"
+                    @click="handleMcpClear(server.name)"
+                    :loading="isServerLoading(server.name, 'clear')"
+                  >
+                    <el-icon><Delete /></el-icon>
+                    清除历史
+                  </el-button>
+                  <el-button
+                    size="small"
                     type="success"
                     @click="handleMcpRefresh(server.name)"
                     :loading="isServerLoading(server.name, 'refresh')"
@@ -145,7 +154,7 @@ const mcpServers = ref<McpServer[]>([])
 const newServerName = ref('')
 const isAddingServer = ref(false)
 const isFetchingServers = ref(false)
-const serverLoadingMap = ref<Record<string, { refresh: boolean; delete: boolean }>>({})
+const serverLoadingMap = ref<Record<string, { refresh: boolean; delete: boolean; clear: boolean }>>({})
 
 const canSubmitNewServer = computed(() => newServerName.value.trim().length > 0)
 
@@ -289,8 +298,8 @@ const parseMcpListResponse = (rawOutput: string): ParsedMcpListResult => {
   return fallback
 }
 
-const setServerLoading = (name: string, action: 'refresh' | 'delete', value: boolean) => {
-  const prev = serverLoadingMap.value[name] || { refresh: false, delete: false }
+const setServerLoading = (name: string, action: 'refresh' | 'delete' | 'clear', value: boolean) => {
+  const prev = serverLoadingMap.value[name] || { refresh: false, delete: false, clear: false }
   serverLoadingMap.value = {
     ...serverLoadingMap.value,
     [name]: {
@@ -302,7 +311,7 @@ const setServerLoading = (name: string, action: 'refresh' | 'delete', value: boo
 
 const clearObsoleteServerLoading = (servers: McpServer[]) => {
   const availableNames = new Set(servers.map(server => server.name))
-  const nextMap: Record<string, { refresh: boolean; delete: boolean }> = {}
+  const nextMap: Record<string, { refresh: boolean; delete: boolean; clear: boolean }> = {}
   Object.entries(serverLoadingMap.value).forEach(([name, state]) => {
     if (availableNames.has(name)) {
       nextMap[name] = state
@@ -311,7 +320,7 @@ const clearObsoleteServerLoading = (servers: McpServer[]) => {
   serverLoadingMap.value = nextMap
 }
 
-const isServerLoading = (name: string, action: 'refresh' | 'delete') => {
+const isServerLoading = (name: string, action: 'refresh' | 'delete' | 'clear') => {
   return serverLoadingMap.value[name]?.[action] === true
 }
 
@@ -372,6 +381,28 @@ const handleMcpDelete = async (serverName: string) => {
     addMcpLog(`取消删除服务: ${serverName}`, 'info')
   } finally {
     setServerLoading(serverName, 'delete', false)
+  }
+}
+
+const handleMcpClear = async (serverName: string) => {
+  try {
+    await ElMessageBox.confirm(`确定要清除MCP服务 "${serverName}" 的历史记录吗？`, '确认清除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    
+    setServerLoading(serverName, 'clear', true)
+    const result = await executeMcpCommand(`/mcp clear ${serverName}`)
+    if (result.success) {
+      ElMessage.success(`已清除 MCP 服务 ${serverName} 的历史记录`)
+      addMcpLog(`服务 ${serverName} 历史记录已清除`, 'success')
+    }
+  } catch {
+    // 用户取消操作
+    addMcpLog(`取消清除服务历史: ${serverName}`, 'info')
+  } finally {
+    setServerLoading(serverName, 'clear', false)
   }
 }
 

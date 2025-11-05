@@ -173,6 +173,7 @@ public class MonerSystemPrompt {
             <command>Command to demonstrate result (optional)</command>
             </attempt_completion>
 
+
             # Tool Use Guidelines
 
             1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task.

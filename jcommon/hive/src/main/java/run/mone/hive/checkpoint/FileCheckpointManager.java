@@ -19,27 +19,73 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Slf4j
 public class FileCheckpointManager {
-
+    @Value("${hive.checkpoint.enable:false}")
+    private boolean enable;
     private final String projectPath;
     private final String gitDir;
     private final File checkpointsFile;
     private final Map<String, String> checkpointMap;
     private final Gson gson = new Gson();
     private static final String DEFAULT_SHADOW_REPO_SUB_DIR = ".hive/checkpoint";
+    private final boolean checkpointAvailable;
 
     public FileCheckpointManager(String projectPath) throws IOException, InterruptedException {
         this(projectPath, DEFAULT_SHADOW_REPO_SUB_DIR);
     }
 
     public FileCheckpointManager(String projectPath, String shadowRepoSubDir) throws IOException, InterruptedException {
-        this.projectPath = new File(projectPath).getCanonicalPath();
-        this.gitDir = Paths.get(this.projectPath, shadowRepoSubDir).toFile().getCanonicalPath();
-        this.checkpointsFile = new File(this.gitDir, "checkpoints.json");
-        this.checkpointMap = loadCheckpoints();
-        addHiveToGitignore();
-        initRepository();
+        if (projectPath.equals("/") || !enable) {
+            this.projectPath = "/";
+            this.gitDir = "";
+            this.checkpointsFile = new File("");
+            this.checkpointMap = new ConcurrentHashMap<>();
+            this.checkpointAvailable = false;
+            log.warn("Project path is '/' vs {} or enable is {}, checkpoint is disabled.", projectPath, enable);
+        } else {
+            this.projectPath = new File(projectPath).getCanonicalPath();
+            this.gitDir = Paths.get(this.projectPath, shadowRepoSubDir).toFile().getCanonicalPath();
+            this.checkpointsFile = new File(this.gitDir, "checkpoints.json");
+            this.checkpointMap = loadCheckpoints();
+            this.checkpointAvailable = checkGitAvailability();
+            if (this.checkpointAvailable) {
+                addHiveToGitignore();
+                initRepository();
+                // Set git user info if not present
+                setGitUserInfo();
+            } else {
+                log.warn("Git command is not available. Skipping git related operations.");
+            }
+        }
+    }
+
+    private void setGitUserInfo() throws IOException, InterruptedException {
+        if (!checkpointAvailable) {
+            return;
+        }
+        String name = executeGitRepoCommand("config", "--get", "user.name").trim();
+        String email = executeGitRepoCommand("config", "--get", "user.email").trim();
+        if (name.isEmpty() || email.isEmpty()) {
+            log.info("Git user info not set, setting default user.");
+            executeGitRepoCommand("config", "user.name", "hive-bot");
+            executeGitRepoCommand("config", "user.email", "hive-bot@xiaomi.com");
+        }
+    }
+
+    private boolean checkGitAvailability() {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("git", "--version");
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            int exitCode = process.waitFor();
+            return exitCode == 0;
+        } catch (IOException | InterruptedException e) {
+            log.warn("Failed to check git availability", e);
+            return false;
+        }
     }
 
     private void addHiveToGitignore() {
@@ -68,6 +114,9 @@ public class FileCheckpointManager {
     }
 
     private void initRepository() throws IOException, InterruptedException {
+        if (!checkpointAvailable) {
+            return;
+        }
         File gitDirFile = new File(this.gitDir);
         if (!gitDirFile.exists()) {
             log.info("start init git dir:{}", this.gitDir);
@@ -87,6 +136,10 @@ public class FileCheckpointManager {
     }
 
     public String createCheckpoint(String id) throws IOException, InterruptedException {
+        if (!checkpointAvailable) {
+            log.warn("Checkpoint is not available, skipping checkpoint creation.");
+            return "";
+        }
         String status = executeGitCommand("status", "--porcelain");
         String commitHash;
 
@@ -113,6 +166,10 @@ public class FileCheckpointManager {
     }
 
     public void revert(String id) throws IOException, InterruptedException {
+        if (!checkpointAvailable) {
+            log.warn("Checkpoint is not available, skipping revert.");
+            return;
+        }
         String commitHash = checkpointMap.get(id);
         if (commitHash == null || commitHash.isEmpty()) {
             throw new IllegalArgumentException("Checkpoint with id '" + id + "' not found.");
@@ -152,6 +209,15 @@ public class FileCheckpointManager {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
+            // config --get user.name will return 1 if not set
+            if (command.length > 2 && command[0].equals("config") && command[1].equals("--get")) {
+                return "";
+            }
+            // rev-parse HEAD will return 128 if not set
+            if (command.length > 1 && command[0].equals("rev-parse") && command[1].equals("HEAD")) {
+                log.warn("Git rev-parse HEAD failed, maybe the repository is empty. Output: {}", output);
+                throw new IOException("Git command failed with exit code " + exitCode + ": " + output);
+            }
             log.error("Error executing git command: {}. Output: {}", String.join(" ", command), output);
             throw new IOException("Git command failed with exit code " + exitCode + ": " + output);
         }

@@ -1,6 +1,7 @@
 package run.mone.hive.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -15,6 +16,16 @@ import java.io.IOException;
 
 @Slf4j
 public class RemoteFileUtils {
+
+
+    public static String userKey = "";
+
+    public static String userSecret = "";
+
+    public static String remoteFileApiHost = "";
+
+    public static String token = "";
+
 
     /**
      * 上传文件到远程服务器
@@ -170,11 +181,56 @@ public class RemoteFileUtils {
     }
 
     /**
+     * 搜索远程文件
+     *
+     * @param directoryPath 目录路径
+     * @param regex         正则表达式
+     * @param filePattern   文件模式
+     * @return 搜索结果
+     * @throws IOException 如果搜索失败
+     */
+    public static String searchFiles(String directoryPath, String regex, String filePattern) throws IOException {
+        if (directoryPath == null || directoryPath.isEmpty()) {
+            throw new IOException("目录路径不能为空");
+        }
+
+        if (directoryPath.startsWith(File.separator)) {
+            directoryPath = directoryPath.substring(1);
+        }
+
+        String url = String.format("%s/search?directory=%s&userKey=%s&userSecret=%s&token=%s&regex=%s&filePattern=%s",
+                getHost(),
+                directoryPath,
+                getUserKey(),
+                getUserSecret(),
+                getToken(),
+                regex != null ? regex : "",
+                filePattern != null ? filePattern : "");
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(url);
+
+            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode >= 200 && statusCode < 300) {
+                    HttpEntity entity = response.getEntity();
+                    return entity != null ? EntityUtils.toString(entity) : "";
+                } else {
+                    throw new IOException("搜索文件失败，状态码: " + statusCode);
+                }
+            }
+        }
+    }
+
+    /**
      * 获取API主机地址
      *
      * @return API主机地址
      */
     private static String getHost() {
+        if (StringUtils.isNotEmpty(remoteFileApiHost)) {
+            return remoteFileApiHost;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_API_HOST", "http://127.0.0.1:9777");
     }
 
@@ -184,6 +240,9 @@ public class RemoteFileUtils {
      * @return 用户Key
      */
     private static String getUserKey() {
+        if (StringUtils.isNotEmpty(userKey)) {
+            return userKey;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_USER_KEY", "wangmin");
     }
 
@@ -193,6 +252,9 @@ public class RemoteFileUtils {
      * @return 用户Secret
      */
     private static String getUserSecret() {
+        if (StringUtils.isNotEmpty(userSecret)) {
+            return userSecret;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_USER_SECRET", "123456");
     }
 
@@ -202,6 +264,10 @@ public class RemoteFileUtils {
      * @return API令牌
      */
     private static String getToken() {
+        if (StringUtils.isNotEmpty(token)) {
+            return token;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_API_TOKEN", "1");
     }
+
 }

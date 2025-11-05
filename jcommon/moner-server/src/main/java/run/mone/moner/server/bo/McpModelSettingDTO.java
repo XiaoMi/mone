@@ -59,7 +59,9 @@ public class McpModelSettingDTO {
     @Data
     public static class Mify {
         private String apiKey;
+        private String model;
         private String baseUrl;
+        private String provider;
     }
 
     public static McpModelSettingDTO buildEmpty() {

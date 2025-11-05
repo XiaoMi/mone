@@ -1,8 +1,6 @@
 package run.mone.hive.common;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 
 /**
  * @author goodjava@qq.com
@@ -11,6 +9,16 @@ import com.google.gson.JsonObject;
 public class JsonUtils {
 
     public static final Gson gson = new Gson();
+
+    public static boolean isValidJson(String jsonString) {
+        try {
+            JsonElement element = JsonParser.parseString(jsonString);
+            return element.isJsonObject() || element.isJsonArray();
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
+    }
+
 
     /**
      * Extracts a value from a JsonElement using the given expression.

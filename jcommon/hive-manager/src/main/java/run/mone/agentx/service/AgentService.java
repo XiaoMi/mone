@@ -524,7 +524,9 @@ public class AgentService {
         
         return Flux.fromIterable(agentNames)
                 .flatMap(agentName -> 
+                    // 使用findByNameContainingIgnoreCase但添加额外的过滤条件来实现严格匹配
                     agentRepository.findByNameContainingIgnoreCase(agentName)
+                            .filter(agent -> agent.getName().equals(agentName.trim())) // 添加严格匹配过滤条件
                             .filter(agent -> agent.getState() == 1)
                             .flatMap(agent -> 
                                 agentInstanceRepository.findByAgentId(agent.getId())

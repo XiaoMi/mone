@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.hive.utils.RemoteFileUtils;
 
 /**
  * @author goodjava@qq.com
@@ -21,13 +22,29 @@ public class AgentConfig {
     @Value("${mcp.remote.file}")
     private Boolean isRemoteFile;
 
+
+    @Value("${remote.file.user.key:}")
+    private String userKey;
+
+
+    @Value("${remote.file.user.secret:}")
+    private String userSecret;
+
+    @Value("${remote.file.api.host:}")
+    private String remoteFileApiHost;
+
+
     @Bean
     public RoleMeta roleMeta() {
+        RemoteFileUtils.userKey = userKey;
+        RemoteFileUtils.userSecret = userSecret;
+        RemoteFileUtils.remoteFileApiHost = remoteFileApiHost;
 
         ListFilesTool listFilesTool = isRemoteFile ? new ListFilesTool(true) : new ListFilesTool(false);
         ReadFileTool readFileTool = isRemoteFile ? new ReadFileTool(true) : new ReadFileTool(false);
         WriteToFileTool writeToFileTool = isRemoteFile ? new WriteToFileTool(true) : new WriteToFileTool(false);
         ReplaceInFileTool replaceInFileTool = isRemoteFile ? new ReplaceInFileTool(true) : new ReplaceInFileTool(false);
+        SearchFilesTool searchFilesTool = isRemoteFile ? new SearchFilesTool(true) : new SearchFilesTool(false);
 
         return RoleMeta.builder()
                 .profile("你是一名优秀的软件工程师")
@@ -37,7 +54,7 @@ public class AgentConfig {
                                 listFilesTool,
                                 new ExecuteCommandToolOptimized(),
                                 readFileTool,
-                                new SearchFilesTool(),
+                                searchFilesTool,
                                 replaceInFileTool,
                                 new ListCodeDefinitionNamesTool(),
                                 writeToFileTool,

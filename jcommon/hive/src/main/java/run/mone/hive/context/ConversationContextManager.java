@@ -1,6 +1,7 @@
 package run.mone.hive.context;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 import run.mone.hive.task.FocusChainSettings;
@@ -25,8 +26,8 @@ public class ConversationContextManager {
     // 配置参数
     private boolean enableAiCompression = true;
     private boolean enableRuleBasedOptimization = true;
-    private int maxMessagesBeforeCompression = 20;
-    
+    private int maxMessagesBeforeCompression = 25;
+
     public ConversationContextManager(LLM llm) {
         this.contextManager = new ContextManager();
         this.aiCompressor = new AiContextCompressor(llm);
@@ -41,10 +42,10 @@ public class ConversationContextManager {
      * 处理新消息并管理上下文
      * 这是主要的入口方法
      */
-    public CompletableFuture<ContextProcessingResult> processNewMessage(List<Message> currentMessages, 
-                                                                       Message newMessage,
-                                                                       TaskState taskState,
-                                                                       FocusChainSettings focusChainSettings) {
+    public CompletableFuture<ContextProcessingResult> processNewMessage(List<Message> currentMessages,
+                                                                        Message newMessage,
+                                                                        TaskState taskState,
+                                                                        FocusChainSettings focusChainSettings, FluxSink sink) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 添加新消息到列表
@@ -56,6 +57,7 @@ public class ConversationContextManager {
                 
                 if (shouldCompress && enableAiCompression && !isCompressing.get()) {
                     log.info("触发上下文压缩，当前消息数: {}", updatedMessages.size());
+                    sink.next("<chat>触发上下文压缩，当前消息数: " + updatedMessages.size()+"</chat>");
                     return performContextCompression(updatedMessages, taskState, focusChainSettings);
                 } else if (enableRuleBasedOptimization) {
                     // 应用规则基础的优化

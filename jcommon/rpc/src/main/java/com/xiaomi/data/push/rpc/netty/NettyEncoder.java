@@ -16,6 +16,7 @@
 
 package com.xiaomi.data.push.rpc.netty;
 
+import com.xiaomi.data.push.rpc.common.CompressionUtil;
 import com.xiaomi.data.push.rpc.common.RemotingHelper;
 import com.xiaomi.data.push.rpc.common.RemotingUtil;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
@@ -37,11 +38,22 @@ public class NettyEncoder extends MessageToByteEncoder<RemotingCommand> {
     @Override
     public void encode(ChannelHandlerContext ctx, RemotingCommand remotingCommand, ByteBuf out) {
         try {
+            byte[] body = remotingCommand.getBody();
+            
+            // 如果启用了压缩，则压缩 body 数据
+            if (body != null && remotingCommand.isCompressionEnabled()) {
+                byte[] compressedBody = CompressionUtil.compress(body);
+                remotingCommand.setBody(compressedBody);
+                log.debug("Body compressed for opaque: {}, original size: {}, compressed size: {}", 
+                         remotingCommand.getOpaque(), body.length, compressedBody.length);
+            }
+            
             ByteBuffer header = remotingCommand.encodeHeader();
             out.writeBytes(header);
-            byte[] body = remotingCommand.getBody();
-            if (body != null) {
-                out.writeBytes(body);
+            
+            byte[] finalBody = remotingCommand.getBody();
+            if (finalBody != null) {
+                out.writeBytes(finalBody);
             }
         } catch (Exception e) {
             log.error("encode exception, " + RemotingHelper.parseChannelRemoteAddr(ctx.channel()), e);

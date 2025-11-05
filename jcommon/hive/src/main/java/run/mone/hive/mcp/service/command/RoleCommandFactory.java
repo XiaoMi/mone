@@ -31,11 +31,12 @@ public class RoleCommandFactory {
         registerCommand(new RefreshConfigCommand(roleService));
         registerCommand(new ListAgentsCommand(roleService));
         registerCommand(new CreateRoleCommand(roleService));
-        registerCommand(new GetConfigCommand(roleService));
+        registerCommand(new ConfigCommand(roleService));
         registerCommand(new SwitchAgentCommand(roleService));
         registerCommand(new InitCommand(roleService));
         registerCommand(new PingCommand(roleService));
         registerCommand(new McpCommand(roleService));
+        registerCommand(new CompressionCommand(roleService));
         
         // 自动扫描和注册带@RoleCommand注解的命令
         scanAndRegisterAnnotatedCommands(roleService);

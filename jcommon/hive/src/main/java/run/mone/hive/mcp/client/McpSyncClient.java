@@ -2,6 +2,7 @@ package run.mone.hive.mcp.client;
 
 import java.time.Duration;
 
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +24,8 @@ import run.mone.hive.mcp.util.Assert;
 public class McpSyncClient implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpSyncClient.class);
+
+	private McpSchema.ListToolsResult tools;
 
 	// TODO: Consider providing a client config to set this properly
 	// this is currently a concern only because AutoCloseable is used - perhaps it
@@ -177,6 +180,14 @@ public class McpSyncClient implements AutoCloseable {
 	 */
 	public McpSchema.ListToolsResult listTools() {
 		return this.delegate.listTools().block();
+	}
+
+	public McpSchema.ListToolsResult getTools() {
+		if (this.tools == null) {
+			this.tools = listTools();
+			return this.tools;
+		}
+		return this.tools;
 	}
 
 	/**

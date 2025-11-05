@@ -2,14 +2,18 @@ package run.mone.hive.mcp.service.command;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.GsonUtils;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MCP配置刷新命令处理类
@@ -55,19 +59,20 @@ public class McpCommand extends RoleBaseCommand {
             // 解析命令：/mcp <operation> [serverName]
             String commandPart = content.substring("/mcp".length()).trim();
             if (commandPart.isEmpty()) {
-                sendErrorAndComplete(sink, "请指定MCP操作，格式: /mcp <operation> [serverName]，支持的操作: refresh, list, delete");
+                sendErrorAndComplete(sink, "请指定MCP操作，格式: /mcp <operation> [serverName]，支持的操作: refresh, list, delete, clear");
                 return;
             }
 
             String[] parts = commandPart.split("\\s+");
             if (parts.length < 1) {
-                sendErrorAndComplete(sink, "支持的操作: refresh, list, delete，格式: /mcp <operation> [serverName]");
+                sendErrorAndComplete(sink, "支持的操作: refresh, list, delete, clear，格式: /mcp <operation> [serverName]");
                 return;
             }
 
             String operation = parts[0].toLowerCase();
-            
+
             switch (operation) {
+                //目前当add用的
                 case "refresh":
                     if (parts.length < 2) {
                         sendErrorAndComplete(sink, "refresh操作需要指定服务器名称，格式: /mcp refresh <serverName|all>");
@@ -80,11 +85,11 @@ public class McpCommand extends RoleBaseCommand {
                     }
                     handleMcpRefresh(message, sink, from, role, serverName);
                     break;
-                    
+
                 case "list":
                     handleMcpList(message, sink, from, role);
                     break;
-                    
+
                 case "delete":
                     if (parts.length < 2) {
                         sendErrorAndComplete(sink, "delete操作需要指定服务器名称，格式: /mcp delete <serverName>");
@@ -97,9 +102,22 @@ public class McpCommand extends RoleBaseCommand {
                     }
                     handleMcpDelete(message, sink, from, role, deleteServerName);
                     break;
-                    
+
+                case "clear":
+                    if (parts.length < 2) {
+                        sendErrorAndComplete(sink, "clear操作需要指定服务器名称，格式: /mcp clear <serverName>");
+                        return;
+                    }
+                    String clearServerName = parts[1].trim();
+                    if (clearServerName.isEmpty()) {
+                        sendErrorAndComplete(sink, "请指定要清空聊天记录的服务器名称");
+                        return;
+                    }
+                    handleMcpClear(message, sink, from, role, clearServerName);
+                    break;
+
                 default:
-                    sendErrorAndComplete(sink, "不支持的操作: " + operation + "，支持的操作: refresh, list, delete");
+                    sendErrorAndComplete(sink, "不支持的操作: " + operation + "，支持的操作: refresh, list, delete, clear");
                     break;
             }
 
@@ -205,9 +223,11 @@ public class McpCommand extends RoleBaseCommand {
      */
     private void refreshSpecificMcpServer(ReactorRole role, String serverName, Map<String, Object> result) {
         try {
-            this.roleService.refreshMcp(Lists.newArrayList(serverName), role);
+            this.roleService.addMcp(Lists.newArrayList(serverName), role);
             result.put("success", true);
             result.put("message", String.format("MCP服务器 '%s' 刷新成功", serverName));
+            role.getMcpNames().add(serverName);
+            role.saveConfig();
             log.info("成功刷新MCP服务器: {}", serverName);
         } catch (Exception e) {
             result.put("message", String.format("刷新MCP服务器 '%s' 失败: %s", serverName, e.getMessage()));
@@ -244,12 +264,27 @@ public class McpCommand extends RoleBaseCommand {
             // 获取所有服务器列表
             var servers = role.getMcpHub().getServers();
             if (servers == null || servers.isEmpty()) {
-                result.put("servers", new java.util.ArrayList<>());
+                java.util.List<Map<String, Object>> serverList = new java.util.ArrayList<>();
+                if (!role.getMcpNames().isEmpty()) {
+                    role.getMcpNames().forEach(it -> {
+                        Map<String, Object> serverInfo = new HashMap<>();
+                        serverInfo.put("name", it);
+                        serverInfo.put("status", "disconnected");
+                        serverInfo.put("error", "");
+                        serverInfo.put("toolsCount", 0);
+                        serverList.add(serverInfo);
+                    });
+                }
+                result.put("servers", serverList);
                 result.put("totalCount", 0);
                 result.put("message", "当前没有配置的MCP服务器");
             } else {
                 java.util.List<Map<String, Object>> serverList = new java.util.ArrayList<>();
+
+                Set<String> set = new HashSet<>(role.getMcpNames());
+
                 for (var server : servers) {
+                    set.remove(server.getName());
                     Map<String, Object> serverInfo = new HashMap<>();
                     serverInfo.put("name", server.getName());
                     serverInfo.put("status", server.getStatus());
@@ -257,6 +292,19 @@ public class McpCommand extends RoleBaseCommand {
                     serverInfo.put("toolsCount", server.getTools() != null ? server.getTools().size() : 0);
                     serverList.add(serverInfo);
                 }
+
+                if (!set.isEmpty()) {
+                    set.forEach(it -> {
+                        Map<String, Object> serverInfo = new HashMap<>();
+                        serverInfo.put("name", it);
+                        serverInfo.put("status", "disconnected");
+                        serverInfo.put("error", "");
+                        serverInfo.put("toolsCount", 0);
+                        serverList.add(serverInfo);
+                    });
+                }
+
+
                 result.put("servers", serverList);
                 result.put("totalCount", servers.size());
             }
@@ -307,6 +355,8 @@ public class McpCommand extends RoleBaseCommand {
             // 检查服务器是否存在
             var connections = role.getMcpHub().getConnections();
             if (connections == null || !connections.containsKey(serverName)) {
+                role.getMcpNames().remove(serverName);
+                role.saveConfig();
                 result.put("message", String.format("MCP服务器 '%s' 不存在", serverName));
             } else {
                 try {
@@ -314,6 +364,8 @@ public class McpCommand extends RoleBaseCommand {
                     role.getMcpHub().removeConnection(serverName);
                     result.put("success", true);
                     result.put("message", String.format("MCP服务器 '%s' 删除成功", serverName));
+                    role.getMcpNames().remove(serverName);
+                    role.saveConfig();
                     log.info("成功删除MCP服务器: {}", serverName);
                 } catch (Exception e) {
                     result.put("message", String.format("删除MCP服务器 '%s' 失败: %s", serverName, e.getMessage()));
@@ -345,6 +397,93 @@ public class McpCommand extends RoleBaseCommand {
 
     @Override
     public String getCommandDescription() {
-        return "MCP服务器管理命令，支持的操作: refresh <serverName|all>, list, delete <serverName>";
+        return "MCP服务器管理命令，支持的操作: refresh <serverName|all>, list, delete <serverName>, clear <serverName>";
+    }
+
+    /**
+     * 处理MCP清空聊天记录操作
+     */
+    private void handleMcpClear(Message message, FluxSink<String> sink, String from, ReactorRole role, String serverName) {
+        try {
+            if (role == null) {
+                sendErrorAndComplete(sink, "无法获取Role实例，MCP清空聊天记录失败");
+                return;
+            }
+
+            // 检查是否有McpHub实例
+            if (role.getMcpHub() == null) {
+                sendErrorAndComplete(sink, "当前Role未配置McpHub，无法执行MCP清空聊天记录操作");
+                return;
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "");
+            result.put("serverName", serverName);
+            result.put("timestamp", System.currentTimeMillis());
+
+            // 检查服务器是否存在
+            var connections = role.getMcpHub().getConnections();
+            if (connections == null || !connections.containsKey(serverName)) {
+                result.put("message", String.format("MCP服务器 '%s' 不存在或未连接", serverName));
+                String jsonResult = GsonUtils.gson.toJson(result);
+                sink.next(jsonResult);
+                sink.complete();
+                return;
+            }
+
+            try {
+                // 构造工具名称: stream_{mcpName}_chat
+                String toolName = String.format("stream_%s_chat", serverName);
+
+                // 构造工具参数
+                Map<String, Object> toolArguments = new HashMap<>();
+                toolArguments.put("message", "/clear");
+                toolArguments.put(Const.OWNER_ID, role.getConfg().getUserId() + "_" + role.getConfg().getAgentId());
+
+                // 调用callToolStream清空聊天记录
+                role.getMcpHub().callToolStream(serverName, toolName, toolArguments)
+                        .doOnNext(callResult -> {
+                            log.info("清空聊天记录响应: {}", callResult);
+                        })
+                        .doOnComplete(() -> {
+                            result.put("success", true);
+                            result.put("message", String.format("MCP服务器 '%s' 聊天记录清空成功", serverName));
+                            String jsonResult = GsonUtils.gson.toJson(result);
+                            sink.next(jsonResult);
+                            sink.complete();
+                            log.info("成功清空MCP服务器聊天记录: {}", serverName);
+                        })
+                        .doOnError(error -> {
+                            result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, error.getMessage()));
+                            String jsonResult = GsonUtils.gson.toJson(result);
+                            sink.next(jsonResult);
+                            sink.complete();
+                            log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, error.getMessage(), error);
+                        })
+                        .subscribe();
+
+            } catch (Exception e) {
+                result.put("message", String.format("清空MCP服务器 '%s' 聊天记录失败: %s", serverName, e.getMessage()));
+                log.error("清空MCP服务器聊天记录失败: {}, 错误: {}", serverName, e.getMessage(), e);
+
+                String jsonResult = GsonUtils.gson.toJson(result);
+                sink.next(jsonResult);
+                sink.complete();
+            }
+
+        } catch (Exception e) {
+            log.error("处理MCP清空聊天记录失败: {}", e.getMessage(), e);
+
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("message", "MCP清空聊天记录失败: " + e.getMessage());
+            errorResult.put("serverName", serverName);
+            errorResult.put("timestamp", System.currentTimeMillis());
+
+            String jsonResult = GsonUtils.gson.toJson(errorResult);
+            sink.next(jsonResult);
+            sink.complete();
+        }
     }
 }

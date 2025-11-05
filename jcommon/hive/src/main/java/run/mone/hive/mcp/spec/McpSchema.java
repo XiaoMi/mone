@@ -387,7 +387,9 @@ public final class McpSchema {
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     public record Implementation(// @formatter:off
 		@JsonProperty("name") String name,
-		@JsonProperty("version") String version) {
+		@JsonProperty("version") String version,
+		@JsonProperty("meta") Map<String,String> meta
+								 ) {
 	} // @formatter:on
 
     // Existing Enums and Base Types (from previous implementation)

@@ -29,6 +29,10 @@ public class LLMConfig {
 
     private boolean json;
 
+    //思考模式
+    @Builder.Default
+    private boolean thinking = false;
+
     private boolean stream;
 
     private String url;

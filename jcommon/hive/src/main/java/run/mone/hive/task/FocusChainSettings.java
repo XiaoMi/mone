@@ -2,7 +2,6 @@ package run.mone.hive.task;
 
 /**
  * Focus Chain配置设置
- * 对应Cline中的FocusChainSettings接口
  */
 public class FocusChainSettings {
     
@@ -12,7 +11,7 @@ public class FocusChainSettings {
     private boolean enabled;
     
     /**
-     * 提醒Cline更新待办列表的间隔（API请求次数）
+     * 提醒更新待办列表的间隔（API请求次数）
      * 默认值: 6
      * 范围: 1-100
      */

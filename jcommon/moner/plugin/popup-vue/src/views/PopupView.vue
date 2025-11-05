@@ -211,8 +211,10 @@ const onMessage = function (message: {
   roleType: string,
   content: string,
   messageType: string,
+  data?: string,
   message?: any
 }) {
+    console.log('onMessage:', message)
     const messageType = message.messageType;
     if (_botStreamBegin == messageType) {
       if (!lastConversionRes) {
@@ -265,6 +267,20 @@ const onMessage = function (message: {
         conversions.value = [...conversions.value];
         lastConversionRes = null;
       }
+    } else {
+      conversions.value.push({
+          text: message.data || "",
+          textType: "",
+          msgType: "ASSISTANT",
+          inversion: false,
+          avatar: "",
+          aiModel: "",
+          loading: false,
+          dateTime: new Date().toLocaleString(),
+          showCursor: false,
+          isShowOperate: true,
+          // name: message.roleName,
+        })
     }
   };
 
@@ -307,7 +323,7 @@ onMounted(() => {
     }
   }, sender, sendResponse) => {
     if (message.type === 'newWebSocketMessage') {
-      console.log('message', message)
+      console.log('popup receive message:', message)
       if (message.message.type === 'json') {
         if (message.message.data.type === 'chat') {
           onMessage(message.message.data)
