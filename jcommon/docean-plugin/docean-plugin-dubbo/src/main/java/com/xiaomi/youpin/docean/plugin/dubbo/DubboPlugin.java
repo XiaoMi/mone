@@ -28,11 +28,15 @@ import com.xiaomi.youpin.docean.plugin.dubbo.anno.Reference;
 import com.xiaomi.youpin.docean.plugin.dubbo.anno.Service;
 import com.xiaomi.youpin.docean.plugin.dubbo.common.Cons;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.common.constants.CommonConstants;
+import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.config.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
+
+import static org.apache.dubbo.common.constants.CommonConstants.REMOTE_METADATA_STORAGE_TYPE;
 
 /**
  * @author goodjava@qq.com
@@ -45,6 +49,8 @@ public class DubboPlugin implements IPlugin {
 
     private ApplicationConfig applicationConfig;
     private RegistryConfig registryConfig;
+    private MetadataReportConfig metadataReportConfig;
+    private ConfigCenterConfig configCenterConfig;
     private ProtocolConfig protocol;
 
 
@@ -54,7 +60,10 @@ public class DubboPlugin implements IPlugin {
         Config config = ioc.getBean(Config.class);
         applicationConfig = new ApplicationConfig(config.get(Cons.DUBBO_APP_NAME, ""));
         applicationConfig.setQosEnable(false);
-
+        //注册方式，默认：接口和应用维度
+        applicationConfig.setRegisterMode(CommonConstants.DEFAULT_REGISTER_MODE);
+        applicationConfig.setEnableFileCache(false);
+        applicationConfig.setMetadataType(REMOTE_METADATA_STORAGE_TYPE);
         Map<String, String> appParams = new HashMap<>();
         appParams.put("nacos.subscribe.legacy-name","true");
         applicationConfig.setParameters(appParams);
@@ -64,20 +73,14 @@ public class DubboPlugin implements IPlugin {
             applicationConfig.setSerializeCheckStatus(config.get("serializeCheckStatus",""));
         }
 
-        registryConfig = new RegistryConfig(config.get(Cons.DUBBO_REG_ADDRESS, ""));
-        //启动的时候是否check 注册中心
-        registryConfig.setCheck(Boolean.valueOf(config.get(Cons.DUBBO_REG_CHECK, Boolean.FALSE.toString())));
-        Map<String, String> m = Maps.newHashMap();
-        m.put(PropertyKeyConst.NAMING_LOAD_CACHE_AT_START, config.get(Cons.DUBBO_LOAD_CACHE_AT_START, Boolean.TRUE.toString()));
-        registryConfig.setParameters(m);
+        registryConfig = registryConfig(config);
+        metadataReportConfig = metadataReportConfig(config);
+        configCenterConfig = configCenterConfig(config);
         int dubboPort = Integer.valueOf(config.get(Cons.DUBBO_PORT, "-1"));
         int dubboThreads = Integer.valueOf(config.get(Cons.DUBBO_THREADS, "200"));
         protocol = getProtocolConfig(dubboPort, dubboThreads);
-
-
         ioc.putBean(applicationConfig);
         ioc.putBean(registryConfig);
-
         try {
             //3.0 需要初始化DubboBootstrap,但dubbo2 并没有这个类,用次hack的方法fix 掉
             Class<?> clazz = Class.forName("org.apache.dubbo.config.bootstrap.DubboBootstrap");
@@ -85,18 +88,54 @@ public class DubboPlugin implements IPlugin {
             Object obj = method.invoke(null);
             Method applicationMethod = clazz.getMethod("application", ApplicationConfig.class);
             Method registryMethod = clazz.getMethod("registry", RegistryConfig.class);
+            Method metadataReportMethod = clazz.getMethod("metadataReport", MetadataReportConfig.class);
+            Method configCenterMethod = clazz.getMethod("configCenter", ConfigCenterConfig.class);
             Method protocolMethod = clazz.getMethod("protocol", ProtocolConfig.class);
 
             //DubboBootstrap.getInstance().application(this.applicationConfig).registry(this.registryConfig).protocol(this.protocol);
             obj = applicationMethod.invoke(obj, this.applicationConfig);
             obj = registryMethod.invoke(obj, this.registryConfig);
+            obj = metadataReportMethod.invoke(obj, this.metadataReportConfig);
+            obj = configCenterMethod.invoke(obj, this.configCenterConfig);
             protocolMethod.invoke(obj, this.protocol);
         } catch (Throwable ex) {
-            log.info(ex.getMessage());
+            log.error("DubboPlugin init error", ex.getMessage());
         }
 
-        DubboCall dubboCall = new DubboCall(this.applicationConfig, this.registryConfig);
+        DubboCall dubboCall = new DubboCall(this.applicationConfig, this.registryConfig, metadataReportConfig, configCenterConfig);
         ioc.putBean(dubboCall);
+    }
+
+    private RegistryConfig registryConfig(Config config) {
+        RegistryConfig registryConfig = new RegistryConfig(config.get(Cons.DUBBO_REG_ADDRESS, ""));
+        //启动的时候是否check 注册中心
+        registryConfig.setCheck(Boolean.valueOf(config.get(Cons.DUBBO_REG_CHECK, Boolean.FALSE.toString())));
+        Map<String, String> m = Maps.newHashMap();
+        m.put(PropertyKeyConst.NAMING_LOAD_CACHE_AT_START, config.get(Cons.DUBBO_LOAD_CACHE_AT_START, Boolean.TRUE.toString()));
+        registryConfig.setParameters(m);
+        return registryConfig;
+    }
+
+    private MetadataReportConfig metadataReportConfig(Config config) {
+        String metaAddr = config.get(Cons.DUBBO_REG_META_ADDRESS, "");
+        if (StringUtils.isEmpty(metaAddr)) {
+            metaAddr = config.get(Cons.DUBBO_REG_ADDRESS, "");
+        }
+        MetadataReportConfig metadataReportConfig = new MetadataReportConfig();
+        metadataReportConfig.setId("meta");
+        metadataReportConfig.setId(metaAddr);
+        return metadataReportConfig;
+    }
+
+    private ConfigCenterConfig configCenterConfig(Config config) {
+        String cfgAddr = config.get(Cons.DUBBO_REG_CFG_ADDRESS, "");
+        if (StringUtils.isEmpty(cfgAddr)) {
+            cfgAddr = config.get(Cons.DUBBO_REG_ADDRESS, "");
+        }
+        ConfigCenterConfig configCenterConfig = new ConfigCenterConfig();
+        configCenterConfig.setId("cfg");
+        configCenterConfig.setId(cfgAddr);
+        return configCenterConfig;
     }
 
 
@@ -104,6 +143,8 @@ public class DubboPlugin implements IPlugin {
         ServiceConfig<Object> serviceConfig = new ServiceConfig<>();
         serviceConfig.setApplication(applicationConfig);
         serviceConfig.setRegistry(registryConfig);
+        serviceConfig.setMetadataReportConfig(metadataReportConfig);
+        serviceConfig.setConfigCenter(configCenterConfig);
         Service s = bean.getClazz().getAnnotation(Service.class);
         serviceConfig.setInterface(s.interfaceClass());
         serviceConfig.setRef(bean.getObj());
@@ -146,6 +187,8 @@ public class DubboPlugin implements IPlugin {
             ReferenceConfig<Object> referenceConfig = new ReferenceConfig<>();
             referenceConfig.setApplication(applicationConfig);
             referenceConfig.setRegistry(registryConfig);
+            referenceConfig.setMetadataReportConfig(metadataReportConfig);
+            referenceConfig.setConfigCenter(configCenterConfig);
             referenceConfig.setInterface(reference.interfaceClass());
             referenceConfig.setGroup(getGroup(ioc, reference.group()));
             referenceConfig.setCheck(reference.check());

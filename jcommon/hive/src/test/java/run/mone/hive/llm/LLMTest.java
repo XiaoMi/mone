@@ -126,7 +126,7 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.OPENROUTER_OPENAI_CODEX);
-        config.setLlmProvider(LLMProvider.OPENROUTER_CLAUDE_HAIKU_45);
+//        config.setLlmProvider(LLMProvider.OPENROUTER_CLAUDE_HAIKU_45);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
@@ -149,7 +149,7 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
 
-//        config.setLlmProvider(LLMProvider.MINIMAX);
+        config.setLlmProvider(LLMProvider.MINIMAX);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO_UI_TARS);
         // config.setLlmProvider(LLMProvider.DOUBAO_VISION);

@@ -1,6 +1,7 @@
 package run.mone.hive.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -15,6 +16,16 @@ import java.io.IOException;
 
 @Slf4j
 public class RemoteFileUtils {
+
+
+    public static String userKey = "";
+
+    public static String userSecret = "";
+
+    public static String remoteFileApiHost = "";
+
+    public static String token = "";
+
 
     /**
      * 上传文件到远程服务器
@@ -217,6 +228,9 @@ public class RemoteFileUtils {
      * @return API主机地址
      */
     private static String getHost() {
+        if (StringUtils.isNotEmpty(remoteFileApiHost)) {
+            return remoteFileApiHost;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_API_HOST", "http://127.0.0.1:9777");
     }
 
@@ -226,6 +240,9 @@ public class RemoteFileUtils {
      * @return 用户Key
      */
     private static String getUserKey() {
+        if (StringUtils.isNotEmpty(userKey)) {
+            return userKey;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_USER_KEY", "wangmin");
     }
 
@@ -235,6 +252,9 @@ public class RemoteFileUtils {
      * @return 用户Secret
      */
     private static String getUserSecret() {
+        if (StringUtils.isNotEmpty(userSecret)) {
+            return userSecret;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_USER_SECRET", "123456");
     }
 
@@ -244,6 +264,9 @@ public class RemoteFileUtils {
      * @return API令牌
      */
     private static String getToken() {
+        if (StringUtils.isNotEmpty(token)) {
+            return token;
+        }
         return System.getenv().getOrDefault("REMOTE_FILE_API_TOKEN", "1");
     }
 

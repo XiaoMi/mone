@@ -1,0 +1,149 @@
+package run.mone.moner.server.role.tool;
+
+import com.google.gson.JsonObject;
+
+import run.mone.hive.common.JsonUtils;
+import run.mone.hive.common.ToolDataInfo;
+import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.roles.tool.ITool;
+import run.mone.moner.server.common.MultiXmlParser;
+
+public class OperationActionTool implements ITool {
+
+    @Override
+    public String getName() {
+        return "operation";
+    }
+
+    @Override
+    public String description() {
+        return """
+                需要在当前页面执行一系列操作TOOL(比如填入搜索内容后点击搜索按钮)
+                - 尽量一次返回一个页面的所有action操作
+                - elementId的数字会在元素的右上角
+                - 数字的颜色和这个元素的边框一定是一个颜色
+                - 必须返回tabId(如果没有,需要你打开相应的tab)
+                - 支持操作类型: fill(填入), click(点击), focus(聚焦), search(搜索), select(选择)
+                """;
+    }
+
+    @Override
+    public String parameters() {
+        return """
+                - actionX: (required, one or more) A set of action objects like action1, action2, ...
+                  - type: (required) always \"action\"
+                  - name: (required) one of [fill, click, focus, search, select]
+                  - elementId: (required) target element id
+                  - value: (optional) value to input/select
+                  - desc: (optional) description
+                  - tabId: (required) the tab id to act on
+                  - next: (optional) whether to proceed automatically (\"true\"/\"false\")
+                """;
+    }
+
+    @Override
+    public String usage() {
+        String taskProgress = """
+            <task_progress>
+            Checklist here (optional)
+            </task_progress>
+            """;
+        if (!taskProgress()) {
+            taskProgress = "";
+        }
+        return """
+                Construct the operation refer to the following example, remember to replace the value of the "tabId" and "elementId" with the actual values.
+                and keep in mind that the type should ALWAYS be "action", but the name should be the name of the action you want to perform:
+
+                <operation>
+                <arguments>
+                {
+                  "action1": {
+                    "type": "action",
+                    "name": "fill",
+                    "elementId": "12",
+                    "value": "冰箱",
+                    "tabId": "2",
+                    "next": "false"
+                  },
+                  "action2": {
+                    "type": "action",
+                    "name": "click",
+                    "elementId": "13",
+                    "desc": "点击搜索按钮",
+                    "tabId": "2",
+                    "next": "false"
+                  },
+                  "action3": {
+                    "type": "action",
+                    "name": "focus",
+                    "elementId": "14",
+                    "desc": "聚焦到输入框",
+                    "tabId": "2",
+                    "next": "false"
+                  },
+                  "action4": {
+                    "type": "action",
+                    "name": "search",
+                    "elementId": "15",
+                    "value": "搜索关键词",
+                    "desc": "执行搜索操作",
+                    "tabId": "2",
+                    "next": "false"
+                  },
+                  "action5": {
+                    "type": "action",
+                    "name": "select",
+                    "elementId": "16",
+                    "value": "选项值",
+                    "desc": "选择下拉框选项",
+                    "tabId": "2",
+                    "next": "false"
+                  }
+                }
+                </arguments>
+                </operation>
+                """.formatted(taskProgress);
+    }
+
+    @Override
+    public boolean callerRunTrigger() {
+        return true;
+    }
+
+    @Override
+    public String formatResult(JsonObject res) {
+        return res.get("xml").getAsString();
+    }
+
+    @Override
+    public boolean needExecute() {
+        return true;
+    }
+
+    @Override public boolean toolInfoAsParam() {
+        return true;
+    }
+
+    @Override
+    public JsonObject execute(ReactorRole role, JsonObject req) {
+        JsonObject res = new JsonObject();
+        ToolDataInfo toolDataInfo = JsonUtils.gson.fromJson(req.get("_tool_info_as_param_"), ToolDataInfo.class);
+        if (toolDataInfo != null) {
+            try {
+                String actions = toolDataInfo.getKeyValuePairs().get("arguments");
+                String xml = new MultiXmlParser().jsonToXml(actions);
+                res.addProperty("xml", xml);
+            } catch (Exception e) {
+                res.addProperty("error", e.getMessage());
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public boolean show() {
+        return true;
+    }
+}
+

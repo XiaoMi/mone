@@ -694,7 +694,7 @@ public class ReactorRole extends Role {
             // 在工具执行前进行路径解析，将相对路径转换为绝对路径
             PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
 
-            ToolInterceptor.before(name, params, extraParam);
+            ToolInterceptor.before(tool, it, params, extraParam);
             contentForLlm = "";
             try {
                 JsonObject toolRes = this.toolMap.get(name).execute(this, params);
@@ -727,7 +727,11 @@ public class ReactorRole extends Role {
                 sink.complete();
             }
         }
-        this.putMessage(assistantMessage);
+
+        // HINT: 如果不需要外部调用方处理后触发下一轮执行，则直接放到记忆中 
+        if (!tool.callerRunTrigger()) {
+            this.putMessage(assistantMessage);
+        }
     }
 
     private void sendToSink(String content, Message contextMessage, boolean addId) {

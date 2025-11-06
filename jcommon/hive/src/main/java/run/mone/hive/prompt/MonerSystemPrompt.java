@@ -1,5 +1,6 @@
 package run.mone.hive.prompt;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +15,7 @@ import run.mone.hive.common.Safe;
 import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
+import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
@@ -236,6 +238,25 @@ public class MonerSystemPrompt {
         if (mcpHub == null) {
             return serverList;
         }
+
+        McpHub defaultHub = McpHubHolder.get("default");
+        if (null != defaultHub) {
+            defaultHub.getConnections().forEach((key, value) -> Safe.run(() -> {
+                Map<String, Object> server = new HashMap<>();
+                server.put("name", key);
+                server.put("args", "");
+                server.put("connection", value);
+                server.put("agent", ImmutableMap.of("name",value.getServer().getName()));
+                List<io.modelcontextprotocol.spec.McpSchema.Tool> tools = value.getServer().getToolsV2();
+                String toolsStr = tools.stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
+                                + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                        .collect(Collectors.joining("\n\n"));
+                server.put("tools", toolsStr);
+
+                serverList.add(server);
+            }));
+        }
+
         mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
             Map<String, Object> server = new HashMap<>();
             server.put("name", key);

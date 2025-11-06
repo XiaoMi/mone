@@ -148,16 +148,18 @@ public class TcpTest {
                         p.setUser(user);
                         RemotingCommand req = RemotingCommand.createRequestCommand(RpcCmd.pingReq);
                         req.setTimeout(2000L);
+                        //开启压缩
+                        req.enableCompression();
                         req.setBody(new Gson().toJson(p).getBytes());
 
 //                        client.sendMessage(client.getServerAddrs(), req, responseFuture -> {
 //                            log.info("--->" + responseFuture.getResponseCommand());
 //                        });
 
-//                        client.sendToAllMessage(req);
-                        client.sendToAllMessage(RpcCmd.pingReq, "ping".getBytes(), resFuture -> {
-                            log.info("----->{}", resFuture.getResponseCommand());
-                        });
+                        client.sendToAllMessage(req);
+//                        client.sendToAllMessage(RpcCmd.pingReq, "ping".getBytes(), resFuture -> {
+//                            log.info("----->{}", resFuture.getResponseCommand());
+//                        });
 
 //                        RemotingCommand res = client.sendMessage(client.getServerAddrs(), RpcCmd.pingReq, "abc", 1000);
 //                        log.info("res:{}", new String(res.getBody()));
