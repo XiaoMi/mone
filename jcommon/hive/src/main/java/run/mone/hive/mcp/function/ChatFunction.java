@@ -11,7 +11,7 @@ import run.mone.hive.bo.TokenRes;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.command.CommandManager;
 import run.mone.hive.mcp.service.RoleService;
-import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema;
 import run.mone.hive.schema.Message;
 
 import java.util.Arrays;

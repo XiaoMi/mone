@@ -2,10 +2,10 @@
 * Copyright 2024 - 2024 the original author or authors.
 */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
-import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse.JSONRPCError;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCResponse.JSONRPCError;
+import run.mone.hive.mcp.core.util.Assert;
 
 import java.util.Map;
 import java.util.function.Function;

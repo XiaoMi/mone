@@ -1,7 +1,7 @@
 /*
  * Copyright 2024-2024 the original author or authors.
  */
-package io.modelcontextprotocol.json.schema.jackson;
+package run.mone.hive.mcp.jsonjackson2.schema.jackson;
 
 import java.util.Map;
 import java.util.Set;
@@ -14,7 +14,7 @@ import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

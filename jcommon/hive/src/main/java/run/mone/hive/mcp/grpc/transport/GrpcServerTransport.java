@@ -16,11 +16,13 @@ import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.common.ClientMeta;
 import run.mone.hive.mcp.grpc.*;
-import run.mone.hive.mcp.server.McpAsyncServer;
-import run.mone.hive.mcp.spec.DefaultMcpSession;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
-import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.core.server.McpAsyncServer;
+import run.mone.hive.mcp.core.spec.McpSession;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCMessage;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCNotification;
+import run.mone.hive.mcp.core.spec.McpServerTransport;
 
 import java.io.IOException;
 import java.util.*;
@@ -31,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
-import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
+import static run.mone.hive.mcp.core.spec.McpSchema.METHOD_TOOLS_CALL;
+import static run.mone.hive.mcp.core.spec.McpSchema.METHOD_TOOLS_STREAM;
 
 /**
  * goodjava@qq.com
@@ -40,7 +42,7 @@ import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
  */
 @Slf4j
 @Data
-public class GrpcServerTransport implements ServerMcpTransport {
+public class GrpcServerTransport implements McpServerTransport {
 
     private final int port;
 
@@ -128,31 +130,31 @@ public class GrpcServerTransport implements ServerMcpTransport {
         }
     }
 
-    @Override
-    public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
-        return Mono.fromRunnable(() -> {
-            try {
-                // 创建 gRPC 服务实现
-                McpServiceImpl serviceImpl = new McpServiceImpl();
-                // 启动 gRPC 服务器，添加元数据拦截器
-                server = ServerBuilder.forPort(port)
-                        .addService(serviceImpl)
-                        .intercept(new MetadataInterceptor())  // 添加元数据拦截器
-                        .build()
-                        .start();
-                log.info("gRPC Server started, listening on port " + port);
+    // @Override
+    // public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
+    //     return Mono.fromRunnable(() -> {
+    //         try {
+    //             // 创建 gRPC 服务实现
+    //             McpServiceImpl serviceImpl = new McpServiceImpl();
+    //             // 启动 gRPC 服务器，添加元数据拦截器
+    //             server = ServerBuilder.forPort(port)
+    //                     .addService(serviceImpl)
+    //                     .intercept(new MetadataInterceptor())  // 添加元数据拦截器
+    //                     .build()
+    //                     .start();
+    //             log.info("gRPC Server started, listening on port " + port);
 
-                // 添加关闭钩子
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    log.info("Shutting down gRPC server");
-                    GrpcServerTransport.this.close();
-                }));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to start gRPC server", e);
-            }
+    //             // 添加关闭钩子
+    //             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    //                 log.info("Shutting down gRPC server");
+    //                 GrpcServerTransport.this.close();
+    //             }));
+    //         } catch (IOException e) {
+    //             throw new RuntimeException("Failed to start gRPC server", e);
+    //         }
 
-        });
-    }
+    //     });
+    // }
 
     @Override
     public Mono<Void> closeGracefully() {
@@ -169,53 +171,56 @@ public class GrpcServerTransport implements ServerMcpTransport {
     private ConcurrentHashMap<String, Object> resMap = new ConcurrentHashMap<>();
 
 
-    public Mono<Object> sendMessage(Map<String, Object> map, String clientId) {
+    public Mono<Void> sendMessage(Map<String, Object> map, String clientId) {
         Map<String, Object> req = new HashMap<>(map);
         ImmutableMap<String, Object> m = ImmutableMap.of(
                 Const.CLIENT_ID, clientId,
                 Const.BLOCK, ""
         );
         req.putAll(m);
-        return sendMessage(new McpSchema.JSONRPCNotification("", "", req));
+        return sendMessage(new JSONRPCNotification("", "", req));
     }
 
 
     //通知到client
     @SneakyThrows
     @Override
-    public Mono<Object> sendMessage(JSONRPCMessage message) {
-        if (message instanceof McpSchema.JSONRPCNotification notification) {
-            Map<String, Object> params = notification.params();
-            if (null != params && params.containsKey(Const.CLIENT_ID)) {
-                String clientId = params.get(Const.CLIENT_ID).toString();
-                StreamObserver<StreamResponse> observer = userConnections.get(clientId);
-                //直接通知到client
-                if (null != observer) {
-                    String reqId = UUID.randomUUID().toString();
-                    observer.onNext(StreamResponse.newBuilder().setRequestId(reqId).setCmd(Const.NOTIFY_MSG).setData(GsonUtils.gson.toJson(params)).build());
-                    //阻塞访问
-                    if (notification.params().containsKey(Const.BLOCK)) {
-                        try {
-                            CountDownLatch cdl = new CountDownLatch(1);
-                            countDownLatchConcurrentHashMap.put(reqId, cdl);
-                            cdl.await(5, TimeUnit.SECONDS);
-                            if (resMap.containsKey(reqId)) {
-                                return Mono.just(resMap.get(reqId));
-                            }
-                        } finally {
-                            countDownLatchConcurrentHashMap.remove(reqId);
-                            resMap.remove(reqId);
-                        }
-                    }
-                }
-            }
-        }
+    public Mono<Void> sendMessage(JSONRPCMessage message) {
+        // FIXME
+        // if (message instanceof McpSchema.JSONRPCNotification notification) {
+        //     Map<String, Object> params = notification.params();
+        //     if (null != params && params.containsKey(Const.CLIENT_ID)) {
+        //         String clientId = params.get(Const.CLIENT_ID).toString();
+        //         StreamObserver<StreamResponse> observer = userConnections.get(clientId);
+        //         //直接通知到client
+        //         if (null != observer) {
+        //             String reqId = UUID.randomUUID().toString();
+        //             observer.onNext(StreamResponse.newBuilder().setRequestId(reqId).setCmd(Const.NOTIFY_MSG).setData(GsonUtils.gson.toJson(params)).build());
+        //             //阻塞访问
+        //             if (notification.params().containsKey(Const.BLOCK)) {
+        //                 try {
+        //                     CountDownLatch cdl = new CountDownLatch(1);
+        //                     countDownLatchConcurrentHashMap.put(reqId, cdl);
+        //                     cdl.await(5, TimeUnit.SECONDS);
+        //                     if (resMap.containsKey(reqId)) {
+        //                         return Mono.just(resMap.get(reqId));
+        //                     }
+        //                 } finally {
+        //                     countDownLatchConcurrentHashMap.remove(reqId);
+        //                     resMap.remove(reqId);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
         return Mono.empty();
     }
 
     @Override
-    public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
-        return objectMapper.convertValue(data, typeRef);
+    public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+        return null;
+        // FIXME
+        // return objectMapper.convertValue(data, typeRef);
     }
 
     /**
@@ -353,7 +358,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                     .setServerInfo(Implementation.newBuilder()
                             .setName(serverInfo.name())
                             .setVersion(serverInfo.version())
-                            .putAllMeta(serverInfo.meta())
+                            // .putAllMeta(serverInfo.meta())
                             .build())
                     .build();
             responseObserver.onNext(response);
@@ -364,21 +369,21 @@ public class GrpcServerTransport implements ServerMcpTransport {
         @Override
         public void listTools(ListToolsRequest request, StreamObserver<ListToolsResponse> responseObserver) {
             List<Tool> tools = new ArrayList<>();
-            mcpServer.getStreamTools().forEach(it -> {
-                McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
-                String inputSchemaStr = GsonUtils.gson.toJson(inputSchema);
-                Tool tool = Tool.newBuilder()
-                        .setName(it.tool().name()).setDescription(it.tool().description())
-                        .setInputSchema(inputSchemaStr)
-                        .build();
-                tools.add(tool);
-            });
+            // mcpServer.getStreamTools().forEach(it -> {
+            //     McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
+            //     String inputSchemaStr = GsonUtils.gson.toJson(inputSchema);
+            //     Tool tool = Tool.newBuilder()
+            //             .setName(it.tool().name()).setDescription(it.tool().description())
+            //             .setInputSchema(inputSchemaStr)
+            //             .build();
+            //     tools.add(tool);
+            // });
 
-            mcpServer.getTools().forEach(it -> {
-                McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
+            mcpServer.listTools().subscribe(it -> {
+                McpSchema.JsonSchema inputSchema = it.inputSchema();
                 String inputSchemaStr = GsonUtils.gson.toJson(inputSchema);
                 Tool tool = Tool.newBuilder()
-                        .setName(it.tool().name()).setDescription(it.tool().description())
+                        .setName(it.name()).setDescription(it.description())
                         .setInputSchema(inputSchemaStr)
                         .build();
                 tools.add(tool);
@@ -396,76 +401,76 @@ public class GrpcServerTransport implements ServerMcpTransport {
             CallToolResponse.Builder resBuilder = CallToolResponse.newBuilder();
 
             //请求进来的
-            if (name.equals(METHOD_TOOLS_CALL)) {
-                DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
-                Object res = rh.handle(request).block();
+            // if (name.equals(METHOD_TOOLS_CALL)) {
+            //     DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
+            //     Object res = rh.handle(request).block();
 
-                if (res instanceof Flux<?> flux) {
-                    McpSchema.CallToolResult r = (McpSchema.CallToolResult) flux.blockLast();
-                    McpSchema.Content it = r.content().get(0);
-                    if (it instanceof McpSchema.TextContent tc) {
-                        TextContent.Builder builder = TextContent.newBuilder();
-                        builder.setData(tc.data());
-                        builder.setText(tc.text());
-                        resBuilder.addContent(Content.newBuilder().setText(builder).build());
-                    }
-                    if (it instanceof McpSchema.ImageContent ic) {
-                        ImageContent.Builder builder = ImageContent.newBuilder();
-                        builder.setData(ic.data());
-                        builder.setMimeType(ic.mimeType());
-                        resBuilder.addContent(Content.newBuilder().setImage(builder).build());
-                    }
-                }
+            //     if (res instanceof Flux<?> flux) {
+            //         McpSchema.CallToolResult r = (McpSchema.CallToolResult) flux.blockLast();
+            //         McpSchema.Content it = r.content().get(0);
+            //         if (it instanceof McpSchema.TextContent tc) {
+            //             TextContent.Builder builder = TextContent.newBuilder();
+            //             builder.setData(tc.data());
+            //             builder.setText(tc.text());
+            //             resBuilder.addContent(Content.newBuilder().setText(builder).build());
+            //         }
+            //         if (it instanceof McpSchema.ImageContent ic) {
+            //             ImageContent.Builder builder = ImageContent.newBuilder();
+            //             builder.setData(ic.data());
+            //             builder.setMimeType(ic.mimeType());
+            //             resBuilder.addContent(Content.newBuilder().setImage(builder).build());
+            //         }
+            //     }
 
-                //支持image 和 text
-                if (res instanceof McpSchema.CallToolResult ctr) {
-                    List<McpSchema.Content> list = ctr.content();
-                    list.forEach(it -> {
-                        if (it instanceof McpSchema.TextContent tc) {
-                            TextContent.Builder builder = TextContent.newBuilder();
-                            builder.setData(tc.data());
-                            builder.setText(tc.text());
-                            resBuilder.addContent(Content.newBuilder().setText(builder).build());
-                        }
-                        if (it instanceof McpSchema.ImageContent ic) {
-                            ImageContent.Builder builder = ImageContent.newBuilder();
-                            builder.setData(ic.data());
-                            builder.setMimeType(ic.mimeType());
-                            resBuilder.addContent(Content.newBuilder().setImage(builder).build());
-                        }
-                    });
-                }
-            }
+            //     //支持image 和 text
+            //     if (res instanceof McpSchema.CallToolResult ctr) {
+            //         List<McpSchema.Content> list = ctr.content();
+            //         list.forEach(it -> {
+            //             if (it instanceof McpSchema.TextContent tc) {
+            //                 TextContent.Builder builder = TextContent.newBuilder();
+            //                 builder.setData(tc.data());
+            //                 builder.setText(tc.text());
+            //                 resBuilder.addContent(Content.newBuilder().setText(builder).build());
+            //             }
+            //             if (it instanceof McpSchema.ImageContent ic) {
+            //                 ImageContent.Builder builder = ImageContent.newBuilder();
+            //                 builder.setData(ic.data());
+            //                 builder.setMimeType(ic.mimeType());
+            //                 resBuilder.addContent(Content.newBuilder().setImage(builder).build());
+            //             }
+            //         });
+            //     }
+            // }
 
             responseObserver.onNext(resBuilder.build());
             responseObserver.onCompleted();
         }
 
         //调用工具(流式返回)
-        @Override
-        public void callToolStream(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
-            String name = request.getName();
-            //请求进来的
-            if (name.equals(METHOD_TOOLS_STREAM)) {
-                DefaultMcpSession.StreamRequestHandler rh = mcpServer.getMcpSession().getStreamRequestHandlers().get(name);
-                rh.handle(request).subscribe(it -> {
-                    List<Content> contentList = new ArrayList<>();
-                    if (it instanceof McpSchema.CallToolResult ctr) {
-                        List<McpSchema.Content> list = ctr.content();
-                        contentList.addAll(list.stream().map(content -> {
-                            if (content instanceof McpSchema.TextContent tc) {
-                                return Content.newBuilder().setText(TextContent.newBuilder().setData(tc.data()).setText(tc.text()).build()).build();
-                            }
-                            if (content instanceof McpSchema.ImageContent ic) {
-                                return Content.newBuilder().setImage(ImageContent.newBuilder().setData(ic.data()).setMimeType(ic.mimeType()).build()).build();
-                            }
-                            return null;
-                        }).filter(Objects::nonNull).toList());
-                    }
-                    responseObserver.onNext(CallToolResponse.newBuilder().addAllContent(contentList).build());
-                }, responseObserver::onError, responseObserver::onCompleted);
-            }
-        }
+        // @Override
+        // public void callToolStream(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
+        //     String name = request.getName();
+        //     //请求进来的
+        //     if (name.equals(METHOD_TOOLS_STREAM)) {
+        //         DefaultMcpSession.StreamRequestHandler rh = mcpServer.getMcpSession().getStreamRequestHandlers().get(name);
+        //         rh.handle(request).subscribe(it -> {
+        //             List<Content> contentList = new ArrayList<>();
+        //             if (it instanceof McpSchema.CallToolResult ctr) {
+        //                 List<McpSchema.Content> list = ctr.content();
+        //                 contentList.addAll(list.stream().map(content -> {
+        //                     if (content instanceof McpSchema.TextContent tc) {
+        //                         return Content.newBuilder().setText(TextContent.newBuilder().setData(tc.data()).setText(tc.text()).build()).build();
+        //                     }
+        //                     if (content instanceof McpSchema.ImageContent ic) {
+        //                         return Content.newBuilder().setImage(ImageContent.newBuilder().setData(ic.data()).setMimeType(ic.mimeType()).build()).build();
+        //                     }
+        //                     return null;
+        //                 }).filter(Objects::nonNull).toList());
+        //             }
+        //             responseObserver.onNext(CallToolResponse.newBuilder().addAllContent(contentList).build());
+        //         }, responseObserver::onError, responseObserver::onCompleted);
+        //     }
+        // }
 
     }
 

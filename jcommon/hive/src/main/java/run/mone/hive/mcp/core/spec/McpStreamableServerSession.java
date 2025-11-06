@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
 import java.time.Duration;
 import java.util.Map;
@@ -15,14 +15,14 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.modelcontextprotocol.json.TypeRef;
+import run.mone.hive.mcp.json.TypeRef;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpNotificationHandler;
-import io.modelcontextprotocol.server.McpRequestHandler;
-import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.server.McpAsyncServerExchange;
+import run.mone.hive.mcp.core.server.McpNotificationHandler;
+import run.mone.hive.mcp.core.server.McpRequestHandler;
+import run.mone.hive.mcp.core.spec.McpSchema.ErrorCodes;
+import run.mone.hive.mcp.core.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;

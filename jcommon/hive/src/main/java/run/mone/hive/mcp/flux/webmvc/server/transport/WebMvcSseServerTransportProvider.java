@@ -11,19 +11,19 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.json.TypeRef;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpServerTransport;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
-import io.modelcontextprotocol.spec.ProtocolVersions;
-import io.modelcontextprotocol.spec.McpServerSession;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.KeepAliveScheduler;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.server.McpTransportContextExtractor;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpServerTransport;
+import run.mone.hive.mcp.core.spec.McpServerTransportProvider;
+import run.mone.hive.mcp.core.spec.ProtocolVersions;
+import run.mone.hive.mcp.core.spec.McpServerSession;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.KeepAliveScheduler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

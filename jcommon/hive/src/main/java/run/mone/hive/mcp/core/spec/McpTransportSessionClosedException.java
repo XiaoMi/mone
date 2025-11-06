@@ -2,7 +2,7 @@
  * Copyright 2025-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
 import reactor.util.annotation.Nullable;
 

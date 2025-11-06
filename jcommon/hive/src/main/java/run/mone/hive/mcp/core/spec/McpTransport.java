@@ -2,12 +2,12 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
 import java.util.List;
 
-import io.modelcontextprotocol.spec.McpSchema.JSONRPCMessage;
-import io.modelcontextprotocol.json.TypeRef;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCMessage;
+import run.mone.hive.mcp.json.TypeRef;
 import reactor.core.publisher.Mono;
 
 /**

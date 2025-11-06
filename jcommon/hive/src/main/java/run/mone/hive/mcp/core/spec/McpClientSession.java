@@ -2,10 +2,10 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.core.util.Assert;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

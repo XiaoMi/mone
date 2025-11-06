@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
 /**
  * Exception that signifies that the server does not recognize the connecting client via

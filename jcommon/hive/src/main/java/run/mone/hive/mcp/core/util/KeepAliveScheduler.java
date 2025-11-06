@@ -2,7 +2,7 @@
  * Copyright 2025 - 2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.util;
+package run.mone.hive.mcp.core.util;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,10 +11,10 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.modelcontextprotocol.json.TypeRef;
+import run.mone.hive.mcp.json.TypeRef;
 
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSession;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSession;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;

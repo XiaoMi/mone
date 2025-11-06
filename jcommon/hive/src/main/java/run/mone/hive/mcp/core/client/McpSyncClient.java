@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.client;
+package run.mone.hive.mcp.core.client;
 
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -10,13 +10,13 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
-import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
-import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
-import io.modelcontextprotocol.spec.McpSchema.ListPromptsResult;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.ClientCapabilities;
+import run.mone.hive.mcp.core.spec.McpSchema.GetPromptRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.GetPromptResult;
+import run.mone.hive.mcp.core.spec.McpSchema.ListPromptsResult;
+import run.mone.hive.mcp.core.util.Assert;
 import reactor.core.publisher.Mono;
 
 /**

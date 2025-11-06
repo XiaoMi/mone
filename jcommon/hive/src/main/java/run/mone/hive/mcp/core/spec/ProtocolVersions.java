@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
 public interface ProtocolVersions {
 

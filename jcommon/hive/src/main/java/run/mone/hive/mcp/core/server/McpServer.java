@@ -2,9 +2,9 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
-import io.modelcontextprotocol.common.McpTransportContext;
+import run.mone.hive.mcp.core.common.McpTransportContext;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,18 +14,18 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
+import run.mone.hive.mcp.json.McpJsonMapper;
 
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.ResourceTemplate;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
-import io.modelcontextprotocol.spec.McpStatelessServerTransport;
-import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.DefaultMcpUriTemplateManagerFactory;
-import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidator;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.CallToolResult;
+import run.mone.hive.mcp.core.spec.McpSchema.ResourceTemplate;
+import run.mone.hive.mcp.core.spec.McpServerTransportProvider;
+import run.mone.hive.mcp.core.spec.McpStatelessServerTransport;
+import run.mone.hive.mcp.core.spec.McpStreamableServerTransportProvider;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.DefaultMcpUriTemplateManagerFactory;
+import run.mone.hive.mcp.core.util.McpUriTemplateManagerFactory;
 import reactor.core.publisher.Mono;
 
 /**

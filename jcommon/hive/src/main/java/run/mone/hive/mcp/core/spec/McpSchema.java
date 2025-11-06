@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,9 +17,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.core.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +65,8 @@ public final class McpSchema {
 	public static final String METHOD_TOOLS_LIST = "tools/list";
 
 	public static final String METHOD_TOOLS_CALL = "tools/call";
+
+	public static final String METHOD_TOOLS_STREAM = "tools/streamCall";
 
 	public static final String METHOD_NOTIFICATION_TOOLS_LIST_CHANGED = "notifications/tools/list_changed";
 

@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.common;
+package run.mone.hive.mcp.core.common;
 
 import java.util.Collections;
 import java.util.Map;

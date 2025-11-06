@@ -2,10 +2,10 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.spec;
+package run.mone.hive.mcp.core.spec;
 
-import io.modelcontextprotocol.server.McpNotificationHandler;
-import io.modelcontextprotocol.server.McpRequestHandler;
+import run.mone.hive.mcp.core.server.McpNotificationHandler;
+import run.mone.hive.mcp.core.server.McpRequestHandler;
 
 import java.time.Duration;
 import java.util.Map;

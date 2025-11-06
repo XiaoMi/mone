@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.client;
+package run.mone.hive.mcp.core.client;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -13,19 +13,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.spec.McpClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
-import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
-import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
-import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
-import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
-import io.modelcontextprotocol.spec.McpSchema.Implementation;
-import io.modelcontextprotocol.spec.McpSchema.Root;
-import io.modelcontextprotocol.spec.McpTransport;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidator;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.spec.McpClientTransport;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.ClientCapabilities;
+import run.mone.hive.mcp.core.spec.McpSchema.CreateMessageRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.CreateMessageResult;
+import run.mone.hive.mcp.core.spec.McpSchema.ElicitRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.ElicitResult;
+import run.mone.hive.mcp.core.spec.McpSchema.Implementation;
+import run.mone.hive.mcp.core.spec.McpSchema.Root;
+import run.mone.hive.mcp.core.spec.McpTransport;
+import run.mone.hive.mcp.core.util.Assert;
 import reactor.core.publisher.Mono;
 
 /**

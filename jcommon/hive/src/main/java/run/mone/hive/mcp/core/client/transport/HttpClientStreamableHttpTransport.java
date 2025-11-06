@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.client.transport;
+package run.mone.hive.mcp.core.client.transport;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,26 +22,26 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.McpJsonMapper;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.json.McpJsonMapper;
 
-import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.client.transport.ResponseSubscribers.ResponseEvent;
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.spec.ClosedMcpTransportSession;
-import io.modelcontextprotocol.spec.DefaultMcpTransportSession;
-import io.modelcontextprotocol.spec.DefaultMcpTransportStream;
-import io.modelcontextprotocol.spec.HttpHeaders;
-import io.modelcontextprotocol.spec.McpClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpTransportException;
-import io.modelcontextprotocol.spec.McpTransportSession;
-import io.modelcontextprotocol.spec.McpTransportSessionNotFoundException;
-import io.modelcontextprotocol.spec.McpTransportStream;
-import io.modelcontextprotocol.spec.ProtocolVersions;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.Utils;
+import run.mone.hive.mcp.core.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import run.mone.hive.mcp.core.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import run.mone.hive.mcp.core.client.transport.ResponseSubscribers.ResponseEvent;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.spec.ClosedMcpTransportSession;
+import run.mone.hive.mcp.core.spec.DefaultMcpTransportSession;
+import run.mone.hive.mcp.core.spec.DefaultMcpTransportStream;
+import run.mone.hive.mcp.core.spec.HttpHeaders;
+import run.mone.hive.mcp.core.spec.McpClientTransport;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpTransportException;
+import run.mone.hive.mcp.core.spec.McpTransportSession;
+import run.mone.hive.mcp.core.spec.McpTransportSessionNotFoundException;
+import run.mone.hive.mcp.core.spec.McpTransportStream;
+import run.mone.hive.mcp.core.spec.ProtocolVersions;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.Utils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;

@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import run.mone.hive.common.GsonUtils;
-import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema;
 import run.mone.hive.roles.tool.ITool;
 
 import java.io.Serializable;

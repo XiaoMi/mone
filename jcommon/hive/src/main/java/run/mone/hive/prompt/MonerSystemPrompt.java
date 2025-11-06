@@ -16,7 +16,7 @@ import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
-import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
@@ -247,7 +247,7 @@ public class MonerSystemPrompt {
                 server.put("args", "");
                 server.put("connection", value);
                 server.put("agent", ImmutableMap.of("name",value.getServer().getName()));
-                List<io.modelcontextprotocol.spec.McpSchema.Tool> tools = value.getServer().getToolsV2();
+                List<McpSchema.Tool> tools = value.getServer().getTools();
                 String toolsStr = tools.stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
                         .collect(Collectors.joining("\n\n"));
@@ -262,8 +262,8 @@ public class MonerSystemPrompt {
             server.put("name", key);
             server.put("args", "");
             server.put("connection", value);
-            server.put("agent",value.getServer().getServerInfo().meta());
-            McpSchema.ListToolsResult tools = value.getClient().getTools();
+            // server.put("agent",value.getServer().getServerInfo().meta());
+            McpSchema.ListToolsResult tools = value.getClient().listTools();
             String toolsStr = tools
                     .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                             + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))

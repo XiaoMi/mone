@@ -2,20 +2,20 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
-import io.modelcontextprotocol.common.McpTransportContext;
+import run.mone.hive.mcp.core.common.McpTransportContext;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpLoggableSession;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.LoggingLevel;
-import io.modelcontextprotocol.spec.McpSchema.LoggingMessageNotification;
-import io.modelcontextprotocol.spec.McpSession;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpLoggableSession;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingLevel;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingMessageNotification;
+import run.mone.hive.mcp.core.spec.McpSession;
+import run.mone.hive.mcp.core.util.Assert;
 import reactor.core.publisher.Mono;
 
 /**

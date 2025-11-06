@@ -2,7 +2,7 @@
  * Copyright 2025 - 2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.json.schema;
+package run.mone.hive.mcp.json.schema;
 
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;

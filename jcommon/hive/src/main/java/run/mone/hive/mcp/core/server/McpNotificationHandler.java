@@ -1,4 +1,4 @@
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
 import reactor.core.publisher.Mono;
 

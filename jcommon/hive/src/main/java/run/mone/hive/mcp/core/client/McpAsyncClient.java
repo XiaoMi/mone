@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.client;
+package run.mone.hive.mcp.core.client;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,28 +15,28 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import io.modelcontextprotocol.client.LifecycleInitializer.Initialization;
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
-import io.modelcontextprotocol.spec.McpClientSession;
-import io.modelcontextprotocol.spec.McpClientSession.NotificationHandler;
-import io.modelcontextprotocol.spec.McpClientSession.RequestHandler;
-import io.modelcontextprotocol.spec.McpClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
-import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
-import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
-import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
-import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
-import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
-import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
-import io.modelcontextprotocol.spec.McpSchema.ListPromptsResult;
-import io.modelcontextprotocol.spec.McpSchema.LoggingLevel;
-import io.modelcontextprotocol.spec.McpSchema.LoggingMessageNotification;
-import io.modelcontextprotocol.spec.McpSchema.PaginatedRequest;
-import io.modelcontextprotocol.spec.McpSchema.Root;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.Utils;
+import run.mone.hive.mcp.core.client.LifecycleInitializer.Initialization;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidator;
+import run.mone.hive.mcp.core.spec.McpClientSession;
+import run.mone.hive.mcp.core.spec.McpClientSession.NotificationHandler;
+import run.mone.hive.mcp.core.spec.McpClientSession.RequestHandler;
+import run.mone.hive.mcp.core.spec.McpClientTransport;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.ClientCapabilities;
+import run.mone.hive.mcp.core.spec.McpSchema.CreateMessageRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.CreateMessageResult;
+import run.mone.hive.mcp.core.spec.McpSchema.ElicitRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.ElicitResult;
+import run.mone.hive.mcp.core.spec.McpSchema.GetPromptRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.GetPromptResult;
+import run.mone.hive.mcp.core.spec.McpSchema.ListPromptsResult;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingLevel;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingMessageNotification;
+import run.mone.hive.mcp.core.spec.McpSchema.PaginatedRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.Root;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;

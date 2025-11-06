@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.server.transport;
+package run.mone.hive.mcp.core.server.transport;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,15 +11,15 @@ import java.io.PrintWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
+import run.mone.hive.mcp.json.McpJsonMapper;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.server.McpStatelessServerHandler;
-import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpStatelessServerTransport;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.server.McpStatelessServerHandler;
+import run.mone.hive.mcp.core.server.McpTransportContextExtractor;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpStatelessServerTransport;
+import run.mone.hive.mcp.core.util.Assert;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;

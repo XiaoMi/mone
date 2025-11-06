@@ -9,7 +9,6 @@ import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.service.RoleService;
-import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 

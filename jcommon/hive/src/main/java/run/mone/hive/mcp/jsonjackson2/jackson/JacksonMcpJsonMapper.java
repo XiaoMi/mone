@@ -2,12 +2,12 @@
  * Copyright 2025 - 2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.json.jackson;
+package run.mone.hive.mcp.jsonjackson2.jackson;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.json.TypeRef;
 
 import java.io.IOException;
 

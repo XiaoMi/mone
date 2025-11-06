@@ -2,10 +2,10 @@
  * Copyright 2025 - 2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.json.jackson;
+package run.mone.hive.mcp.jsonjackson2.jackson;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.McpJsonMapperSupplier;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.json.McpJsonMapperSupplier;
 
 /**
  * A supplier of {@link McpJsonMapper} instances that uses the Jackson library for JSON

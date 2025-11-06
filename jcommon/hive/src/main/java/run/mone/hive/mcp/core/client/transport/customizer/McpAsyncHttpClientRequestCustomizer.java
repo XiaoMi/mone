@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.client.transport.customizer;
+package run.mone.hive.mcp.core.client.transport.customizer;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.annotation.Nullable;
 
-import io.modelcontextprotocol.common.McpTransportContext;
+import run.mone.hive.mcp.core.common.McpTransportContext;
 
 /**
  * Customize {@link HttpRequest.Builder} before executing the request, in either SSE or

@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.client.transport;
+package run.mone.hive.mcp.core.client.transport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.util.Assert;
 import run.mone.hive.mcp.hub.McpType;
 
 /**
@@ -51,6 +53,9 @@ public class ServerParameters {
 	@JsonProperty("url")
 	private String url;
 
+	public ServerParameters() {
+	}
+
 	private ServerParameters(String command, List<String> args, Map<String, String> env) {
 		Assert.notNull(command, "The command can not be null");
 		Assert.notNull(args, "The args can not be null");
@@ -71,8 +76,24 @@ public class ServerParameters {
 		return this.args;
 	}
 
+	public String getType () {
+		return this.type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
 	public Map<String, String> getEnv() {
 		return this.env;
+	}
+
+	public String getUrl() {
+		return this.url;
+	}
+
+	public boolean isSseRemote() {
+		return this.sseRemote;
 	}
 
 	public static Builder builder(String command) {
@@ -86,6 +107,10 @@ public class ServerParameters {
 		private List<String> args = new ArrayList<>();
 
 		private Map<String, String> env = new HashMap<>();
+
+		private String url;
+
+		private boolean sseRemote = false;
 
 		public Builder(String command) {
 			Assert.notNull(command, "The command can not be null");
@@ -124,8 +149,24 @@ public class ServerParameters {
 			return this;
 		}
 
+		public Builder url(String url) {
+			Assert.notNull(url, "The url can not be null");
+			this.url = url;
+			return this;
+		}
+
+		public Builder sseRemote(boolean sseRemote) {
+			this.sseRemote = sseRemote;
+			return this;
+		}
+
 		public ServerParameters build() {
-			return new ServerParameters(command, args, env);
+			ServerParameters res = new ServerParameters(command, args, env);
+			if (StringUtils.isNotEmpty(url)) {
+				res.url = url;
+			}
+			res.sseRemote = sseRemote;
+			return res;
 		}
 
 	}

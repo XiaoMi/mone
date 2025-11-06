@@ -2,7 +2,7 @@
  * Copyright 2024 - 2025 the original author or authors.
  */
 
-package run.mone.hive.mcp.client.transport;
+package run.mone.hive.mcp.core.client.transport;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,20 +18,20 @@ import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.modelcontextprotocol.client.transport.ResponseSubscribers.ResponseEvent;
-import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.spec.HttpHeaders;
-import io.modelcontextprotocol.spec.McpClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.JSONRPCMessage;
-import io.modelcontextprotocol.spec.McpTransportException;
-import io.modelcontextprotocol.spec.ProtocolVersions;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.Utils;
+import run.mone.hive.mcp.core.client.transport.ResponseSubscribers.ResponseEvent;
+import run.mone.hive.mcp.core.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import run.mone.hive.mcp.core.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.core.spec.HttpHeaders;
+import run.mone.hive.mcp.core.spec.McpClientTransport;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCMessage;
+import run.mone.hive.mcp.core.spec.McpTransportException;
+import run.mone.hive.mcp.core.spec.ProtocolVersions;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.Utils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.client.transport;
+package run.mone.hive.mcp.core.client.transport;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,12 +15,12 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.spec.McpClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.JSONRPCMessage;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.core.spec.McpClientTransport;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCMessage;
+import run.mone.hive.mcp.core.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;

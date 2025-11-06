@@ -2,11 +2,11 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.common;
+package run.mone.hive.mcp.core.common;
 
 import java.util.Map;
 
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.util.Assert;
 
 /**
  * Default implementation for {@link McpTransportContext} which uses a map as storage.

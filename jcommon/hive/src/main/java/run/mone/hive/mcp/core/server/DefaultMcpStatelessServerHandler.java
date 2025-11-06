@@ -2,11 +2,11 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;

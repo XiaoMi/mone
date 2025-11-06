@@ -2,9 +2,9 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
-import io.modelcontextprotocol.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema;
 import reactor.core.publisher.Mono;
 
 /**

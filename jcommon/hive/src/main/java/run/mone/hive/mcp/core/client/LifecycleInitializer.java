@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.client;
+package run.mone.hive.mcp.core.client;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import io.modelcontextprotocol.spec.McpClientSession;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpTransportSessionNotFoundException;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.spec.McpClientSession;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpTransportSessionNotFoundException;
+import run.mone.hive.mcp.core.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;

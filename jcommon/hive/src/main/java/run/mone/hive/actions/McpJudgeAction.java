@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import run.mone.hive.common.AiTemplate;
-import run.mone.hive.mcp.client.transport.ServerParameters;
+import run.mone.hive.mcp.core.client.transport.ServerParameters;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;

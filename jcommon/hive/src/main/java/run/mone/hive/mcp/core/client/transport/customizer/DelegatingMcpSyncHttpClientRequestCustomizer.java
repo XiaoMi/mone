@@ -2,14 +2,14 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.client.transport.customizer;
+package run.mone.hive.mcp.core.client.transport.customizer;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.util.List;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.util.Assert;
 
 /**
  * Composable {@link McpSyncHttpClientRequestCustomizer} that applies multiple

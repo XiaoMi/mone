@@ -2,11 +2,11 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.LoggingMessageNotification;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingMessageNotification;
 
 /**
  * Represents a synchronous exchange with a Model Context Protocol (MCP) client. The

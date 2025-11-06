@@ -4,14 +4,14 @@
 
 package run.mone.hive.mcp.flux.webmvc.server.transport;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.server.McpStatelessServerHandler;
-import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpStatelessServerTransport;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.core.server.McpStatelessServerHandler;
+import run.mone.hive.mcp.core.server.McpTransportContextExtractor;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpStatelessServerTransport;
+import run.mone.hive.mcp.core.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

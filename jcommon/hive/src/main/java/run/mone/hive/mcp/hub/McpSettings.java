@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParser;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import run.mone.hive.mcp.client.transport.ServerParameters;
+import run.mone.hive.mcp.core.client.transport.ServerParameters;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,8 +18,6 @@ import java.util.stream.Collectors;
 public class McpSettings {
 
     private Map<String, ServerParameters> mcpServers;
-
-    private Map<String, io.modelcontextprotocol.client.transport.ServerParameters> mcpServersV2;
 
     public static McpSettings fromFile(Path path) throws IOException {
         String content = new String(Files.readAllBytes(path));

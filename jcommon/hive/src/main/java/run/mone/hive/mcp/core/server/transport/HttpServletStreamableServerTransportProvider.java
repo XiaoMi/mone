@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.server.transport;
+package run.mone.hive.mcp.core.server.transport;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,20 +16,20 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.modelcontextprotocol.json.TypeRef;
+import run.mone.hive.mcp.json.TypeRef;
 
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.spec.HttpHeaders;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpStreamableServerSession;
-import io.modelcontextprotocol.spec.McpStreamableServerTransport;
-import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
-import io.modelcontextprotocol.spec.ProtocolVersions;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.util.KeepAliveScheduler;
+import run.mone.hive.mcp.core.common.McpTransportContext;
+import run.mone.hive.mcp.core.server.McpTransportContextExtractor;
+import run.mone.hive.mcp.core.spec.HttpHeaders;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpStreamableServerSession;
+import run.mone.hive.mcp.core.spec.McpStreamableServerTransport;
+import run.mone.hive.mcp.core.spec.McpStreamableServerTransportProvider;
+import run.mone.hive.mcp.core.spec.ProtocolVersions;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.core.util.KeepAliveScheduler;
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

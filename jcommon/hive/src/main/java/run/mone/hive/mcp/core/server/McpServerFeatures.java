@@ -2,7 +2,7 @@
  * Copyright 2024-2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,10 +11,10 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.Utils;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.CallToolRequest;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.Utils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 

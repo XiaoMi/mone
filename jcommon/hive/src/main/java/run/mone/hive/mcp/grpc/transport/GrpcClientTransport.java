@@ -21,7 +21,7 @@ import reactor.core.publisher.MonoSink;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
-import run.mone.hive.mcp.client.transport.ServerParameters;
+import run.mone.hive.mcp.core.client.transport.ServerParameters;
 import run.mone.hive.mcp.grpc.CallToolRequest;
 import run.mone.hive.mcp.grpc.CallToolResponse;
 import run.mone.hive.mcp.grpc.InitializeRequest;
@@ -35,9 +35,11 @@ import run.mone.hive.mcp.grpc.PingRequest;
 import run.mone.hive.mcp.grpc.PingResponse;
 import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.grpc.StreamResponse;
-import run.mone.hive.mcp.spec.ClientMcpTransport;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.core.spec.McpClientTransport;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCMessage;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCRequest;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -51,8 +53,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
-import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
+import static run.mone.hive.mcp.core.spec.McpSchema.METHOD_TOOLS_CALL;
+import static run.mone.hive.mcp.core.spec.McpSchema.METHOD_TOOLS_STREAM;
 
 /**
  * goodjava@qq.com
@@ -60,7 +62,7 @@ import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
  */
 @Slf4j
 @Data
-public class GrpcClientTransport implements ClientMcpTransport {
+public class GrpcClientTransport implements McpClientTransport {
 
     private final String host;
 
@@ -413,18 +415,18 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
 
     @Override
-    public Mono<Object> sendMessage(JSONRPCMessage message) {
+    public Mono<Void> sendMessage(JSONRPCMessage message) {
         return Mono.create((sink) -> {
-            if (message instanceof run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request) {
+            if (message instanceof JSONRPCRequest request) {
                 handleToolCall(request, sink);
             }
         });
     }
 
-    @Override
+    // @Override
     public Flux<Object> sendStreamMessage(JSONRPCMessage message) {
         return Flux.create(sink -> {
-            if (message instanceof run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request) {
+            if (message instanceof JSONRPCRequest request) {
                 handleToolStreamCall(request, sink);
             }
         });
@@ -453,7 +455,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     StreamObserver<StreamRequest> req;
 
     @SuppressWarnings("unchecked")
-    private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) {
+    private void handleToolCall(JSONRPCRequest request, MonoSink sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
 
@@ -487,7 +489,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
         String methodName = getMethodName(request);
 
         // 从元数据或请求中获取 clientId
-        String clientId = metaData.getOrDefault(Const.CLIENT_ID, request.clientId());
+        // FIXME
+        // String clientId = metaData.getOrDefault(Const.CLIENT_ID, request.clientId());
 
         CallToolRequest.Builder builder = CallToolRequest.newBuilder()
                 .setName(METHOD_TOOLS_CALL)
@@ -507,7 +510,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
         return methodName;
     }
 
-    private void handleToolStreamCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, FluxSink sink) {
+    private void handleToolStreamCall(JSONRPCRequest request, FluxSink sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
 
@@ -548,45 +551,47 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     //grpc 的返回结果,需要手动转换下
     @Override
-    public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
-        try {
-            if (data instanceof CallToolResponse ctr) {
-                return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> {
-                    if (it.hasText()) {
-                        return new McpSchema.TextContent(it.getText().getText(), it.getText().getData());
-                    }
-                    if (it.hasImage()) {
-                        return new McpSchema.ImageContent(it.getImage().getData(), it.getImage().getMimeType());
-                    }
-                    return null;
-                }).collect(Collectors.toUnmodifiableList()), false);
-            }
+    public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+        // try {
+        //     if (data instanceof CallToolResponse ctr) {
+        //         return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> {
+        //             if (it.hasText()) {
+        //                 return new McpSchema.TextContent(it.getText().getText(), it.getText().getData());
+        //             }
+        //             if (it.hasImage()) {
+        //                 return new McpSchema.ImageContent(it.getImage().getData(), it.getImage().getMimeType());
+        //             }
+        //             return null;
+        //         }).collect(Collectors.toUnmodifiableList()), false);
+        //     }
 
-            if (data instanceof PingResponse pr) {
-                return (T) pr;
-            }
+        //     if (data instanceof PingResponse pr) {
+        //         return (T) pr;
+        //     }
 
-            if (data instanceof ListToolsResponse ltr) {
-                List<McpSchema.Tool> tools = ltr.getToolsList().stream().map(it -> new McpSchema.Tool(it.getName(), it.getDescription(), it.getInputSchema())).toList();
-                return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
-            }
+        //     if (data instanceof ListToolsResponse ltr) {
+        //         List<McpSchema.Tool> tools = ltr.getToolsList().stream().map(it -> new McpSchema.Tool(it.getName(), it.getDescription(), it.getInputSchema())).toList();
+        //         return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
+        //     }
 
-            if (data instanceof InitializeResponse ir) {
-                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion(), ir.getServerInfo().getMetaMap());
-                return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
-            }
+        //     if (data instanceof InitializeResponse ir) {
+        //         McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion(), ir.getServerInfo().getMetaMap());
+        //         return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
+        //     }
 
-            if (data instanceof NotificationInitializedResponse nir) {
-                return (T) nir;
-            }
+        //     if (data instanceof NotificationInitializedResponse nir) {
+        //         return (T) nir;
+        //     }
 
-            if (data instanceof String) {
-                return objectMapper.readValue((String) data, typeRef);
-            } else {
-                return objectMapper.convertValue(data, typeRef);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error unmarshalling data", e);
-        }
+        //     if (data instanceof String) {
+        //         return objectMapper.readValue((String) data, typeRef);
+        //     } else {
+        //         return objectMapper.convertValue(data, typeRef);
+        //     }
+        // } catch (IOException e) {
+        //     throw new RuntimeException("Error unmarshalling data", e);
+        // }
+        // FIXME
+        return null;
     }
 } 

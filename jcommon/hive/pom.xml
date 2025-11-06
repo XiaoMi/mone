@@ -240,10 +240,10 @@
             <version>0.64.8</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp</artifactId>
-            <version>0.15.0</version>
+         <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.5.7</version>
         </dependency>
 
     </dependencies>

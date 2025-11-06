@@ -17,7 +17,7 @@ package run.mone.hive.common;
 
 import lombok.Builder;
 import lombok.Data;
-import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema;
 
 @Data
 @Builder

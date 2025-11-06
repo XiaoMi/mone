@@ -2,13 +2,13 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
 import java.util.List;
 
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.LoggingMessageNotification;
-import io.modelcontextprotocol.util.Assert;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingMessageNotification;
+import run.mone.hive.mcp.core.util.Assert;
 
 /**
  * A synchronous implementation of the Model Context Protocol (MCP) server that wraps

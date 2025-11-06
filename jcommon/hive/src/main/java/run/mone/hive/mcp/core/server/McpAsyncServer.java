@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package io.modelcontextprotocol.server;
+package run.mone.hive.mcp.core.server;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -14,37 +14,37 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 
-import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
-import io.modelcontextprotocol.spec.DefaultMcpStreamableServerSessionFactory;
-import io.modelcontextprotocol.spec.McpClientSession;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.CompleteResult.CompleteCompletion;
-import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
-import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse;
-import io.modelcontextprotocol.spec.McpSchema.LoggingLevel;
-import io.modelcontextprotocol.spec.McpSchema.LoggingMessageNotification;
-import io.modelcontextprotocol.spec.McpSchema.PromptReference;
-import io.modelcontextprotocol.spec.McpSchema.ResourceReference;
-import io.modelcontextprotocol.spec.McpSchema.SetLevelRequest;
-import io.modelcontextprotocol.spec.McpSchema.Tool;
-import io.modelcontextprotocol.spec.McpServerSession;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
-import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
-import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
-import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.DefaultMcpUriTemplateManagerFactory;
-import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
-import io.modelcontextprotocol.util.Utils;
+import run.mone.hive.mcp.json.McpJsonMapper;
+import run.mone.hive.mcp.json.TypeRef;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidator;
+import run.mone.hive.mcp.core.spec.DefaultMcpStreamableServerSessionFactory;
+import run.mone.hive.mcp.core.spec.McpClientSession;
+import run.mone.hive.mcp.core.spec.McpError;
+import run.mone.hive.mcp.core.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema.CallToolResult;
+import run.mone.hive.mcp.core.spec.McpSchema.CompleteResult.CompleteCompletion;
+import run.mone.hive.mcp.core.spec.McpSchema.ErrorCodes;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCResponse;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingLevel;
+import run.mone.hive.mcp.core.spec.McpSchema.LoggingMessageNotification;
+import run.mone.hive.mcp.core.spec.McpSchema.PromptReference;
+import run.mone.hive.mcp.core.spec.McpSchema.ResourceReference;
+import run.mone.hive.mcp.core.spec.McpSchema.SetLevelRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.Tool;
+import run.mone.hive.mcp.core.spec.McpServerSession;
+import run.mone.hive.mcp.core.spec.McpServerTransportProvider;
+import run.mone.hive.mcp.core.spec.McpServerTransportProviderBase;
+import run.mone.hive.mcp.core.spec.McpStreamableServerTransportProvider;
+import run.mone.hive.mcp.core.util.Assert;
+import run.mone.hive.mcp.core.util.DefaultMcpUriTemplateManagerFactory;
+import run.mone.hive.mcp.core.util.McpUriTemplateManagerFactory;
+import run.mone.hive.mcp.core.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static io.modelcontextprotocol.spec.McpError.RESOURCE_NOT_FOUND;
+import static run.mone.hive.mcp.core.spec.McpError.RESOURCE_NOT_FOUND;
 
 /**
  * The Model Context Protocol (MCP) server implementation that provides asynchronous

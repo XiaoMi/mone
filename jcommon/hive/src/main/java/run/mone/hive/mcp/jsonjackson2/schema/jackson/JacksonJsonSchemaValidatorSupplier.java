@@ -2,10 +2,10 @@
  * Copyright 2025 - 2025 the original author or authors.
  */
 
-package io.modelcontextprotocol.json.schema.jackson;
+package run.mone.hive.mcp.jsonjackson2.schema.jackson;
 
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
-import io.modelcontextprotocol.json.schema.JsonSchemaValidatorSupplier;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidator;
+import run.mone.hive.mcp.json.schema.JsonSchemaValidatorSupplier;
 
 /**
  * A concrete implementation of {@link JsonSchemaValidatorSupplier} that provides a

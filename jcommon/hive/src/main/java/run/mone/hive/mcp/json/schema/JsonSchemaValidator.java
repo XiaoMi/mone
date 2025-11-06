@@ -1,7 +1,7 @@
 /*
  * Copyright 2024-2024 the original author or authors.
  */
-package io.modelcontextprotocol.json.schema;
+package run.mone.hive.mcp.json.schema;
 
 import java.util.Map;
 

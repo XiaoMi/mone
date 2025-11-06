@@ -2,7 +2,7 @@
 * Copyright 2025 - 2025 the original author or authors.
 */
 
-package io.modelcontextprotocol.util;
+package run.mone.hive.mcp.core.util;
 
 /**
  * Factory interface for creating instances of {@link McpUriTemplateManager}.

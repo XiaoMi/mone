@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.service.RoleService;
-import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.core.spec.McpSchema;
 
 import java.io.File;
 import java.nio.file.Files;
