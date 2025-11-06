@@ -1,7 +1,10 @@
 package run.mone.hive.mcp.hub;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +81,12 @@ public class McpHub {
     private void ping() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> {
-                value.getClient().ping();
+                // 如果是HTTP类型，使用V2的客户端
+                if (value.getType() == McpType.HTTP && value.getClientV2() != null) {
+                    value.getClientV2().ping();
+                } else {
+                    value.getClient().ping();
+                }
             }, ex -> {
                 if (null == ex) {
                     value.setErrorNum(0);
@@ -89,7 +97,12 @@ public class McpHub {
                         value.setErrorNum(0);
                         McpConnection conn = this.connections.get(key);
                         Safe.run(() -> {
-                            value.getTransport().close();
+                            // 根据类型关闭不同的transport
+                            if (conn.getType() == McpType.HTTP && conn.getTransportV2() != null) {
+                                // HTTP类型的transport V2没有close方法，只有closeGracefully
+                            } else if (conn.getTransport() != null) {
+                                conn.getTransport().close();
+                            }
                         });
                         //尝试再连接过去
                         String name = conn.getServer().getName();
@@ -107,7 +120,16 @@ public class McpHub {
         McpConnection v = this.connections.remove(key);
         log.info("remove connection:{}", v);
         if (null != v) {
-            v.getTransport().close();
+            // 如果是HTTP类型，使用V2的客户端
+            if (v.getType() == McpType.HTTP && v.getClientV2() != null) {
+                try {
+                    v.getClientV2().close();
+                } catch (Exception e) {
+                    log.warn("Failed to close HTTP connection: {}", e.getMessage());
+                }
+            } else if (v.getTransport() != null) {
+                v.getTransport().close();
+            }
         }
     }
 
@@ -256,8 +278,17 @@ public class McpHub {
     }
 
     public void connectToServer(String name, ServerParameters config) {
+        String configType = config.getType().toLowerCase();
+        
+        // HTTP类型使用V2的实现
+        if ("http".equals(configType)) {
+            connectToServerHttp(name, config);
+            return;
+        }
+        
+        // 其他类型使用原有实现
         ClientMcpTransport transport = null;
-        switch (config.getType().toLowerCase()) {
+        switch (configType) {
             case "grpc":
                 transport = new GrpcClientTransport(config);
                 break;
@@ -310,6 +341,56 @@ public class McpHub {
             }
         }
     }
+    
+    /**
+     * HTTP类型的连接方法，使用 io.modelcontextprotocol 的实现
+     */
+    private void connectToServerHttp(String name, ServerParameters config) {
+        ObjectMapper objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport transportV2 = 
+            io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport
+                .builder(config.getUrl())
+                    .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+                    .endpoint(config.getUrl())
+                .connectTimeout(Duration.ofSeconds(30))
+                .build();
+
+        io.modelcontextprotocol.client.McpSyncClient clientV2 = 
+            io.modelcontextprotocol.client.McpClient.sync(transportV2)
+                .requestTimeout(Duration.ofSeconds(120))
+                .capabilities(io.modelcontextprotocol.spec.McpSchema.ClientCapabilities.builder()
+                    .roots(true)
+                    .build())
+                .build();
+
+        McpServer server = new McpServer(name, config.toString());
+        server.setServerParameters(config);
+        McpConnection connection = new McpConnection(server, clientV2, transportV2, McpType.fromString(config.getType()));
+        connection.setKey(name);
+        connections.put(name, connection);
+        
+        try {
+            //这里真的会连接过去
+            io.modelcontextprotocol.spec.McpSchema.InitializeResult res = clientV2.initialize();
+            server.setStatus("connected");
+            //放入serverInfo
+            server.setServerInfoV2(res.serverInfo());
+            //放入工具(tool)
+            server.setToolsV2(clientV2.listTools().tools());
+        } catch (Exception e) {
+            log.error("Failed to connect to MCP server {}: ", name, e);
+            server.setStatus("disconnected");
+            server.setError(e.getMessage());
+            // Clean up failed connection
+            try {
+                clientV2.closeGracefully();
+            } catch (Exception closeEx) {
+                log.warn("Failed to clean up connection resources for {}: {}", name, closeEx.getMessage());
+            }
+        }
+    }
 
     private void startSseServer(ServerParameters config) {
         ProcessBuilder processBuilder = new ProcessBuilder();
@@ -332,8 +413,20 @@ public class McpHub {
         McpConnection connection = connections.remove(name);
         if (connection != null) {
             try {
-                connection.getTransport().closeGracefully();
-                connection.getClient().closeGracefully();
+                // 如果是HTTP类型，使用V2的客户端和transport
+                if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
+                    if (connection.getClientV2() != null) {
+                        connection.getClientV2().closeGracefully();
+                    }
+                } else {
+                    // 其他类型使用原有的客户端和transport
+                    if (connection.getTransport() != null) {
+                        connection.getTransport().closeGracefully();
+                    }
+                    if (connection.getClient() != null) {
+                        connection.getClient().closeGracefully();
+                    }
+                }
             } catch (Exception e) {
                 System.err.println("Failed to close transport for " + name + ": " + e.getMessage());
             }
@@ -368,6 +461,18 @@ public class McpHub {
         if (connection == null) {
             throw new IllegalArgumentException("No connection found for server: " + serverName);
         }
+        
+        // 如果是HTTP类型，使用V2的客户端
+        if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
+            io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 = 
+                new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
+            io.modelcontextprotocol.spec.McpSchema.CallToolResult resultV2 = connection.getClientV2().callTool(requestV2);
+            
+            // 转换结果为旧版本的类型
+            return convertCallToolResultFromV2(resultV2);
+        }
+        
+        // 其他类型使用原有的客户端
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callTool(request);
     }
@@ -382,15 +487,76 @@ public class McpHub {
                 sink.complete();
             });
         }
+        
+        // 如果是HTTP类型，使用V2的客户端
+        if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
+            io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 = 
+                new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
+            
+            // V2的客户端只有同步方法 callTool，没有 callToolStream
+            // 所以这里调用 callTool 并包装成 Flux
+            return Flux.create(sink -> {
+                try {
+                    io.modelcontextprotocol.spec.McpSchema.CallToolResult resultV2 = connection.getClientV2().callTool(requestV2);
+                    McpSchema.CallToolResult result = convertCallToolResultFromV2(resultV2);
+                    sink.next(result);
+                    sink.complete();
+                } catch (Exception e) {
+                    sink.error(e);
+                }
+            });
+        }
+        
+        // 其他类型使用原有的客户端
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callToolStream(request);
+    }
+    
+    /**
+     * 将V2版本的CallToolResult转换为旧版本
+     */
+    private McpSchema.CallToolResult convertCallToolResultFromV2(io.modelcontextprotocol.spec.McpSchema.CallToolResult resultV2) {
+        // 转换content列表
+        List<McpSchema.Content> contents = Lists.newArrayList();
+        if (resultV2.content() != null) {
+            for (io.modelcontextprotocol.spec.McpSchema.Content contentV2 : resultV2.content()) {
+                if (contentV2 instanceof io.modelcontextprotocol.spec.McpSchema.TextContent) {
+                    io.modelcontextprotocol.spec.McpSchema.TextContent textContentV2 = 
+                        (io.modelcontextprotocol.spec.McpSchema.TextContent) contentV2;
+                    contents.add(new McpSchema.TextContent(textContentV2.text()));
+                } else if (contentV2 instanceof io.modelcontextprotocol.spec.McpSchema.ImageContent) {
+                    io.modelcontextprotocol.spec.McpSchema.ImageContent imageContentV2 = 
+                        (io.modelcontextprotocol.spec.McpSchema.ImageContent) contentV2;
+                    contents.add(new McpSchema.ImageContent(imageContentV2.data(), imageContentV2.mimeType()));
+                } else if (contentV2 instanceof io.modelcontextprotocol.spec.McpSchema.EmbeddedResource) {
+                    io.modelcontextprotocol.spec.McpSchema.EmbeddedResource resourceV2 = 
+                        (io.modelcontextprotocol.spec.McpSchema.EmbeddedResource) contentV2;
+                    // 创建对应的旧版本资源对象
+                    contents.add(new McpSchema.TextContent("Embedded Resource: " + resourceV2.resource().uri()));
+                }
+            }
+        }
+        
+        return new McpSchema.CallToolResult(contents, resultV2.isError());
     }
 
     public void dispose() {
         for (McpConnection connection : connections.values()) {
             try {
-                connection.getTransport().close();
-                connection.getClient().close();
+                // 如果是HTTP类型，使用V2的客户端
+                if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
+                    if (connection.getClientV2() != null) {
+                        connection.getClientV2().close();
+                    }
+                } else {
+                    // 其他类型使用原有的客户端和transport
+                    if (connection.getTransport() != null) {
+                        connection.getTransport().close();
+                    }
+                    if (connection.getClient() != null) {
+                        connection.getClient().close();
+                    }
+                }
             } catch (Exception e) {
                 log.error("Failed to close connection: " + e.getMessage());
             }
