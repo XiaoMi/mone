@@ -18,6 +18,7 @@ import run.mone.hive.mcp.core.spec.McpSchema.GetPromptResult;
 import run.mone.hive.mcp.core.spec.McpSchema.ListPromptsResult;
 import run.mone.hive.mcp.core.util.Assert;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 /**
  * A synchronous client implementation for the Model Context Protocol (MCP) that wraps an
@@ -238,6 +239,15 @@ public class McpSyncClient implements AutoCloseable {
 	}
 
 	/**
+	 * Streams tool results if supported by the server/transport.
+	 * @param callToolRequest The request containing the tool name and input parameters.
+	 * @return A Flux that emits partial tool results.
+	 */
+	public reactor.core.publisher.Flux<McpSchema.CallToolResult> callToolStream(McpSchema.CallToolRequest callToolRequest) {
+		return withProvidedContext(this.delegate.callToolStream(callToolRequest));
+	}
+
+	/**
 	 * Retrieves the list of all tools provided by the server.
 	 * @return The list of all tools result containing: - tools: List of available tools,
 	 * each with a name, description, and input schema - nextCursor: Optional cursor for
@@ -401,6 +411,13 @@ public class McpSyncClient implements AutoCloseable {
 	 * @return the result of the action
 	 */
 	private <T> Mono<T> withProvidedContext(Mono<T> action) {
+		return action.contextWrite(ctx -> ctx.put(McpTransportContext.KEY, this.contextProvider.get()));
+	}
+
+	/**
+	 * Propagate transport context for Flux-based operations.
+	 */
+	private <T> Flux<T> withProvidedContext(Flux<T> action) {
 		return action.contextWrite(ctx -> ctx.put(McpTransportContext.KEY, this.contextProvider.get()));
 	}
 

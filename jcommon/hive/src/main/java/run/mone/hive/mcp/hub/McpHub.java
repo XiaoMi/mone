@@ -278,15 +278,19 @@ public class McpHub {
                 if (!config.isSseRemote()) {
                     startSseServer(config);
                 }
-                // FIXME
-                // transport = new HttpClientSseClientTransport(config.getUrl());
+                transport = run.mone.hive.mcp.core.client.transport.HttpClientSseClientTransport
+                        .builder(config.getUrl())
+                        .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+                        .asyncHttpRequestCustomizer(new run.mone.hive.mcp.core.client.transport.customizer.ClientAuthHeaderCustomizer())
+                        .build();
                 break;
             case "http":
                 transport = HttpClientStreamableHttpTransport
-                    .builder("https://mcpserver")
+                    .builder(config.getUrl())
                     .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-                    .endpoint("https://mcpserver")
+                    .asyncHttpRequestCustomizer(new run.mone.hive.mcp.core.client.transport.customizer.ClientAuthHeaderCustomizer())
                     .build();
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported transport type: " + config.getType());
         }
@@ -298,6 +302,15 @@ public class McpHub {
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
+                .transportContextProvider(() -> {
+                    Map<String, Object> meta = new HashMap<>();
+                    Map<String, String> env = config.getEnv();
+                    if (env != null) {
+                        meta.put("clientId", env.getOrDefault("clientId", ""));
+                        meta.put("token", env.getOrDefault("token", ""));
+                    }
+                    return run.mone.hive.mcp.core.common.McpTransportContext.create(meta);
+                })
                 .build();
 
         McpServer server = new McpServer(name, config.toString());
@@ -395,40 +408,17 @@ public class McpHub {
 
     public Flux<McpSchema.CallToolResult> callToolStream(String serverName, String
             toolName, Map<String, Object> toolArguments) {
-        // McpConnection connection = connections.get(serverName);
-        // if (connection == null) {
-        //     McpHubHolder.remove(serverName);
-        //     return Flux.create(sink -> {
-        //         sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)), true));
-        //         sink.complete();
-        //     });
-        // }
-        
-        // // 如果是HTTP类型，使用V2的客户端
-        // if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
-        //     io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 = 
-        //         new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
-            
-        //     // V2的客户端只有同步方法 callTool，没有 callToolStream
-        //     // 所以这里调用 callTool 并包装成 Flux
-        //     return Flux.create(sink -> {
-        //         try {
-        //             io.modelcontextprotocol.spec.McpSchema.CallToolResult resultV2 = connection.getClientV2().callTool(requestV2);
-        //             McpSchema.CallToolResult result = convertCallToolResultFromV2(resultV2);
-        //             sink.next(result);
-        //             sink.complete();
-        //         } catch (Exception e) {
-        //             sink.error(e);
-        //         }
-        //     });
-        // }
-        
-        // // 其他类型使用原有的客户端
-        // McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
-        // return connection.getClient().callToolStream(request);
+        McpConnection connection = connections.get(serverName);
+        if (connection == null) {
+            McpHubHolder.remove(serverName);
+            return Flux.create(sink -> {
+                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent("No connection found for server: " + serverName)), true));
+                sink.complete();
+            });
+        }
 
-        // FIXME
-        return Flux.empty();
+        McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
+        return connection.getClient().callToolStream(request);
     }
     
     public void dispose() {

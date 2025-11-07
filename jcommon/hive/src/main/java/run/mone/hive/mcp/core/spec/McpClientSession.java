@@ -9,6 +9,8 @@ import run.mone.hive.mcp.core.util.Assert;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
@@ -49,6 +51,18 @@ public class McpClientSession implements McpSession {
 
 	/** Map of pending responses keyed by request ID */
 	private final ConcurrentHashMap<Object, MonoSink<McpSchema.JSONRPCResponse>> pendingResponses = new ConcurrentHashMap<>();
+
+	/** Map of pending stream responses keyed by request ID */
+	private final ConcurrentHashMap<Object, StreamEntry<?>> pendingStreamResponses = new ConcurrentHashMap<>();
+
+	private static class StreamEntry<T> {
+		final FluxSink<T> sink;
+		final TypeRef<T> typeRef;
+		StreamEntry(FluxSink<T> sink, TypeRef<T> typeRef) {
+			this.sink = sink;
+			this.typeRef = typeRef;
+		}
+	}
 
 	/** Map of request handlers keyed by method name */
 	private final ConcurrentHashMap<String, RequestHandler<?>> requestHandlers = new ConcurrentHashMap<>();
@@ -137,18 +151,55 @@ public class McpClientSession implements McpSession {
 		this.transport.connect(mono -> mono.doOnNext(this::handle)).transform(connectHook).subscribe();
 	}
 
-	private void dismissPendingResponses() {
-		this.pendingResponses.forEach((id, sink) -> {
-			logger.warn("Abruptly terminating exchange for request {}", id);
-			sink.error(new RuntimeException("MCP session with server terminated"));
-		});
-		this.pendingResponses.clear();
-	}
+    private void dismissPendingResponses() {
+        this.pendingResponses.forEach((id, sink) -> {
+            logger.warn("Abruptly terminating exchange for request {}", id);
+            sink.error(new RuntimeException("MCP session with server terminated"));
+        });
+        this.pendingResponses.clear();
+
+        this.pendingStreamResponses.forEach((id, entry) -> {
+            logger.warn("Abruptly terminating stream for request {}", id);
+            try {
+                entry.sink.error(new RuntimeException("MCP streaming session with server terminated"));
+            } catch (Throwable t) {
+                logger.debug("Failed to error stream sink for {}", id, t);
+            }
+        });
+        this.pendingStreamResponses.clear();
+    }
 
 	private void handle(McpSchema.JSONRPCMessage message) {
 		if (message instanceof McpSchema.JSONRPCResponse response) {
 			logger.debug("Received response: {}", response);
 			if (response.id() != null) {
+				// streaming first
+				StreamEntry<?> streamEntry = pendingStreamResponses.get(response.id());
+				if (streamEntry != null) {
+					@SuppressWarnings("unchecked")
+					StreamEntry<Object> entry = (StreamEntry<Object>) streamEntry;
+					try {
+						if (response.error() != null) {
+							entry.sink.error(new McpError(response.error()));
+							pendingStreamResponses.remove(response.id());
+							return;
+						}
+						Object value = this.transport.unmarshalFrom(response.result(), entry.typeRef);
+						entry.sink.next(value);
+						if (isStreamComplete(value)) {
+							entry.sink.complete();
+							pendingStreamResponses.remove(response.id());
+						}
+						return;
+					}
+					catch (Throwable t) {
+						entry.sink.error(t);
+						pendingStreamResponses.remove(response.id());
+						return;
+					}
+				}
+
+				// single response path
 				var sink = pendingResponses.remove(response.id());
 				if (sink == null) {
 					logger.warn("Unexpected response for unknown id {}", response.id());
@@ -246,6 +297,49 @@ public class McpClientSession implements McpSession {
 	}
 
 	/**
+	 * Sends a JSON-RPC request and returns a stream of responses.
+	 * @param <T> The expected response type
+	 * @param method The method name to call
+	 * @param requestParams The request parameters
+	 * @param typeRef Type reference for response deserialization
+	 * @return A Flux containing the response stream
+	 */
+	public <T> Flux<T> sendRequestStream(String method, Object requestParams, TypeRef<T> typeRef) {
+		String requestId = this.generateRequestId();
+		// gRPC 传输层原生支持流式，直接走传输层的 sendStreamMessage
+		if (this.transport instanceof run.mone.hive.mcp.grpc.transport.GrpcClientTransport gct) {
+			McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
+					requestId, requestParams);
+			return gct.sendStreamMessage(jsonrpcRequest)
+				.map(obj -> this.transport.unmarshalFrom(obj, typeRef));
+		}
+
+		return Flux.<T>create(sink -> {
+			this.pendingStreamResponses.put(requestId, new StreamEntry<>(sink, typeRef));
+			McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
+					requestId, requestParams);
+			this.transport.sendMessage(jsonrpcRequest).subscribe(v -> {
+			}, error -> {
+				this.pendingStreamResponses.remove(requestId);
+				sink.error(error);
+			});
+		}).doOnCancel(() -> this.pendingStreamResponses.remove(requestId));
+	}
+
+	private boolean isStreamComplete(Object result) {
+		if (result instanceof McpSchema.CallToolResult ctr) {
+			if (ctr.content() == null || ctr.content().isEmpty()) {
+				return false;
+			}
+			McpSchema.Content c = ctr.content().get(0);
+			if (c instanceof McpSchema.TextContent tc) {
+				return "[DONE]".equals(tc.text());
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Sends a JSON-RPC request and returns the response.
 	 * @param <T> The expected response type
 	 * @param method The method name to call
@@ -300,17 +394,17 @@ public class McpClientSession implements McpSession {
 	 * Closes the session gracefully, allowing pending operations to complete.
 	 * @return A Mono that completes when the session is closed
 	 */
-	@Override
-	public Mono<Void> closeGracefully() {
-		return Mono.fromRunnable(this::dismissPendingResponses);
-	}
+    @Override
+    public Mono<Void> closeGracefully() {
+        return Mono.fromRunnable(this::dismissPendingResponses);
+    }
 
 	/**
 	 * Closes the session immediately, potentially interrupting pending operations.
 	 */
-	@Override
-	public void close() {
-		dismissPendingResponses();
-	}
+    @Override
+    public void close() {
+        dismissPendingResponses();
+    }
 
 }

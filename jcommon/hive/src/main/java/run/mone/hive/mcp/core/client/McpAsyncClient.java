@@ -594,6 +594,22 @@ public class McpAsyncClient {
 		});
 	}
 
+	/**
+	 * Streams tool results provided by the server if supported.
+	 * @param callToolRequest The request containing the tool name and input parameters.
+	 * @return A Flux that emits partial tool results and completes when the stream ends.
+	 */
+    public Flux<McpSchema.CallToolResult> callToolStream(McpSchema.CallToolRequest callToolRequest) {
+        return this.initializer.withInitialization("calling tool (stream)", init -> Mono.just(init))
+                .flatMapMany(init -> {
+                    if (init.initializeResult().capabilities().tools() == null) {
+                        return Flux.error(new IllegalStateException("Server does not provide tools capability"));
+                    }
+                    return init.mcpSession().sendRequestStream(McpSchema.METHOD_TOOLS_STREAM, callToolRequest, CALL_TOOL_RESULT_TYPE_REF)
+                            .map(result -> validateToolResult(callToolRequest.name(), result));
+                });
+    }
+
 	private McpSchema.CallToolResult validateToolResult(String toolName, McpSchema.CallToolResult result) {
 
 		if (!this.enableCallToolSchemaCaching || result == null || result.isError() == Boolean.TRUE) {

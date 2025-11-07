@@ -1,10 +1,9 @@
 package run.mone.hive.mcp.grpc.transport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JavaType;
 
-import com.google.gson.reflect.TypeToken;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -18,7 +17,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-import run.mone.hive.common.GsonUtils;
+// import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.core.client.transport.ServerParameters;
@@ -40,15 +39,17 @@ import run.mone.hive.mcp.core.spec.McpClientTransport;
 import run.mone.hive.mcp.core.spec.McpSchema;
 import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCRequest;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCResponse;
+import run.mone.hive.mcp.core.spec.McpSchema.JSONRPCNotification;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
+// import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
+// import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -83,6 +84,9 @@ public class GrpcClientTransport implements McpClientTransport {
 
     private Consumer<Object> consumer = (msg) -> {
     };
+
+    // 保存 connect(handler) 注册的 handler，用于把响应投递回会话
+    private Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> inboundHandler;
 
     // 添加重连相关的字段
     private volatile boolean isReconnecting = false;
@@ -175,6 +179,7 @@ public class GrpcClientTransport implements McpClientTransport {
     @Override
     public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         return Mono.fromRunnable(() -> {
+            this.inboundHandler = handler;
             this.channel = ManagedChannelBuilder.forAddress(host, port)
                     .usePlaintext()
                     // 启用自动重连
@@ -416,16 +421,111 @@ public class GrpcClientTransport implements McpClientTransport {
 
     @Override
     public Mono<Void> sendMessage(JSONRPCMessage message) {
-        return Mono.create((sink) -> {
-            if (message instanceof JSONRPCRequest request) {
-                handleToolCall(request, sink);
+        // 处理通知（initialized）
+        if (message instanceof JSONRPCNotification notification) {
+            if (McpSchema.METHOD_NOTIFICATION_INITIALIZED.equals(notification.method())) {
+                try {
+                    methodNotificationInitialized();
+                } catch (Throwable t) {
+                    if (this.inboundHandler != null) {
+                        JSONRPCResponse.JSONRPCError err = new JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR, t.getMessage(), null);
+                        JSONRPCResponse response = new JSONRPCResponse(McpSchema.JSONRPC_VERSION, null, null, err);
+                        this.inboundHandler.apply(Mono.just(response)).subscribe();
+                    }
+                }
             }
-        });
+            return Mono.empty();
+        }
+
+        if (!(message instanceof JSONRPCRequest request)) {
+            return Mono.empty();
+        }
+
+        try {
+            String method = request.method();
+            Object result = null;
+
+            switch (method) {
+                case McpSchema.METHOD_INITIALIZE: {
+                    InitializeRequest initReq = InitializeRequest.newBuilder().build();
+                    InitializeResponse resp = getMetadataBlockingStub().initialize(initReq);
+                    result = resp;
+                    break;
+                }
+                case McpSchema.METHOD_PING: {
+                    PingRequest pingRequest = PingRequest.newBuilder().build();
+                    PingResponse resp = getMetadataBlockingStub().ping(pingRequest);
+                    result = resp;
+                    break;
+                }
+                case McpSchema.METHOD_TOOLS_LIST: {
+                    ListToolsRequest listReq = ListToolsRequest.newBuilder().build();
+                    ListToolsResponse resp = getMetadataBlockingStub().listTools(listReq);
+                    result = resp;
+                    break;
+                }
+                case McpSchema.METHOD_TOOLS_CALL: {
+                    // 重用 handleToolCall 的参数构建逻辑
+                    McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
+                    Map<String, Object> objectMap = re.arguments();
+                    objectMap.remove(Const.ROLE);
+                    Map<String, String> stringMap = objectMap.entrySet().stream()
+                            .filter(e -> Objects.nonNull(e.getKey()) && Objects.nonNull(e.getValue()))
+                            .collect(Collectors.toMap(
+                                    Map.Entry::getKey,
+                                    e -> {
+                                        Object value = e.getValue();
+                                        if (value == null) {
+                                            return null;
+                                        }
+                                        if (value instanceof Collection<?> ||
+                                                value.getClass().isArray() ||
+                                                value instanceof Map<?, ?> ||
+                                                !value.getClass().isPrimitive() &&
+                                                        !value.getClass().equals(String.class)) {
+                                            try {
+                                                return objectMapper.writeValueAsString(value);
+                                            } catch (JsonProcessingException ex) {
+                                                throw new RuntimeException("Failed to serialize value", ex);
+                                            }
+                                        }
+                                        return Objects.toString(value, "");
+                                    }
+                            ));
+                    String methodName = getMethodName(request);
+                    CallToolRequest.Builder builder = CallToolRequest.newBuilder()
+                            .setName(METHOD_TOOLS_CALL)
+                            .setMethod(methodName)
+                            .putAllArguments(stringMap);
+                    CallToolResponse resp = getMetadataBlockingStub().callTool(builder.build());
+                    result = resp;
+                    break;
+                }
+                default: {
+                    // 未支持的方法，不返回结果
+                    result = null;
+                    break;
+                }
+            }
+
+            if (this.inboundHandler != null) {
+                JSONRPCResponse response = new JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null);
+                this.inboundHandler.apply(Mono.just(response)).subscribe();
+            }
+        } catch (Throwable t) {
+            if (this.inboundHandler != null && message instanceof JSONRPCRequest req && req.id() != null) {
+                JSONRPCResponse.JSONRPCError err = new JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR, t.getMessage(), null);
+                JSONRPCResponse response = new JSONRPCResponse(McpSchema.JSONRPC_VERSION, req.id(), null, err);
+                this.inboundHandler.apply(Mono.just(response)).subscribe();
+            }
+        }
+
+        return Mono.empty();
     }
 
     // @Override
     public Flux<Object> sendStreamMessage(JSONRPCMessage message) {
-        return Flux.create(sink -> {
+        return Flux.create((FluxSink<Object> sink) -> {
             if (message instanceof JSONRPCRequest request) {
                 handleToolStreamCall(request, sink);
             }
@@ -455,7 +555,7 @@ public class GrpcClientTransport implements McpClientTransport {
     StreamObserver<StreamRequest> req;
 
     @SuppressWarnings("unchecked")
-    private void handleToolCall(JSONRPCRequest request, MonoSink sink) {
+    private void handleToolCall(JSONRPCRequest request, MonoSink<Object> sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
 
@@ -510,7 +610,7 @@ public class GrpcClientTransport implements McpClientTransport {
         return methodName;
     }
 
-    private void handleToolStreamCall(JSONRPCRequest request, FluxSink sink) {
+    private void handleToolStreamCall(JSONRPCRequest request, FluxSink<Object> sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
 
@@ -549,49 +649,52 @@ public class GrpcClientTransport implements McpClientTransport {
 
     }
 
-    //grpc 的返回结果,需要手动转换下
+    // grpc 的返回结果类型转换
     @Override
     public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
-        // try {
-        //     if (data instanceof CallToolResponse ctr) {
-        //         return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> {
-        //             if (it.hasText()) {
-        //                 return new McpSchema.TextContent(it.getText().getText(), it.getText().getData());
-        //             }
-        //             if (it.hasImage()) {
-        //                 return new McpSchema.ImageContent(it.getImage().getData(), it.getImage().getMimeType());
-        //             }
-        //             return null;
-        //         }).collect(Collectors.toUnmodifiableList()), false);
-        //     }
+        try {
+            if (data instanceof CallToolResponse ctr) {
+                java.util.List<McpSchema.Content> contents = ctr.getContentList().stream().map(it -> {
+                    if (it.hasText()) {
+                        return new McpSchema.TextContent(it.getText().getText());
+                    }
+                    if (it.hasImage()) {
+                        return new McpSchema.ImageContent(null, it.getImage().getData(), it.getImage().getMimeType());
+                    }
+                    return null;
+                }).filter(Objects::nonNull).collect(java.util.stream.Collectors.toList());
+                return (T) new McpSchema.CallToolResult(contents, false);
+            }
 
-        //     if (data instanceof PingResponse pr) {
-        //         return (T) pr;
-        //     }
+            if (data instanceof PingResponse pr) {
+                return (T) pr;
+            }
 
-        //     if (data instanceof ListToolsResponse ltr) {
-        //         List<McpSchema.Tool> tools = ltr.getToolsList().stream().map(it -> new McpSchema.Tool(it.getName(), it.getDescription(), it.getInputSchema())).toList();
-        //         return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
-        //     }
+            if (data instanceof ListToolsResponse ltr) {
+                java.util.List<McpSchema.Tool> tools = ltr.getToolsList().stream()
+                        .map(it -> new McpSchema.Tool(it.getName(), null, it.getDescription(), null, null, null, null))
+                        .collect(java.util.stream.Collectors.toList());
+                return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
+            }
 
-        //     if (data instanceof InitializeResponse ir) {
-        //         McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion(), ir.getServerInfo().getMetaMap());
-        //         return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
-        //     }
+            if (data instanceof InitializeResponse ir) {
+                McpSchema.Implementation implementation = new McpSchema.Implementation(
+                        ir.getServerInfo().getName(), ir.getServerInfo().getVersion());
+                return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
+            }
 
-        //     if (data instanceof NotificationInitializedResponse nir) {
-        //         return (T) nir;
-        //     }
+            if (data instanceof NotificationInitializedResponse nir) {
+                return (T) nir;
+            }
 
-        //     if (data instanceof String) {
-        //         return objectMapper.readValue((String) data, typeRef);
-        //     } else {
-        //         return objectMapper.convertValue(data, typeRef);
-        //     }
-        // } catch (IOException e) {
-        //     throw new RuntimeException("Error unmarshalling data", e);
-        // }
-        // FIXME
-        return null;
+            JavaType javaType = objectMapper.getTypeFactory().constructType(typeRef.getType());
+            if (data instanceof String s) {
+                return objectMapper.readValue(s, javaType);
+            } else {
+                return objectMapper.convertValue(data, javaType);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error unmarshalling data", e);
+        }
     }
 } 
