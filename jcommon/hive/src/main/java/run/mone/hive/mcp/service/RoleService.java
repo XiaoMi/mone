@@ -129,7 +129,7 @@ public class RoleService {
         Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
         map.entrySet().forEach(entry -> {
             Safe.run(() -> {
-                if (entry.getValue().size() == 0) {
+                if (entry.getValue().isEmpty()) {
                     return;
                 }
                 Map m = (Map) entry.getValue().get(0);

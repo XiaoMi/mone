@@ -134,6 +134,16 @@ public class SwitchAgentCommand extends RoleBaseCommand {
             AgentMarkdownDocument document = new AgentMarkdownDocument();
             document.setFileName(fileName);
 
+            if (fileName.equals("default.md")) {
+                role.getRoleConfig().put(Const.AGENT_CONFIG, "");
+                sendMessages(sink,
+                        "🔄 正在切换Agent配置...\n",
+                        String.format("📋 已加载配置文件: %s\n", fileName),
+                        "✅ Agent切换完毕\n"
+                );
+                return;
+            }
+
             // 尝试加载配置文件
             AgentMarkdownDocument tmp = roleService.getMarkdownDocument(document, role);
             if (tmp != null) {
