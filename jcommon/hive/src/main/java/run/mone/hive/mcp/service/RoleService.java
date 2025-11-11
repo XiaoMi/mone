@@ -229,6 +229,7 @@ public class RoleService {
         role.setOutputFormat(roleMeta.getOutputFormat());
         role.setActions(roleMeta.getActions());
         role.setType(roleMeta.getRoleType());
+        role.setMcpInterceptor(roleMeta.getMcpInterceptor());
         if (null != roleMeta.getLlm()) {
             role.setLlm(roleMeta.getLlm());
         }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import run.mone.hive.actions.Action;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
@@ -95,5 +96,8 @@ public class RoleMeta {
 
     @Builder.Default
     private Map<String,String> meta = new HashMap<>();
+
+    @Builder.Default
+    private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
 
 }
