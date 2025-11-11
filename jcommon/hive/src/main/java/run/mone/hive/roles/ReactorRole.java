@@ -369,7 +369,7 @@ public class ReactorRole extends Role {
         log.info("receive message:{}", msg);
 
         if (msg.isError()) {
-            log.info("Role 处理发生错误");
+            log.info("Role 处理发生错误:{}", msg);
             return 2;
         }
 
@@ -712,6 +712,7 @@ public class ReactorRole extends Role {
                     sendToSink(contentForUser, assistantMessage, true);
                 }
             } catch (Throwable ex) {
+                log.error("mcp 结果处理异常", ex);
                 error.set(true);
             }
         } else {
