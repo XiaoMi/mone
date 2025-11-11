@@ -136,6 +136,7 @@ public class SwitchAgentCommand extends RoleBaseCommand {
 
             if (fileName.equals("default.md")) {
                 role.getRoleConfig().put(Const.AGENT_CONFIG, "");
+                role.getRoleConfig().put("__agent_config_key__", fileName);
                 sendMessages(sink,
                         "🔄 正在切换Agent配置...\n",
                         String.format("📋 已加载配置文件: %s\n", fileName),
