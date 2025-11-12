@@ -1415,6 +1415,14 @@ public class LLM {
                                     if (choicesJson == null || choicesJson.isEmpty()) {
                                         continue;
                                     }
+
+                                    if (llmProvider == LLMProvider.MINIMAX && !choicesJson.isEmpty()) {
+                                        if (choicesJson.get(0).getAsJsonObject().has("finish_reason")) {
+                                            sink.complete();
+                                            return;
+                                        }
+                                    }
+
                                     JsonObject delta = choicesJson
                                             .get(0).getAsJsonObject()
                                             .getAsJsonObject("delta");
@@ -1450,6 +1458,7 @@ public class LLM {
                             }
                         }
                     }
+                    sink.complete();
                     log.info("FINISH");
                 } catch (Throwable ex) {
                     JsonObject jsonResponse = new JsonObject();

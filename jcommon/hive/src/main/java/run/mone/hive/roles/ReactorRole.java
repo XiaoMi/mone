@@ -590,7 +590,7 @@ public class ReactorRole extends Role {
                 callMcp(it, sink);
             } else {
                 //只返回了一个思考结果
-                if (name.equals("thinking")) {
+                if (name.startsWith("think")) {
                     String _msg = "我思考的内容是:" + toolRes;
                     this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
                 } else {
