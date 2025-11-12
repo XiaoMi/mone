@@ -42,6 +42,9 @@ public class FileCheckpointManager {
         if (!enabled) {
             enabled = isCheckpointEnabledByProps();
         }
+        if (enabled) {
+            enabled = isCheckpointEnabledByENV();
+        }
         if (projectPath.equals("/") || !enabled) {
             this.projectPath = "/";
             this.gitDir = "";
@@ -63,6 +66,18 @@ public class FileCheckpointManager {
             } else {
                 log.warn("Git command is not available. Skipping git related operations.");
             }
+        }
+    }
+
+    private boolean isCheckpointEnabledByENV() {
+        try {
+            String t = System.getenv("HIVE_CHECKPOINT_DISABLE");
+            if ("true".equals(t) || "1".equals(t) || "yes".equals(t) || "on".equals(t)) {
+                return false;
+            }
+            return true;
+        } catch (Throwable ignore) {
+            return true;
         }
     }
 
