@@ -1,5 +1,6 @@
 package run.mone.hive.spring.starter;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -9,9 +10,12 @@ import org.springframework.web.filter.CorsFilter;
 /**
  * CORS 跨域配置
  * 
+ * 通过配置项 hive.starter.enabled 控制是否启用（默认：true）
+ * 
  * @author goodjava@qq.com
  */
 @Configuration
+@ConditionalOnProperty(name = "hive.starter.enabled", havingValue = "true", matchIfMissing = true)
 public class CorsConfig {
 
     @Bean
