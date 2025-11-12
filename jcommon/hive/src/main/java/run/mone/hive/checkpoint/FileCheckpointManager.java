@@ -37,14 +37,28 @@ public class FileCheckpointManager {
         this(projectPath, DEFAULT_SHADOW_REPO_SUB_DIR);
     }
 
-    public FileCheckpointManager(String projectPath, String shadowRepoSubDir) throws IOException, InterruptedException {
-        boolean enabled = enable;
+    private static Boolean staticEnabled = null;
+
+    public static boolean enableCheck(boolean enabled) {
+        if (staticEnabled != null) {
+            return staticEnabled;
+        }
+        staticEnabled = enableCheckInner(enabled);
+        return staticEnabled;
+    }
+
+    private static boolean enableCheckInner(boolean enabled) {
         if (!enabled) {
             enabled = isCheckpointEnabledByProps();
         }
         if (enabled) {
             enabled = isCheckpointEnabledByENV();
         }
+        return enabled;
+    }
+
+    public FileCheckpointManager(String projectPath, String shadowRepoSubDir) throws IOException, InterruptedException {
+        boolean enabled = enableCheck(enable);
         if (projectPath.equals("/") || !enabled) {
             this.projectPath = "/";
             this.gitDir = "";
@@ -69,7 +83,7 @@ public class FileCheckpointManager {
         }
     }
 
-    private boolean isCheckpointEnabledByENV() {
+    private static boolean isCheckpointEnabledByENV() {
         try {
             String t = System.getenv("HIVE_CHECKPOINT_DISABLE");
             if ("true".equals(t) || "1".equals(t) || "yes".equals(t) || "on".equals(t)) {
@@ -81,7 +95,7 @@ public class FileCheckpointManager {
         }
     }
 
-    private boolean isCheckpointEnabledByProps() {
+    private static boolean isCheckpointEnabledByProps() {
         try {
             String p = System.getProperty("hive.checkpoint.enable");
             if (p == null) {
