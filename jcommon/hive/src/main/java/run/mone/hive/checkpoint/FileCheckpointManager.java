@@ -68,6 +68,10 @@ public class FileCheckpointManager {
 
     private boolean isCheckpointEnabledByProps() {
         try {
+            String t = System.getenv("HIVE_CHECKPOINT_DISABLE");
+            if ("true".equals(t) || "1".equals(t) || "yes".equals(t) || "on".equals(t)) {
+                return false;
+            }
             String p = System.getProperty("hive.checkpoint.enable");
             if (p == null) {
                 p = System.getenv("HIVE_CHECKPOINT_ENABLE");
