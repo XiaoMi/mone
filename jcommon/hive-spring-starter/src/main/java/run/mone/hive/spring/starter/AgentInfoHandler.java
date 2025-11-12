@@ -3,6 +3,7 @@ package run.mone.hive.spring.starter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,8 @@ import java.util.Map;
  * Agent 信息处理器
  * 提供 Agent 的基本信息、状态、配置等
  * 
+ * 通过配置项 hive.starter.enabled 控制是否启用（默认：true）
+ * 
  * @author goodjava@qq.com
  */
 @Slf4j
@@ -29,6 +32,7 @@ import java.util.Map;
 @RequestMapping("/mcp/agent")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "hive.starter.enabled", havingValue = "true", matchIfMissing = true)
 public class AgentInfoHandler {
 
     private final RoleService roleService;
