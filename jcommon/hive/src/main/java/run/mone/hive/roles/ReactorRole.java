@@ -369,7 +369,7 @@ public class ReactorRole extends Role {
         log.info("receive message:{}", msg);
 
         if (msg.isError()) {
-            log.info("Role 处理发生错误");
+            log.info("Role 处理发生错误:{}", msg);
             return 2;
         }
 
@@ -589,10 +589,16 @@ public class ReactorRole extends Role {
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
-                String _msg = "发现不支持工具:" + name + ",请继续";
-                sink.next(_msg);
-                log.warn("不支持的工具 tool:{}", _msg);
-                this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
+                //只返回了一个思考结果
+                if (name.equals("thinking")) {
+                    String _msg = "我思考的内容是:" + toolRes;
+                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
+                } else {
+                    String _msg = "发现不支持工具:" + name + ",请继续";
+                    sink.next(_msg);
+                    log.warn("不支持的工具 tool:{}", _msg);
+                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
+                }
             }
         } catch (Exception e) {
             sink.error(e);
@@ -712,6 +718,7 @@ public class ReactorRole extends Role {
                     sendToSink(contentForUser, assistantMessage, true);
                 }
             } catch (Throwable ex) {
+                log.error("mcp 结果处理异常", ex);
                 error.set(true);
             }
         } else {

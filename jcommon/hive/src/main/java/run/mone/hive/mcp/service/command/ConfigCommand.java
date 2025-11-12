@@ -281,6 +281,10 @@ public class ConfigCommand extends RoleBaseCommand {
                     log.warn("解析markdown文件失败: {}, 错误: {}", filename, e.getMessage());
                     // 如果解析失败，agentName保持为null
                 }
+
+                if (filename.equals("default.md")) {
+                    agentName = "default";
+                }
                 
                 agentMap.put(filename, agentName);
             }

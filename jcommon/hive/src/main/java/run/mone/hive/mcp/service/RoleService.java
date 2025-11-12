@@ -129,7 +129,7 @@ public class RoleService {
         Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
         map.entrySet().forEach(entry -> {
             Safe.run(() -> {
-                if (entry.getValue().size() == 0) {
+                if (entry.getValue().isEmpty()) {
                     return;
                 }
                 Map m = (Map) entry.getValue().get(0);
@@ -229,6 +229,7 @@ public class RoleService {
         role.setOutputFormat(roleMeta.getOutputFormat());
         role.setActions(roleMeta.getActions());
         role.setType(roleMeta.getRoleType());
+        role.setMcpInterceptor(roleMeta.getMcpInterceptor());
         if (null != roleMeta.getLlm()) {
             role.setLlm(roleMeta.getLlm());
         }
