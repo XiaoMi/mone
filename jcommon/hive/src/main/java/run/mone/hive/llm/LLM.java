@@ -536,6 +536,7 @@ public class LLM {
                     || this.llmProvider == LLMProvider.MOONSHOT
                     || this.llmProvider == LLMProvider.DOUBAO_VISION
                     || this.llmProvider == LLMProvider.DOUBAO
+                    || this.llmProvider == LLMProvider.DOUBAO_SEED_CODE
                     || this.llmProvider == LLMProvider.QWEN
                     || this.llmProvider == LLMProvider.MIFY
                     || this.llmProvider == LLMProvider.MIFY_GATEWAY
@@ -1057,6 +1058,7 @@ public class LLM {
                     this.llmProvider == LLMProvider.DOUBAO_VISION ||
                     this.llmProvider == LLMProvider.GROK ||
                     this.llmProvider == LLMProvider.DOUBAO ||
+                    this.llmProvider == LLMProvider.DOUBAO_SEED_CODE ||
                     this.llmProvider == LLMProvider.QWEN ||
                     this.llmProvider == LLMProvider.MIFY ||
                     this.llmProvider == LLMProvider.MIFY_GATEWAY ||
@@ -1085,7 +1087,7 @@ public class LLM {
 
         // openai 系列的应该都可以
         if (this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.DEEPSEEK || this.llmProvider == LLMProvider.QWEN
-                || this.llmProvider == LLMProvider.AZURE_GPT5
+                || this.llmProvider == LLMProvider.AZURE_GPT5 || this.llmProvider == LLMProvider.DOUBAO_SEED_CODE
         ) {
             JsonObject usage = new JsonObject();
             usage.addProperty("include_usage", true);
@@ -2371,6 +2373,7 @@ public class LLM {
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_UI_TARS
                 || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_VISION
+                || llm.getConfig().getLlmProvider() == LLMProvider.DOUBAO_SEED_CODE
                 || llm.getConfig().getLlmProvider() == LLMProvider.GLM_45_V
                 || llm.getConfig().getLlmProvider() == LLMProvider.MIFY
                 || llm.getConfig().getLlmProvider() == LLMProvider.MIFY_GATEWAY
