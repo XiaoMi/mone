@@ -380,9 +380,13 @@ public class RoleService {
                 return; // 命令已处理
             }
 
+            if (message.isClearHistory()) {
+                rr.clearMemory();
+            }
+
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
             String content = message.getContent();
-            if (rr.isInterrupted() && !roleCommandFactory.findCommand(content).isPresent()) {
+            if (rr.isInterrupted() && roleCommandFactory.findCommand(content).isEmpty()) {
                 log.info("Agent {} 收到新的非中断命令，自动重置中断状态", from);
                 rr.resetInterrupt();
                 sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
