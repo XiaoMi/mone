@@ -1583,10 +1583,12 @@ class LLMTest {
     @Test
     public void testChatCompletionWithUsage() {
         // This test requires OPENROUTER to be configured
-        config.setLlmProvider(LLMProvider.OPENROUTER);
-        config.setModel("anthropic/claude-sonnet-4");
+//        config.setLlmProvider(LLMProvider.OPENROUTER);
+//        config.setModel("anthropic/claude-sonnet-4");
         // Make sure OPENROUTER_AI_GATEWAY environment variable is set
-        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+//        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        config.setLlmProvider(LLMProvider.DOUBAO_SEED_CODE);
+        config.setModel(config.getLlmProvider().getDefaultModel());
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();
@@ -1669,7 +1671,10 @@ class LLMTest {
 //        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
 
 //        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
-        config.setLlmProvider(LLMProvider.AZURE_GPT5);
+//        config.setLlmProvider(LLMProvider.AZURE_GPT5);
+
+        config.setLlmProvider(LLMProvider.DOUBAO_SEED_CODE);
+        config.setModel(config.getLlmProvider().getDefaultModel());
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();
