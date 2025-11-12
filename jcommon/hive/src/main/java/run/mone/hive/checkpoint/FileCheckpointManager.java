@@ -42,6 +42,9 @@ public class FileCheckpointManager {
         if (!enabled) {
             enabled = isCheckpointEnabledByProps();
         }
+        if (enabled) {
+            enabled = isCheckpointEnabledByENV();
+        }
         if (projectPath.equals("/") || !enabled) {
             this.projectPath = "/";
             this.gitDir = "";
@@ -66,12 +69,20 @@ public class FileCheckpointManager {
         }
     }
 
-    private boolean isCheckpointEnabledByProps() {
+    private boolean isCheckpointEnabledByENV() {
         try {
             String t = System.getenv("HIVE_CHECKPOINT_DISABLE");
             if ("true".equals(t) || "1".equals(t) || "yes".equals(t) || "on".equals(t)) {
                 return false;
             }
+            return true;
+        } catch (Throwable ignore) {
+            return true;
+        }
+    }
+
+    private boolean isCheckpointEnabledByProps() {
+        try {
             String p = System.getProperty("hive.checkpoint.enable");
             if (p == null) {
                 p = System.getenv("HIVE_CHECKPOINT_ENABLE");
