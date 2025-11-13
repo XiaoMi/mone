@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.util.HtmlUtils;
 import run.mone.hive.roles.ReactorRole;
 
 import java.nio.charset.StandardCharsets;
@@ -93,7 +94,8 @@ public class DiffTool implements ITool {
             if (diff.isEmpty()) {
                 res.addProperty("message", "无差异");
             } else {
-                res.addProperty("diff", diff);
+                String escapedDiff = HtmlUtils.htmlEscape(diff);
+                res.addProperty("diff", escapedDiff);
             }
             res.addProperty("text_truncated", truncated);
 
@@ -114,6 +116,26 @@ public class DiffTool implements ITool {
             res.addProperty("error", e.getMessage());
         }
         return res;
+    }
+
+     /**
+     * 是否通开启auto diff
+     */
+    private boolean isAutoDiff() {
+       try {
+            String p = System.getProperty("hive.auto.diff");
+            if (p == null) {
+                p = System.getenv("HIVE_AUTO_DIFF");
+            }
+            if (p == null) {
+                return false;
+            }
+            p = p.trim().toLowerCase();
+            log.info("auto diff enabled by props:{}", p);
+            return "true".equals(p) || "1".equals(p) || "yes".equals(p) || "on".equals(p);
+        } catch (Throwable ignore) {
+            return false;
+        } 
     }
 }
 
