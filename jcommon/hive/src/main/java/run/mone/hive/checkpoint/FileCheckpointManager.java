@@ -86,10 +86,7 @@ public class FileCheckpointManager {
     private static boolean isCheckpointEnabledByENV() {
         try {
             String t = System.getenv("HIVE_CHECKPOINT_DISABLE");
-            if ("true".equals(t) || "1".equals(t) || "yes".equals(t) || "on".equals(t)) {
-                return false;
-            }
-            return true;
+            return !"true".equals(t) && !"1".equals(t) && !"yes".equals(t) && !"on".equals(t);
         } catch (Throwable ignore) {
             return true;
         }

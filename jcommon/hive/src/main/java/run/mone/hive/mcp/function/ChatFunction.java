@@ -116,7 +116,6 @@ public class ChatFunction implements McpFunction {
         }
 
         try {
-            //发送消息
             return sendMsgToAgent(clientId, userId, agentId, ownerId, message, images, voiceBase64, timeout);
         } catch (Exception e) {
             String errorMessage = "ERROR: " + e.getMessage();
@@ -139,24 +138,32 @@ public class ChatFunction implements McpFunction {
                 .build();
 
         if (FileCheckpointManager.enableCheck(enableCheckPoint)) {
-            // 1. 创建一个只包含消息ID的Flux
-            String idTag = "<hive-msg-id>" + userMessage.getId() + "</hive-msg-id>";
-            McpSchema.CallToolResult idResult = new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(idTag)), false);
-            Flux<McpSchema.CallToolResult> idFlux = Flux.just(idResult);
-
-            // 2. 创建处理Agent响应的Flux
-            Flux<McpSchema.CallToolResult> agentResponseFlux = roleService.receiveMsg(userMessage)
-                    .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
-                    .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
-
-            // 依次串联2个Flux
-            return Flux.concat(idFlux, agentResponseFlux);
+            return getToolResultFlux(userMessage);
         } else {
             // 创建处理Agent响应的Flux
-            return roleService.receiveMsg(userMessage)
-                    .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
-                    .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+            return getCallToolResultFlux(userMessage);
         }
+    }
+
+    private @NotNull Flux<McpSchema.CallToolResult> getToolResultFlux(Message userMessage) {
+        // 1. 创建一个只包含消息ID的Flux
+        String idTag = "<hive-msg-id>" + userMessage.getId() + "</hive-msg-id>";
+        McpSchema.CallToolResult idResult = new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(idTag)), false);
+        Flux<McpSchema.CallToolResult> idFlux = Flux.just(idResult);
+
+        // 2. 创建处理Agent响应的Flux
+        Flux<McpSchema.CallToolResult> agentResponseFlux = roleService.receiveMsg(userMessage)
+                .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
+                .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+
+        // 依次串联2个Flux
+        return Flux.concat(idFlux, agentResponseFlux);
+    }
+
+    private @NotNull Flux<McpSchema.CallToolResult> getCallToolResultFlux(Message userMessage) {
+        return roleService.receiveMsg(userMessage)
+                .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
+                .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
     }
 
 

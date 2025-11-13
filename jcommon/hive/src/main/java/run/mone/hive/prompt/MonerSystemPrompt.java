@@ -358,7 +358,7 @@ public class MonerSystemPrompt {
             </arguments>
             <% if(enableTaskProgress) { %><task_progress>
             - [x] Set up project structure
-            - [x] Install dependencies  
+            - [x] Install dependencies
             - [ ] Get weather data
             - [ ] Test application
             </task_progress><% } %>
