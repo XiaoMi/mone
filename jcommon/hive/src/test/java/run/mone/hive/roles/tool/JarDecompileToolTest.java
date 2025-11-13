@@ -3,7 +3,11 @@ package run.mone.hive.roles.tool;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.ReactorRole;
+
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +25,13 @@ class JarDecompileToolTest {
     @BeforeEach
     void setUp() {
         tool = new JarDecompileTool();
-        mockRole = new ReactorRole();
+
+        // Create mock LLM
+        LLM mockLlm = Mockito.mock(LLM.class);
+
+        // Create ReactorRole with required parameters
+        mockRole = new ReactorRole("test-role", new CountDownLatch(1), mockLlm);
+
         // Set workspace path to current directory for testing
         mockRole.setWorkspacePath(System.getProperty("user.dir"));
     }
