@@ -198,6 +198,13 @@ public class HeraFileMonitor {
                 long pointer = 0L;
                 if (null != fi && Objects.equals(it.getPath(), fi.getFileName())) {
                     pointer = fi.getPointer();
+                    // 如果指针超过文件长度，说明文件可能被截断或重新创建，重置为0
+                    long fileLength = it.length();
+                    if (pointer > fileLength) {
+                        log.warn("pointer {} exceeds file length {}, reset to 0 for file:{}, fileKey:{}", 
+                                pointer, fileLength, it.getPath(), fileKey);
+                        pointer = 0L;
+                    }
                 }
                 log.info("initFile fileName:{},fileKey:{},fi:{},pointer:{}", name, fileKey, fi, pointer);
                 map.put(hf.getFileKey(), hf);
