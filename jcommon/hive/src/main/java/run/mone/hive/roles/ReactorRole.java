@@ -10,16 +10,14 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.util.HtmlUtils;
-
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -43,7 +41,6 @@ import run.mone.hive.utils.JsonUtils;
 import run.mone.hive.utils.NetUtils;
 import run.mone.hive.utils.RetryExecutor;
 
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -521,7 +518,7 @@ public class ReactorRole extends Role {
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String userPrompt = buildUserPrompt(msg, history, sink);
-            log.info("userPrompt:{}", userPrompt);
+            log.info("userPrompt:\n{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt, msg);
 
@@ -538,6 +535,7 @@ public class ReactorRole extends Role {
 
             //获取系统提示词
             String systemPrompt = buildSystemPrompt(msg);
+            log.info("system prompt:\n{}", systemPrompt);
 
             // 在调用LLM前检查中断状态
             if (this.interrupted.get()) {
@@ -608,6 +606,8 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             sink.error(e);
             log.error("ReactorRole act error:" + e.getMessage(), e);
+            String _msg = "处理中发生了错误:" + e.getMessage();
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
@@ -665,7 +665,7 @@ public class ReactorRole extends Role {
 
         // 发送给前端
         if (StringUtils.isNotEmpty(contentForUser)) {
-            sendToSink(contentForUser, assistantMessage, true);
+            sendToSink(JsonUtils.toolResult(contentForUser), assistantMessage, true);
         }
 
         String name = "";
@@ -753,7 +753,7 @@ public class ReactorRole extends Role {
             if (StringUtils.isNotEmpty(content)) {
                 this.fluxSink.next(content);
             }
-            if (FileCheckpointManager.enableCheck(true)){
+            if (FileCheckpointManager.enableCheck(true)) {
                 // 如果需要，再单独发送ID
                 if (addId && contextMessage != null) {
                     this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");

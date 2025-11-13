@@ -59,11 +59,6 @@ public class RoleCommandFactory {
      */
     private void scanAndRegisterAnnotatedCommands(RoleService roleService) {
         try {
-            if (!ApplicationContextHolder.isInitialized()) {
-                log.warn("ApplicationContext未初始化，跳过自动扫描命令");
-                return;
-            }
-
             ApplicationContext applicationContext = ApplicationContextHolder.getApplicationContext();
             Map<String, Object> commandBeans = applicationContext.getBeansWithAnnotation(RoleCommand.class);
 
