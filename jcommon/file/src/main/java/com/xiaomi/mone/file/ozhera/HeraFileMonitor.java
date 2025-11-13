@@ -134,10 +134,14 @@ public class HeraFileMonitor {
                         }
 
                         if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
+                            Object fileKey = null;
+                            if (hfile != null) {
+                                fileKey = hfile.getFileKey();
+                                map.remove(fileKey);
+                            }
                             fileMap.remove(filePath);
-                            if (null != hfile) {
-                                map.remove(hfile.getFileKey());
-                                listener.onEvent(FileEvent.builder().type(EventType.delete).fileName(filePath).fileKey(hfile.getFileKey()).build());
+                            if (listener != null) {
+                                listener.onEvent(FileEvent.builder().type(EventType.delete).fileName(filePath).fileKey(fileKey).build());
                             }
                         }
 
