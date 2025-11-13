@@ -328,35 +328,25 @@ public class RoleService {
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
-
         Optional<RoleBaseCommand> optional = roleCommandFactory.findCommand(message);
-
         // 检查是否是需要特殊处理的命令（创建role命令、压缩命令等）
         if (optional.isPresent() && isImmediateExecutionCommand(optional.get())) {
             ReactorRole existingRole = roleMap.get(from);
             return Flux.create(sink -> roleCommandFactory.executeCommand(message, sink, from, existingRole));
         }
 
-        roleMap.compute(from, (k, v) -> {
-            if (v == null) {
-                return createRole(message);
-            }
-            if (v.getState().get().equals(RoleState.exit)) {
-                return createRole(message);
-            }
-            return v;
-        });
+        ensureActiveRole(message, from);
 
         return Flux.create(sink -> {
             message.setSink(sink);
-            ReactorRole rr = roleMap.get(from);
-            if (null == rr) {
+            ReactorRole reactorRole = roleMap.get(from);
+            if (null == reactorRole) {
                 sink.next("没有找到Agent\n");
                 sink.complete();
                 return;
             }
 
-            RoleMeta roleMeta = rr.getRoleMeta();
+            RoleMeta roleMeta = reactorRole.getRoleMeta();
             if (null != roleMeta && null != roleMeta.getInterruptQuery() && roleMeta.getInterruptQuery().isAutoInterruptQuery()) {
                 boolean intent = new IntentClassificationService().shouldInterruptExecution(roleMeta.getInterruptQuery(), message);
                 if (intent) {
@@ -365,31 +355,43 @@ public class RoleService {
             }
 
             // 使用命令工厂处理所有命令
-            if (roleCommandFactory.executeCommand(message, sink, from, rr)) {
+            if (roleCommandFactory.executeCommand(message, sink, from, reactorRole)) {
                 return; // 命令已处理
             }
 
             if (message.isClearHistory()) {
-                rr.clearMemory();
+                reactorRole.clearMemory();
             }
 
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
             String content = message.getContent();
-            if (rr.isInterrupted() && roleCommandFactory.findCommand(content).isEmpty()) {
+            if (reactorRole.isInterrupted() && roleCommandFactory.findCommand(content).isEmpty()) {
                 log.info("Agent {} 收到新的非中断命令，自动重置中断状态", from);
-                rr.resetInterrupt();
+                reactorRole.resetInterrupt();
                 sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
             }
 
             //把消息下发给Agent
-            if (!(rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
+            if (!(reactorRole.getState().get().equals(RoleState.observe) || reactorRole.getState().get().equals(RoleState.think))) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                if (resolveMessageData(message, rr, sink)) {
-                    rr.putMessage(message);
+                if (resolveMessageData(message, reactorRole, sink)) {
+                    reactorRole.putMessage(message);
                 }
             }
+        });
+    }
+
+    private void ensureActiveRole(Message message, String from) {
+        roleMap.compute(from, (k, v) -> {
+            if (v == null) {
+                return createRole(message);
+            }
+            if (v.getState().get().equals(RoleState.exit)) {
+                return createRole(message);
+            }
+            return v;
         });
     }
 

@@ -115,8 +115,7 @@ public class ChatFunction implements McpFunction {
         try {
             return sendMsgToAgent(clientId, userId, agentId, ownerId, message, images, voiceBase64, timeout);
         } catch (Exception e) {
-            String errorMessage = "ERROR: " + e.getMessage();
-            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("ERROR: " + e.getMessage())), true));
         }
     }
 
