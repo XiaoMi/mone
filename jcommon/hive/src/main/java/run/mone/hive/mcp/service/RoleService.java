@@ -327,7 +327,7 @@ public class RoleService {
 
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
-        String from = message.getSentFrom().toString();
+        String from = message.getSentFrom().toString();//from本质是:Const.OWNER_ID
         Optional<RoleBaseCommand> optional = roleCommandFactory.findCommand(message);
         // 检查是否是需要特殊处理的命令（创建role命令、压缩命令等）
         if (optional.isPresent() && isImmediateExecutionCommand(optional.get())) {
