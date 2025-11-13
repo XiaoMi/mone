@@ -779,9 +779,11 @@ public class ReactorRole extends Role {
             if (StringUtils.isNotEmpty(content)) {
                 this.fluxSink.next(content);
             }
-            // 如果需要，再单独发送ID
-            if (addId && contextMessage != null) {
-                this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");
+            if (FileCheckpointManager.enableCheck(true)){
+                // 如果需要，再单独发送ID
+                if (addId && contextMessage != null) {
+                    this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");
+                }
             }
         }
     }
