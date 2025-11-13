@@ -58,6 +58,7 @@ public class AgentConfig {
                                 replaceInFileTool,
                                 new ListCodeDefinitionNamesTool(),
                                 writeToFileTool,
+                                // new DiffTool(),
                                 new ChatTool(),
                                 new AskTool(),
                                 new AttemptCompletionTool()

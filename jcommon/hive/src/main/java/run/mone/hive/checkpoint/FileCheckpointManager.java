@@ -37,14 +37,35 @@ public class FileCheckpointManager {
         this(projectPath, DEFAULT_SHADOW_REPO_SUB_DIR);
     }
 
+    private static Boolean staticEnabled = null;
+
+    public static boolean enableCheck(boolean enabled) {
+        if (staticEnabled != null) {
+            return staticEnabled;
+        }
+        staticEnabled = enableCheckInner(enabled);
+        return staticEnabled;
+    }
+
+    private static boolean enableCheckInner(boolean enabled) {
+        if (!enabled) {
+            enabled = isCheckpointEnabledByProps();
+        }
+        if (enabled) {
+            enabled = isCheckpointEnabledByENV();
+        }
+        return enabled;
+    }
+
     public FileCheckpointManager(String projectPath, String shadowRepoSubDir) throws IOException, InterruptedException {
-        if (projectPath.equals("/") || !enable) {
+        boolean enabled = enableCheck(enable);
+        if (projectPath.equals("/") || !enabled) {
             this.projectPath = "/";
             this.gitDir = "";
             this.checkpointsFile = new File("");
             this.checkpointMap = new ConcurrentHashMap<>();
             this.checkpointAvailable = false;
-            log.warn("Project path is '/' vs {} or enable is {}, checkpoint is disabled.", projectPath, enable);
+            log.warn("Project path is '/' vs {} or enable is {}, checkpoint is disabled.", projectPath, enabled);
         } else {
             this.projectPath = new File(projectPath).getCanonicalPath();
             this.gitDir = Paths.get(this.projectPath, shadowRepoSubDir).toFile().getCanonicalPath();
@@ -59,6 +80,35 @@ public class FileCheckpointManager {
             } else {
                 log.warn("Git command is not available. Skipping git related operations.");
             }
+        }
+    }
+
+    private static boolean isCheckpointEnabledByENV() {
+        try {
+            String t = System.getenv("HIVE_CHECKPOINT_DISABLE");
+            if ("true".equals(t) || "1".equals(t) || "yes".equals(t) || "on".equals(t)) {
+                return false;
+            }
+            return true;
+        } catch (Throwable ignore) {
+            return true;
+        }
+    }
+
+    private static boolean isCheckpointEnabledByProps() {
+        try {
+            String p = System.getProperty("hive.checkpoint.enable");
+            if (p == null) {
+                p = System.getenv("HIVE_CHECKPOINT_ENABLE");
+            }
+            if (p == null) {
+                return false;
+            }
+            p = p.trim().toLowerCase();
+            log.info("checkpoint enabled by props:{}", p);
+            return "true".equals(p) || "1".equals(p) || "yes".equals(p) || "on".equals(p);
+        } catch (Throwable ignore) {
+            return false;
         }
     }
 
@@ -81,7 +131,9 @@ public class FileCheckpointManager {
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
             int exitCode = process.waitFor();
-            return exitCode == 0;
+            boolean success = exitCode == 0;
+            log.info("git available:{}", success);
+            return success;
         } catch (IOException | InterruptedException e) {
             log.warn("Failed to check git availability", e);
             return false;
@@ -245,6 +297,64 @@ public class FileCheckpointManager {
         }
         try (FileWriter writer = new FileWriter(checkpointsFile)) {
             gson.toJson(checkpointMap, writer);
+        }
+    }
+
+    /**
+     * Generate a unified diff from the given checkpoint to current work-tree.
+     * If {@code checkpointId} is null or empty, uses {@code HEAD} as the base.
+     *
+     * @param checkpointId checkpoint id or commit-ish; when null/empty, use HEAD
+     * @param paths        optional path list to limit scope; when null/empty, diff entire tree
+     * @param contextLines unified context lines (e.g., 3, 5)
+     * @return diff text (may be empty if no changes), or a message if checkpoint is unavailable
+     */
+    public String diffFromCheckpoint(String checkpointId, List<String> paths, int contextLines) {
+        if (!checkpointAvailable) {
+            return "Checkpoint is not available (git disabled or not found).";
+        }
+        String base = "HEAD";
+        if (checkpointId != null && !checkpointId.isEmpty()) {
+            String mapped = checkpointMap.getOrDefault(checkpointId, checkpointId);
+            base = mapped;
+        }
+
+        try {
+            // Add all files to staging area (including untracked files) to include them in diff
+            executeGitCommand("add", "-A");
+
+            ProcessBuilder pb = new ProcessBuilder("git",
+                    "--git-dir=" + this.gitDir,
+                    "--work-tree=" + this.projectPath,
+                    "diff",
+                    "--cached",  // Show diff between staged changes and base commit
+                    "--no-color",
+                    "--unified=" + Math.max(0, contextLines),
+                    base,
+                    "--");
+
+            if (paths != null && !paths.isEmpty()) {
+                pb.command().addAll(paths);
+            } else {
+                pb.command().add(".");
+            }
+
+            log.info("Executing git diff command: {}", String.join(" ", pb.command()));
+            String diff = execute(pb, "diff");
+
+            // Reset staging area to avoid affecting future operations
+            executeGitCommand("reset", "HEAD");
+
+            return diff;
+        } catch (IOException | InterruptedException e) {
+            log.error("Failed to run git diff", e);
+            // Try to reset even on error to keep repo clean
+            try {
+                executeGitCommand("reset", "HEAD");
+            } catch (Exception resetEx) {
+                log.warn("Failed to reset after diff error", resetEx);
+            }
+            return "Failed to run git diff: " + e.getMessage();
         }
     }
 }

@@ -378,7 +378,8 @@ public class MonerSystemPrompt {
             Checklist here (optional)
             </task_progress><% } %>
             </execute_command>
-            
+           
+            这里有一些内部的tool,这些tool不需要返回server_name
             <% for(tool in toolList){%>
             ## ${invoke(tool, "getName")}
             Description: ${invoke(tool, "description")}
@@ -447,7 +448,7 @@ public class MonerSystemPrompt {
             <% } %>
             
             
-            请记住这三个参数必须提供:  
+            如果是mcp工具,请记住这三个参数必须提供:  
             <server_name>
             <tool_name>
             <arguments>

@@ -10,6 +10,8 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.util.HtmlUtils;
+
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
@@ -37,8 +39,10 @@ import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 import run.mone.hive.task.*;
+import run.mone.hive.utils.JsonUtils;
 import run.mone.hive.utils.NetUtils;
 
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -590,7 +594,7 @@ public class ReactorRole extends Role {
                 callMcp(it, sink);
             } else {
                 //只返回了一个思考结果
-                if (name.equals("thinking")) {
+                if (name.startsWith("think")) {
                     String _msg = "我思考的内容是:" + toolRes;
                     this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
                 } else {
@@ -738,6 +742,34 @@ public class ReactorRole extends Role {
         // HINT: 如果不需要外部调用方处理后触发下一轮执行，则直接放到记忆中 
         if (!tool.callerRunTrigger()) {
             this.putMessage(assistantMessage);
+        }
+
+        // Auto-trigger diff after file-modifying tools
+        try {
+            if (this.fileCheckpointManager != null && tool.needExecute() && this.isAutoDiff()) {
+                if ("write_to_file".equals(name) || "replace_in_file".equals(name)) {
+                    String diff = this.fileCheckpointManager.diffFromCheckpoint(null, java.util.Collections.emptyList(), 3);
+                    if (diff == null) diff = "";
+                    byte[] bytes = diff.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    boolean truncated = false;
+                    int maxBytes = 200 * 1024;
+                    if (bytes.length > maxBytes) {
+                        diff = new String(bytes, 0, maxBytes, java.nio.charset.StandardCharsets.UTF_8) + "\n...\n[diff output truncated]";
+                        truncated = true;
+                    }
+
+                    String contentForUser = diff.isEmpty() ? "无差异" : diff;
+                    String escaped = HtmlUtils.htmlEscape(contentForUser);
+                    Message diffMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
+                    sendToSink(JsonUtils.toolResult(escaped), diffMessage, true);
+                    contentForLlm = "调用Tool:" + "diff_since_checkpoint" + "\n结果:\n" + contentForUser;
+                    diffMessage.setData(contentForLlm);
+                    diffMessage.setContent(contentForLlm);
+                    this.putMessage(diffMessage);
+                }
+            }
+        } catch (Throwable ignore) {
+            // do not fail the main flow on diff errors
         }
     }
 
@@ -1246,4 +1278,23 @@ public class ReactorRole extends Role {
         return this.contextManager != null && this.contextManager.isCompressing();
     }
 
+    /**
+     * 是否通开启auto diff
+     */
+    private boolean isAutoDiff() {
+       try {
+            String p = System.getProperty("hive.auto.diff");
+            if (p == null) {
+                p = System.getenv("HIVE_AUTO_DIFF");
+            }
+            if (p == null) {
+                return false;
+            }
+            p = p.trim().toLowerCase();
+            log.info("auto diff enabled by props:{}", p);
+            return "true".equals(p) || "1".equals(p) || "yes".equals(p) || "on".equals(p);
+        } catch (Throwable ignore) {
+            return false;
+        } 
+    }
 }

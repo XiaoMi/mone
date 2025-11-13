@@ -33,6 +33,7 @@ public enum LLMProvider {
     OPENAICOMPATIBLE("", "", "", null),
     OPENAI_MULTIMODAL_COMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
+    DOUBAO_SEED_CODE("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", "doubao-seed-code-preview-251028", null),
     DOUBAO_VISION("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_VISION_MODEL_KEY"),
     DOUBAO_UI_TARS("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_UI_TARS_MODEL_KEY"),
     DOUBAO_DEEPSEEK_R1("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_R1_MODEL_KEY"),
