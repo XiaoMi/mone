@@ -25,8 +25,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
-import run.mone.hive.mcp.service.command.CompressionCommand;
-import run.mone.hive.mcp.service.command.CreateRoleCommand;
+import run.mone.hive.mcp.service.command.RoleBaseCommand;
 import run.mone.hive.mcp.service.command.RoleCommandFactory;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
@@ -147,13 +146,7 @@ public class RoleService {
     }
 
     private static @NotNull McpHub getMcpHub(ReactorRole role) {
-        McpHub hub = new McpHub();
-        if (null != role.getMcpHub()) {
-            hub = role.getMcpHub();
-        } else {
-            hub = new McpHub();
-        }
-        return hub;
+        return role.getMcpHub() != null ? role.getMcpHub() : new McpHub();
     }
 
     //合并两个List<String>注意去重(method)
@@ -322,30 +315,26 @@ public class RoleService {
     }
 
 
+    /**
+     * 判断命令是否需要立即执行（无需等待Agent状态）
+     * 例如：创建role命令、压缩命令等
+     */
+    private boolean isImmediateExecutionCommand(RoleBaseCommand command) {
+        String commandName = command.getCommandName();
+        // 使用命令名称来判断，避免依赖具体的命令类
+        return "/create".equals(commandName) || "compression".equals(commandName);
+    }
+
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
         String from = message.getSentFrom().toString();
 
-        // 检查是否是创建role命令，如果是且role为空，则特殊处理
-        if (roleCommandFactory.findCommand(message).isPresent() &&
-                roleCommandFactory.findCommand(message).get() instanceof CreateRoleCommand) {
-            ReactorRole existingRole = roleMap.get(from);
-            if (existingRole == null) {
-                return Flux.create(sink -> {
-                    roleCommandFactory.executeCommand(message, sink, from, null);
-                });
-            } else {
-                existingRole.saveConfig();
-            }
-        }
+        Optional<RoleBaseCommand> optional = roleCommandFactory.findCommand(message);
 
-        // 检查是否是压缩命令，如果是则直接处理，无需等待Agent状态
-        if (roleCommandFactory.findCommand(message).isPresent() &&
-                roleCommandFactory.findCommand(message).get() instanceof CompressionCommand) {
+        // 检查是否是需要特殊处理的命令（创建role命令、压缩命令等）
+        if (optional.isPresent() && isImmediateExecutionCommand(optional.get())) {
             ReactorRole existingRole = roleMap.get(from);
-            return Flux.create(sink -> {
-                roleCommandFactory.executeCommand(message, sink, from, existingRole);
-            });
+            return Flux.create(sink -> roleCommandFactory.executeCommand(message, sink, from, existingRole));
         }
 
         roleMap.compute(from, (k, v) -> {
