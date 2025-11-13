@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
@@ -59,7 +60,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, GrpcServerTransport transport) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, GrpcServerTransport transport, ApplicationContext applicationContext) {
         List<ITool> toolList = roleMeta.getTools();
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
 
@@ -78,7 +79,8 @@ public class HiveAutoConfigure {
                 mcpTools,
                 hiveManagerService,
                 roleMeta,
-                transport
+                transport,
+                applicationContext
         );
     }
 

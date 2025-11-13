@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.DependsOn;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -51,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @Data
 @Slf4j
+@DependsOn("applicationContextHolder")
 public class RoleService {
 
     private final LLM llm;
@@ -108,11 +111,13 @@ public class RoleService {
 
     private final GrpcServerTransport transport;
 
+    private final ApplicationContext applicationContext;
+
     @PostConstruct
     @SneakyThrows
     public void init() {
         //初始化Role命令工厂
-        this.roleCommandFactory = new RoleCommandFactory(this);
+        this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
         //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
