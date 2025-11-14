@@ -9,7 +9,7 @@
         <version>1.6.1-jdk21-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mcp-coder</artifactId>
+    <artifactId>mcp-git</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -17,39 +17,58 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-
     <dependencies>
-
+<!--        <dependency>-->
+<!--            <groupId>run.mone</groupId>-->
+<!--            <artifactId>hive-spring-starter</artifactId>-->
+<!--            <version>1.6.0-jdk21-SNAPSHOT</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>hive</artifactId>
             <version>1.6.2-jdk21-SNAPSHOT</version>
         </dependency>
-
+<!--        <dependency>-->
+<!--            <groupId>run.mone</groupId>-->
+<!--            <artifactId>mcp-chat</artifactId>-->
+<!--            <version>1.6.1-jdk21-SNAPSHOT</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
+        <!-- JGit dependency for Git operations -->
         <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>hive-spring-starter</artifactId>
-            <version>1.6.0-jdk21-SNAPSHOT</version>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>6.10.0.202406032230-r</version>
         </dependency>
-
+        <!-- Apache Commons Lang -->
         <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>mcp-git</artifactId>
-            <version>1.6.1-jdk21-SNAPSHOT</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.14.0</version>
         </dependency>
-
     </dependencies>
 
     <build>
-
         <plugins>
-
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <verbose>true</verbose>
+                    <encoding>UTF-8</encoding>
+                    <compilerArguments>
+                        <sourcepath>${project.basedir}/src/main/java</sourcepath>
+                    </compilerArguments>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.7.14</version>
                 <configuration>
-                    <mainClass>run.mone.mcp.coder.CoderAgentBootstrap</mainClass>
+                    <mainClass>run.mone.mcp.git.GitApplication</mainClass>
                     <finalName>app</finalName>
                 </configuration>
                 <executions>
@@ -60,10 +79,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
         </plugins>
-
     </build>
-
 </project>
