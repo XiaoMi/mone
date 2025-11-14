@@ -28,6 +28,7 @@ public class DiffTool implements ITool {
     private static final int DEFAULT_CONTEXT = 3;
     private static final int DEFAULT_MAX_BYTES = 200 * 1024; // 200KB
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final String DEFAULT_NOTIFY_URL = "http://127.0.0.1:6666/tianye";
 
     private final OkHttpClient httpClient;
 
@@ -161,6 +162,27 @@ public class DiffTool implements ITool {
     }
 
     /**
+     * 获取diff通知URL
+     * 优先从系统属性获取，其次从环境变量获取，最后使用默认值
+     */
+    private String getDiffNotifyUrl() {
+        try {
+            String url = System.getProperty("hive.diff.notify.url");
+            if (url == null) {
+                url = System.getenv("HIVE_DIFF_NOTIFY_URL");
+            }
+            if (url == null) {
+                url = DEFAULT_NOTIFY_URL;
+            }
+            log.debug("使用diff通知URL: {}", url);
+            return url.trim();
+        } catch (Throwable ex) {
+            log.warn("获取diff通知URL失败，使用默认值", ex);
+            return DEFAULT_NOTIFY_URL;
+        }
+    }
+
+    /**
      * 发送diff通知到外部接口
      */
     private void sendDiffNotification(ReactorRole role, String checkpointId, JsonArray changedFiles) {
@@ -183,7 +205,7 @@ public class DiffTool implements ITool {
             }
 
             // 发送HTTP请求
-            String url = "http://127.0.0.1:3458/tianye";
+            String url = getDiffNotifyUrl();
             sendHttpPostRequest(url, requestBody.toString());
 
             log.info("已发送diff通知: projectName={}, checkpointId={}, changedFiles={}",
