@@ -3,12 +3,20 @@ package run.mone.hive.roles.tool;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.util.HtmlUtils;
 import run.mone.hive.roles.ReactorRole;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Diff tool that shows changes from last checkpoint commit (HEAD) to current work-tree.
@@ -19,6 +27,16 @@ public class DiffTool implements ITool {
     public static final String NAME = "diff_since_checkpoint";
     private static final int DEFAULT_CONTEXT = 3;
     private static final int DEFAULT_MAX_BYTES = 200 * 1024; // 200KB
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
+    private final OkHttpClient httpClient;
+
+    public DiffTool() {
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(3, TimeUnit.SECONDS)
+                .build();
+    }
 
     @Override
     public String getName() {
@@ -93,7 +111,8 @@ public class DiffTool implements ITool {
             if (diff.isEmpty()) {
                 res.addProperty("message", "无差异");
             } else {
-                res.addProperty("diff", diff);
+                String escapedDiff = HtmlUtils.htmlEscape(diff);
+                res.addProperty("diff", escapedDiff);
             }
             res.addProperty("text_truncated", truncated);
 
@@ -109,11 +128,104 @@ public class DiffTool implements ITool {
             res.add("changed_files", changed);
             res.addProperty("changed_files_count", changed.size());
 
+            // 自动发送diff通知
+            if (isAutoDiffNotify()) {
+                sendDiffNotification(role, checkpointId, changed);
+            }
+
         } catch (Exception e) {
             log.error("DiffTool execute error", e);
             res.addProperty("error", e.getMessage());
         }
         return res;
+    }
+
+     /**
+     * 是否开启diff notify
+     */
+    private boolean isAutoDiffNotify() {
+       try {
+            String p = System.getProperty("hive.auto.diff.notify");
+            if (p == null) {
+                p = System.getenv("HIVE_AUTO_DIFF_NOTIFY");
+            }
+            if (p == null) {
+                return false;
+            }
+            p = p.trim().toLowerCase();
+            log.info("auto diff enabled by props:{}", p);
+            return "true".equals(p) || "1".equals(p) || "yes".equals(p) || "on".equals(p);
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    /**
+     * 发送diff通知到外部接口
+     */
+    private void sendDiffNotification(ReactorRole role, String checkpointId, JsonArray changedFiles) {
+        try {
+            // 获取项目名称
+            String projectName = extractProjectName(role.getWorkspacePath());
+            if (StringUtils.isEmpty(projectName)) {
+                log.warn("无法获取项目名称，跳过diff通知");
+                return;
+            }
+
+            // 构建请求体
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("cmd", "show_checkpoint_diff");
+            requestBody.addProperty("projectName", projectName);
+
+            // 如果有checkpointId，则添加
+            if (StringUtils.isNotEmpty(checkpointId)) {
+                requestBody.addProperty("checkpointId", checkpointId);
+            }
+
+            // 发送HTTP请求
+            String url = "http://127.0.0.1:3458/tianye";
+            sendHttpPostRequest(url, requestBody.toString());
+
+            log.info("已发送diff通知: projectName={}, checkpointId={}, changedFiles={}",
+                    projectName, checkpointId, changedFiles.size());
+        } catch (Exception e) {
+            log.error("发送diff通知失败", e);
+        }
+    }
+
+    /**
+     * 从工作区路径中提取项目名称
+     */
+    private String extractProjectName(String workspacePath) {
+        if (StringUtils.isEmpty(workspacePath)) {
+            return null;
+        }
+        try {
+            return Paths.get(workspacePath).getFileName().toString();
+        } catch (Exception e) {
+            log.error("提取项目名称失败: {}", workspacePath, e);
+            return null;
+        }
+    }
+
+    /**
+     * 发送HTTP POST请求
+     */
+    private void sendHttpPostRequest(String urlString, String jsonBody) throws Exception {
+        RequestBody body = RequestBody.create(jsonBody, JSON);
+        Request request = new Request.Builder()
+                .url(urlString)
+                .post(body)
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            int responseCode = response.code();
+            log.debug("HTTP POST 响应码: {}", responseCode);
+
+            if (!response.isSuccessful()) {
+                log.warn("HTTP POST 请求失败: {}", responseCode);
+            }
+        }
     }
 }
 

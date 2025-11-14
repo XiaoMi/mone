@@ -5,9 +5,6 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.benf.cfr.reader.api.CfrDriver;
-import org.benf.cfr.reader.api.ClassFileSource;
-import org.benf.cfr.reader.api.OutputSinkFactory;
-import org.benf.cfr.reader.api.SinkReturns;
 import run.mone.hive.roles.ReactorRole;
 
 import java.io.*;
@@ -404,50 +401,14 @@ public class JarDecompileTool implements ITool {
      */
     private void decompileWithCFR(File jarFile, File outputDir) throws IOException {
         try {
-            // CFR options
+            // CFR options - use outputdir for file output
             Map<String, String> options = new HashMap<>();
             options.put("outputdir", outputDir.getAbsolutePath());
             options.put("caseinsensitivefs", "true");
-            options.put("silent", "true");
 
-            // Create output sink
-            OutputSinkFactory outputSinkFactory = new OutputSinkFactory() {
-                @Override
-                public List<SinkClass> getSupportedSinks(SinkType sinkType, Collection<SinkClass> collection) {
-                    return Arrays.asList(SinkClass.STRING, SinkClass.DECOMPILED, SinkClass.DECOMPILED_MULTIVER);
-                }
-
-                @Override
-                public <T> Sink<T> getSink(SinkType sinkType, SinkClass sinkClass) {
-                    return new Sink<T>() {
-                        @Override
-                        public void write(T t) {
-                            // Handle output
-                            if (t instanceof SinkReturns.Decompiled) {
-                                SinkReturns.Decompiled decompiled = (SinkReturns.Decompiled) t;
-                                String packageName = decompiled.getPackageName();
-                                String className = decompiled.getClassName();
-                                String javaCode = decompiled.getJava();
-
-                                // Write to file
-                                try {
-                                    File packageDir = new File(outputDir, packageName.replace('.', File.separatorChar));
-                                    packageDir.mkdirs();
-                                    File javaFile = new File(packageDir, className + ".java");
-                                    Files.writeString(javaFile.toPath(), javaCode, StandardCharsets.UTF_8);
-                                } catch (IOException e) {
-                                    log.error("Failed to write decompiled file: {}.{}", packageName, className, e);
-                                }
-                            }
-                        }
-                    };
-                }
-            };
-
-            // Run CFR decompiler
+            // Use CFR's default file output sink by not providing custom sink
             CfrDriver driver = new CfrDriver.Builder()
                     .withOptions(options)
-                    .withOutputSink(outputSinkFactory)
                     .build();
 
             driver.analyse(Collections.singletonList(jarFile.getAbsolutePath()));

@@ -125,6 +125,7 @@ public class ConfigCommand extends RoleBaseCommand {
             llmOptions.put("claude", "openrouter_claude_sonnet_45");
             llmOptions.put("gemini", "openrouter_gemini_25_pro");
             llmOptions.put("minimax", "minimax");
+            llmOptions.put("doubao_seed_code", "doubao_seed_code");
             configMap.put("llmOptions", llmOptions);
 
             // 构建标准响应格式
