@@ -25,7 +25,7 @@ public class RoleCommandFactory {
 
     private final List<RoleBaseCommand> commands = new ArrayList<>();
 
-    public RoleCommandFactory(RoleService roleService) {
+    public RoleCommandFactory(RoleService roleService, ApplicationContext applicationContext) {
         // 注册所有Role命令
         registerCommand(new InterruptCommand(roleService));
         registerCommand(new RefreshConfigCommand(roleService));
@@ -39,7 +39,7 @@ public class RoleCommandFactory {
         registerCommand(new CompressionCommand(roleService));
         
         // 自动扫描和注册带@RoleCommand注解的命令
-        scanAndRegisterAnnotatedCommands(roleService);
+        scanAndRegisterAnnotatedCommands(applicationContext);
     }
 
     /**
@@ -54,21 +54,11 @@ public class RoleCommandFactory {
 
     /**
      * 扫描并注册带@RoleCommand注解的命令
-     *
-     * @param roleService RoleService实例
      */
-    private void scanAndRegisterAnnotatedCommands(RoleService roleService) {
+    private void scanAndRegisterAnnotatedCommands(ApplicationContext applicationContext) {
         try {
-            if (!ApplicationContextHolder.isInitialized()) {
-                log.warn("ApplicationContext未初始化，跳过自动扫描命令");
-                return;
-            }
-
-            ApplicationContext applicationContext = ApplicationContextHolder.getApplicationContext();
             Map<String, Object> commandBeans = applicationContext.getBeansWithAnnotation(RoleCommand.class);
-
             List<RoleBaseCommand> annotatedCommands = new ArrayList<>();
-            
             for (Object bean : commandBeans.values()) {
                 if (bean instanceof RoleBaseCommand) {
                     RoleBaseCommand command = (RoleBaseCommand) bean;

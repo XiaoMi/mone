@@ -176,7 +176,6 @@ export default {
           },
         }
       })
-      console.log('messages>>', messages)
       return messages
     },
   },

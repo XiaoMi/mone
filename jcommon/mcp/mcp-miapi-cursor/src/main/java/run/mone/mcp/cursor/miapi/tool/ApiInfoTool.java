@@ -41,11 +41,8 @@ public class ApiInfoTool implements ITool {
     @Override
     public String description() {
         return """
-            This is a tool for querying interface information.
-
-            **When to use:** When the user querys the interface information, choose to use this tool.
-
-            **Output:** This tool will return the query interface information.
+            1.功能只是查询完整的接口信息，不进行接口测试和其他回答.
+            2.用户需要输入要查询的接口path或url.
             """;
     }
 
@@ -83,7 +80,7 @@ public class ApiInfoTool implements ITool {
         }
     }
 
-    public String getApiDetail(String type, JsonElement url) {
+    private String getApiDetail(String type, JsonElement url) {
         if (StringUtils.isEmpty(type) || url == null || StringUtils.isEmpty(url.getAsString())) {
             return "error: Parameters cannot be empty";
         }
@@ -97,7 +94,7 @@ public class ApiInfoTool implements ITool {
         return getApiDetailMiApi(requestParams);
     }
 
-    public String getApiDetailMiApi(JsonObject reqParamsBo) {
+    private String getApiDetailMiApi(JsonObject reqParamsBo) {
         String result = "";
         try {
             JsonObject detail = httpClient.post(host + "/OpenApi/mcp/detail", reqParamsBo);

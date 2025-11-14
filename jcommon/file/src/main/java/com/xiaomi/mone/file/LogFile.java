@@ -7,9 +7,11 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.processing.FilerException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -80,6 +82,9 @@ public class LogFile implements ILogFile {
             //日志文件进行切分时，减少FileNotFoundException概率,这个应该删掉了,在使用前保证就好了，由于历史原因,降低了休眠时间
 //            TimeUnit.SECONDS.sleep(1);
             //4kb
+            if (raf != null) {
+                raf.close();
+            }
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
             reFresh = false;
@@ -132,7 +137,7 @@ public class LogFile implements ILogFile {
                         lineNumber = 0;
                         break;
                     }
-
+//                    Thread.sleep(10000);
                     if (stop || exceptionFinish) {
                         log.info("readline stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, FileUtils.fileKey(new File(file)));
                         break;
@@ -178,7 +183,7 @@ public class LogFile implements ILogFile {
                     raf.close();
                 }
                 log.error("readLine error", e);
-                if (e instanceof FileNotFoundException) {
+                if (e instanceof FileNotFoundException | e instanceof FileSystemException) {
                     throw e;
                 }
             }
@@ -250,6 +255,9 @@ public class LogFile implements ILogFile {
     public void shutdown() {
         try {
             this.stop = true;
+            if (raf != null) {
+                raf.close();
+            }
             Files.write(Paths.get("/tmp/" + this.md5), String.valueOf(this.pointer).getBytes());
         } catch (Throwable ex) {
             log.error(ex.getMessage());

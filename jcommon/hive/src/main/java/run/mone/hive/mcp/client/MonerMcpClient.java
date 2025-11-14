@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class MonerMcpClient {
@@ -39,7 +40,7 @@ public class MonerMcpClient {
             toolArguments.put(Const.USER_INTERNAL_NAME, internalName);
             toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
             Safe.run(() -> {
-                toolArguments.put(Const.OWNER_ID, toolDataInfo.getUserId()+"_"+toolDataInfo.getAgentId());
+                toolArguments.put(Const.OWNER_ID, toolDataInfo.getUserId() + "_" + toolDataInfo.getAgentId());
             });
             if (null != toolDataInfo.getRole()) {
                 toolArguments.put(Const.ROLE, toolDataInfo.getRole());
@@ -47,7 +48,7 @@ public class MonerMcpClient {
 
             AtomicBoolean error = new AtomicBoolean(false);
             // 调用before方法并检查返回值
-            boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
+            boolean shouldProceed = monerMcpInterceptor.before(serviceName, toolName, toolArguments);
             if (shouldProceed) {
                 McpSchema.CallToolResult toolRes = null;
                 //流式调用
@@ -83,11 +84,17 @@ public class MonerMcpClient {
                     if (null == hub) {
                         return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
                     }
+
+                    if (serviceName.equals("alphavantage")) {
+                        hub = McpHubHolder.get(from);
+                        toolArguments.keySet().stream().filter(it -> it.startsWith("__")).collect(Collectors.toSet()).forEach(toolArguments::remove);
+                    }
+
                     try {
                         toolRes = hub.callTool(serviceName, toolName,
                                 toolArguments);
                     } catch (Throwable ex) {
-                        log.error(ex.getMessage(),ex);
+                        log.error(ex.getMessage(), ex);
                         error.set(true);
                     }
                 }
@@ -95,6 +102,12 @@ public class MonerMcpClient {
                 return McpResult.builder().toolName(toolName).content(toolRes.content().get(0)).error(error.get()).build();
             } else {
                 log.info("工具 {} 执行被拦截，不执行实际调用", toolName);
+                //执行拦截器中的操作
+                McpResult res = monerMcpInterceptor.call(serviceName, toolName, toolArguments);
+                if (null != res) {
+                    log.info("mcp interceptor call res:{}", res);
+                    return res;
+                }
                 McpSchema.TextContent textContent = new McpSchema.TextContent("操作已取消，可以结束此轮操作。");
                 return McpResult.builder().toolName(toolName).content(textContent).build();
             }
@@ -152,8 +165,8 @@ public class MonerMcpClient {
                             }
                         }
 
-                ).doOnError(e->{
-            error.set(true);
+                ).doOnError(e -> {
+                    error.set(true);
                 })
                 .blockLast();
     }

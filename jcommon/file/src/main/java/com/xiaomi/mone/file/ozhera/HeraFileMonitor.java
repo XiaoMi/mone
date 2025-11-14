@@ -45,6 +45,8 @@ public class HeraFileMonitor {
 
     private Gson gson = new Gson();
 
+    private static final String MAX_FILE_SIZE_KEY = "max_file_size";
+
     public HeraFileMonitor() {
         this(TimeUnit.SECONDS.toMillis(30));
     }
@@ -79,7 +81,23 @@ public class HeraFileMonitor {
     }
 
     public void reg(String path, Predicate<String> predicate) throws IOException, InterruptedException {
-        this.reg(path, predicate, 10);
+        this.reg(path, predicate, getMaxFiles());
+    }
+
+    private int getMaxFiles() {
+        int defaultMaxFiles = 1000;
+        String raw = System.getenv(MAX_FILE_SIZE_KEY);
+        if (null == raw || raw.isEmpty()) {
+            raw = System.getProperty(MAX_FILE_SIZE_KEY);
+        }
+        if (null != raw && !raw.isEmpty()) {
+            try {
+                defaultMaxFiles = Integer.parseInt(raw);
+            } catch (Exception e) {
+                log.error("parse {} error,use default value:{},config value:{}", MAX_FILE_SIZE_KEY, defaultMaxFiles, raw);
+            }
+        }
+        return defaultMaxFiles;
     }
 
     public void reg(String path, Predicate<String> predicate, Integer maxFiles) throws IOException {
@@ -116,10 +134,14 @@ public class HeraFileMonitor {
                         }
 
                         if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
+                            Object fileKey = null;
+                            if (hfile != null) {
+                                fileKey = hfile.getFileKey();
+                                map.remove(fileKey);
+                            }
                             fileMap.remove(filePath);
-                            if (null != hfile) {
-                                map.remove(hfile.getFileKey());
-                                listener.onEvent(FileEvent.builder().type(EventType.delete).fileName(filePath).fileKey(hfile.getFileKey()).build());
+                            if (listener != null) {
+                                listener.onEvent(FileEvent.builder().type(EventType.delete).fileName(filePath).fileKey(fileKey).build());
                             }
                         }
 
@@ -149,6 +171,12 @@ public class HeraFileMonitor {
                 log.error("watchService error", e);
             }
         }
+        try {
+            watchService.close();
+            log.info("watchService closed for directory {},path:{}", directory, path);
+        } catch (IOException e) {
+            log.error("failed to close watchService,directory {},path:{}", directory, path, e);
+        }
     }
 
     private ReentrantLock lock = new ReentrantLock();
@@ -170,6 +198,13 @@ public class HeraFileMonitor {
                 long pointer = 0L;
                 if (null != fi && Objects.equals(it.getPath(), fi.getFileName())) {
                     pointer = fi.getPointer();
+                    // 如果指针超过文件长度，说明文件可能被截断或重新创建，重置为0
+                    long fileLength = it.length();
+                    if (pointer > fileLength) {
+                        log.warn("pointer {} exceeds file length {}, reset to 0 for file:{}, fileKey:{}", 
+                                pointer, fileLength, it.getPath(), fileKey);
+                        pointer = 0L;
+                    }
                 }
                 log.info("initFile fileName:{},fileKey:{},fi:{},pointer:{}", name, fileKey, fi, pointer);
                 map.put(hf.getFileKey(), hf);

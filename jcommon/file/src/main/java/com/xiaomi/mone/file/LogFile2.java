@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.security.MessageDigest;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -100,6 +101,9 @@ public class LogFile2 implements ILogFile {
 
     private void open() throws FileNotFoundException {
         try {
+            if (raf != null) {
+                raf.close();
+            }
             //4kb
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
@@ -216,7 +220,7 @@ public class LogFile2 implements ILogFile {
                     raf.close();
                 }
                 log.error("readLine error", e);
-                if (e instanceof FileNotFoundException) {
+                if (e instanceof FileNotFoundException | e instanceof FileSystemException) {
                     throw e;
                 }
             }
@@ -287,6 +291,9 @@ public class LogFile2 implements ILogFile {
     public void shutdown() {
         try {
             this.stop = true;
+            if (raf != null) {
+                raf.close();
+            }
             FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
         } catch (Throwable ex) {
             log.error(ex.getMessage());

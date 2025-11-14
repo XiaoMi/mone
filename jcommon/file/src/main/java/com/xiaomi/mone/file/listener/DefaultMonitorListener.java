@@ -57,8 +57,19 @@ public class DefaultMonitorListener implements EventListener {
 
         if (event.getType().equals(EventType.delete)) {
             log.info("delete:{},{}", event.getFileName(), event.getFileKey());
-            readListenerMap.remove(event.getFileKey());
-            monitor.getMap().remove(event.getFileKey());
+            Object fileKey = event.getFileKey();
+            if (fileKey != null) {
+                ReadListener readListener = readListenerMap.remove(fileKey);
+                if (readListener != null && readListener instanceof OzHeraReadListener) {
+                    OzHeraReadListener ozHeraReadListener = (OzHeraReadListener) readListener;
+                    log.info("shutdown logFile for deleted file, fileKey:{}, file:{}", fileKey, ozHeraReadListener.getLogFile().getFile());
+                    ozHeraReadListener.getLogFile().shutdown();
+                }
+                monitor.getMap().remove(fileKey);
+            } else {
+                // fileKey为null，可能是文件已经被自动移除，尝试通过fileName查找
+                log.warn("delete event with null fileKey, fileName:{}", event.getFileName());
+            }
         }
 
         if (event.getType().equals(EventType.empty)) {
@@ -83,7 +94,12 @@ public class DefaultMonitorListener implements EventListener {
 
     @Override
     public void remove(Object fileKey) {
-        readListenerMap.remove(fileKey);
+        ReadListener readListener = readListenerMap.remove(fileKey);
+        if (readListener != null && readListener instanceof OzHeraReadListener) {
+            OzHeraReadListener ozHeraReadListener = (OzHeraReadListener) readListener;
+            log.info("shutdown logFile for fileKey:{}, file:{}", fileKey, ozHeraReadListener.getLogFile().getFile());
+            ozHeraReadListener.getLogFile().shutdown();
+        }
     }
 
     @Override

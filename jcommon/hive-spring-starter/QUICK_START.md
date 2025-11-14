@@ -41,6 +41,10 @@ hive-spring-starter/
 spring.application.name=my-mcp-agent
 server.port=8080
 
+# Hive Starter 总开关（默认: true）
+# 设置为 false 时，整个 starter 都不会生效
+hive.starter.enabled=true
+
 # MCP 配置
 mcp.grpc.port=9999
 mcp.llm=CLAUDE_COMPANY
@@ -110,11 +114,25 @@ curl http://localhost:8080/mcp/agent/config
 
 ## 🎯 使用场景
 
+### 0. 禁用整个 Starter
+
+```properties
+# application.properties
+# 禁用整个 starter，所有 MCP 相关功能都不会生效
+hive.starter.enabled=false
+```
+
+适用场景：
+- 不需要 MCP 功能的应用
+- 临时禁用 MCP 功能进行调试
+- 多环境配置中某些环境不需要 MCP
+
 ### 1. 只使用 Agent Info API
 
 ```properties
 # application.properties
 # 不需要任何额外配置，Agent Info API 默认启用
+# hive.starter.enabled=true（默认值）
 ```
 
 适用场景：
@@ -224,7 +242,15 @@ curl http://localhost:8080/mcp/agent/stats
 
 ## ❓ 常见问题
 
-### Q1: 为什么 SSE 或 WebSocket 不工作？
+### Q1: 如何禁用整个 starter？
+
+A: 在配置文件中设置：
+```properties
+hive.starter.enabled=false
+```
+设置后，所有 MCP 相关功能（包括 Agent Info API、SSE、WebSocket、gRPC 服务等）都不会生效。
+
+### Q2: 为什么 SSE 或 WebSocket 不工作？
 
 A: 检查配置文件中是否启用了相应的功能：
 ```properties
@@ -232,7 +258,7 @@ mcp.sse.enabled=true
 mcp.websocket.enabled=true
 ```
 
-### Q2: 如何在代码中使用 SSE 推送消息？
+### Q3: 如何在代码中使用 SSE 推送消息？
 
 A: 注入 `SseHandler` 并调用其方法：
 ```java
@@ -244,7 +270,7 @@ public void pushMessage(String clientId, Map<String, Object> message) {
 }
 ```
 
-### Q3: 如何在代码中使用 WebSocket 发送消息？
+### Q4: 如何在代码中使用 WebSocket 发送消息？
 
 A: 注入 `WebSocketHandler` 并调用其方法：
 ```java
@@ -256,14 +282,14 @@ public void sendWebSocketMessage(String sessionId, Map<String, Object> message) 
 }
 ```
 
-### Q4: 测试页面无法访问？
+### Q5: 测试页面无法访问？
 
 A: 确保：
 1. 应用已正常启动
 2. 端口没有被占用
 3. 静态资源配置正确（Spring Boot 默认会自动配置）
 
-### Q5: 如何部署到生产环境？
+### Q6: 如何部署到生产环境？
 
 A: 生产环境建议：
 1. 使用 Nginx 等反向代理处理 WebSocket 和 SSE

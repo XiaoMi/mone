@@ -31,4 +31,8 @@ public class JsonUtils {
     public static String toolResult(String res) {
         return "<tool_result>" + res + "</tool_result>";
     }
+
+    public static String fileDiffResult(String res) {
+        return "<file_diff>" + res + "</file_diff>";
+    }
 } 

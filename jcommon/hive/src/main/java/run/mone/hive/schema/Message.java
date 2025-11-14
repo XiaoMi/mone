@@ -47,6 +47,9 @@ public class Message implements Serializable {
 
     private boolean error;
 
+    //标识是否需要清空聊天记录
+    private boolean clearHistory;
+
     public Message(String content) {
         this(content, "user", null, null);
     }

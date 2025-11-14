@@ -31,6 +31,7 @@ import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -56,7 +57,7 @@ public class PushChannelEventListener implements ChannelEventListener {
 
 
     public Collection<Channel> clients() {
-        return AgentContext.ins().map.values().stream().map(it->it.getChannel()).collect(Collectors.toList());
+        return AgentContext.ins().map.values().stream().map(it -> it.getChannel()).collect(Collectors.toList());
     }
 
 
@@ -120,6 +121,10 @@ public class PushChannelEventListener implements ChannelEventListener {
         AgentChannel ac = new AgentChannel();
         ac.setChannel(channel);
         ac.setRemoteAddr(remoteAddr);
+
+        if (AgentContext.ins().map.containsKey(remoteAddr)) {
+            logger.warn("client already exist:{}，hostname:{}", remoteAddr, ((InetSocketAddress) channel.remoteAddress()).getHostString());
+        }
         AgentContext.ins().map.put(remoteAddr, ac);
     }
 
@@ -131,7 +136,7 @@ public class PushChannelEventListener implements ChannelEventListener {
 
     @Override
     public void onChannelException(String remoteAddr, Channel channel) {
-        logger.info("onChannelException:{}",remoteAddr);
+        logger.info("onChannelException:{}", remoteAddr);
         AgentContext.ins().map.remove(remoteAddr);
         RemotingUtil.closeChannel(channel);
     }
@@ -146,6 +151,6 @@ public class PushChannelEventListener implements ChannelEventListener {
     }
 
     public Channel channel(Predicate<User> predicate) {
-        return AgentContext.ins().map.entrySet().stream().map(it->it.getValue()).filter(e->predicate.test(e.getUser())).findAny().orElse(null);
+        return AgentContext.ins().map.entrySet().stream().map(it -> it.getValue()).filter(e -> predicate.test(e.getUser())).findAny().orElse(null);
     }
 }

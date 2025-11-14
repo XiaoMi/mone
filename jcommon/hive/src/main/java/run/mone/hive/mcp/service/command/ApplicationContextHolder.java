@@ -29,8 +29,12 @@ public class ApplicationContextHolder implements ApplicationContextAware {
      * 获取ApplicationContext
      *
      * @return ApplicationContext实例
+     * @throws IllegalStateException 如果ApplicationContext尚未初始化
      */
     public static ApplicationContext getApplicationContext() {
+        if (applicationContext == null) {
+            throw new IllegalStateException("ApplicationContext尚未初始化，请确保Spring容器已启动");
+        }
         return applicationContext;
     }
 

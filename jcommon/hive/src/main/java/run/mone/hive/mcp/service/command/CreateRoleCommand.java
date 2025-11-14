@@ -48,6 +48,12 @@ public class CreateRoleCommand extends RoleBaseCommand {
     @Override
     public void execute(Message message, FluxSink<String> sink, String from, ReactorRole role) {
         try {
+            //有就保存下配置即可
+            if (null != role) {
+                role.saveConfig();
+                return;
+            }
+
             ReactorRole newRole = null;
 
             ReactorRole oldRole = roleService.getRoleMap().get(from);

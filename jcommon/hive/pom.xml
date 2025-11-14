@@ -240,6 +240,19 @@
             <version>0.64.8</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>0.15.0</version>
+        </dependency>
+
+        <!-- CFR Decompiler for jar decompilation -->
+        <dependency>
+            <groupId>org.benf</groupId>
+            <artifactId>cfr</artifactId>
+            <version>0.152</version>
+        </dependency>
+
     </dependencies>
 
     <build>

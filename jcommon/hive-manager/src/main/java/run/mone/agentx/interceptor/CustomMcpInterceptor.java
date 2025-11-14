@@ -15,13 +15,13 @@ public class CustomMcpInterceptor extends MonerMcpInterceptor {
 
     /**
      * 在调用 MCP 工具前执行的方法
-     * 
-     * @param toolName 工具名称
+     *
+     * @param toolName      工具名称
      * @param toolArguments 工具参数
      * @return 如果返回 true，则继续执行工具；如果返回 false，则拦截工具执行
      */
     @Override
-    public boolean before(String toolName, Map<String, Object> toolArguments) {
+    public boolean before(String serviceName, String toolName, Map<String, Object> toolArguments) {
         log.info("自定义拦截器 - 调用 MCP 工具前: {}, 参数: {}", toolName, toolArguments);
         String ip = NetUtils.getLocalHost();
         toolArguments.put("athenaPluginIp", ip);
@@ -31,9 +31,9 @@ public class CustomMcpInterceptor extends MonerMcpInterceptor {
 
     /**
      * 在调用 MCP 工具后执行的方法
-     * 
+     *
      * @param toolName 工具名称
-     * @param toolRes 工具执行结果
+     * @param toolRes  工具执行结果
      */
     @Override
     public void after(String toolName, McpSchema.CallToolResult toolRes) {
