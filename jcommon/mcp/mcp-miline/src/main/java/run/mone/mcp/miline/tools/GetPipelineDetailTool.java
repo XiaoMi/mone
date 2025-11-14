@@ -172,108 +172,7 @@ public class GetPipelineDetailTool implements ITool {
      * @throws Exception 查询异常
      */
     private JsonObject getPipelineDetail(Integer pipelineId) throws Exception {
-        // Mock数据返回
-        log.info("getPipelineDetail (MOCK) request for pipelineId: {}", pipelineId);
 
-        String mockResponse = """
-            {
-              "code": 0,
-              "message": "success",
-              "data": {
-                "id": 120104,
-                "env": "staging",
-                "projectId": 0,
-                "pipelineId": 1202846,
-                "pipelineRecordId": 203271,
-                "pipelineBaseParam": {
-                  "projectId": 150918,
-                  "pipelineId": 1202846,
-                  "gitUrl": "https://git.n.xiaomi.com/youpin-gateway/zxw_test2",
-                  "gitBranch": "staging",
-                  "gitCommitId": "f30d270f36ff40627e27d46f88559499040cedb7",
-                  "gitName": "wangmin17",
-                  "gitProjectGroup": "wangmin17",
-                  "gitProjectName": "bootdemo",
-                  "flowParam": null,
-                  "imageTag": "",
-                  "dockerUser": "wangmin17",
-                  "deployEnvGroup": null,
-                  "changeIds": null,
-                  "runType": null
-                },
-                "jarName": "bootdemo-20220623113340076.jar",
-                "jarDownloadUrl": "http://10.38.167.198:9999/download?name=bootdemo-20220623113340076.jar&token=dprqfzzy123!",
-                "containerName": "bootdemo-20220623113340076",
-                "deployType": 2,
-                "status": 2,
-                "startTime": 1655955230518,
-                "runner": "wangmin17",
-                "deployBatches": [
-                  {
-                    "deployMachineList": [
-                      {
-                        "id": 0,
-                        "name": null,
-                        "ip": "10.38.162.14",
-                        "hostname": null,
-                        "group": null,
-                        "desc": null,
-                        "ctime": 0,
-                        "utime": 0,
-                        "labels": null,
-                        "prepareLabels": null,
-                        "version": 0,
-                        "cpuCore": [],
-                        "step": 4,
-                        "status": 1,
-                        "time": 23587,
-                        "startTime": 0,
-                        "appDeployStatus": 0,
-                        "failNum": 0,
-                        "restartNum": 0,
-                        "dubboPort": null,
-                        "pipelineDeployId": 0,
-                        "sidecars": null
-                      }
-                    ],
-                    "batch": 0,
-                    "status": 6,
-                    "fort": true
-                  }
-                ],
-                "deployMachines": [],
-                "deploySetting": {
-                  "dockerCup": 1,
-                  "dockerMem": 2048,
-                  "dockerReplicate": 0,
-                  "batchSum": 0,
-                  "dockerLabels": "cpus=true,http_port=9999,kc_private_sid=true,log_path=/home/work/log/bootdemo/,tenement=first_dept",
-                  "clusters": null
-                },
-                "remark": null
-              }
-            }
-            """;
-
-        log.info("getPipelineDetail (MOCK) response: {}", mockResponse);
-
-        // 解析Mock响应
-        com.google.gson.JsonParser parser = new com.google.gson.JsonParser();
-        JsonObject fullResponse = parser.parse(mockResponse).getAsJsonObject();
-
-        JsonObject data = fullResponse.getAsJsonObject("data");
-        if (data != null) {
-            data.addProperty("success", true);
-            data.addProperty("message", "成功查询流水线详情 (MOCK)");
-            return data;
-        } else {
-            JsonObject error = new JsonObject();
-            error.addProperty("success", false);
-            error.addProperty("error", "流水线详情数据为空");
-            return error;
-        }
-
-        /* 实际HTTP调用代码 - 已注释用于mock测试
         // 构建请求体
         List<Object> requestBody = List.of(pipelineId);
 
@@ -331,7 +230,6 @@ public class GetPipelineDetailTool implements ITool {
 
             return result;
         }
-        */
     }
 
     /**
