@@ -18,22 +18,11 @@
     </properties>
 
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>run.mone</groupId>-->
-<!--            <artifactId>hive-spring-starter</artifactId>-->
-<!--            <version>1.6.0-jdk21-SNAPSHOT</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>hive</artifactId>
             <version>1.6.2-jdk21-SNAPSHOT</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>run.mone</groupId>-->
-<!--            <artifactId>mcp-chat</artifactId>-->
-<!--            <version>1.6.1-jdk21-SNAPSHOT</version>-->
-<!--            <scope>compile</scope>-->
-<!--        </dependency>-->
         <!-- JGit dependency for Git operations -->
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
@@ -62,22 +51,6 @@
                         <sourcepath>${project.basedir}/src/main/java</sourcepath>
                     </compilerArguments>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.14</version>
-                <configuration>
-                    <mainClass>run.mone.mcp.git.GitApplication</mainClass>
-                    <finalName>app</finalName>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
