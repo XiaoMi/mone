@@ -41,7 +41,7 @@ public class AgentConfig {
                 .profile("你是一名优秀的软件工程师")
                 .goal("你的目标是根据用户的需求写好代码")
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
-//                .workflow("有文件修改或写入动作后(比如调用了write_to_file或者replace_in_file 这两个Tool后)，自动触发差异对比(调用DiffTool)")
+                .workflow("有文件修改或写入动作后(比如调用了write_to_file或者replace_in_file 这两个Tool后)，自动触发差异对比(调用DiffTool)")
                 .tools(Lists.newArrayList(
                                 new ListFilesTool(isRemoteFile),
                                 new ExecuteCommandToolOptimized(),
@@ -50,7 +50,7 @@ public class AgentConfig {
                                 new ReplaceInFileTool(isRemoteFile),
                                 new ListCodeDefinitionNamesTool(),
                                 new WriteToFileTool(isRemoteFile),
-//                                new DiffTool(),
+                                new DiffTool(),
                                 new ChatTool(),
                                 new AskTool(),
                                 new AttemptCompletionTool()
