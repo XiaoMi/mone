@@ -1,4 +1,4 @@
-package run.mone.hive.mcp.client;
+package run.mone.hive.mcp.demo;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 @Slf4j
-public class StreamableHttpClient {
+public class Demo {
 
     /**
      * 测试使用了formulahendry/mcp-server-code-runner这个mcp server
@@ -46,10 +46,10 @@ public class StreamableHttpClient {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         McpClientTransport transport = HttpClientStreamableHttpTransport
-//                            .builder("http://localhost:3088")
-                .builder("https://mcp.alphavantage.co")
+                .builder("http://localhost:3088")
+                // .builder("https://mcp.alphavantage.co")
                 .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-                .endpoint("https://mcp.alphavantage.co/mcp?apikey=123456&categories=core_stock_apis,options_data_apis,alpha_intelligence")
+                // .endpoint("https://mcp.alphavantage.co/mcp?apikey=123456&categories=core_stock_apis,options_data_apis,alpha_intelligence")
                 .build();
 
         McpSyncClient client = McpClient.sync(transport)
