@@ -277,7 +277,13 @@ public class MonerSystemPrompt {
         }));
 
 
-        //启用claude code agent
+        //启用claude code agent (一个code agent)
+        loadClaudeAgentIfConfigured(role, serverList);
+
+        return serverList;
+    }
+
+    private static void loadClaudeAgentIfConfigured(ReactorRole role, List<Map<String, Object>> serverList) {
         if (role.getRoleConfig().containsKey(Constants.CLAUDE_AGENT)) {
             //加载claude code agent
             Map<String, Object> server = new HashMap<>();
@@ -285,7 +291,10 @@ public class MonerSystemPrompt {
             server.put("args", "");
             McpConnection mc = new McpConnection(new McpServer("", ""), (McpSyncClient) null, null);
             server.put("connection", mc);
-            server.put("agent", ImmutableMap.of("name", Constants.CLAUDE_AGENT));
+            String profile = role.getRoleConfig().getOrDefault("claude_profile", "一个非常擅长写代码的Agent");
+            String goal = role.getRoleConfig().getOrDefault("claude_goal", "帮助用户完成代码任务");
+            String constraints = role.getRoleConfig().getOrDefault("constraints", "不讨论任何和代码不相关的内容");
+            server.put("agent", ImmutableMap.of("name", Constants.CLAUDE_AGENT, "profile", profile, "goal", goal, "constraints", constraints));
             String toolDesc = role.getRoleConfig().getOrDefault("claude_desc", "你可以通过和%s沟通来解决你的问题".formatted(Constants.CLAUDE_AGENT));
             McpSchema.ListToolsResult tools = new McpSchema.ListToolsResult(Lists.newArrayList(
                     new McpSchema.Tool("chat", toolDesc, ChatFunction.TOOL_SCHEMA)), "");
@@ -296,8 +305,6 @@ public class MonerSystemPrompt {
             server.put("tools", toolsStr);
             serverList.add(server);
         }
-
-        return serverList;
     }
 
     public static final String TOOL_USE_INFO = """
