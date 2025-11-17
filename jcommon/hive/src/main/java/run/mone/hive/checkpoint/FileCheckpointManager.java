@@ -37,7 +37,7 @@ public class FileCheckpointManager {
         this(projectPath, DEFAULT_SHADOW_REPO_SUB_DIR);
     }
 
-    private static Boolean staticEnabled = null;
+    public static Boolean staticEnabled = null;
 
     public static boolean enableCheck(boolean enabled) {
         if (staticEnabled != null) {
@@ -219,6 +219,13 @@ public class FileCheckpointManager {
             log.warn("Checkpoint is not available, skipping revert.");
             return;
         }
+        // 重新加载检查点数据，确保获取到最新的映射
+        try {
+            refreshCheckpointMap();
+        } catch (IOException e) {
+            log.warn("Failed to refresh checkpoint map before revert, using cached data", e);
+        }
+
         String commitHash = checkpointMap.get(id);
         if (commitHash == null || commitHash.isEmpty()) {
             throw new IllegalArgumentException("Checkpoint with id '" + id + "' not found.");
@@ -227,8 +234,147 @@ public class FileCheckpointManager {
         log.info("Reverted to checkpoint with id: {}", id);
     }
 
+    /**
+     * 列出所有检查点
+     * 每次都从文件重新加载最新数据，确保获取到最新的检查点信息
+     *
+     * @return 检查点ID到commit hash的映射
+     */
     public Map<String, String> listCheckpoints() {
-        return new ConcurrentHashMap<>(this.checkpointMap);
+        try {
+            // 重新从文件加载最新的检查点数据
+            Map<String, String> latestCheckpoints = loadCheckpoints();
+            // 同时更新内存中的缓存
+            this.checkpointMap.clear();
+            this.checkpointMap.putAll(latestCheckpoints);
+            return new ConcurrentHashMap<>(latestCheckpoints);
+        } catch (IOException e) {
+            log.warn("Failed to reload checkpoints from file, returning cached data", e);
+            // 如果加载失败，返回内存中的缓存数据
+            return new ConcurrentHashMap<>(this.checkpointMap);
+        }
+    }
+
+    /**
+     * 获取最新的检查点ID
+     * 基于 Git commit 时间戳，返回时间最新的检查点
+     *
+     * @return 最新的检查点ID，如果没有检查点则返回 null
+     */
+    public String getLatestCheckpointId() {
+        if (!checkpointAvailable) {
+            log.warn("Checkpoint is not available");
+            return null;
+        }
+
+        try {
+            // 刷新检查点映射
+            refreshCheckpointMap();
+
+            if (checkpointMap.isEmpty()) {
+                log.debug("No checkpoints found");
+                return null;
+            }
+
+            // 使用 git log 获取所有 commits，按时间倒序排列
+            // 格式: commit_hash
+            String logOutput = executeGitCommand("log", "--all", "--format=%H", "--date-order");
+
+            if (logOutput == null || logOutput.trim().isEmpty()) {
+                log.debug("No commits found in repository");
+                return null;
+            }
+
+            // 解析每一行 commit hash
+            String[] commits = logOutput.trim().split("\n");
+
+            // 创建反向映射: commit hash -> checkpoint ID
+            Map<String, String> hashToId = new ConcurrentHashMap<>();
+            for (Map.Entry<String, String> entry : checkpointMap.entrySet()) {
+                hashToId.put(entry.getValue().trim(), entry.getKey());
+            }
+
+            // 找到第一个（最新的）在 checkpointMap 中的 commit
+            for (String commitHash : commits) {
+                String hash = commitHash.trim();
+                if (hashToId.containsKey(hash)) {
+                    String checkpointId = hashToId.get(hash);
+                    log.debug("Latest checkpoint found: {} -> {}", checkpointId, hash);
+                    return checkpointId;
+                }
+            }
+
+            log.debug("No matching checkpoint found in git history");
+            return null;
+
+        } catch (IOException | InterruptedException e) {
+            log.error("Failed to get latest checkpoint", e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取最新检查点的父检查点ID
+     * 如果最新检查点的父提交也是一个检查点，则返回该检查点ID；否则返回 null
+     *
+     * @return 最新检查点的父检查点ID，如果不存在则返回 null
+     */
+    public String getLatestCheckpointParentId() {
+        // 1. 获取最新的检查点ID
+        String latestId = getLatestCheckpointId();
+        if (latestId == null) {
+            return null;
+        }
+
+        // 2. 获取该检查点的父检查点ID
+        return getParentCheckpointId(latestId);
+    }
+
+    /**
+     * 获取指定检查点的父检查点ID
+     * 如果父提交也是一个检查点，则返回该检查点ID；否则返回 null
+     *
+     * @param checkpointId 检查点ID
+     * @return 父检查点ID，如果不存在则返回 null
+     */
+    public String getParentCheckpointId(String checkpointId) {
+        if (!checkpointAvailable || checkpointId == null) {
+            return null;
+        }
+
+        try {
+            // 刷新检查点映射
+            refreshCheckpointMap();
+
+            // 获取检查点对应的 commit hash
+            String commitHash = checkpointMap.get(checkpointId);
+            if (commitHash == null) {
+                log.warn("Checkpoint {} not found in map", checkpointId);
+                return null;
+            }
+
+            // 获取父 commit hash
+            String parentCommitHash = getParent(commitHash.trim());
+            if (parentCommitHash == null || parentCommitHash.isEmpty()) {
+                log.debug("Checkpoint {} has no parent", checkpointId);
+                return null;
+            }
+
+            // 在 checkpointMap 中查找父 commit 对应的检查点ID
+            for (Map.Entry<String, String> entry : checkpointMap.entrySet()) {
+                if (entry.getValue().trim().equals(parentCommitHash)) {
+                    log.debug("Found parent checkpoint: {} for checkpoint: {}", entry.getKey(), checkpointId);
+                    return entry.getKey();
+                }
+            }
+
+            log.debug("Parent commit {} is not a checkpoint", parentCommitHash);
+            return null;
+
+        } catch (IOException e) {
+            log.error("Failed to get parent checkpoint for {}", checkpointId, e);
+            return null;
+        }
     }
 
 
@@ -298,7 +444,18 @@ public class FileCheckpointManager {
     }
 
     /**
-     * Generate a unified diff from the given checkpoint to current work-tree.
+     * 从文件刷新内存中的检查点映射
+     * 用于确保内存缓存与文件保持同步
+     */
+    private void refreshCheckpointMap() throws IOException {
+        Map<String, String> latestCheckpoints = loadCheckpoints();
+        this.checkpointMap.clear();
+        this.checkpointMap.putAll(latestCheckpoints);
+        log.debug("Refreshed checkpoint map, loaded {} checkpoints", latestCheckpoints.size());
+    }
+
+    /**
+     * Generate a unified diff from the given checkpoint to it's parent.
      * If {@code checkpointId} is null or empty, uses {@code HEAD} as the base.
      *
      * @param checkpointId checkpoint id or commit-ish; when null/empty, use HEAD
@@ -315,20 +472,27 @@ public class FileCheckpointManager {
             String mapped = checkpointMap.getOrDefault(checkpointId, checkpointId);
             base = mapped;
         }
+        String parent = getParent(base);
 
         try {
-            // Add all files to staging area (including untracked files) to include them in diff
-            executeGitCommand("add", "-A");
-
             ProcessBuilder pb = new ProcessBuilder("git",
                     "--git-dir=" + this.gitDir,
                     "--work-tree=" + this.projectPath,
                     "diff",
-                    "--cached",  // Show diff between staged changes and base commit
                     "--no-color",
-                    "--unified=" + Math.max(0, contextLines),
-                    base,
-                    "--");
+                    "--unified=" + Math.max(0, contextLines));
+
+            // 如果有父提交，对比 parent..base；否则显示 base 的全部内容
+            if (parent != null && !parent.isEmpty()) {
+                pb.command().add(parent);
+                pb.command().add(base);
+            } else {
+                // 首次提交，没有父提交，显示该提交引入的所有内容
+                pb.command().add("--root");
+                pb.command().add(base);
+            }
+
+            pb.command().add("--");
 
             if (paths != null && !paths.isEmpty()) {
                 pb.command().addAll(paths);
@@ -339,19 +503,33 @@ public class FileCheckpointManager {
             log.info("Executing git diff command: {}", String.join(" ", pb.command()));
             String diff = execute(pb, "diff");
 
-            // Reset staging area to avoid affecting future operations
-            executeGitCommand("reset", "HEAD");
-
             return diff;
         } catch (IOException | InterruptedException e) {
             log.error("Failed to run git diff", e);
-            // Try to reset even on error to keep repo clean
-            try {
-                executeGitCommand("reset", "HEAD");
-            } catch (Exception resetEx) {
-                log.warn("Failed to reset after diff error", resetEx);
-            }
             return "Failed to run git diff: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 获取指定提交的父提交hash
+     *
+     * @param commitish commit hash 或引用（如 HEAD）
+     * @return 父提交的 hash，如果没有父提交（首次提交）则返回空字符串
+     */
+    private String getParent(String commitish) {
+        if (!checkpointAvailable) {
+            return "";
+        }
+        try {
+            // 使用 git rev-parse {commit}^ 获取父提交
+            // 对于首次提交，会返回错误，我们捕获并返回空字符串
+            String parent = executeGitCommand("rev-parse", commitish + "^").trim();
+            log.debug("Parent of {} is {}", commitish, parent);
+            return parent;
+        } catch (IOException | InterruptedException e) {
+            // 如果是首次提交（没有父提交），git rev-parse 会失败
+            log.debug("Failed to get parent of {}, possibly the initial commit: {}", commitish, e.getMessage());
+            return "";
         }
     }
 }

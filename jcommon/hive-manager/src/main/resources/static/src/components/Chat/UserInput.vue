@@ -126,11 +126,18 @@
         </div>
       </div>
     </div>
-    <div v-if="suggestionVisible" class="sc-user-input--commonds">
+    <div v-if="suggestionVisible" class="sc-user-input--commonds command-suggestions">
       <div class="sc-user-input--commonds-list">
-        <div v-for="(item, index) of suggestions" @click="setSuggestion(item.value)" :class="`sc-user-input--commonds-item${index === highlightedIndex ? ' active' : ''
-          }`" :key="item.value">
-          <span style="color: aqua">{{ item.label.slice(0, 1) }}</span>{{ item.label.slice(1) }}
+        <div v-for="(item, index) of suggestions"
+             @click="selectSuggestion(item.value)"
+             :class="`sc-user-input--commonds-item command-item${index === highlightedIndex ? ' active' : ''}`"
+             :key="item.value">
+          <div class="command-main">
+            <span class="command-slash">/</span><span class="command-name">{{ item.label.slice(1) }}</span>
+          </div>
+          <div class="command-description">
+            {{ item.params?.description || '' }}
+          </div>
         </div>
       </div>
     </div>
@@ -316,7 +323,10 @@ export default {
       //   this.searchFiles(newValue);
       // }
       else if (newValue != oldValue) {
-        this.querySuggestion(newValue);
+        // 如果正在选择命令建议，不触发 querySuggestion，避免重新打开建议列表
+        if (!this.isSelectingSuggestion) {
+          this.querySuggestion(newValue);
+        }
         // this.queryKnowledgeBases(newValue);
         if (!newValue) {
           // this.activeCommond = "";
@@ -363,6 +373,7 @@ export default {
       inputActive: false,
       percentage: 0,
       bizUpdate: false,
+      isSelectingSuggestion: false, // 标志位：正在选择命令建议
       screenshotImages: [] as {
         mediaType: string;
         url: string;
@@ -501,10 +512,86 @@ export default {
     },
   },
   created() {
-    this.allSuggestions = [];
+    // 定义内置的斜杠命令列表
+    this.allSuggestions = [
+      {
+        id: 'init',
+        label: '/init',
+        value: '/init',
+        cmd: '/init',
+        params: {
+          description: '分析代码库并创建MCODE.md文件'
+        }
+      },
+      {
+        id: 'clear',
+        label: '/clear',
+        value: '/clear',
+        cmd: '/clear',
+        params: {
+          description: '清空对话历史记录'
+        }
+      },
+      {
+        id: 'cancel',
+        label: '/cancel',
+        value: '/cancel',
+        cmd: '/cancel',
+        params: {
+          description: '取消当前正在执行的任务'
+        }
+      },
+      {
+        id: 'config',
+        label: '/config',
+        value: '/config',
+        cmd: '/config',
+        params: {
+          description: '查看或修改配置'
+        }
+      },
+      {
+        id: 'interrupt',
+        label: '/interrupt',
+        value: '/interrupt',
+        cmd: '/interrupt',
+        params: {
+          description: '中断Agent执行'
+        }
+      },
+      {
+        id: 'refresh',
+        label: '/refresh',
+        value: '/refresh',
+        cmd: '/refresh',
+        params: {
+          description: '刷新配置'
+        }
+      },
+      {
+        id: 'switch',
+        label: '/switch',
+        value: '/switch',
+        cmd: '/switch',
+        params: {
+          description: '切换Agent'
+        }
+      },
+      {
+        id: 'create',
+        label: '/create',
+        value: '/create',
+        cmd: '/create',
+        params: {
+          description: '创建新的Agent'
+        }
+      }
+    ];
+
+    // 如果需要从服务器加载更多命令，可以取消注释
     // util.fetchCommonds().then((res) => {
     //   if (Array.isArray(res)) {
-    //     this.allSuggestions = (res || []).map((it: any) => {
+    //     const serverCommands = (res || []).map((it: any) => {
     //       return {
     //         id: it.id,
     //         label: `${it.label}`,
@@ -515,6 +602,7 @@ export default {
     //         },
     //       };
     //     });
+    //     this.allSuggestions = [...this.allSuggestions, ...serverCommands];
     //   }
     // });
   },
@@ -656,9 +744,12 @@ export default {
             return it;
           });
         this.commandVisible = true;
+        // 默认高亮第一个命令，这样用户可以直接按回车选择
+        this.highlightedIndex = this.suggestions.length > 0 ? 0 : -1;
       } else {
         this.commandVisible = false;
         this.suggestions = [];
+        this.highlightedIndex = -1;
       }
     },
     highlight(index: number) {
@@ -720,8 +811,7 @@ export default {
         if (suggestionVisible && suggestions[highlightedIndex]) {
           event.preventDefault();
           event.stopPropagation();
-          this.setSuggestion(suggestions[highlightedIndex].value);
-          this.close();
+          this.selectSuggestion(suggestions[highlightedIndex].value);
         } else if (this.cFileVisible && this.cFileList) {
           event.preventDefault();
           event.stopPropagation();
@@ -747,6 +837,12 @@ export default {
       this.currentSelectItem = {} as IFileItem;
       // @ts-ignore
       this.$refs?.autoCompleteInput?.cleanTextContent();
+    },
+    closeSuggestions() {
+      // 只关闭建议列表，不清空已选择的命令文本
+      this.suggestions = [];
+      this.commandVisible = false;
+      this.highlightedIndex = -1;
     },
     sendText() {
       this.submitText();
@@ -986,10 +1082,23 @@ export default {
       this.close();
     },
     setSuggestion(suggestion: string) {
-      // this.showFormParams = true
-      this.activeCommond = suggestion;
+      // 只将命令填充到输入框作为普通文本，不设置为activeCommond
+      // 这样用户可以继续编辑命令或添加参数
+      this.text = suggestion;
       this.knowledgeBasesValue = [];
-      this.close();
+      // 让输入框获得焦点
+      this.$nextTick(() => {
+        this.$refs?.autoCompleteInput?.focus();
+      });
+    },
+    selectSuggestion(suggestion: string) {
+      // 点击或回车选择命令时调用
+      this.isSelectingSuggestion = true; // 设置标志位，避免触发 watch
+      this.setSuggestion(suggestion);
+      this.closeSuggestions(); // 关闭建议列表
+      this.$nextTick(() => {
+        this.isSelectingSuggestion = false; // 重置标志位
+      });
     },
     setInputActive(onoff: boolean) {
       this.inputActive = onoff;
@@ -1526,6 +1635,96 @@ export default {
 
     &::-webkit-scrollbar {
       display: none;
+    }
+  }
+
+  // Claude Code 风格的命令建议样式
+  &.command-suggestions {
+    .sc-user-input--commonds-list {
+      padding: 6px;
+      background: rgba(30, 30, 40, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(100, 100, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .command-item {
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+
+      .command-main {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 500;
+        min-width: 120px; // 预留约15个字符的空间，足够容纳最长的命令
+        flex-shrink: 0;
+
+        .command-slash {
+          color: rgba(0, 255, 255, 0.6);
+          font-weight: 600;
+          margin-right: 2px;
+        }
+
+        .command-name {
+          color: rgba(255, 255, 255, 0.85);
+        }
+      }
+
+      .command-description {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.45);
+        line-height: 1.4;
+        margin-left: 12px; // 减小间距，让命令和描述更紧凑
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      &:hover {
+        background: rgba(60, 60, 80, 0.5);
+
+        .command-slash {
+          color: rgba(0, 255, 255, 0.9);
+        }
+
+        .command-name {
+          color: rgba(255, 255, 255, 1);
+        }
+
+        .command-description {
+          color: rgba(255, 255, 255, 0.6);
+        }
+      }
+
+      &.active {
+        background: rgba(0, 180, 255, 0.2);
+        border-left: 2px solid rgba(0, 255, 255, 0.8);
+
+        .command-slash {
+          color: rgba(0, 255, 255, 1);
+        }
+
+        .command-name {
+          color: rgba(255, 255, 255, 1);
+        }
+
+        .command-description {
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
     }
   }
 
