@@ -14,13 +14,16 @@ import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
+import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.hub.McpConnection;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.mcp.hub.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
-import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
 import java.io.File;
@@ -272,6 +275,27 @@ public class MonerSystemPrompt {
 
             serverList.add(server);
         }));
+
+
+        //启用claude code agent
+        if(role.getRoleConfig().containsKey(Constants.CLAUDE_AGENT)) {
+            //加载claude code agent
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", Constants.CLAUDE_AGENT);
+            server.put("args", "");
+            McpConnection mc = new McpConnection(new McpServer("",""), (McpSyncClient) null,null);
+            server.put("connection", mc);
+            server.put("agent",  ImmutableMap.of("name",Constants.CLAUDE_AGENT));
+            McpSchema.ListToolsResult tools = new McpSchema.ListToolsResult(Lists.newArrayList(
+                    new McpSchema.Tool("chat", "你可以通过和claude chat来解决你的问题", ChatFunction.TOOL_SCHEMA)), "");
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.toString() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+            serverList.add(server);
+        }
+
         return serverList;
     }
 

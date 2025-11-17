@@ -90,6 +90,15 @@ public class MonerMcpClient {
                         toolArguments.keySet().stream().filter(it -> it.startsWith("__")).collect(Collectors.toSet()).forEach(toolArguments::remove);
                     }
 
+                    //直接调用claude
+                    if (serviceName.equals(Constants.CLAUDE_AGENT)) {
+                        log.info("call claude code agent");
+                        ClaudeCodeClient client = new ClaudeCodeClient(ClaudeCodeClient.DEFAULT_CLAUDE_CMD, ClaudeCodeClient.DEFAULT_TIMEOUT_SECONDS, role.getWorkspacePath());
+                        String output = client.execute(toolArguments.get("message").toString()).getOutput();
+                        monerMcpInterceptor.after(toolName, new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(output)), false));
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(output)).error(error.get()).build();
+                    }
+
                     try {
                         toolRes = hub.callTool(serviceName, toolName,
                                 toolArguments);
