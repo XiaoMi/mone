@@ -51,7 +51,22 @@ class PathResolutionInterceptorTest {
         assertTrue(resolvedPath.endsWith("test.txt"));
         assertTrue(resolvedPath.length() > "test.txt".length()); // Should be absolute now
     }
-    
+
+    @Test
+    void testResolvePathParametersForReadFileAbsolute() throws IOException {
+        // Set up parameters with relative path
+        String path = "/tmp/zxw_test2";
+        params.addProperty("path", path);
+        workspacePath = "/tmp";
+
+        PathResolutionInterceptor.resolvePathParameters("read_file", params, extraParams, workspacePath);
+
+        // Path should be resolved to absolute
+        String resolvedPath = params.get("path").getAsString();
+        assertTrue(resolvedPath.endsWith("zxw_test2"));
+        assertTrue(resolvedPath.length() == path.length()); // Should be absolute now
+    }
+
     @Test
     void testResolvePathParametersForListFiles() {
         // Set up parameters with relative directory path
