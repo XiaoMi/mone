@@ -94,7 +94,7 @@ public class MonerMcpClient {
                     if (serviceName.equals(Constants.CLAUDE_AGENT)) {
                         log.info("call claude code agent");
                         ClaudeCodeClient client = new ClaudeCodeClient(ClaudeCodeClient.DEFAULT_CLAUDE_CMD, ClaudeCodeClient.DEFAULT_TIMEOUT_SECONDS, role.getWorkspacePath());
-                        String output = client.execute(toolArguments.get("message").toString()).getOutput();
+                        String output = client.execute(toolArguments.get("message").toString(), true, null).getOutput();
                         monerMcpInterceptor.after(toolName, new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(output)), false));
                         return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(output)).error(error.get()).build();
                     }
