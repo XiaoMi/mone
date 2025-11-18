@@ -1,6 +1,7 @@
 package com.xiaomi.mone.es;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author goodjava@qq.com
  */
+@Slf4j
 public class EsClient {
 
     private static Sniffer sniffer;
@@ -70,7 +72,7 @@ public class EsClient {
 
     public static boolean startedSniffer = true;
 
-    private SniffOnFailureListener sniffOnFailureListener = new SniffOnFailureListener();
+    private final SniffOnFailureListener sniffOnFailureListener = new SniffOnFailureListener();
 
     public EsClient(String esAddr, String token, String catalog, String database) {
         validateParams(esAddr, token, catalog, database);
@@ -113,7 +115,7 @@ public class EsClient {
         String host = esAddrParts[0];
         int port = Integer.parseInt(esAddrParts[1]);
 
-        return RestClient.builder(new HttpHost(host, port, "http"))
+        RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(host, port, "http"))
                 .setDefaultHeaders(defaultHeaders)
                 .setFailureListener(sniffOnFailureListener)
                 .setHttpClientConfigCallback(x -> x.setMaxConnPerRoute(MAX_CONN_PER_ROUTE)
@@ -125,6 +127,15 @@ public class EsClient {
                                 .build())
                         .setKeepAliveStrategy((response, context) -> KEEP_ALIVE_DURATION_MS)
                         .setDefaultIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build()));
+        if (startedSniffer) {
+            return restClientBuilder.setNodeSelector(new NodeSelector() {
+                @Override
+                public void select(Iterable<Node> iterable) {
+                    nodeSelect(iterable);
+                }
+            });
+        }
+        return restClientBuilder;
     }
 
 
@@ -167,7 +178,7 @@ public class EsClient {
     }
 
     private RestClientBuilder createRestClientBuilder(List<HttpHost> hosts, Header[] headers) {
-        return RestClient.builder(hosts.toArray(new HttpHost[0]))
+        RestClientBuilder restClientBuilder = RestClient.builder(hosts.toArray(new HttpHost[0]))
                 .setDefaultHeaders(headers)
                 .setFailureListener(sniffOnFailureListener)
                 .setFailureListener(sniffOnFailureListener)
@@ -180,6 +191,62 @@ public class EsClient {
                                 .build())
                         .setKeepAliveStrategy((response, context) -> KEEP_ALIVE_DURATION_MS)
                         .setDefaultIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build()));
+        if (startedSniffer) {
+            return restClientBuilder.setNodeSelector(new NodeSelector() {
+                @Override
+                public void select(Iterable<Node> iterable) {
+                    nodeSelect(iterable);
+                }
+            });
+        }
+        return restClientBuilder;
+    }
+
+    public void nodeSelect(Iterable<Node> nodes) {
+        boolean hasHotDataNode = false;
+        for (Node node : nodes) {
+            if (node.getAttributes() == null) {
+                log.info("node without arrtibutes, " + node.getName());
+            } else if (node.getAttributes().containsKey("node_type")) {
+                List<String> nodeTypeList = node.getAttributes().get("node_type");
+                hasHotDataNode = nodeTypeList.stream().anyMatch(nodeType -> nodeType.startsWith("hot"));
+                if (hasHotDataNode) {
+                    break;
+                }
+            }
+        }
+
+        if (hasHotDataNode) {
+            for (Iterator<Node> itr = nodes.iterator(); itr.hasNext(); ) {
+                Node node = itr.next();
+                if (node.getAttributes() == null) {
+                    itr.remove();
+                } else if (!node.getAttributes().containsKey("node_type")) {
+                    itr.remove();
+                } else {
+                    boolean isHotDataNode = node.getAttributes().get("node_type")
+                            .stream()
+                            .anyMatch(nodeType -> nodeType.startsWith("hot"));
+                    if (!isHotDataNode) {
+                        itr.remove();
+                    }
+                }
+            }
+        } else {
+            for (Iterator<Node> itr = nodes.iterator(); itr.hasNext(); ) {
+                Node node = itr.next();
+                if (node.getRoles() == null) continue;
+                if ((node.getRoles().isMasterEligible()
+                        && false == node.getRoles().isData()
+                        && false == node.getRoles().isIngest())
+                        ||
+                        (node.getAttributes().containsKey("node_type")
+                                && node.getAttributes().get("node_type").contains("client")
+                                && false == node.getRoles().isData())) {
+                    itr.remove();
+                }
+            }
+        }
     }
 
     private void initializeHighLevelClient(RestClientBuilder clientBuilder) {

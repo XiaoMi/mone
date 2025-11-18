@@ -29,9 +29,11 @@ public enum LLMProvider {
     OPENROUTER_GEMINI_25_FLUSH("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-flash", null),
     OPENROUTER_GEMINI_25_PRO("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "google/gemini-2.5-pro", null),
     OPENROUTER_GROK_CODE_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-code-fast-1", null),
+    OPENROUTER_GROK_4_FAST("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "x-ai/grok-4-fast", null),
     OPENAICOMPATIBLE("", "", "", null),
     OPENAI_MULTIMODAL_COMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
+    DOUBAO_SEED_CODE("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", "doubao-seed-code-preview-251028", null),
     DOUBAO_VISION("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_VISION_MODEL_KEY"),
     DOUBAO_UI_TARS("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_UI_TARS_MODEL_KEY"),
     DOUBAO_DEEPSEEK_R1("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_R1_MODEL_KEY"),
@@ -39,8 +41,8 @@ public enum LLMProvider {
     //claude-3-5-sonnet@20240620
     CLAUDE_COMPANY("CLAUDE_URL", "CLAUDE_TOKEN", "claude-3-5-sonnet@20240620", "CLAUDE35_MODEL_KEY"),
     TENCENT_DEEPSEEK("https://api.lkeap.cloud.tencent.com/v1/chat/completions", "TENCENT_API_KEY", "deepseek-r1", null),
-    GROK("https://api.x.ai/v1/chat/completions", "XAI_API_KEY", "grok-3-latest", null),
-    MINIMAX("https://api.minimax.chat/v1/text/chatcompletion_v2", "MINIMAX_API_KEY", "MiniMax-Text-01", "MINIMAX_GROUP_ID"),
+    GROK("https://api.x.ai/v1/chat/completions", "XAI_API_KEY", "grok-4", null),
+    MINIMAX("https://api.minimaxi.com/v1/chat/completions", "MINIMAX_API_KEY", "MiniMax-M2", "MINIMAX_GROUP_ID"),
     QWEN3("", "xxx", "Qwen3-14B", ""),
     // 这里的模型设置不生效，需要去对应Agent上修改
     MIFY("XXX", "MIFY_API_KEY", "deepseek-r1", null),

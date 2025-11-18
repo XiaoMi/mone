@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.DependsOn;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -25,8 +27,7 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
-import run.mone.hive.mcp.service.command.CompressionCommand;
-import run.mone.hive.mcp.service.command.CreateRoleCommand;
+import run.mone.hive.mcp.service.command.RoleBaseCommand;
 import run.mone.hive.mcp.service.command.RoleCommandFactory;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @Data
 @Slf4j
+@DependsOn("applicationContextHolder")
 public class RoleService {
 
     private final LLM llm;
@@ -109,11 +111,13 @@ public class RoleService {
 
     private final GrpcServerTransport transport;
 
+    private final ApplicationContext applicationContext;
+
     @PostConstruct
     @SneakyThrows
     public void init() {
         //初始化Role命令工厂
-        this.roleCommandFactory = new RoleCommandFactory(this);
+        this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
         //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
@@ -129,7 +133,7 @@ public class RoleService {
         Map<String, List> map = hiveManagerService.getAgentInstancesByNames(agentNames);
         map.entrySet().forEach(entry -> {
             Safe.run(() -> {
-                if (entry.getValue().size() == 0) {
+                if (entry.getValue().isEmpty()) {
                     return;
                 }
                 Map m = (Map) entry.getValue().get(0);
@@ -147,13 +151,7 @@ public class RoleService {
     }
 
     private static @NotNull McpHub getMcpHub(ReactorRole role) {
-        McpHub hub = new McpHub();
-        if (null != role.getMcpHub()) {
-            hub = role.getMcpHub();
-        } else {
-            hub = new McpHub();
-        }
-        return hub;
+        return role.getMcpHub() != null ? role.getMcpHub() : new McpHub();
     }
 
     //合并两个List<String>注意去重(method)
@@ -229,6 +227,7 @@ public class RoleService {
         role.setOutputFormat(roleMeta.getOutputFormat());
         role.setActions(roleMeta.getActions());
         role.setType(roleMeta.getRoleType());
+        role.setMcpInterceptor(roleMeta.getMcpInterceptor());
         if (null != roleMeta.getLlm()) {
             role.setLlm(roleMeta.getLlm());
         }
@@ -321,52 +320,38 @@ public class RoleService {
     }
 
 
+    /**
+     * 判断命令是否需要立即执行（无需等待Agent状态）
+     * 例如：创建role命令、压缩命令等
+     */
+    private boolean isImmediateExecutionCommand(RoleBaseCommand command) {
+        String commandName = command.getCommandName();
+        // 使用命令名称来判断，避免依赖具体的命令类
+        return "/create".equals(commandName) || "compression".equals(commandName);
+    }
+
     //根据from进行隔离(比如Athena 不同 的project就是不同的from)
     public Flux<String> receiveMsg(Message message) {
-        String from = message.getSentFrom().toString();
-
-        // 检查是否是创建role命令，如果是且role为空，则特殊处理
-        if (roleCommandFactory.findCommand(message).isPresent() &&
-                roleCommandFactory.findCommand(message).get() instanceof CreateRoleCommand) {
+        String from = message.getSentFrom().toString();//from本质是:Const.OWNER_ID
+        Optional<RoleBaseCommand> optional = roleCommandFactory.findCommand(message);
+        // 检查是否是需要特殊处理的命令（创建role命令、压缩命令等）
+        if (optional.isPresent() && isImmediateExecutionCommand(optional.get())) {
             ReactorRole existingRole = roleMap.get(from);
-            if (existingRole == null) {
-                return Flux.create(sink -> {
-                    roleCommandFactory.executeCommand(message, sink, from, null);
-                });
-            } else {
-                existingRole.saveConfig();
-            }
+            return Flux.create(sink -> roleCommandFactory.executeCommand(message, sink, from, existingRole));
         }
 
-        // 检查是否是压缩命令，如果是则直接处理，无需等待Agent状态
-        if (roleCommandFactory.findCommand(message).isPresent() &&
-                roleCommandFactory.findCommand(message).get() instanceof CompressionCommand) {
-            ReactorRole existingRole = roleMap.get(from);
-            return Flux.create(sink -> {
-                roleCommandFactory.executeCommand(message, sink, from, existingRole);
-            });
-        }
-
-        roleMap.compute(from, (k, v) -> {
-            if (v == null) {
-                return createRole(message);
-            }
-            if (v.getState().get().equals(RoleState.exit)) {
-                return createRole(message);
-            }
-            return v;
-        });
+        ensureActiveRole(message, from);
 
         return Flux.create(sink -> {
             message.setSink(sink);
-            ReactorRole rr = roleMap.get(from);
-            if (null == rr) {
+            ReactorRole reactorRole = roleMap.get(from);
+            if (null == reactorRole) {
                 sink.next("没有找到Agent\n");
                 sink.complete();
                 return;
             }
 
-            RoleMeta roleMeta = rr.getRoleMeta();
+            RoleMeta roleMeta = reactorRole.getRoleMeta();
             if (null != roleMeta && null != roleMeta.getInterruptQuery() && roleMeta.getInterruptQuery().isAutoInterruptQuery()) {
                 boolean intent = new IntentClassificationService().shouldInterruptExecution(roleMeta.getInterruptQuery(), message);
                 if (intent) {
@@ -375,27 +360,43 @@ public class RoleService {
             }
 
             // 使用命令工厂处理所有命令
-            if (roleCommandFactory.executeCommand(message, sink, from, rr)) {
+            if (roleCommandFactory.executeCommand(message, sink, from, reactorRole)) {
                 return; // 命令已处理
+            }
+
+            if (message.isClearHistory()) {
+                reactorRole.clearMemory();
             }
 
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
             String content = message.getContent();
-            if (rr.isInterrupted() && !roleCommandFactory.findCommand(content).isPresent()) {
+            if (reactorRole.isInterrupted() && roleCommandFactory.findCommand(content).isEmpty()) {
                 log.info("Agent {} 收到新的非中断命令，自动重置中断状态", from);
-                rr.resetInterrupt();
+                reactorRole.resetInterrupt();
                 sink.next("🔄 检测到新命令，已自动重置中断状态，继续执行...\n");
             }
 
             //把消息下发给Agent
-            if (!(rr.getState().get().equals(RoleState.observe) || rr.getState().get().equals(RoleState.think))) {
+            if (!(reactorRole.getState().get().equals(RoleState.observe) || reactorRole.getState().get().equals(RoleState.think))) {
                 sink.next("有正在处理中的消息\n");
                 sink.complete();
             } else {
-                if (resolveMessageData(message, rr, sink)) {
-                    rr.putMessage(message);
+                if (resolveMessageData(message, reactorRole, sink)) {
+                    reactorRole.putMessage(message);
                 }
             }
+        });
+    }
+
+    private void ensureActiveRole(Message message, String from) {
+        roleMap.compute(from, (k, v) -> {
+            if (v == null) {
+                return createRole(message);
+            }
+            if (v.getState().get().equals(RoleState.exit)) {
+                return createRole(message);
+            }
+            return v;
         });
     }
 

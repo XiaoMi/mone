@@ -32,7 +32,6 @@
             <version>1.6.0-jdk21-SNAPSHOT</version>
         </dependency>
 
-
     </dependencies>
 
     <build>

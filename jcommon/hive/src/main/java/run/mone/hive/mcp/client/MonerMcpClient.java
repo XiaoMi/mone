@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class MonerMcpClient {
@@ -39,7 +40,7 @@ public class MonerMcpClient {
             toolArguments.put(Const.USER_INTERNAL_NAME, internalName);
             toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
             Safe.run(() -> {
-                toolArguments.put(Const.OWNER_ID, toolDataInfo.getUserId()+"_"+toolDataInfo.getAgentId());
+                toolArguments.put(Const.OWNER_ID, toolDataInfo.getUserId() + "_" + toolDataInfo.getAgentId());
             });
             if (null != toolDataInfo.getRole()) {
                 toolArguments.put(Const.ROLE, toolDataInfo.getRole());
@@ -47,7 +48,7 @@ public class MonerMcpClient {
 
             AtomicBoolean error = new AtomicBoolean(false);
             // 调用before方法并检查返回值
-            boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
+            boolean shouldProceed = monerMcpInterceptor.before(serviceName, toolName, toolArguments);
             if (shouldProceed) {
                 McpSchema.CallToolResult toolRes = null;
                 //流式调用
@@ -83,11 +84,26 @@ public class MonerMcpClient {
                     if (null == hub) {
                         return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
                     }
+
+                    if (serviceName.equals("alphavantage")) {
+                        hub = McpHubHolder.get(from);
+                        toolArguments.keySet().stream().filter(it -> it.startsWith("__")).collect(Collectors.toSet()).forEach(toolArguments::remove);
+                    }
+
+                    //直接调用claude
+                    if (serviceName.equals(Constants.CLAUDE_AGENT)) {
+                        log.info("call claude code agent");
+                        ClaudeCodeClient client = new ClaudeCodeClient(ClaudeCodeClient.DEFAULT_CLAUDE_CMD, ClaudeCodeClient.DEFAULT_TIMEOUT_SECONDS, role.getWorkspacePath());
+                        String output = client.execute(toolArguments.get("message").toString(), true, null).getOutput();
+                        monerMcpInterceptor.after(toolName, new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(output)), false));
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(output)).error(error.get()).build();
+                    }
+
                     try {
                         toolRes = hub.callTool(serviceName, toolName,
                                 toolArguments);
                     } catch (Throwable ex) {
-                        log.error(ex.getMessage(),ex);
+                        log.error(ex.getMessage(), ex);
                         error.set(true);
                     }
                 }
@@ -95,6 +111,12 @@ public class MonerMcpClient {
                 return McpResult.builder().toolName(toolName).content(toolRes.content().get(0)).error(error.get()).build();
             } else {
                 log.info("工具 {} 执行被拦截，不执行实际调用", toolName);
+                //执行拦截器中的操作
+                McpResult res = monerMcpInterceptor.call(serviceName, toolName, toolArguments);
+                if (null != res) {
+                    log.info("mcp interceptor call res:{}", res);
+                    return res;
+                }
                 McpSchema.TextContent textContent = new McpSchema.TextContent("操作已取消，可以结束此轮操作。");
                 return McpResult.builder().toolName(toolName).content(textContent).build();
             }
@@ -137,14 +159,23 @@ public class MonerMcpClient {
     private static void internalCall(FluxSink sink, Function<String, McpFunction> f, String toolName, Map<String, Object> toolArguments, StringBuilder sb, AtomicBoolean error) {
         McpFunction function = f.apply(toolName);
         Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
-        flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
-            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                //直接返回给前端
-                s.next(tc.text());
-                sb.append(tc.text());
-            }
-        })).doOnError(e->{
-            error.set(true);
+        flux.doOnNext(tr -> {
+                            Optional.ofNullable(sink).ifPresent(s -> {
+                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                    //直接返回给前端
+                                    s.next(tc.text());
+                                    sb.append(tc.text());
+                                }
+                            });
+                            if (Optional.ofNullable(sink).isEmpty()) {
+                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                    sb.append(tc.text());
+                                }
+                            }
+                        }
+
+                ).doOnError(e -> {
+                    error.set(true);
                 })
                 .blockLast();
     }

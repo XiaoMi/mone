@@ -1,7 +1,10 @@
 package run.mone.hive.common;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.Test;
 
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,8 +39,11 @@ public class CommonTest {
     }
 
     @Test
-    public void testAA() {
-        new AA().hi();
+    public void testDate() {
+//        Nov 7, 2025, 10:43:40 PM
+        System.out.println(new Gson().toJson(new Date()));
+//        Nov 7, 2025, 10:43:40 PM
+        System.out.println(new GsonBuilder().setDateFormat("MMM d, yyyy, hh:mm:ss a").create().toJson(new Date()));
     }
 
     @Test

@@ -25,7 +25,7 @@ public class RoleCommandFactory {
 
     private final List<RoleBaseCommand> commands = new ArrayList<>();
 
-    public RoleCommandFactory(RoleService roleService) {
+    public RoleCommandFactory(RoleService roleService, ApplicationContext applicationContext) {
         // 注册所有Role命令
         registerCommand(new InterruptCommand(roleService));
         registerCommand(new RefreshConfigCommand(roleService));
@@ -39,7 +39,7 @@ public class RoleCommandFactory {
         registerCommand(new CompressionCommand(roleService));
         
         // 自动扫描和注册带@RoleCommand注解的命令
-        scanAndRegisterAnnotatedCommands(roleService);
+        scanAndRegisterAnnotatedCommands(applicationContext);
     }
 
     /**
@@ -54,21 +54,11 @@ public class RoleCommandFactory {
 
     /**
      * 扫描并注册带@RoleCommand注解的命令
-     *
-     * @param roleService RoleService实例
      */
-    private void scanAndRegisterAnnotatedCommands(RoleService roleService) {
+    private void scanAndRegisterAnnotatedCommands(ApplicationContext applicationContext) {
         try {
-            if (!ApplicationContextHolder.isInitialized()) {
-                log.warn("ApplicationContext未初始化，跳过自动扫描命令");
-                return;
-            }
-
-            ApplicationContext applicationContext = ApplicationContextHolder.getApplicationContext();
             Map<String, Object> commandBeans = applicationContext.getBeansWithAnnotation(RoleCommand.class);
-
             List<RoleBaseCommand> annotatedCommands = new ArrayList<>();
-            
             for (Object bean : commandBeans.values()) {
                 if (bean instanceof RoleBaseCommand) {
                     RoleBaseCommand command = (RoleBaseCommand) bean;
@@ -180,7 +170,11 @@ public class RoleCommandFactory {
                 sink.next("❌ 命令执行失败: " + e.getMessage() + "\n");
                 return true; // 即使执行失败，也表示找到了命令
             } finally {
-                sink.complete();
+                // 只有非异步命令才立即关闭sink
+                // 异步命令需要由Agent在后台处理完成后关闭sink
+                if (!command.isAsyncCommand()) {
+                    sink.complete();
+                }
             }
         }
         return false;
@@ -207,8 +201,13 @@ public class RoleCommandFactory {
             } catch (Exception e) {
                 log.error("执行Role命令失败: {}, 错误: {}", command.getCommandName(), e.getMessage(), e);
                 sink.next("❌ 命令执行失败: " + e.getMessage() + "\n");
-                sink.complete();
                 return true; // 即使执行失败，也表示找到了命令
+            } finally {
+                // 只有非异步命令才立即关闭sink
+                // 异步命令需要由Agent在后台处理完成后关闭sink
+                if (!command.isAsyncCommand()) {
+                    sink.complete();
+                }
             }
         }
         return false;
