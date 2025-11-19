@@ -3,8 +3,11 @@ package run.mone.mcp.milinenew.config;
 import com.google.common.collect.Lists;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.mcp.milinenew.tools.RunPipelineTool;
+import run.mone.mcp.milinenew.tools.CreateProjectTool;
 
 /**
  * @author goodjava@qq.com
@@ -24,7 +27,10 @@ public class AgentConfig {
                         new ChatTool(),
                         new AskTool(),
                         new RunPipelineTool(),
+                        new CreateProjectTool(),
                         new AttemptCompletionTool()))
+                //mcp工具
+                .mcpTools(Lists.newArrayList(new ChatFunction("miline-new", 20)))
                 .build();
     }
 
