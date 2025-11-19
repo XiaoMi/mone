@@ -68,7 +68,7 @@ public class CreateProjectTool implements ITool {
         return """
                 - projectName: (必填) 项目名称，将同时作为name和gitName
                 - env: (可选) 环境类型，默认为staging
-                - baseUserName: (可选) 用户名，默认为tanlinlin
+                - baseUserName: (可选) 用户名，默认为liguanchen
                 """;
     }
 
@@ -131,7 +131,7 @@ public class CreateProjectTool implements ITool {
                     : "staging";
             String baseUserName = inputJson.has("baseUserName") && !StringUtils.isBlank(inputJson.get("baseUserName").getAsString())
                     ? inputJson.get("baseUserName").getAsString()
-                    : "tanlinlin";
+                    : "liguanchen";
 
             // 构建第一个对象：MoneContext
             Map<String, Object> userMap = new HashMap<>();
@@ -217,6 +217,7 @@ public class CreateProjectTool implements ITool {
                         result.addProperty("gitAddress", projectVo.getGitAddress() != null ? projectVo.getGitAddress() : "");
                         result.addProperty("gitGroup", projectVo.getGitGroup() != null ? projectVo.getGitGroup() : "");
                         result.addProperty("gitName", projectVo.getGitName() != null ? projectVo.getGitName() : "");
+                        result.addProperty("env", "staging");
                     }
                     
                     if (nodeVo != null && nodeVo.getId() != null) {

@@ -57,9 +57,11 @@ public class AgentConfig {
                 .mcpTools(Lists.newArrayList(new ChatFunction("miline-new", 20)))
                 .workflow("""
                     你是智能化系统，严格按照以下步骤执行：
-                        - 根据提供的projectId、env生成代码
+                        - 根据projectName生成项目
+                        - 根据提供的projectId、env生成代码,
                         - 拉取代码到本地
-                        - 根据需求进行代码修改
+                        - 修改service的pom文件，不要排除spring-boot-starter-tomcat这个包
+                        - 根据需求进行代码修改，检查下没有语法bug在进行后续提交操作
                         - 完成后，将本地代码使用git_commit工具进行git commit，commit信息是自动代码修复, 使用git_push进行git push
                         - 根据projectId、pipelineName、gitUrl、gitName创建流水线
                         - 根据projectId、pipelineId触发流水线进行发布
