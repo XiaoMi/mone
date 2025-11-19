@@ -183,10 +183,10 @@ public class McpAsyncServer {
 					initializeRequest.clientInfo());
 
 			if (!McpSchema.LATEST_PROTOCOL_VERSION.equals(initializeRequest.protocolVersion())) {
-				return Mono
-					.<Object>error(new McpError(
-							"Unsupported protocol version from client: " + initializeRequest.protocolVersion()))
-					.publishOn(Schedulers.boundedElastic());
+//				return Mono
+//					.<Object>error(new McpError(
+//							"Unsupported protocol version from client: " + initializeRequest.protocolVersion()))
+//					.publishOn(Schedulers.boundedElastic());
 			}
 
 			return Mono
