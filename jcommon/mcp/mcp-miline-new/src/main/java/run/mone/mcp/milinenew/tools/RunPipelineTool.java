@@ -13,6 +13,7 @@ import run.mone.hive.roles.tool.ITool;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -124,7 +125,10 @@ public class RunPipelineTool implements ITool {
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
 
-            Map<String, String> userMap = Map.of("baseUserName", "wangmin17");
+//            Map<String, String> userMap = Map.of("baseUserName", "liguanchen");
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("baseUserName", "liguanchen");
+            userMap.put("userType", 0);
             List<Object> requestBody = List.of(userMap, projectId, pipelineId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("runPipeline request: {}", requestBodyStr);
