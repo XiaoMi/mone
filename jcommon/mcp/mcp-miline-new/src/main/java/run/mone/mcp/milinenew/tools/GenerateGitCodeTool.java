@@ -207,7 +207,7 @@ public class GenerateGitCodeTool implements ITool {
                 result.addProperty("msg", "生成代码成功");
                 result.addProperty("gitUrl", apiResponse.getData().gitUrl);
                 result.addProperty("pipelineName", apiResponse.getData().pipelineName);
-                result.addProperty("projectName", apiResponse.getData().projectName);
+                result.addProperty("gitName", apiResponse.getData().gitName);
                 return result;
             }
         } catch (NumberFormatException e) {
@@ -235,7 +235,7 @@ public class GenerateGitCodeTool implements ITool {
     private static class GitCodeGenerationResult {
         private String pipelineName;
         private String gitUrl;
-        private String projectName;
+        private String gitName;
         
     }
 }

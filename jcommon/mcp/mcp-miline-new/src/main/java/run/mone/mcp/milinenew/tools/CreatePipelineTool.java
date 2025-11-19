@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class CreatePipelineTool implements ITool {
-    public static String projectName = "";
+    public static String gitName = "";
     public static final String name = "create_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
     private static final String CREATE_PIPELINE_URL = BASE_URL + "/createPipeline";
@@ -74,7 +74,7 @@ public class CreatePipelineTool implements ITool {
                 - projectId: (必填) 项目ID
                 - pipelineName: (必填) 流水线名称
                 - gitUrl: (必填) Git仓库地址
-                - projectName: (必填) 项目名称，默认为git项目名
+                - gitName: (必填) 项目名称，默认为git项目名
                 - gitBranch: (选填) Git分支，默认为master
                 - env: (选填) 环境，默认为staging
                 - pipelineCname: (选填) 流水线中文名称
@@ -97,6 +97,7 @@ public class CreatePipelineTool implements ITool {
                 <projectId>项目ID</projectId>
                 <pipelineName>流水线名称</pipelineName>
                 <gitUrl>Git仓库地址</gitUrl>
+                <gitName>项目名称，默认为git项目名</gitName>
                 <gitBranch>分支名(可选，默认master)</gitBranch>
                 <env>环境(可选，默认staging)</env>
                 %s
@@ -137,8 +138,8 @@ public class CreatePipelineTool implements ITool {
             }
 
             // 解析参数
-            projectName = inputJson.has("projectName") && StringUtils.isNotBlank(inputJson.get("projectName").getAsString())
-                    ? inputJson.get("projectName").getAsString() : "";
+            gitName = inputJson.has("gitName") && StringUtils.isNotBlank(inputJson.get("gitName").getAsString())
+                    ? inputJson.get("gitName").getAsString() : "";
             String projectId = inputJson.get("projectId").getAsString();
             String pipelineName = inputJson.get("pipelineName").getAsString();
             pipelineName = new File(pipelineName).getName();
@@ -324,7 +325,7 @@ public class CreatePipelineTool implements ITool {
         steps.add(createStep("k8s_java_image_build", "K8s java镜像构建",
                 Map.of(
                         "image", "MIONE/java-image-build",
-                        "jarPath", projectName + "-server/target/*.jar",//todo projectName
+                        "jarPath", gitName + "-server/target/*.jar",//todo projectName
                         "fromImage", ""
                 )));
 
