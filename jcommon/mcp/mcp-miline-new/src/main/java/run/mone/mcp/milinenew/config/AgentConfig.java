@@ -14,6 +14,8 @@ import run.mone.mcp.milinenew.tools.RunPipelineTool;
 import run.mone.mcp.git.tool.GitCloneTool;
 import run.mone.mcp.git.tool.GitCommitTool;
 import run.mone.mcp.git.tool.GitPushTool;
+import run.mone.mcp.milinenew.tools.RunPipelineTool;
+import run.mone.mcp.milinenew.tools.CreateProjectTool;
 
 /**
  * @author goodjava@qq.com
@@ -39,6 +41,7 @@ public class AgentConfig {
                                 new ChatTool(),
                                 new AskTool(),
                                 new AttemptCompletionTool(),
+                                new CreateProjectTool(),
                                 new GenerateGitCodeTool(),
                                 new ListFilesTool(false),
                                 new ExecuteCommandToolOptimized(),

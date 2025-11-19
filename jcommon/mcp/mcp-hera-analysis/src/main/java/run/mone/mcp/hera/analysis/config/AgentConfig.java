@@ -13,7 +13,9 @@ import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.SpeechToTextTool;
 import run.mone.hive.roles.tool.TextToSpeechTool;
 import run.mone.mcp.hera.analysis.tool.ApplicationMetricsTool;
+import run.mone.mcp.hera.analysis.tool.DubboInterfaceQpsTool;
 import run.mone.mcp.hera.analysis.tool.HeraAnalysisTool;
+import run.mone.mcp.hera.analysis.tool.LogQueryTool;
 
 /**
  * @author zhangxiaowei6
@@ -31,6 +33,12 @@ public class AgentConfig {
 
     @Autowired
     private ApplicationMetricsTool applicationMetricsTool;
+
+    @Autowired
+    private DubboInterfaceQpsTool dubboInterfaceQpsTool;
+
+    @Autowired
+    private LogQueryTool logQueryTool;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -54,7 +62,9 @@ public class AgentConfig {
                         new SpeechToTextTool(),
                         new TextToSpeechTool(),
                         applicationMetricsTool,
-                        heraAnalysisTool
+                        heraAnalysisTool,
+                        dubboInterfaceQpsTool,
+                        logQueryTool
                         ))
                 //mcp工具
                 .mcpTools(Lists.newArrayList(chat))

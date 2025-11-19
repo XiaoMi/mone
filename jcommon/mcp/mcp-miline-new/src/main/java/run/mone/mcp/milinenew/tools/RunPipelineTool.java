@@ -23,7 +23,7 @@ public class RunPipelineTool implements ITool {
 
     public static final String name = "run_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL + "/startPipelineWithLatestCommit";
+    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/startPipelineWithLatestCommit" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -108,6 +108,11 @@ public class RunPipelineTool implements ITool {
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {
+            if (BASE_URL == null || RUN_PIPELINE_URL == null) {
+                result.addProperty("error", "配置错误: req_base_url 环境变量未设置");
+                log.error("req_base_url 环境变量未设置，无法执行流水线操作");
+                return result;
+            }
             if (!inputJson.has("projectId") || StringUtils.isBlank(inputJson.get("projectId").getAsString())) {
                 result.addProperty("error", "缺少必填参数'projectId'");
                 return result;

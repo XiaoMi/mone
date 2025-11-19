@@ -270,9 +270,10 @@ public class DefaultMcpSession implements McpSession {
             }
 
             String clientId = request.clientId();
+            Boolean complete = true;
 
             return handler.handle(request.params())
-                    .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null, true, clientId, null)
+                    .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null, complete, clientId, null)
                     )
                     .onErrorResume(error -> Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
                             request.id(),

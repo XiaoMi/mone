@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
  * 对应Claude Code中的/init指令功能
  */
 @Slf4j
-@RoleCommand(priority = 0)
 public class InitCommand extends RoleBaseCommand {
 
     public InitCommand(RoleService roleService) {

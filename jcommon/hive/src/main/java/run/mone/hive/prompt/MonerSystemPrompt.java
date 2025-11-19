@@ -14,13 +14,16 @@ import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
+import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.hub.McpConnection;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.mcp.hub.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
-import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
 import java.io.File;
@@ -246,7 +249,7 @@ public class MonerSystemPrompt {
                 server.put("name", key);
                 server.put("args", "");
                 server.put("connection", value);
-                server.put("agent", ImmutableMap.of("name",value.getServer().getName()));
+                server.put("agent", ImmutableMap.of("name", value.getServer().getName()));
                 List<io.modelcontextprotocol.spec.McpSchema.Tool> tools = value.getServer().getToolsV2();
                 String toolsStr = tools.stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
@@ -262,7 +265,7 @@ public class MonerSystemPrompt {
             server.put("name", key);
             server.put("args", "");
             server.put("connection", value);
-            server.put("agent",value.getServer().getServerInfo().meta());
+            server.put("agent", value.getServer().getServerInfo().meta());
             McpSchema.ListToolsResult tools = value.getClient().getTools();
             String toolsStr = tools
                     .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
@@ -272,7 +275,36 @@ public class MonerSystemPrompt {
 
             serverList.add(server);
         }));
+
+
+        //启用claude code agent (一个code agent)
+        loadClaudeAgentIfConfigured(role, serverList);
+
         return serverList;
+    }
+
+    private static void loadClaudeAgentIfConfigured(ReactorRole role, List<Map<String, Object>> serverList) {
+        if (role.getRoleConfig().containsKey(Constants.CLAUDE_AGENT)) {
+            //加载claude code agent
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", Constants.CLAUDE_AGENT);
+            server.put("args", "");
+            McpConnection mc = new McpConnection(new McpServer("", ""), (McpSyncClient) null, null);
+            server.put("connection", mc);
+            String profile = role.getRoleConfig().getOrDefault("claude_profile", "一个非常擅长写代码的Agent");
+            String goal = role.getRoleConfig().getOrDefault("claude_goal", "帮助用户完成代码任务");
+            String constraints = role.getRoleConfig().getOrDefault("constraints", "不讨论任何和代码不相关的内容");
+            server.put("agent", ImmutableMap.of("name", Constants.CLAUDE_AGENT, "profile", profile, "goal", goal, "constraints", constraints));
+            String toolDesc = role.getRoleConfig().getOrDefault("claude_desc", "你可以通过和%s沟通来解决你的问题".formatted(Constants.CLAUDE_AGENT));
+            McpSchema.ListToolsResult tools = new McpSchema.ListToolsResult(Lists.newArrayList(
+                    new McpSchema.Tool("chat", toolDesc, ChatFunction.TOOL_SCHEMA)), "");
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.toString() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+            serverList.add(server);
+        }
     }
 
     public static final String TOOL_USE_INFO = """
@@ -378,7 +410,7 @@ public class MonerSystemPrompt {
             Checklist here (optional)
             </task_progress><% } %>
             </execute_command>
-           
+            
             这里有一些内部的tool,这些tool不需要返回server_name
             <% for(tool in toolList){%>
             ## ${invoke(tool, "getName")}
@@ -428,11 +460,11 @@ public class MonerSystemPrompt {
             # Connected MCP Servers
             
             When a server is connected, you can use the server's tools via the `use_mcp_tool` tool, and access the server's resources via the `access_mcp_resource` tool.
-           
+            
             # 调用这些tool会有一些参数,如果发现用户没提供,可以参考这些用户已经配置好的默认参数
             用户的默认参数:
             ${toolConfig}
-             
+            
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
             ## 这个Agent的信息

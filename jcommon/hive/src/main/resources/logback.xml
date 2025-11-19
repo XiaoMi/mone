@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 配置JUL到SLF4J的桥接 -->
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+    <!-- Console appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Root logger -->
+    <root level="DEBUG">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- 特定包的日志级别配置 -->
+    <!-- Tomcat相关日志 - 现在通过SLF4J桥接输出 -->
+<!--    <logger name="org.apache.catalina" level="INFO" />-->
+<!--    <logger name="org.apache.coyote" level="INFO" />-->
+<!--    <logger name="org.apache.tomcat" level="DEBUG" />-->
+<!--    -->
+<!--    &lt;!&ndash; Tomcat启动相关日志 &ndash;&gt;-->
+<!--    <logger name="org.apache.catalina.core.StandardService" level="INFO" />-->
+<!--    <logger name="org.apache.catalina.core.StandardEngine" level="INFO" />-->
+<!--    <logger name="org.apache.catalina.startup.Catalina" level="INFO" />-->
+    
+    <!-- Spring相关日志，减少噪音 -->
+    <logger name="org.springframework" level="INFO" />
+    
+    <!-- Netty相关日志，减少噪音 -->
+    <logger name="io.netty" level="INFO" />
+    
+    <!-- HTTP客户端日志，减少噪音 -->
+    <logger name="org.apache.http" level="INFO" />
+    <logger name="okhttp3" level="INFO" />
+    
+    <!-- 第三方库日志，减少噪音 -->
+    <logger name="com.fasterxml.jackson" level="INFO" />
+    <logger name="org.reflections" level="WARN" />
+    
+    <!-- 保持hive项目的DEBUG级别 -->
+    <logger name="run.mone.hive" level="DEBUG" />
+</configuration>

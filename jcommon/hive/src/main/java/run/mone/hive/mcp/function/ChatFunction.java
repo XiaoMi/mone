@@ -63,7 +63,7 @@ public class ChatFunction implements McpFunction {
     }
 
 
-    private static final String TOOL_SCHEMA = """
+    public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
                 "properties": {
