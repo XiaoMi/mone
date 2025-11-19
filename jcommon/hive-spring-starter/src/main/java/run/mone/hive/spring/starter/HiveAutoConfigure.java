@@ -12,6 +12,7 @@ import org.springframework.util.CollectionUtils;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.server.transport.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
@@ -50,6 +51,15 @@ public class HiveAutoConfigure {
         return transport;
     }
 
+    @Bean
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "http")
+    HttpServletStreamableServerTransport httpServerTransport() {
+        HttpServletStreamableServerTransport transport =HttpServletStreamableServerTransport.builder()
+                .mcpEndpoint("/mcp")
+                .build();
+        return transport;
+    }
+
     //注册类
     @Bean
     @ConditionalOnMissingBean
@@ -60,7 +70,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, GrpcServerTransport transport, ApplicationContext applicationContext) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, ServerMcpTransport transport, ApplicationContext applicationContext) {
         List<ITool> toolList = roleMeta.getTools();
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
 

@@ -30,6 +30,7 @@ import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.service.command.RoleBaseCommand;
 import run.mone.hive.mcp.service.command.RoleCommandFactory;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
@@ -109,7 +110,7 @@ public class RoleService {
     //Role命令工厂
     private RoleCommandFactory roleCommandFactory;
 
-    private final GrpcServerTransport transport;
+    private final ServerMcpTransport transport;
 
     private final ApplicationContext applicationContext;
 
