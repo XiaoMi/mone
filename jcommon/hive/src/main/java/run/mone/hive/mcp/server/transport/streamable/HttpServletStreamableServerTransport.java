@@ -2,7 +2,7 @@
  * Copyright 2024-2024 the original author or authors.
  */
 
-package run.mone.hive.mcp.server.transport;
+package run.mone.hive.mcp.server.transport.streamable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -145,24 +146,24 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         this.mcpEndpoint = mcpEndpoint;
         this.disallowDelete = disallowDelete;
 
-        if (keepAliveInterval != null) {
-            this.keepAliveScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "mcp-keepalive");
-                t.setDaemon(true);
-                return t;
-            });
+        // if (keepAliveInterval != null) {
+        //     this.keepAliveScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        //         Thread t = new Thread(r, "mcp-keepalive");
+        //         t.setDaemon(true);
+        //         return t;
+        //     });
 
-            this.keepAliveScheduler.scheduleAtFixedRate(() -> {
-                long now = System.currentTimeMillis();
-                Safe.run(() -> sessions.entrySet().forEach(entry -> {
-                    if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
-                        logger.info("Session timeout, removing: {}", entry.getKey());
-                        entry.getValue().close();
-                        sessions.remove(entry.getKey());
-                    }
-                }));
-            }, keepAliveInterval.toSeconds(), keepAliveInterval.toSeconds(), TimeUnit.SECONDS);
-        }
+        //     this.keepAliveScheduler.scheduleAtFixedRate(() -> {
+        //         long now = System.currentTimeMillis();
+        //         Safe.run(() -> sessions.entrySet().forEach(entry -> {
+        //             if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
+        //                 logger.info("Session timeout, removing: {}", entry.getKey());
+        //                 entry.getValue().close();
+        //                 sessions.remove(entry.getKey());
+        //             }
+        //         }));
+        //     }, keepAliveInterval.toSeconds(), keepAliveInterval.toSeconds(), TimeUnit.SECONDS);
+        // }
     }
 
     @Override
@@ -243,7 +244,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
     private void sendMessageToSession(McpSession session, String jsonText) {
         try {
-            logger.debug("Sending message to session: {}", session.getId());
+            logger.debug("Sending message to session: {}, message:{}", session.getId(), jsonText);
             session.sendMessage(jsonText);
         } catch (Exception e) {
             logger.error("Failed to send message to session {}: {}", session.getId(), e.getMessage());
@@ -264,6 +265,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
+        logger.debug("Request URI with GET method, uri: {}, params: {}", requestURI, request.getQueryString());
         if (!requestURI.endsWith(mcpEndpoint)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
@@ -358,6 +360,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
+        logger.debug("Request URI with POST method, uri: {}", requestURI);
         if (!requestURI.endsWith(mcpEndpoint)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
@@ -383,6 +386,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             }
 
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body.toString());
+            logger.debug("Request URI with POST method, uri: {}, body: {}", requestURI, body.toString());
 
             // Handle ping requests
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals("ping")) {
@@ -400,22 +404,94 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             // Handle initialization request
             if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
                     && jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
-                
-                // Process initialization through connect handler
-                if (connectHandler != null) {
-                    McpSchema.JSONRPCMessage result = connectHandler.apply(Mono.just(message)).block();
-                    
-                    response.setContentType(APPLICATION_JSON);
-                    response.setCharacterEncoding(UTF_8);
-                    if (clientId != null) {
-                        response.setHeader(Const.MC_CLIENT_ID, clientId);
-                    }
-                    response.setStatus(HttpServletResponse.SC_OK);
 
-                    String jsonResponse = objectMapper.writeValueAsString(result);
-                    PrintWriter writer = response.getWriter();
-                    writer.write(jsonResponse);
-                    writer.flush();
+                // setup session for initialization
+                logger.info("handle initialization request:{}", body.toString());
+                String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
+                if (sessionId == null || sessionId.isBlank()) {
+                    sessionId = request.getHeader(Const.MC_CLIENT_ID);
+                }
+                if (sessionId == null || sessionId.isBlank()) {
+                    sessionId = java.util.UUID.randomUUID().toString();
+                }
+
+                // Process initialization - response should be returned directly in HTTP body
+                // 对于 Streamable HTTP，初始化响应必须在 HTTP response body 中返回，
+                // 而不是通过 SSE 发送
+                if (connectHandler != null) {
+                    String finalSessionId = sessionId;
+
+                    try {
+                        // 设置响应头
+                        response.setContentType(APPLICATION_JSON);
+                        response.setCharacterEncoding(UTF_8);
+                        response.setHeader(HttpHeaders.MCP_SESSION_ID, finalSessionId);
+                        response.setStatus(HttpServletResponse.SC_OK);
+
+                        // 创建一个临时的 session 来捕获响应
+                        // 由于 connectHandler 会通过 sendMessage 发送响应，我们需要
+                        // 捕获这个响应并写入 HTTP body
+                        PrintWriter writer = response.getWriter();
+                        java.util.concurrent.CompletableFuture<String> responseFuture = new java.util.concurrent.CompletableFuture<>();
+
+                        // 创建临时 session，其 sendMessage 会将响应保存到 future
+                        McpSession tempSession = new McpSession(finalSessionId, null, writer) {
+                            @Override
+                            public void sendJsonMessage(String msg) throws IOException {
+                                responseFuture.complete(msg);
+                            }
+                        };
+
+                        // 临时添加到 sessions map，让 sendMessage 能找到它
+                        sessions.put(finalSessionId, tempSession);
+
+                        // 处理初始化请求
+                        connectHandler.apply(Mono.just(message)).block();
+
+                        // 等待响应（最多 5 秒）
+                        String jsonResponse = responseFuture.get(5, java.util.concurrent.TimeUnit.SECONDS);
+
+                        // 写入响应体
+                        writer.write(jsonResponse);
+                        writer.flush();
+
+                        // 移除临时 session
+                        sessions.remove(finalSessionId);
+
+                        logger.info("handled initialization for session: {}", finalSessionId);
+                    } catch (java.util.concurrent.TimeoutException e) {
+                        sessions.remove(finalSessionId);
+                        logger.error("Initialization timeout for session: {}", finalSessionId, e);
+                        response.sendError(HttpServletResponse.SC_REQUEST_TIMEOUT,
+                            "Initialization timeout");
+                    } catch (Exception e) {
+                        sessions.remove(finalSessionId);
+                        logger.error("Error handling initialization for session: {}", finalSessionId, e);
+                        try {
+                            response.setContentType(APPLICATION_JSON);
+                            response.setCharacterEncoding(UTF_8);
+                            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+                            McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                                McpSchema.JSONRPC_VERSION,
+                                jsonrpcRequest.id(),
+                                null,
+                                new McpSchema.JSONRPCResponse.JSONRPCError(
+                                    McpSchema.ErrorCodes.INTERNAL_ERROR,
+                                    e.getMessage(),
+                                    null
+                                )
+                            );
+                            String errorJson = objectMapper.writeValueAsString(errorResponse);
+                            response.getWriter().write(errorJson);
+                            response.getWriter().flush();
+                        } catch (IOException ioEx) {
+                            logger.error("Error writing error response: {}", ioEx.getMessage());
+                            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                                "Initialization failed: " + e.getMessage());
+                        }
+                    }
+
                     return;
                 }
             }
@@ -465,10 +541,29 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 return;
             }
 
-            // Handle other requests through connect handler
+            // Handle other requests (responses will be sent through SSE connection)
             if (connectHandler != null) {
-                connectHandler.apply(Mono.just(message)).block();
-                response.setStatus(HttpServletResponse.SC_OK);
+                // 设置响应头，即使响应体为空
+                response.setContentType(APPLICATION_JSON);
+                response.setCharacterEncoding(UTF_8);
+                response.setStatus(HttpServletResponse.SC_ACCEPTED);  // 202: 请求已接受，响应将通过 SSE 发送
+
+                // 异步处理请求，响应会通过 SSE 连接发送
+                // 兼容新旧两种 session header
+                String requestSessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
+                if (requestSessionId == null || requestSessionId.isBlank()) {
+                    requestSessionId = request.getHeader(Const.MC_CLIENT_ID);
+                }
+                if (requestSessionId == null) {
+                    requestSessionId = clientId;
+                }
+                String finalRequestSessionId = requestSessionId;
+
+                connectHandler.apply(Mono.just(message))
+                    .subscribe(
+                        result -> logger.debug("Request handled successfully, response sent via SSE for session: {}", finalRequestSessionId),
+                        error -> logger.error("Error handling request for session: {}", finalRequestSessionId, error)
+                    );
             } else {
                 this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                         new McpError("No message handler registered"));
@@ -479,7 +574,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             this.responseError(response, HttpServletResponse.SC_BAD_REQUEST,
                     new McpError("Invalid message format: " + e.getMessage()));
         } catch (Exception e) {
-            logger.error("Error handling message: {}", e.getMessage());
+            logger.error("Error handling message:", e);
             try {
                 this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                         new McpError("Error processing message: " + e.getMessage()));
@@ -517,7 +612,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
-        String sessionId = request.getHeader(Const.MC_CLIENT_ID);
+//        String sessionId = request.getHeader(Const.MC_CLIENT_ID);
+        String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
         if (sessionId == null) {
             this.responseError(response, HttpServletResponse.SC_BAD_REQUEST,
                     new McpError("Session ID required in header"));
@@ -676,7 +772,13 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
          * @param message The message to send
          */
         public void sendMessage(String message) throws IOException {
-            sendEvent(MESSAGE_EVENT_TYPE, message, this.id);
+            // sendEvent(MESSAGE_EVENT_TYPE, message, this.id);
+            sendJsonMessage(message);
+        }
+
+        public void sendJsonMessage(String message) throws IOException {
+            writer.write(message);
+            writer.flush();
         }
 
         /**

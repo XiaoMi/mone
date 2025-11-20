@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,20 @@ import java.util.stream.Collectors;
 public class McpAsyncServer {
 
 	private final static Logger logger = LoggerFactory.getLogger(McpAsyncServer.class);
+
+	/**
+	 * Lifecycle state constants for the MCP server session.
+	 * Following the MCP protocol specification for proper initialization sequence.
+	 */
+	private static final int STATE_UNINITIALIZED = 0;
+	private static final int STATE_INITIALIZING = 1;
+	private static final int STATE_INITIALIZED = 2;
+
+	/**
+	 * Current initialization state of the server session.
+	 * Tracks the progression: UNINITIALIZED -> INITIALIZING -> INITIALIZED
+	 */
+	private final AtomicInteger state = new AtomicInteger(STATE_UNINITIALIZED);
 
 	/**
 	 * The MCP session implementation that manages bidirectional JSON-RPC communication
@@ -152,7 +167,7 @@ public class McpAsyncServer {
 
 		Map<String, NotificationHandler> notificationHandlers = new HashMap<>();
 
-		notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_INITIALIZED, (params) -> Mono.empty());
+		notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_INITIALIZED, initializedNotificationHandler());
 
 		if (Utils.isEmpty(rootsChangeConsumers)) {
 			rootsChangeConsumers = List.of((roots) -> logger
@@ -175,6 +190,23 @@ public class McpAsyncServer {
 					new TypeReference<McpSchema.InitializeRequest>() {
 					});
 
+			// Check if already initialized or initializing
+			int currentState = this.state.get();
+			if (currentState == STATE_INITIALIZING) {
+				logger.warn("Initialize request received while already initializing");
+				return Mono.<Object>error(new McpError("Server is already initializing"))
+					.publishOn(Schedulers.boundedElastic());
+			}
+			if (currentState == STATE_INITIALIZED) {
+				logger.warn("Initialize request received but server is already initialized");
+				return Mono.<Object>error(new McpError("Server is already initialized"))
+					.publishOn(Schedulers.boundedElastic());
+			}
+
+			// Transition to INITIALIZING state
+			this.state.lazySet(STATE_INITIALIZING);
+			logger.debug("Server state: UNINITIALIZED -> INITIALIZING");
+
 			this.clientCapabilities = initializeRequest.capabilities();
 			this.clientInfo = initializeRequest.clientInfo();
 
@@ -182,17 +214,54 @@ public class McpAsyncServer {
 					initializeRequest.protocolVersion(), initializeRequest.capabilities(),
 					initializeRequest.clientInfo());
 
-			if (!McpSchema.LATEST_PROTOCOL_VERSION.equals(initializeRequest.protocolVersion())) {
+			// HINT: skip check protocol version
+//			if (!McpSchema.LATEST_PROTOCOL_VERSION.equals(initializeRequest.protocolVersion())) {
 //				return Mono
 //					.<Object>error(new McpError(
 //							"Unsupported protocol version from client: " + initializeRequest.protocolVersion()))
 //					.publishOn(Schedulers.boundedElastic());
-			}
+//			}
 
 			return Mono
-				.<Object>just(new McpSchema.InitializeResult(McpSchema.LATEST_PROTOCOL_VERSION, this.serverCapabilities,
+				.<Object>just(new McpSchema.InitializeResult(McpSchema.CURRENT_PROTOCOL_VERSION, this.serverCapabilities,
 						this.serverInfo, null))
 				.publishOn(Schedulers.boundedElastic());
+		};
+	}
+
+	/**
+	 * Handles the 'initialized' notification from the client.
+	 * This is the final step of the initialization handshake as per MCP specification.
+	 * The sequence is:
+	 * 1. Client sends 'initialize' request
+	 * 2. Server responds with InitializeResult
+	 * 3. Client sends 'initialized' notification (this handler)
+	 *
+	 * Only after receiving this notification should the server consider the session
+	 * fully initialized and ready for business operations.
+	 */
+	private NotificationHandler initializedNotificationHandler() {
+		return params -> {
+			int currentState = this.state.get();
+
+			if (currentState == STATE_UNINITIALIZED) {
+				logger.error("Received 'initialized' notification before 'initialize' request");
+				return Mono.error(new McpError(
+					"Protocol violation: 'initialized' notification received before 'initialize' request"));
+			}
+
+			if (currentState == STATE_INITIALIZED) {
+				logger.warn("Received duplicate 'initialized' notification - already initialized");
+				return Mono.empty();
+			}
+
+			// Transition to INITIALIZED state
+			this.state.lazySet(STATE_INITIALIZED);
+			logger.info("Server state: INITIALIZING -> INITIALIZED. Session is now fully initialized and ready.");
+			logger.info("Client capabilities: {}", this.clientCapabilities);
+			logger.info("Client info: {}", this.clientInfo);
+
+			return Mono.empty();
 		};
 	}
 
@@ -226,6 +295,51 @@ public class McpAsyncServer {
 	 */
 	public McpSchema.Implementation getClientInfo() {
 		return this.clientInfo;
+	}
+
+	/**
+	 * Checks if the server session is fully initialized.
+	 * @return true if the server has completed the initialization handshake, false otherwise
+	 */
+	public boolean isInitialized() {
+		return this.state.get() == STATE_INITIALIZED;
+	}
+
+	/**
+	 * Checks if the server session is currently initializing.
+	 * @return true if initialization is in progress, false otherwise
+	 */
+	public boolean isInitializing() {
+		return this.state.get() == STATE_INITIALIZING;
+	}
+
+	/**
+	 * Gets the current initialization state as a human-readable string.
+	 * @return The current state name
+	 */
+	public String getStateDescription() {
+		return switch (this.state.get()) {
+			case STATE_UNINITIALIZED -> "UNINITIALIZED";
+			case STATE_INITIALIZING -> "INITIALIZING";
+			case STATE_INITIALIZED -> "INITIALIZED";
+			default -> "UNKNOWN";
+		};
+	}
+
+	/**
+	 * Ensures that the server is fully initialized before proceeding.
+	 * @throws McpError if the server is not in INITIALIZED state
+	 */
+	private void ensureInitialized() {
+		int currentState = this.state.get();
+		if (currentState != STATE_INITIALIZED) {
+			String stateDesc = switch (currentState) {
+				case STATE_UNINITIALIZED -> "UNINITIALIZED";
+				case STATE_INITIALIZING -> "INITIALIZING";
+				default -> "UNKNOWN";
+			};
+			throw new McpError("Server must be initialized before this operation. Current state: " + stateDesc);
+		}
 	}
 
 	/**
@@ -708,11 +822,13 @@ public class McpAsyncServer {
 	 */
 	private DefaultMcpSession.RequestHandler setLoggerRequestHandler() {
 		return params -> {
-			McpSchema.LoggingLevel setLoggerRequest = transport.unmarshalFrom(params,
-					new TypeReference<McpSchema.LoggingLevel>() {
+			McpSchema.SetLevelRequest setLoggerRequest = transport.unmarshalFrom(params,
+					new TypeReference<McpSchema.SetLevelRequest>() {
 					});
 
-			this.minLoggingLevel = setLoggerRequest;
+			this.minLoggingLevel = setLoggerRequest.level();
+
+			logger.info("Logging level updated to: {}", this.minLoggingLevel);
 
 			return Mono.empty();
 		};
