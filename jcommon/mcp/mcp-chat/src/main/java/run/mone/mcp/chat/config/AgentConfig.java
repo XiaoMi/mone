@@ -10,6 +10,7 @@ import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.Rag;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.mcp.chat.function.AddTwoNumbersFunction;
 
 /**
  * @author goodjava@qq.com
@@ -42,7 +43,10 @@ public class AgentConfig {
 //                                        .build()).build()),
                         new AttemptCompletionTool()
                         ))
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
+                .mcpTools(Lists.newArrayList(
+                        // new AddTwoNumbersFunction(),
+                        new ChatFunction(agentName, 60)
+                ))
                 .build();
     }
 
