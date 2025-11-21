@@ -22,6 +22,9 @@ public class AgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Value("${mcp.agent.mode:MCP}")
+    private String agentMode;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -32,6 +35,7 @@ public class AgentConfig {
 //                .webQuery(WebQuery.builder().autoWebQuery(false).modelType("bert").version("finetune-bert-20250605-73a29258").build())
                 //内部工具(意图识别的小模型)
                 .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
+                .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
@@ -42,11 +46,12 @@ public class AgentConfig {
 //                                        .llm(RoleMemoryConfig.LlmConfig.builder().providerName(LLMProvider.QWEN.name()).model("qwen3-max").build())
 //                                        .build()).build()),
                         new AttemptCompletionTool()
-                        ))
-                .mcpTools(Lists.newArrayList(
-                        // new AddTwoNumbersFunction(),
-                        new ChatFunction(agentName, 60)
                 ))
+                .mcpTools(
+                        RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) ?
+                                Lists.newArrayList(
+                                        new ChatFunction(agentName, 60)
+                                ) : Lists.newArrayList(new AddTwoNumbersFunction()))
                 .build();
     }
 
