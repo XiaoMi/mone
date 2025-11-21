@@ -31,6 +31,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.spec.McpError;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
@@ -62,9 +63,12 @@ import jakarta.servlet.http.HttpServletResponse;
  * @see HttpServlet
  */
 @WebServlet(asyncSupported = true)
+@Data
 public class HttpServletStreamableServerTransport extends HttpServlet implements ServerMcpTransport {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpServletStreamableServerTransport.class);
+
+    private McpAsyncServer mcpServer;
 
     /**
      * Event type for JSON-RPC messages sent through the SSE connection.
@@ -397,7 +401,14 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                         return v;
                     });
                 }
-                response.setStatus(HttpServletResponse.SC_OK);
+
+                McpSchema.JSONRPCResponse pingResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    Map.of(),
+                    null
+                );
+                responseJsonRpc(response, pingResponse);
                 return;
             }
 
@@ -495,6 +506,89 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     return;
                 }
             }
+
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_TOOLS_CALL)) {
+                logger.info("call tool: {}", req);
+
+                if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
+                    try {
+                        Object handlerResult = mcpServer.toolsCallRequestHandler().handle(req.params()).block();
+                        McpSchema.CallToolResult result;
+
+                        // Handle both direct result and Flux wrapped result
+                        if (handlerResult instanceof Flux) {
+                            result = (McpSchema.CallToolResult) ((Flux<?>) handlerResult).blockFirst();
+                        } else {
+                            result = (McpSchema.CallToolResult) handlerResult;
+                        }
+
+                        McpSchema.JSONRPCResponse toolsCallResponse = new McpSchema.JSONRPCResponse(
+                                McpSchema.JSONRPC_VERSION,
+                                req.id(),
+                                result,
+                                null
+                        );
+                        responseJsonRpc(response, toolsCallResponse);
+                    } catch (Exception e) {
+                        logger.error("Error handling tools call request: {}", e.getMessage(), e);
+                        McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                            McpSchema.JSONRPC_VERSION,
+                            req.id(),
+                            null,
+                            new McpSchema.JSONRPCResponse.JSONRPCError(
+                                McpSchema.ErrorCodes.INTERNAL_ERROR,
+                                "Failed to call tool: " + e.getMessage(),
+                                null
+                            )
+                        );
+                        responseJsonRpc(response, errorResponse);
+                    }
+                } else {
+                    logger.warn("MCP server or tools call handler is not available");
+                    this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            new McpError("Tools call handler not available"));
+                }
+                return;
+            }
+
+
+            //获取工具列表
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_TOOLS_LIST)) {
+                logger.debug("Handling tools list request: {}", req);
+
+                if (mcpServer != null && mcpServer.toolsListRequestHandler() != null) {
+                    try {
+                        McpSchema.ListToolsResult result = (McpSchema.ListToolsResult) mcpServer.toolsListRequestHandler().handle(null).block();
+
+                        McpSchema.JSONRPCResponse toolsListResponse = new McpSchema.JSONRPCResponse(
+                            McpSchema.JSONRPC_VERSION,
+                            req.id(),
+                            result,
+                            null
+                        );
+                        responseJsonRpc(response, toolsListResponse);
+                    } catch (Exception e) {
+                        logger.error("Error handling tools list request: {}", e.getMessage(), e);
+                        McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                            McpSchema.JSONRPC_VERSION,
+                            req.id(),
+                            null,
+                            new McpSchema.JSONRPCResponse.JSONRPCError(
+                                McpSchema.ErrorCodes.INTERNAL_ERROR,
+                                "Failed to get tools list: " + e.getMessage(),
+                                null
+                            )
+                        );
+                        responseJsonRpc(response, errorResponse);
+                    }
+                } else {
+                    logger.warn("MCP server or tools list handler is not available");
+                    this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            new McpError("Tools list handler not available"));
+                }
+                return;
+            }
+
 
             // Handle tools stream requests
             if (message instanceof McpSchema.JSONRPCRequest req
@@ -645,6 +739,22 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error deleting session");
             }
         }
+    }
+
+    /**
+     * Sends a JSON-RPC response to the client
+     * @param response The HTTP servlet response
+     * @param jsonRpcResponse The JSON-RPC response object to send
+     * @throws IOException If an I/O error occurs
+     */
+    private void responseJsonRpc(HttpServletResponse response, McpSchema.JSONRPCResponse jsonRpcResponse) throws IOException {
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType(APPLICATION_JSON);
+        response.setCharacterEncoding(UTF_8);
+
+        PrintWriter writer = response.getWriter();
+        writer.write(objectMapper.writeValueAsString(jsonRpcResponse));
+        writer.flush();
     }
 
     public void responseError(HttpServletResponse response, int httpCode, McpError mcpError) throws IOException {

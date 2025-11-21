@@ -487,7 +487,8 @@ public class McpAsyncServer {
 		return this.mcpSession.sendNotification(McpSchema.METHOD_NOTIFICATION_TOOLS_LIST_CHANGED, null);
 	}
 
-	private DefaultMcpSession.RequestHandler toolsListRequestHandler() {
+    //列出所有工具
+	public DefaultMcpSession.RequestHandler toolsListRequestHandler() {
 		return params -> {
 
 			List<Tool> toolsRes = new ArrayList<>();
@@ -502,7 +503,7 @@ public class McpAsyncServer {
 		};
 	}
 
-	private DefaultMcpSession.RequestHandler toolsCallRequestHandler() {
+	public DefaultMcpSession.RequestHandler toolsCallRequestHandler() {
 		// TODO: handle tool call request
 		return params -> {
 			//grpc
