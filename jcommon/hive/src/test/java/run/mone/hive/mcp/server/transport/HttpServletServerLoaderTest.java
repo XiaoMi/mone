@@ -5,6 +5,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.mcp.server.McpAsyncServer;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletServerLoader;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.time.Duration;

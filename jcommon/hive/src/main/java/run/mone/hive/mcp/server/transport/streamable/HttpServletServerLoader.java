@@ -1,4 +1,4 @@
-package run.mone.hive.mcp.server.transport;
+package run.mone.hive.mcp.server.transport.streamable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -8,10 +8,7 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
 import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.server.McpServer;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.mcp.spec.ServerMcpTransport;
 
-import java.io.File;
 import java.time.Duration;
 import java.util.function.Function;
 

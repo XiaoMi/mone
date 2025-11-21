@@ -270,7 +270,7 @@ public class DefaultMcpSession implements McpSession {
             }
 
             String clientId = request.clientId();
-            Boolean complete = true;
+            Boolean complete = null;
 
             return handler.handle(request.params())
                     .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null, complete, clientId, null)

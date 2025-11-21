@@ -3,6 +3,7 @@ package run.mone.hive.mcp.server.transport;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 
