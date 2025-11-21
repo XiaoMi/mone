@@ -74,7 +74,7 @@ public class McpServer {
         log.info("检测到 HTTP transport，使用 HttpServletServerLoader 方式启动服务器");
 
         // 从 meta 中获取配置参数，如果没有则使用默认值
-        int port = Integer.parseInt(meta.getOrDefault("http.port", "8080"));
+        int port = Integer.parseInt(meta.getOrDefault("http.port", "8081"));
         String mcpEndpoint = meta.getOrDefault("http.endpoint", "/mcp");
         int keepAliveSeconds = Integer.parseInt(meta.getOrDefault("http.keepalive.seconds", "30"));
         boolean disallowDelete = Boolean.parseBoolean(meta.getOrDefault("http.disallow.delete", "false"));
