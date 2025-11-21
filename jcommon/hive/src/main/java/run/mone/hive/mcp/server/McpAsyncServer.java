@@ -532,6 +532,48 @@ public class McpAsyncServer {
 					new TypeReference<McpSchema.CallToolRequest>() {
 					});
 
+			// First check if tool exists in streamTools
+			Optional<McpServer.ToolStreamRegistration> streamToolRegistration = this.streamTools.stream()
+				.filter(tr -> callToolRequest.name().equals(tr.tool().name()))
+				.findAny();
+
+			if (streamToolRegistration.isPresent()) {
+				// If found in streamTools, call stream tool and merge all results
+				McpServer.ToolStreamRegistration streamTool = streamToolRegistration.get();
+				logger.info("Calling stream tool: {}", streamTool.tool().name());
+
+				return Flux.from(streamTool.call()
+								.apply(callToolRequest.arguments())
+								.subscribeOn(Schedulers.boundedElastic()))
+						.collectList()
+						.map(results -> {
+							// Merge all CallToolResult into one
+							StringBuilder mergedContent = new StringBuilder();
+							boolean hasError = false;
+
+							for (Object result : results) {
+								if (result instanceof McpSchema.CallToolResult callResult) {
+									// Extract text content from each result
+									for (Object content : callResult.content()) {
+										if (content instanceof McpSchema.TextContent textContent) {
+											mergedContent.append(textContent.text());
+										}
+									}
+									if (callResult.isError()) {
+										hasError = true;
+									}
+								}
+							}
+
+							// Return merged CallToolResult
+							return (Object) new McpSchema.CallToolResult(
+								List.of(new McpSchema.TextContent(mergedContent.toString())),
+								hasError
+							);
+						});
+			}
+
+			// If not in streamTools, check regular tools
 			Optional<ToolRegistration> toolRegistration = this.tools.stream()
 				.filter(tr -> callToolRequest.name().equals(tr.tool().name()))
 				.findAny();
