@@ -270,7 +270,7 @@ public class DefaultMcpSession implements McpSession {
             }
 
             String clientId = request.clientId();
-            Boolean complete = null;
+            Boolean complete = transport instanceof run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport ? null : true;
 
             return handler.handle(request.params())
                     .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null, complete, clientId, null)
