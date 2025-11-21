@@ -160,7 +160,13 @@ public class HttpServletServerLoader {
             tomcat = new Tomcat();
             tomcat.setPort(port);
             // 必须调用 getConnector() 来创建 HTTP connector，否则 Tomcat 不会监听端口
-            tomcat.getConnector();
+            var connector = tomcat.getConnector();
+
+            // 配置连接器以减少 EOFException 日志噪音
+            connector.setProperty("connectionTimeout", "60000"); // 60秒连接超时
+            connector.setProperty("keepAliveTimeout", "60000");  // Keep-alive 超时
+            connector.setProperty("maxKeepAliveRequests", "100"); // 最大 keep-alive 请求数
+            connector.setProperty("socket.soTimeout", "60000");  // Socket 读取超时
 
             // 设置工作目录
             String baseDir = System.getProperty("java.io.tmpdir");

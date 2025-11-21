@@ -79,8 +79,8 @@ public class AddTwoNumbersFunction implements McpFunction {
      * 将对象转换为 double 类型
      */
     private double convertToDouble(Object obj) {
-        if (obj instanceof Number) {
-            return ((Number) obj).doubleValue();
+        if (obj instanceof Number n) {
+            return n.doubleValue();
         } else if (obj instanceof String) {
             return Double.parseDouble((String) obj);
         } else {

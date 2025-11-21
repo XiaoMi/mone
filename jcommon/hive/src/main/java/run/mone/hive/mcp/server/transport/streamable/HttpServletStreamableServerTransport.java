@@ -150,24 +150,40 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         this.mcpEndpoint = mcpEndpoint;
         this.disallowDelete = disallowDelete;
 
-        // if (keepAliveInterval != null) {
-        //     this.keepAliveScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        //         Thread t = new Thread(r, "mcp-keepalive");
-        //         t.setDaemon(true);
-        //         return t;
-        //     });
+        // 启用会话清理机制，定期清理已关闭的会话
+        this.keepAliveScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "mcp-session-cleaner");
+            t.setDaemon(true);
+            return t;
+        });
 
-        //     this.keepAliveScheduler.scheduleAtFixedRate(() -> {
-        //         long now = System.currentTimeMillis();
-        //         Safe.run(() -> sessions.entrySet().forEach(entry -> {
-        //             if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
-        //                 logger.info("Session timeout, removing: {}", entry.getKey());
-        //                 entry.getValue().close();
-        //                 sessions.remove(entry.getKey());
-        //             }
-        //         }));
-        //     }, keepAliveInterval.toSeconds(), keepAliveInterval.toSeconds(), TimeUnit.SECONDS);
-        // }
+        // 每30秒清理一次已关闭的会话
+        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                List<String> closedSessions = sessions.entrySet().stream()
+                    .filter(entry -> entry.getValue().isClosed())
+                    .map(Map.Entry::getKey)
+                    .collect(java.util.stream.Collectors.toList());
+                    
+                if (!closedSessions.isEmpty()) {
+                    logger.debug("Cleaning up {} closed sessions", closedSessions.size());
+                    closedSessions.forEach(sessions::remove);
+                }
+                
+                // 如果设置了 keepAliveInterval，也检查超时会话
+                if (keepAliveInterval != null) {
+                    long now = System.currentTimeMillis();
+                    sessions.entrySet().removeIf(entry -> {
+                        if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
+                            logger.info("Session timeout, removing: {}", entry.getKey());
+                            entry.getValue().close();
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+            });
+        }, 30, 30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -205,15 +221,24 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 String clientId = extractClientId(message);
                 if (clientId != null && !clientId.isEmpty()) {
                     McpSession session = sessions.get(clientId);
-                    if (session != null) {
+                    if (session != null && !session.isClosed()) {
                         logger.info("Sending message to specific client: {}", clientId);
                         sendMessageToSession(session, jsonText);
+                    } else {
+                        logger.warn("Target session {} not found or closed", clientId);
                     }
                     return;
                 }
 
-                // Broadcast to all sessions
-                this.sessions.values().parallelStream().forEach(session -> {
+                // Broadcast to all active sessions
+                List<McpSession> activeSessions = this.sessions.values().stream()
+                    .filter(session -> !session.isClosed())
+                    .collect(java.util.stream.Collectors.toList());
+                    
+                logger.debug("Broadcasting to {} active sessions out of {} total", 
+                    activeSessions.size(), this.sessions.size());
+                    
+                activeSessions.parallelStream().forEach(session -> {
                     sendMessageToSession(session, jsonText);
                 });
             } catch (Exception e) {
@@ -250,6 +275,11 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         try {
             logger.debug("Sending message to session: {}, message:{}", session.getId(), jsonText);
             session.sendMessage(jsonText);
+        } catch (IOException e) {
+            // 连接已断开，清理会话
+            logger.warn("Client connection lost for session {}: {}", session.getId(), e.getMessage());
+            sessions.remove(session.getId());
+            session.close();
         } catch (Exception e) {
             logger.error("Failed to send message to session {}: {}", session.getId(), e.getMessage());
             sessions.remove(session.getId());
@@ -313,7 +343,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             response.setHeader("Access-Control-Allow-Origin", "*");
 
             AsyncContext asyncContext = request.startAsync();
-            asyncContext.setTimeout(0);
+            // 设置合理的超时时间，避免连接无限期挂起
+            asyncContext.setTimeout(300000); // 5分钟超时
 
             McpSession session = new McpSession(sessionId, asyncContext, response.getWriter());
             this.sessions.put(sessionId, session);
@@ -337,7 +368,13 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
                 @Override
                 public void onError(jakarta.servlet.AsyncEvent event) throws IOException {
-                    logger.debug("SSE connection error for session: {}", finalSessionId);
+                    Throwable throwable = event.getThrowable();
+                    if (throwable instanceof java.io.EOFException) {
+                        logger.debug("Client disconnected (EOFException) for session: {}", finalSessionId);
+                    } else {
+                        logger.warn("SSE connection error for session: {}, error: {}", 
+                                finalSessionId, throwable != null ? throwable.getMessage() : "Unknown error");
+                    }
                     sessions.remove(finalSessionId);
                 }
 
@@ -348,7 +385,13 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             });
         } catch (Exception e) {
             logger.error("Failed to handle GET request for session {}: {}", sessionId, e.getMessage());
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            // 清理可能已创建的会话
+            sessions.remove(sessionId);
+            try {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            } catch (IOException ioEx) {
+                logger.error("Failed to send error response: {}", ioEx.getMessage());
+            }
         }
     }
 
@@ -382,11 +425,25 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
 
         try {
+            // 检查请求体是否为空
+            if (request.getContentLength() == 0) {
+                logger.warn("Received empty POST request");
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Empty request body");
+                return;
+            }
+            
             BufferedReader reader = request.getReader();
             StringBuilder body = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 body.append(line);
+            }
+            
+            // 检查请求体是否为空
+            if (body.length() == 0) {
+                logger.warn("Received POST request with empty body");
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Empty request body");
+                return;
             }
 
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body.toString());
@@ -409,6 +466,40 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     null
                 );
                 responseJsonRpc(response, pingResponse);
+                return;
+            }
+
+            // Handle resources/list request - return empty list quickly
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_RESOURCES_LIST)) {
+                logger.debug("Handling resources/list request: {}", req);
+                McpSchema.ListResourcesResult result = new McpSchema.ListResourcesResult(
+                    List.of(),  // empty resources list
+                    null        // no next cursor
+                );
+                McpSchema.JSONRPCResponse resourcesListResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    result,
+                    null
+                );
+                responseJsonRpc(response, resourcesListResponse);
+                return;
+            }
+
+            // Handle resources/templates/list request - return empty list quickly
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_RESOURCES_TEMPLATES_LIST)) {
+                logger.debug("Handling resources/templates/list request: {}", req);
+                McpSchema.ListResourceTemplatesResult result = new McpSchema.ListResourceTemplatesResult(
+                    List.of(),  // empty resource templates list
+                    null        // no next cursor
+                );
+                McpSchema.JSONRPCResponse resourceTemplatesListResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    result,
+                    null
+                );
+                responseJsonRpc(response, resourceTemplatesListResponse);
                 return;
             }
 
@@ -603,7 +694,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     response.setHeader("Access-Control-Allow-Origin", "*");
 
                     AsyncContext asyncContext = request.startAsync();
-                    asyncContext.setTimeout(0);
+                    // 设置合理的超时时间用于流式响应
+                    asyncContext.setTimeout(600000); // 10分钟超时，适合长时间流式响应
 
                     McpSession sessionTransport = new McpSession(clientId != null ? clientId : "stream", 
                             asyncContext, response.getWriter());
@@ -663,18 +755,24 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                         new McpError("No message handler registered"));
             }
 
+        } catch (java.io.EOFException e) {
+            logger.debug("Client disconnected while reading request body: {}", e.getMessage());
+            // 不需要发送响应，客户端已断开
         } catch (IllegalArgumentException | IOException e) {
             logger.error("Failed to deserialize message: {}", e.getMessage());
-            this.responseError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    new McpError("Invalid message format: " + e.getMessage()));
+            try {
+                this.responseError(response, HttpServletResponse.SC_BAD_REQUEST,
+                        new McpError("Invalid message format: " + e.getMessage()));
+            } catch (IOException ioEx) {
+                logger.debug("Failed to send error response, client may have disconnected: {}", ioEx.getMessage());
+            }
         } catch (Exception e) {
             logger.error("Error handling message:", e);
             try {
                 this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                         new McpError("Error processing message: " + e.getMessage()));
             } catch (IOException ex) {
-                logger.error(FAILED_TO_SEND_ERROR_RESPONSE, ex.getMessage());
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error processing message");
+                logger.debug("Failed to send error response, client may have disconnected: {}", ex.getMessage());
             }
         }
     }
@@ -748,23 +846,34 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * @throws IOException If an I/O error occurs
      */
     private void responseJsonRpc(HttpServletResponse response, McpSchema.JSONRPCResponse jsonRpcResponse) throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType(APPLICATION_JSON);
-        response.setCharacterEncoding(UTF_8);
+        try {
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType(APPLICATION_JSON);
+            response.setCharacterEncoding(UTF_8);
 
-        PrintWriter writer = response.getWriter();
-        writer.write(objectMapper.writeValueAsString(jsonRpcResponse));
-        writer.flush();
+            PrintWriter writer = response.getWriter();
+            writer.write(objectMapper.writeValueAsString(jsonRpcResponse));
+            writer.flush();
+        } catch (IOException e) {
+            logger.debug("Failed to send JSON-RPC response, client may have disconnected: {}", e.getMessage());
+            throw e;
+        }
     }
 
     public void responseError(HttpServletResponse response, int httpCode, McpError mcpError) throws IOException {
-        response.setContentType(APPLICATION_JSON);
-        response.setCharacterEncoding(UTF_8);
-        response.setStatus(httpCode);
-        String jsonError = objectMapper.writeValueAsString(mcpError);
-        PrintWriter writer = response.getWriter();
-        writer.write(jsonError);
-        writer.flush();
+        try {
+            response.setContentType(APPLICATION_JSON);
+            response.setCharacterEncoding(UTF_8);
+            response.setStatus(httpCode);
+            String jsonError = objectMapper.writeValueAsString(mcpError);
+            PrintWriter writer = response.getWriter();
+            writer.write(jsonError);
+            writer.flush();
+        } catch (IOException e) {
+            // 客户端可能已断开连接，记录日志但不抛出异常
+            logger.debug("Failed to send error response, client may have disconnected: {}", e.getMessage());
+            throw e;
+        }
     }
 
     /**
@@ -804,11 +913,36 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * Initiates a graceful shutdown of the transport.
      * @return A Mono that completes when all cleanup operations are finished
      */
+    /**
+     * 清理已关闭的会话
+     */
+    public void cleanupClosedSessions() {
+        List<String> closedSessions = sessions.entrySet().stream()
+            .filter(entry -> entry.getValue().isClosed())
+            .map(Map.Entry::getKey)
+            .collect(java.util.stream.Collectors.toList());
+            
+        if (!closedSessions.isEmpty()) {
+            logger.debug("Removing {} closed sessions", closedSessions.size());
+            closedSessions.forEach(sessions::remove);
+        }
+    }
+    
+    /**
+     * 获取活跃会话数量
+     */
+    public int getActiveSessionCount() {
+        return (int) sessions.values().stream()
+            .filter(session -> !session.isClosed())
+            .count();
+    }
+
     @Override
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
             this.isClosing = true;
-            logger.debug("Initiating graceful shutdown with {} active sessions", this.sessions.size());
+            logger.info("Initiating graceful shutdown with {} total sessions ({} active)", 
+                this.sessions.size(), getActiveSessionCount());
 
             this.sessions.values().parallelStream().forEach(session -> {
                 try {
@@ -832,7 +966,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 }
             }
 
-            logger.debug("Graceful shutdown completed");
+            logger.info("Graceful shutdown completed");
         });
     }
 
@@ -855,7 +989,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * send messages concurrently.
      */
     @Data
-    private static class McpSession {
+    static class McpSession {
 
         private final String id;
         private final AsyncContext asyncContext;
@@ -863,6 +997,13 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         private volatile boolean closed = false;
         private volatile long updateTime = System.currentTimeMillis();
         private final ReentrantLock lock = new ReentrantLock();
+        
+        /**
+         * 检查会话是否已关闭
+         */
+        public boolean isClosed() {
+            return this.closed;
+        }
 
         /**
          * Creates a new session with the specified ID and SSE writer.
@@ -887,8 +1028,28 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
 
         public void sendJsonMessage(String message) throws IOException {
-            writer.write(message);
-            writer.flush();
+            if (this.closed) {
+                logger.debug("Attempted to send message to closed session: {}", this.id);
+                throw new IOException("Session is closed");
+            }
+            
+            lock.lock();
+            try {
+                if (this.closed) {
+                    throw new IOException("Session was closed during message send");
+                }
+                
+                writer.write(message);
+                writer.flush();
+                
+                // 检查连接状态
+                if (writer.checkError()) {
+                    this.closed = true;
+                    throw new IOException("Client disconnected");
+                }
+            } finally {
+                lock.unlock();
+            }
         }
 
         /**
@@ -939,8 +1100,17 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 }
 
                 this.closed = true;
-                this.asyncContext.complete();
-                logger.debug("Successfully completed async context for session {}", this.id);
+                
+                // 安全地关闭 AsyncContext
+                if (this.asyncContext != null) {
+                    try {
+                        this.asyncContext.complete();
+                        logger.debug("Successfully completed async context for session {}", this.id);
+                    } catch (IllegalStateException e) {
+                        // AsyncContext 可能已经被关闭
+                        logger.debug("AsyncContext already completed for session {}: {}", this.id, e.getMessage());
+                    }
+                }
             } catch (Exception e) {
                 logger.warn("Failed to complete async context for session {}: {}", this.id, e.getMessage());
             } finally {
