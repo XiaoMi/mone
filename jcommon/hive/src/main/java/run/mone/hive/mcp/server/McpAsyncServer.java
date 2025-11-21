@@ -12,6 +12,7 @@ import run.mone.hive.mcp.server.McpServer.PromptRegistration;
 import run.mone.hive.mcp.server.McpServer.ResourceRegistration;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
 import run.mone.hive.mcp.spec.McpError;
@@ -192,16 +193,20 @@ public class McpAsyncServer {
 
 			// Check if already initialized or initializing
 			int currentState = this.state.get();
-			if (currentState == STATE_INITIALIZING) {
-				logger.warn("Initialize request received while already initializing");
-				return Mono.<Object>error(new McpError("Server is already initializing"))
-					.publishOn(Schedulers.boundedElastic());
-			}
-			if (currentState == STATE_INITIALIZED) {
-				logger.warn("Initialize request received but server is already initialized");
-				return Mono.<Object>error(new McpError("Server is already initialized"))
-					.publishOn(Schedulers.boundedElastic());
-			}
+
+            if (!(transport instanceof HttpServletStreamableServerTransport)) {
+                if (currentState == STATE_INITIALIZING) {
+                    logger.warn("Initialize request received while already initializing");
+                    return Mono.<Object>error(new McpError("Server is already initializing"))
+                            .publishOn(Schedulers.boundedElastic());
+                }
+                if (currentState == STATE_INITIALIZED) {
+                    logger.warn("Initialize request received but server is already initialized");
+                    return Mono.<Object>error(new McpError("Server is already initialized"))
+                            .publishOn(Schedulers.boundedElastic());
+                }
+            }
+
 
 			// Transition to INITIALIZING state
 			this.state.lazySet(STATE_INITIALIZING);

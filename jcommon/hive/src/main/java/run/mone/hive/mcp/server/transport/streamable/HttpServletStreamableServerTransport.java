@@ -619,6 +619,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                                 result,
                                 null
                         );
+                        logger.info("Sending tools/call response: {}", objectMapper.writeValueAsString(toolsCallResponse));
                         responseJsonRpc(response, toolsCallResponse);
                     } catch (Exception e) {
                         logger.error("Error handling tools call request: {}", e.getMessage(), e);
