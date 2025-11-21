@@ -12,7 +12,7 @@ import org.springframework.util.CollectionUtils;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
-import run.mone.hive.mcp.server.transport.HttpServletStreamableServerTransport;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
