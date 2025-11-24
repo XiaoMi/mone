@@ -19,6 +19,7 @@ import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.ConversationContextManager;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.llm.LLMProvider;
@@ -827,7 +828,20 @@ public class ReactorRole extends Role {
     private LLM getLlm(String llmProvider) {
         LLM curLLM = null;
         if (StringUtils.isNotEmpty(llmProvider)) {
-            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT))).build());
+            LLMProvider provider = LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT));
+            LLMConfig config = LLMConfig.builder().llmProvider(provider).build();
+
+            // 为 MIFY_GATEWAY 设置环境变量中的配置
+            if (provider == LLMProvider.MIFY_GATEWAY) {
+                config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
+                config.setToken(System.getenv("MIFY_API_KEY"));
+                CustomConfig customConfig = new CustomConfig();
+                customConfig.setModel(System.getenv("MIFY_MODEL"));
+                customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
+                config.setCustomConfig(customConfig);
+            }
+
+            curLLM = new LLM(config);
         } else {
             curLLM = llm;
         }
