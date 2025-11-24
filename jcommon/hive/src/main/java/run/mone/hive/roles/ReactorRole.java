@@ -233,6 +233,11 @@ public class ReactorRole extends Role {
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
+                // 检查 roleMeta 是否已初始化
+                if (roleMeta == null) {
+                    log.debug("roleMeta is not initialized yet, skipping scheduled task");
+                    return;
+                }
                 if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
                     return;
                 }
