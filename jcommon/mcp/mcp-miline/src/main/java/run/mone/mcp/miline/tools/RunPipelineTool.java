@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 public class RunPipelineTool implements ITool {
 
     public static final String name = "run_pipeline";
-    private static final String BASE_URL = System.getenv("req_staging_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL + "/startPipelineWithLatestCommit";
+    private static final String BASE_URL = System.getenv("req_base_url");
+    private static final String RUN_PIPELINE_URL = BASE_URL + "/st/startPipeline";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
