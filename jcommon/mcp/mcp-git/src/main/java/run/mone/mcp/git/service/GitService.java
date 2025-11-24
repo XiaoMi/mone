@@ -36,6 +36,9 @@ public class GitService {
     @Value("${git.default.token:}")
     private String defaultToken;
 
+    @Value("${git.email.suffix}")
+    private String emailSuffix;
+
     /**
      * Git Clone操作
      *
@@ -145,10 +148,13 @@ public class GitService {
      *
      * @param localPath Git仓库本地路径
      * @param message 提交消息
+     * @param authorName author名称，可选
+     * @param authorEmail author邮箱，可选
      * @return GitResponse
      */
-    public GitResponse gitCommit(String localPath, String message) {
-        log.info("Git commit operation - localPath: {}, message: {}", localPath, message);
+    public GitResponse gitCommit(String localPath, String message, String authorName, String authorEmail) {
+        log.info("Git commit operation - localPath: {}, message: {}, authorName: {}, authorEmail: {}",
+                localPath, message, authorName, authorEmail);
 
         if (StringUtils.isBlank(localPath)) {
             return GitResponse.error("Local path is required");
@@ -170,6 +176,15 @@ public class GitService {
             // 提交
             CommitCommand commitCommand = git.commit()
                     .setMessage(message);
+
+            // 设置 author 信息
+            if (StringUtils.isNotBlank(authorName) && StringUtils.isNotBlank(authorEmail)) {
+                commitCommand.setAuthor(authorName, authorEmail);
+                commitCommand.setCommitter(authorName, authorEmail);
+                log.info("Set commit author: {} <{}>", authorName, authorEmail);
+            } else {
+                log.warn("Author information not provided, will use git config or system user");
+            }
 
             commitCommand.call();
             git.close();
@@ -265,5 +280,12 @@ public class GitService {
             name = name.substring(lastSlash + 1);
         }
         return name;
+    }
+
+    /**
+     * 获取邮箱后缀配置
+     */
+    public String getEmailSuffix() {
+        return emailSuffix;
     }
 }
