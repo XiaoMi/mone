@@ -44,7 +44,7 @@ public class ToolConfig {
                         apiInfoTool,
                         findDetailTook,
                         apiTestTool,
-                        new ExecuteCommandTool(),
+//                        new ExecuteCommandTool(),
                         new ChatTool(),
                         new AttemptCompletionTool(),
                         new AskTool(),
