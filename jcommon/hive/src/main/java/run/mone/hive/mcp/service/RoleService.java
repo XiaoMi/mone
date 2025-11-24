@@ -30,6 +30,7 @@ import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.service.command.RoleBaseCommand;
 import run.mone.hive.mcp.service.command.RoleCommandFactory;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
@@ -109,7 +110,7 @@ public class RoleService {
     //Role命令工厂
     private RoleCommandFactory roleCommandFactory;
 
-    private final GrpcServerTransport transport;
+    private final ServerMcpTransport transport;
 
     private final ApplicationContext applicationContext;
 
@@ -122,10 +123,12 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
-        //创建一个默认Agent
-        createDefaultAgent();
-        //优雅关机
-        shutdownHook();
+        if (roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+            //创建一个默认Agent
+            createDefaultAgent();
+            //优雅关机
+            shutdownHook();
+        }
     }
 
     private McpHub updateMcpConnections(List<String> agentNames, String clientId, ReactorRole role) {

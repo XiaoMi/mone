@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import run.mone.hive.mcp.client.transport.ProtocolVersions;
 
 /**
  * ORIGINAL CODE IS FROM SPRING AI!!!
@@ -27,7 +28,7 @@ public final class McpSchema {
     private McpSchema() {
     }
 
-    public static final String LATEST_PROTOCOL_VERSION = "2024-11-05";
+    public static final String CURRENT_PROTOCOL_VERSION = ProtocolVersions.MCP_2024_11_05;
 
     public static final String JSONRPC_VERSION = "2.0";
 
@@ -926,6 +927,19 @@ public final class McpSchema {
 		}
 
 	} // @formatter:on
+
+    // ---------------------------
+    // Logging Request
+    // ---------------------------
+
+	/**
+	 * Request to set the minimum logging level for server-sent logging messages.
+	 * Messages below this level will not be sent to the client.
+	 *
+	 * @param level The minimum logging level to set
+	 */
+	public record SetLevelRequest(@JsonProperty("level") LoggingLevel level) {
+	}
 
     // ---------------------------
     // Autocomplete

@@ -27,6 +27,7 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.service.IntentClassificationService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -232,6 +233,14 @@ public class ReactorRole extends Role {
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
+                // 检查 roleMeta 是否已初始化
+                if (roleMeta == null) {
+                    log.debug("roleMeta is not initialized yet, skipping scheduled task");
+                    return;
+                }
+                if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+                    return;
+                }
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }

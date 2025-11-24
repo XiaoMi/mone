@@ -12,8 +12,14 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.SpeechToTextTool;
 import run.mone.hive.roles.tool.TextToSpeechTool;
+import run.mone.mcp.hera.analysis.function.ApplicationMetricsFunction;
+import run.mone.mcp.hera.analysis.function.DubboInterfaceQpsFunction;
+import run.mone.mcp.hera.analysis.function.HeraAnalysisFunction;
+import run.mone.mcp.hera.analysis.function.LogQueryFunction;
 import run.mone.mcp.hera.analysis.tool.ApplicationMetricsTool;
+import run.mone.mcp.hera.analysis.tool.DubboInterfaceQpsTool;
 import run.mone.mcp.hera.analysis.tool.HeraAnalysisTool;
+import run.mone.mcp.hera.analysis.tool.LogQueryTool;
 
 /**
  * @author zhangxiaowei6
@@ -26,11 +32,32 @@ public class AgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Value("${mcp.agent.mode:MCP}")
+    private String agentMode;
+
     @Autowired
     private HeraAnalysisTool heraAnalysisTool;
 
     @Autowired
     private ApplicationMetricsTool applicationMetricsTool;
+
+    @Autowired
+    private DubboInterfaceQpsTool dubboInterfaceQpsTool;
+
+    @Autowired
+    private LogQueryTool logQueryTool;
+
+    @Autowired
+    private ApplicationMetricsFunction applicationMetricsFunction;
+
+    @Autowired
+    private HeraAnalysisFunction heraAnalysisFunction;
+
+    @Autowired
+    private DubboInterfaceQpsFunction dubboInterfaceQpsFunction;
+
+    @Autowired
+    private LogQueryFunction logQueryFunction;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -43,6 +70,7 @@ public class AgentConfig {
                 .profile("你是Hera可观测系统专家，精通分布式系统的监控和链路追踪，能够帮助用户诊断和解决复杂的系统问题")
                 .goal("你的目标是根据用户输入返回Hera中专业的监控数据和链路追踪数据，帮助用户快速定位和解决系统中的异常和性能问题")
                 .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
+                .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 //允许自动从知识库获取内容(意图识别的小模型)
 //                .webQuery(WebQuery.builder().autoWebQuery(true).modelType("bert").version("finetune-bert-20250605-73a29258").releaseServiceName("bert-is-network").build())
 //                .rag(Rag.builder().autoRag(true).modelType("bert").version("finetune-bert-20250605-ed8acbcf").releaseServiceName("bert-is-knowledge-base").build())
@@ -50,14 +78,18 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool(),
-                        new SpeechToTextTool(),
-                        new TextToSpeechTool(),
-                        applicationMetricsTool,
-                        heraAnalysisTool
+                        new AttemptCompletionTool()
+                        // applicationMetricsTool,
+                        // heraAnalysisTool,
+                        // dubboInterfaceQpsTool,
+                        // logQueryTool
                         ))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(chat))
+                .mcpTools(
+                    RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) 
+                        ? Lists.newArrayList(chat) 
+                        : Lists.newArrayList(logQueryFunction)
+                )
                 .build();
     }
 }
