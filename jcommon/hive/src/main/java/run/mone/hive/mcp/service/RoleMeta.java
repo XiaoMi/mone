@@ -31,8 +31,25 @@ import java.util.function.Function;
 @Data
 public class RoleMeta {
 
+    /**
+     * Role mode enumeration
+     * AGENT: Traditional agent mode
+     * MCP: Model Context Protocol mode
+     */
+    public enum RoleMode {
+        AGENT,
+        MCP
+    }
+
     @Builder.Default
     protected String name ="ai_agent";
+
+    /**
+     * Role mode: AGENT or MCP
+     * Default is AGENT mode for backward compatibility
+     */
+    @Builder.Default
+    protected RoleMode mode = RoleMode.AGENT;
 
     protected String profile;
 

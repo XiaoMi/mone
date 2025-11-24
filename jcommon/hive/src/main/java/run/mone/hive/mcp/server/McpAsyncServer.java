@@ -214,14 +214,6 @@ public class McpAsyncServer {
 					initializeRequest.protocolVersion(), initializeRequest.capabilities(),
 					initializeRequest.clientInfo());
 
-			// HINT: skip check protocol version
-//			if (!McpSchema.LATEST_PROTOCOL_VERSION.equals(initializeRequest.protocolVersion())) {
-//				return Mono
-//					.<Object>error(new McpError(
-//							"Unsupported protocol version from client: " + initializeRequest.protocolVersion()))
-//					.publishOn(Schedulers.boundedElastic());
-//			}
-
 			return Mono
 				.<Object>just(new McpSchema.InitializeResult(McpSchema.CURRENT_PROTOCOL_VERSION, this.serverCapabilities,
 						this.serverInfo, null))
@@ -532,6 +524,48 @@ public class McpAsyncServer {
 					new TypeReference<McpSchema.CallToolRequest>() {
 					});
 
+			// First check if tool exists in streamTools
+			Optional<McpServer.ToolStreamRegistration> streamToolRegistration = this.streamTools.stream()
+				.filter(tr -> callToolRequest.name().equals(tr.tool().name()))
+				.findAny();
+
+			if (streamToolRegistration.isPresent()) {
+				// If found in streamTools, call stream tool and merge all results
+				McpServer.ToolStreamRegistration streamTool = streamToolRegistration.get();
+				logger.info("Calling stream tool: {}", streamTool.tool().name());
+
+				return Flux.from(streamTool.call()
+								.apply(callToolRequest.arguments())
+								.subscribeOn(Schedulers.boundedElastic()))
+						.collectList()
+						.map(results -> {
+							// Merge all CallToolResult into one
+							StringBuilder mergedContent = new StringBuilder();
+							boolean hasError = false;
+
+							for (Object result : results) {
+								if (result instanceof McpSchema.CallToolResult callResult) {
+									// Extract text content from each result
+									for (Object content : callResult.content()) {
+										if (content instanceof McpSchema.TextContent textContent) {
+											mergedContent.append(textContent.text());
+										}
+									}
+									if (callResult.isError()) {
+										hasError = true;
+									}
+								}
+							}
+
+							// Return merged CallToolResult
+							return (Object) new McpSchema.CallToolResult(
+								List.of(new McpSchema.TextContent(mergedContent.toString())),
+								hasError
+							);
+						});
+			}
+
+			// If not in streamTools, check regular tools
 			Optional<ToolRegistration> toolRegistration = this.tools.stream()
 				.filter(tr -> callToolRequest.name().equals(tr.tool().name()))
 				.findAny();

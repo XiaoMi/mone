@@ -123,10 +123,12 @@ public class RoleService {
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
-        //创建一个默认Agent
-        createDefaultAgent();
-        //优雅关机
-        shutdownHook();
+        if (roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+            //创建一个默认Agent
+            createDefaultAgent();
+            //优雅关机
+            shutdownHook();
+        }
     }
 
     private McpHub updateMcpConnections(List<String> agentNames, String clientId, ReactorRole role) {
