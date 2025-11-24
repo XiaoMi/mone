@@ -74,9 +74,13 @@ public class ChatFunction implements McpFunction {
                     "context": {
                         "type": "string",
                         "description": "Previous chat history"
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "Client identifier"
                     }
                 },
-                "required": ["message"]
+                "required": ["message", "clientId"]
             }
             """;
 

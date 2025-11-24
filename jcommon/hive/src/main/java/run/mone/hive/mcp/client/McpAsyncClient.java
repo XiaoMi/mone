@@ -7,7 +7,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,6 @@ import reactor.core.scheduler.Schedulers;
 
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
-import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
@@ -252,7 +250,7 @@ public class McpAsyncClient {
      */
     public Mono<McpSchema.InitializeResult> initialize() {
         McpSchema.InitializeRequest initializeRequest = new McpSchema.InitializeRequest(// @formatter:off
-                McpSchema.LATEST_PROTOCOL_VERSION,
+                McpSchema.CURRENT_PROTOCOL_VERSION,
                 this.clientCapabilities,
                 this.clientInfo); // @formatter:on
 
