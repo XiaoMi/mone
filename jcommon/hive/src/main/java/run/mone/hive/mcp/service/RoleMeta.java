@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import run.mone.hive.actions.Action;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
@@ -30,8 +31,25 @@ import java.util.function.Function;
 @Data
 public class RoleMeta {
 
+    /**
+     * Role mode enumeration
+     * AGENT: Traditional agent mode
+     * MCP: Model Context Protocol mode
+     */
+    public enum RoleMode {
+        AGENT,
+        MCP
+    }
+
     @Builder.Default
     protected String name ="ai_agent";
+
+    /**
+     * Role mode: AGENT or MCP
+     * Default is AGENT mode for backward compatibility
+     */
+    @Builder.Default
+    protected RoleMode mode = RoleMode.AGENT;
 
     protected String profile;
 
@@ -95,5 +113,8 @@ public class RoleMeta {
 
     @Builder.Default
     private Map<String,String> meta = new HashMap<>();
+
+    @Builder.Default
+    private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
 
 }

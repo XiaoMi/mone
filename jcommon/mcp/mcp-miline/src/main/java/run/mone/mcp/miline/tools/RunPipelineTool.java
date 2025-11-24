@@ -1,7 +1,7 @@
 package run.mone.mcp.miline.tools;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,6 @@ import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class RunPipelineTool implements ITool {
 
     public static final String name = "run_pipeline";
-    private static final String BASE_URL = System.getenv("req_base_url");
+    private static final String BASE_URL = System.getenv("req_staging_base_url");
     private static final String RUN_PIPELINE_URL = BASE_URL + "/startPipelineWithLatestCommit";
 
     private final OkHttpClient client;
@@ -118,7 +117,7 @@ public class RunPipelineTool implements ITool {
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
 
-            Map<String, String> userMap = Map.of("baseUserName", "wangmin17");
+            Map<String, String> userMap = Map.of("baseUserName", "wangmin17", "userType", "0");
             List<Object> requestBody = List.of(userMap, projectId, pipelineId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("runPipeline request: {}", requestBodyStr);
@@ -139,27 +138,74 @@ public class RunPipelineTool implements ITool {
                 .writeTimeout(3, TimeUnit.SECONDS)
                 .build();
 
-            try (Response response = pipelineClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Unexpected response code: " + response);
+            // 重试机制：最多重试10次
+            int maxRetries = 10;
+            String lastErrorMessage = null;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    log.info("尝试第 {} 次调用流水线接口 (共{}次)", attempt, maxRetries);
+
+                    try (Response response = pipelineClient.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            lastErrorMessage = "HTTP response code: " + response.code();
+                            log.warn("第 {} 次调用失败: {}", attempt, lastErrorMessage);
+                            continue;
+                        }
+
+                        if (response.body() == null) {
+                            lastErrorMessage = "响应体为空";
+                            log.warn("第 {} 次调用失败: {}", attempt, lastErrorMessage);
+                            continue;
+                        }
+
+                        String responseBody = response.body().string();
+                        log.info("runPipeline response (attempt {}): {}", attempt, responseBody);
+
+                        ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                            responseBody,
+                            objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                        );
+
+                        // 检查是否满足成功条件：code == 1 且 message == "有运行中pipeline, 需先关闭"
+                        if (apiResponse.getCode() == 1 &&
+                            "有运行中pipeline, 需先关闭".equals(apiResponse.getMessage())) {
+                            log.info("第 {} 次调用成功：检测到有运行中的流水线", attempt);
+                            result.addProperty("result", "调用成功：" + apiResponse.getMessage());
+                            result.addProperty("code", apiResponse.getCode());
+                            result.addProperty("message", "调用成功");
+                            result.addProperty("attempts", attempt);
+                            return result;
+                        }
+
+                        // 记录未满足成功条件的响应
+                        lastErrorMessage = String.format("code=%d, message=%s",
+                            apiResponse.getCode(), apiResponse.getMessage());
+                        log.warn("第 {} 次调用返回但未满足成功条件: {}", attempt, lastErrorMessage);
+
+                        // 如果不是最后一次尝试，等待一段时间后重试
+                        if (attempt < maxRetries) {
+                            Thread.sleep(500); // 等待500ms后重试
+                        }
+                    }
+                } catch (IOException e) {
+                    lastErrorMessage = "IO异常: " + e.getMessage();
+                    log.warn("第 {} 次调用发生IO异常: {}", attempt, e.getMessage());
+                    if (attempt < maxRetries) {
+                        Thread.sleep(500); // 等待500ms后重试
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw e;
                 }
-
-                String responseBody = response.body().string();
-                log.info("runPipeline response: {}", responseBody);
-
-                ApiResponse<Integer> apiResponse = objectMapper.readValue(
-                    responseBody,
-                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
-                );
-
-                if (apiResponse.getCode() != 0) {
-                    throw new Exception("API error: " + apiResponse.getMessage());
-                }
-
-                result.addProperty("executionId", apiResponse.getData());
-                result.addProperty("result", String.format("成功触发流水线，执行ID: %d", apiResponse.getData()));
-                return result;
             }
+
+            // 重试10次都没有成功
+            log.error("重试 {} 次后仍未成功，最后错误: {}", maxRetries, lastErrorMessage);
+            result.addProperty("error", String.format("重试%d次后仍未成功，最后错误: %s", maxRetries, lastErrorMessage));
+            result.addProperty("attempts", maxRetries);
+            return result;
+
         } catch (NumberFormatException e) {
             log.error("项目ID或流水线ID格式不正确", e);
             result.addProperty("error", "'projectId'与'pipelineId'必须是数字");
@@ -172,9 +218,11 @@ public class RunPipelineTool implements ITool {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class ApiResponse<T> {
         private int code;
         private T data;
         private String message;
+        private String detailMsg;
     }
 }

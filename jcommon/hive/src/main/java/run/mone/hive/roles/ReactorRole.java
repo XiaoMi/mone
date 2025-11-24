@@ -14,10 +14,10 @@ import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.bo.HealthInfo;
 import run.mone.hive.bo.RegInfo;
+import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.context.ConversationContextManager;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -27,6 +27,7 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.service.IntentClassificationService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -37,7 +38,9 @@ import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 import run.mone.hive.task.*;
+import run.mone.hive.utils.JsonUtils;
 import run.mone.hive.utils.NetUtils;
+import run.mone.hive.utils.RetryExecutor;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -230,6 +233,9 @@ public class ReactorRole extends Role {
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
+                if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+                    return;
+                }
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
@@ -369,7 +375,7 @@ public class ReactorRole extends Role {
         log.info("receive message:{}", msg);
 
         if (msg.isError()) {
-            log.info("Role 处理发生错误");
+            log.info("Role 处理发生错误:{}", msg);
             return 2;
         }
 
@@ -516,7 +522,7 @@ public class ReactorRole extends Role {
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String userPrompt = buildUserPrompt(msg, history, sink);
-            log.info("userPrompt:{}", userPrompt);
+            log.info("userPrompt:\n{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt, msg);
 
@@ -533,6 +539,7 @@ public class ReactorRole extends Role {
 
             //获取系统提示词
             String systemPrompt = buildSystemPrompt(msg);
+            log.info("system prompt:\n{}", systemPrompt);
 
             // 在调用LLM前检查中断状态
             if (this.interrupted.get()) {
@@ -589,14 +596,22 @@ public class ReactorRole extends Role {
             } else if (name.equals("use_mcp_tool")) {//执行mcp
                 callMcp(it, sink);
             } else {
-                String _msg = "发现不支持工具:" + name + ",请继续";
-                sink.next(_msg);
-                log.warn("不支持的工具 tool:{}", _msg);
-                this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
+                //只返回了一个思考结果
+                if (name.startsWith("think")) {
+                    String _msg = "我思考的内容是:" + toolRes;
+                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
+                } else {
+                    String _msg = "发现不支持工具:" + name + ",请继续";
+                    sink.next(_msg);
+                    log.warn("不支持的工具 tool:{}", _msg);
+                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
+                }
             }
         } catch (Exception e) {
             sink.error(e);
             log.error("ReactorRole act error:" + e.getMessage(), e);
+            String _msg = "处理中发生了错误:" + e.getMessage();
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).sink(sink).build());
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
@@ -654,7 +669,7 @@ public class ReactorRole extends Role {
 
         // 发送给前端
         if (StringUtils.isNotEmpty(contentForUser)) {
-            sendToSink(contentForUser, assistantMessage, true);
+            sendToSink(JsonUtils.toolResult(contentForUser), assistantMessage, true);
         }
 
         String name = "";
@@ -694,7 +709,7 @@ public class ReactorRole extends Role {
             // 在工具执行前进行路径解析，将相对路径转换为绝对路径
             PathResolutionInterceptor.resolvePathParameters(name, params, extraParam, this.workspacePath);
 
-            ToolInterceptor.before(name, params, extraParam);
+            ToolInterceptor.before(tool, it, params, extraParam);
             contentForLlm = "";
             try {
                 JsonObject toolRes = this.toolMap.get(name).execute(this, params);
@@ -712,6 +727,7 @@ public class ReactorRole extends Role {
                     sendToSink(contentForUser, assistantMessage, true);
                 }
             } catch (Throwable ex) {
+                log.error("mcp 结果处理异常", ex);
                 error.set(true);
             }
         } else {
@@ -727,7 +743,12 @@ public class ReactorRole extends Role {
                 sink.complete();
             }
         }
-        this.putMessage(assistantMessage);
+
+        // HINT: 如果不需要外部调用方处理后触发下一轮执行，则直接放到记忆中 
+        if (!tool.callerRunTrigger()) {
+            this.putMessage(assistantMessage);
+        }
+
     }
 
     private void sendToSink(String content, Message contextMessage, boolean addId) {
@@ -736,9 +757,11 @@ public class ReactorRole extends Role {
             if (StringUtils.isNotEmpty(content)) {
                 this.fluxSink.next(content);
             }
-            // 如果需要，再单独发送ID
-            if (addId && contextMessage != null) {
-                this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");
+            if (FileCheckpointManager.enableCheck(true)) {
+                // 如果需要，再单独发送ID
+                if (addId && contextMessage != null) {
+                    this.fluxSink.next("<hive-msg-id>" + contextMessage.getId() + "</hive-msg-id>");
+                }
             }
         }
     }
@@ -748,65 +771,52 @@ public class ReactorRole extends Role {
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
 
-        // 添加重试机制，同时支持中断功能
-        int maxRetries = 3;
-        int retryCount = 0;
-        boolean success = false;
-
-        while (!success && retryCount < maxRetries) {
-            // 在重试前检查中断状态
-            if (this.interrupted.get()) {
-                log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
-                hasError.set(true);
-                sendToSink("⚠️ 执行已被中断\n", null, false);
-                Optional.ofNullable(sink).ifPresent(FluxSink::complete);
-                break;
-            }
-
-            try {
-                if (retryCount > 0) {
-                    log.info("LLM调用重试第{}次", retryCount);
-                    sendToSink("LLM调用超时，正在重试第" + retryCount + "次...\n", null, false);
-                }
-
-                sb.setLength(0); // 清空之前的结果
-
-                curLLM.compoundMsgCall(compoundMsg, systemPrompt)
-                        .doOnNext(it -> {
-                            // 在每次接收流式响应时检查中断状态
-                            if (this.interrupted.get()) {
-                                log.info("Role '{}' 在LLM流式响应中被中断", this.name);
-                                hasError.set(true);
-                                sendToSink("⚠️ 执行已被中断\n", null, false);
-                                Optional.ofNullable(sink).ifPresent(FluxSink::complete);
-                                return; // 停止处理后续响应
-                            }
-                            if (it != null && !it.startsWith(TOKEN_USAGE_LABEL_START)) {
-                                sb.append(it);
-                            }
-                            sendToSink(it, null, false);
+        // 使用重试执行器
+        RetryExecutor<String> retryExecutor = new RetryExecutor<>(
+                RetryExecutor.RetryConfig.builder()
+                        .maxRetries(3)
+                        .interruptChecker(() -> this.interrupted.get())
+                        .onRetry(retryCount -> {
+                            log.info("LLM调用重试第{}次", retryCount);
+                            sendToSink("LLM调用超时，正在重试第" + retryCount + "次...\n", null, false);
                         })
-                        .doOnError(error -> {
-                            throw new RuntimeException(error);
+                        .onFinalFailure(error -> {
+                            sendToSink("LLM调用失败，已重试3次，无法完成请求。\n", null, false);
+                            Optional.ofNullable(sink).ifPresent(s -> s.error(error));
                         })
-                        .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
-                        .blockLast();
+                        .onInterrupted(() -> {
+                            log.info("Role '{}' 在LLM调用重试过程中被中断", this.name);
+                            sendToSink("⚠️ 执行已被中断\n", null, false);
+                            Optional.ofNullable(sink).ifPresent(FluxSink::complete);
+                        })
+                        .build()
+        );
 
-                success = true; // 如果执行到这里没有异常，说明成功了
-            } catch (Exception error) {
-                retryCount++;
-                log.error("LLM调用失败(第{}次): {}", retryCount, error.getMessage(), error);
+        return retryExecutor.executeWithErrorFlag(() -> {
+            sb.setLength(0); // 清空之前的结果
 
-                if (retryCount >= maxRetries) {
-                    // 所有重试都失败了
-                    sendToSink("LLM调用失败，已重试" + retryCount + "次，无法完成请求。\n", null, false);
-                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
-                    sb.append("LLM调用失败: ").append(error.getMessage());
-                    hasError.set(true);
-                }
-            }
-        }
-        return sb.toString();
+            curLLM.compoundMsgCall(compoundMsg, systemPrompt)
+                    .doOnNext(it -> {
+                        // 在每次接收流式响应时检查中断状态
+                        if (this.interrupted.get()) {
+                            log.info("Role '{}' 在LLM流式响应中被中断", this.name);
+                            sendToSink("⚠️ 执行已被中断\n", null, false);
+                            Optional.ofNullable(sink).ifPresent(FluxSink::complete);
+                            return; // 停止处理后续响应
+                        }
+                        if (it != null && !it.startsWith(TOKEN_USAGE_LABEL_START)) {
+                            sb.append(it);
+                        }
+                        sendToSink(it, null, false);
+                    })
+                    .doOnError(error -> {
+                        throw new RuntimeException(error);
+                    })
+                    .takeWhile(it -> !this.interrupted.get()) // 中断时停止接收流
+                    .blockLast();
+
+            return sb.toString();
+        }, "", hasError);
     }
 
     private LLM getLlm(String llmProvider) {

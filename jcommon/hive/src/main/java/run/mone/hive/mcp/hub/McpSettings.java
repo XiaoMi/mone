@@ -19,10 +19,38 @@ public class McpSettings {
 
     private Map<String, ServerParameters> mcpServers;
 
+    private Map<String, io.modelcontextprotocol.client.transport.ServerParameters> mcpServersV2;
+
     public static McpSettings fromFile(Path path) throws IOException {
         String content = new String(Files.readAllBytes(path));
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(content, McpSettings.class);
+    }
+
+    @SneakyThrows
+    public static McpSettings fromContentV2(String content) {
+        content = JsonParser.parseString(content).getAsJsonObject().get("mcpServersV2").toString();
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<Map<String, ServerParameters>> typeRef = new TypeReference<>() {};
+        Map<String, ServerParameters> mcpServers = mapper.readValue(content, typeRef);
+        McpSettings ms = new McpSettings();
+        ms.setMcpServers(mcpServers);
+        return ms;
+    }
+
+    @SneakyThrows
+    public static McpSettings fromContentAtOnceV2(String content,String mcpServerName) {
+        content = JsonParser.parseString(content).getAsJsonObject().get("mcpServersV2").toString();
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<Map<String, ServerParameters>> typeRef = new TypeReference<>() {};
+        Map<String, ServerParameters> mcpServers = mapper.readValue(content, typeRef);
+        // 过滤mcpServers，只保留key为mcpServerName
+        mcpServers = mcpServers.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(mcpServerName))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        McpSettings ms = new McpSettings();
+        ms.setMcpServers(mcpServers);
+        return ms;
     }
 
     @SneakyThrows

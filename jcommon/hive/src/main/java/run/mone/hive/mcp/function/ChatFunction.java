@@ -5,9 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import run.mone.hive.bo.TokenReq;
 import run.mone.hive.bo.TokenRes;
+import run.mone.hive.checkpoint.FileCheckpointManager;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.command.CommandManager;
 import run.mone.hive.mcp.service.RoleService;
@@ -28,6 +31,9 @@ import java.util.function.Function;
 @Data
 @Slf4j
 public class ChatFunction implements McpFunction {
+
+    @Value("${hive.checkpoint.enable:false}")
+    private boolean enableCheckPoint;
 
     private RoleService roleService;
 
@@ -57,7 +63,7 @@ public class ChatFunction implements McpFunction {
     }
 
 
-    private static final String TOOL_SCHEMA = """
+    public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
                 "properties": {
@@ -68,9 +74,13 @@ public class ChatFunction implements McpFunction {
                     "context": {
                         "type": "string",
                         "description": "Previous chat history"
+                    },
+                    "clientId": {
+                        "type": "string",
+                        "description": "Client identifier"
                     }
                 },
-                "required": ["message"]
+                "required": ["message", "clientId"]
             }
             """;
 
@@ -98,11 +108,7 @@ public class ChatFunction implements McpFunction {
         log.info("message:{}", message);
 
         String voiceBase64 = arguments.get("voiceBase64") == null ? null : (String) arguments.get("voiceBase64");
-        List<String> images = null;
-        if (arguments.get("images") != null) {
-            String imagesStr = arguments.get("images").toString();
-            images = Arrays.asList(imagesStr.split(","));
-        }
+        List<String> images = getImages(arguments);
 
         // 尝试使用命令管理器处理命令
         var commandResult = commandManager.executeCommand(message, clientId, userId, agentId, ownerId, timeout);
@@ -111,17 +117,34 @@ public class ChatFunction implements McpFunction {
         }
 
         try {
-            //发送消息
             return sendMsgToAgent(clientId, userId, agentId, ownerId, message, images, voiceBase64, timeout);
         } catch (Exception e) {
-            String errorMessage = "ERROR: " + e.getMessage();
-            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("ERROR: " + e.getMessage())), true));
         }
+    }
+
+    private static @Nullable List<String> getImages(Map<String, Object> arguments) {
+        List<String> images = null;
+        if (arguments.get("images") != null) {
+            String imagesStr = arguments.get("images").toString();
+            images = Arrays.asList(imagesStr.split(","));
+        }
+        return images;
     }
 
     @NotNull
     private Flux<McpSchema.CallToolResult> sendMsgToAgent(String clientId, String userId, String agentId, String ownerId, String message, List<String> images, String voiceBase64, long timeout) {
-        Message userMessage = Message.builder()
+        Message userMessage = getUser(clientId, userId, agentId, ownerId, message, images, voiceBase64);
+        if (FileCheckpointManager.enableCheck(enableCheckPoint)) {
+            return getToolResultFlux(userMessage);
+        } else {
+            // 创建处理Agent响应的Flux
+            return getCallToolResultFlux(userMessage);
+        }
+    }
+
+    private static Message getUser(String clientId, String userId, String agentId, String ownerId, String message, List<String> images, String voiceBase64) {
+        return Message.builder()
                 .clientId(clientId)
                 .userId(userId)
                 .agentId(agentId)
@@ -132,8 +155,9 @@ public class ChatFunction implements McpFunction {
                 .images(images)
                 .voiceBase64(voiceBase64)
                 .build();
+    }
 
-
+    private @NotNull Flux<McpSchema.CallToolResult> getToolResultFlux(Message userMessage) {
         // 1. 创建一个只包含消息ID的Flux
         String idTag = "<hive-msg-id>" + userMessage.getId() + "</hive-msg-id>";
         McpSchema.CallToolResult idResult = new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(idTag)), false);
@@ -146,6 +170,12 @@ public class ChatFunction implements McpFunction {
 
         // 依次串联2个Flux
         return Flux.concat(idFlux, agentResponseFlux);
+    }
+
+    private @NotNull Flux<McpSchema.CallToolResult> getCallToolResultFlux(Message userMessage) {
+        return roleService.receiveMsg(userMessage)
+                .onErrorResume((e) -> Flux.just("ERROR:" + e.getMessage()))
+                .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
     }
 
 

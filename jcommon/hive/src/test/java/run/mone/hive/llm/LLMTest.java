@@ -126,7 +126,7 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.OPENROUTER_OPENAI_CODEX);
-        config.setLlmProvider(LLMProvider.OPENROUTER_CLAUDE_HAIKU_45);
+//        config.setLlmProvider(LLMProvider.OPENROUTER_CLAUDE_HAIKU_45);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
@@ -149,7 +149,7 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
 
-//        config.setLlmProvider(LLMProvider.MINIMAX);
+        config.setLlmProvider(LLMProvider.MINIMAX);
 
 //        config.setLlmProvider(LLMProvider.DOUBAO_UI_TARS);
         // config.setLlmProvider(LLMProvider.DOUBAO_VISION);
@@ -1583,10 +1583,12 @@ class LLMTest {
     @Test
     public void testChatCompletionWithUsage() {
         // This test requires OPENROUTER to be configured
-        config.setLlmProvider(LLMProvider.OPENROUTER);
-        config.setModel("anthropic/claude-sonnet-4");
+//        config.setLlmProvider(LLMProvider.OPENROUTER);
+//        config.setModel("anthropic/claude-sonnet-4");
         // Make sure OPENROUTER_AI_GATEWAY environment variable is set
-        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+//        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        config.setLlmProvider(LLMProvider.DOUBAO_SEED_CODE);
+        config.setModel(config.getLlmProvider().getDefaultModel());
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();
@@ -1669,7 +1671,10 @@ class LLMTest {
 //        config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
 
 //        config.setLlmProvider(LLMProvider.AZURE_GPT5_CODEX);
-        config.setLlmProvider(LLMProvider.AZURE_GPT5);
+//        config.setLlmProvider(LLMProvider.AZURE_GPT5);
+
+        config.setLlmProvider(LLMProvider.DOUBAO_SEED_CODE);
+        config.setModel(config.getLlmProvider().getDefaultModel());
         llm = new LLM(config);
 
         List<AiMessage> messages = new ArrayList<>();

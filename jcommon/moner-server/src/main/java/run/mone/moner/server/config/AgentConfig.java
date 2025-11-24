@@ -24,6 +24,11 @@ public class AgentConfig {
 
     @Bean
     public RoleMeta roleMeta() {
+        String workflow = """
+                1. 当用户需要购物的时候，优先选择京东; 没有明确挑选商品策略的话，默认选择商品列表中的第一个商品，然后加入到购物车中，然后点击购物车按钮，在购物车页面点击结算，流程结束
+                2. 当用户需要搜索的时候，优先选择Google搜索， 在搜索完成后，如果有结果，则直接进行总结并发送给用户
+                """;
+
         return RoleMeta.builder()
                 .profile("你是一个浏览器助手")
                 .goal("你的目标是更好的帮助用户,完成用户在浏览器中的操作")
@@ -37,8 +42,9 @@ public class AgentConfig {
                         new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool(),
-                        new TavilySearchTool(),
-                        new KnowledgeBaseQueryTool(),
+                        // new TavilySearchTool(),
+                        // new KnowledgeBaseQueryTool(),
+                        // new MemoryActionTool(),
                         // Chrome 专用内部工具（用于在系统提示中展示，用法返回 XML，让前端执行）
                         new OpenTabActionTool(),
                         new OperationActionTool(),
@@ -46,11 +52,10 @@ public class AgentConfig {
                         new GetContentActionTool(),
                         new FullPageActionTool(),
                         new CodeActionTool(),
-                        new ClickAfterRefreshTool(),
-                        new MemoryActionTool(),
-                        new ProcessActionTool()
+                        new ClickAfterRefreshTool()
                         ))
                 .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
+                .workflow(workflow)
                 .build();
     }
 

@@ -72,9 +72,9 @@ public class AgentController {
 
     @GetMapping("/access/{id}")
     public Mono<ApiResponse<AgentWithInstancesDTO>> getAccessAgent(
-            @PathVariable Long id,
-            @RequestParam String accessApp,
-            @RequestParam String accessKey) {
+            @PathVariable("id") Long id,
+            @RequestParam("accessApp") String accessApp,
+            @RequestParam("accessKey") String accessKey) {
         return agentService.hasAccess(id, accessApp, accessKey)
                 .flatMap(hasAccess -> {
                     if (hasAccess) {
@@ -86,14 +86,14 @@ public class AgentController {
     }
 
     @GetMapping("/{id}")
-    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@PathVariable Long id) {
+    public Mono<ApiResponse<AgentWithInstancesDTO>> getAgent(@PathVariable("id") Long id) {
         return agentService.findAgentWithInstances(id)
                 .map(ApiResponse::success)
                 .defaultIfEmpty(ApiResponse.error(404, "Agent not found"));
     }
 
     @PutMapping("/{id}")
-    public Mono<ApiResponse<Agent>> updateAgent(@AuthenticationPrincipal User user, @PathVariable Long id, @RequestBody Agent agent) {
+    public Mono<ApiResponse<Agent>> updateAgent(@AuthenticationPrincipal User user, @PathVariable("id") Long id, @RequestBody Agent agent) {
         return agentService.findById(id)
 //                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
                 .flatMap(existingAgent -> {
@@ -106,7 +106,7 @@ public class AgentController {
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ApiResponse<Void>> deleteAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
+    public Mono<ApiResponse<Void>> deleteAgent(@AuthenticationPrincipal User user, @PathVariable("id") Long id) {
         return agentService.findById(id)
                 .flatMap(existingAgent -> agentService.deleteAgent(id))
                 .thenReturn(ApiResponse.<Void>success(null))
@@ -176,9 +176,9 @@ public class AgentController {
 
     @GetMapping("/{id}/check")
     public Mono<ApiResponse<Boolean>> checkAccess(
-            @PathVariable Long id,
-            @RequestParam String accessApp,
-            @RequestParam String accessKey) {
+            @PathVariable("id") Long id,
+            @RequestParam("accessApp") String accessApp,
+            @RequestParam("accessKey") String accessKey) {
         return agentService.hasAccess(id, accessApp, accessKey)
                 .map(ApiResponse::success);
     }

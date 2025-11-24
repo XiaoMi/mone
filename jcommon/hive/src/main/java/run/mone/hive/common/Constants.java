@@ -14,5 +14,8 @@ public class Constants {
     public static final String WORKSPACE_PATH = "workspacePath";
 
     public static final String TOKEN_USAGE_LABEL_START = "\n<usage>\n";
+
     public static final String TOKEN_USAGE_LABEL_END = "\n</usage>\n";
+
+    public static final String CLAUDE_AGENT = "claude_agent";
 } 

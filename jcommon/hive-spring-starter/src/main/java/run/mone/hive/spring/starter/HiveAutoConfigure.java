@@ -5,15 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
-import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.service.HiveManagerService;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.service.RoleService;
@@ -25,80 +24,23 @@ import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
-import static run.mone.hive.llm.ClaudeProxy.*;
-
 /**
+ * Hive Spring Starter 自动配置类
+ * 
+ * 通过配置项 hive.starter.enabled 控制是否启用（默认：true）
+ * 设置为 false 时，整个 starter 将不会生效
+ * 
  * @author goodjava@qq.com
  */
 @Configuration
 @Slf4j
+@ConditionalOnProperty(name = "hive.starter.enabled", havingValue = "true", matchIfMissing = true)
 public class HiveAutoConfigure {
 
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
-
-    @Value("${mcp.llm:CLAUDE_COMPANY}")
-    private String llmType;
-
-    //大模型
-    @Bean
-    @ConditionalOnMissingBean
-    public LLM llm() {
-        llmType = llmType.toLowerCase(Locale.ROOT);
-        if (LLMProvider.CLAUDE_COMPANY.name().equalsIgnoreCase(llmType)) {
-            LLMConfig config = LLMConfig.builder()
-                    .llmProvider(LLMProvider.CLAUDE_COMPANY)
-                    .url(getClaudeUrl())
-                    .version(getClaudeVersion())
-                    .maxTokens(getClaudeMaxToekns())
-                    .build();
-            return new LLM(config);
-        }
-        //使用deepseek 原生的v3
-        if (LLMProvider.DEEPSEEK.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
-        }
-        //使用字节的deepseek v3
-        if (LLMProvider.DOUBAO_DEEPSEEK_V3.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            return new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
-        }
-
-        if (LLMProvider.GOOGLE_2.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
-            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
-            return new LLM(config);
-        }
-        if (LLMProvider.OPENAICOMPATIBLE.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAICOMPATIBLE).build();
-            config.setUrl(System.getenv("OPENAI_COMPATIBLE_URL"));
-            config.setModel(System.getenv("OPENAI_COMPATIBLE_MODEL"));
-            config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
-            return new LLM(config);
-        }
-        if (LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENAI_MULTIMODAL_COMPATIBLE).build();
-            config.setUrl(System.getenv("OPENAI_COMPATIBLE_URL"));
-            config.setModel(System.getenv("OPENAI_COMPATIBLE_MODEL"));
-            config.setToken(System.getenv("OPENAI_COMPATIBLE_TOKEN"));
-            return new LLM(config);
-        }
-
-        if (LLMProvider.MIFY_GATEWAY.name().toLowerCase(Locale.ROOT).equals(llmType)) {
-            LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.MIFY_GATEWAY).build();
-            config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
-            config.setToken(System.getenv("MIFY_API_KEY"));
-            CustomConfig customConfig = new CustomConfig();
-            customConfig.setModel(System.getenv("MIFY_MODEL"));
-            customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
-            config.setCustomConfig(customConfig);
-            return new LLM(config);
-        }
-
-        return new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmType.toUpperCase(Locale.ROOT))).build());
-    }
 
     //传输协议
     @Bean
@@ -106,6 +48,15 @@ public class HiveAutoConfigure {
     GrpcServerTransport grpcServerTransport() {
         GrpcServerTransport transport = new GrpcServerTransport(grpcPort);
         transport.setOpenAuth(true);
+        return transport;
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "http")
+    HttpServletStreamableServerTransport httpServerTransport() {
+        HttpServletStreamableServerTransport transport =HttpServletStreamableServerTransport.builder()
+                .mcpEndpoint("/mcp")
+                .build();
         return transport;
     }
 
@@ -119,7 +70,7 @@ public class HiveAutoConfigure {
     //角色管理
     @Bean
     @ConditionalOnMissingBean
-    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, GrpcServerTransport transport) {
+    public RoleService roleService(LLM llm, HiveManagerService hiveManagerService, RoleMeta roleMeta, ServerMcpTransport transport, ApplicationContext applicationContext) {
         List<ITool> toolList = roleMeta.getTools();
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
 
@@ -138,7 +89,8 @@ public class HiveAutoConfigure {
                 mcpTools,
                 hiveManagerService,
                 roleMeta,
-                transport
+                transport,
+                applicationContext
         );
     }
 

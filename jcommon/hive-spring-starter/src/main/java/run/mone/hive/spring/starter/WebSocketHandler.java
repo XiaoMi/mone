@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private final RoleService roleService;
+    private final WebSocketProperties webSocketProperties;
 
     // 存储所有活跃的WebSocket连接
     private final Map<String, WebSocketSession> sessionMap = new ConcurrentHashMap<>();
@@ -52,6 +53,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String sessionId = session.getId();
         log.info("WebSocket connection established: {}", sessionId);
+
+        // 放宽会话级文本消息大小限制（需与容器缓冲区匹配）
+        Integer limit = webSocketProperties.getMaxTextMessageSize();
+        if (limit != null && limit > 0) {
+            try {
+                session.setTextMessageSizeLimit(limit);
+            } catch (Throwable ignore) {
+                // 某些容器实现可能不支持设置该值，忽略即可
+            }
+        }
         
         sessionMap.put(sessionId, session);
         
@@ -384,4 +395,3 @@ public class WebSocketHandler extends TextWebSocketHandler {
         sessionMap.clear();
     }
 }
-

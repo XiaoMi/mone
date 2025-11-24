@@ -62,6 +62,7 @@
         <module>mcp-dayu-service-query</module>
         <module>mcp-miline</module>
         <module>mcp-yijing</module>
+        <module>mcp-git</module>
     </modules>
 
     <properties>

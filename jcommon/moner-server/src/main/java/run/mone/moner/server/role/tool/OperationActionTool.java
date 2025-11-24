@@ -1,6 +1,12 @@
 package run.mone.moner.server.role.tool;
 
+import com.google.gson.JsonObject;
+
+import run.mone.hive.common.JsonUtils;
+import run.mone.hive.common.ToolDataInfo;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.moner.server.common.MultiXmlParser;
 
 public class OperationActionTool implements ITool {
 
@@ -37,7 +43,18 @@ public class OperationActionTool implements ITool {
 
     @Override
     public String usage() {
+        String taskProgress = """
+            <task_progress>
+            Checklist here (optional)
+            </task_progress>
+            """;
+        if (!taskProgress()) {
+            taskProgress = "";
+        }
         return """
+                Construct the operation refer to the following example, remember to replace the value of the "tabId" and "elementId" with the actual values.
+                and keep in mind that the type should ALWAYS be "action", but the name should be the name of the action you want to perform:
+
                 <operation>
                 <arguments>
                 {
@@ -86,7 +103,47 @@ public class OperationActionTool implements ITool {
                 }
                 </arguments>
                 </operation>
-                """;
+                """.formatted(taskProgress);
+    }
+
+    @Override
+    public boolean callerRunTrigger() {
+        return true;
+    }
+
+    @Override
+    public String formatResult(JsonObject res) {
+        return res.get("xml").getAsString();
+    }
+
+    @Override
+    public boolean needExecute() {
+        return true;
+    }
+
+    @Override public boolean toolInfoAsParam() {
+        return true;
+    }
+
+    @Override
+    public JsonObject execute(ReactorRole role, JsonObject req) {
+        JsonObject res = new JsonObject();
+        ToolDataInfo toolDataInfo = JsonUtils.gson.fromJson(req.get("_tool_info_as_param_"), ToolDataInfo.class);
+        if (toolDataInfo != null) {
+            try {
+                String actions = toolDataInfo.getKeyValuePairs().get("arguments");
+                String xml = new MultiXmlParser().jsonToXml(actions);
+                res.addProperty("xml", xml);
+            } catch (Exception e) {
+                res.addProperty("error", e.getMessage());
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public boolean show() {
+        return true;
     }
 }
 

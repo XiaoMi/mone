@@ -1137,7 +1137,6 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
 
   .tool-result-content {
     @include content-base;
-    padding: 0;
     max-height: 400px;
     overflow-y: auto;
 
