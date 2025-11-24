@@ -40,11 +40,12 @@ public class AgentConfig {
         RemoteFileUtils.userSecret = userSecret;
         RemoteFileUtils.remoteFileApiHost = remoteFileApiHost;
 
-        ListFilesTool listFilesTool = isRemoteFile ? new ListFilesTool(true) : new ListFilesTool(false);
-        ReadFileTool readFileTool = isRemoteFile ? new ReadFileTool(true) : new ReadFileTool(false);
-        WriteToFileTool writeToFileTool = isRemoteFile ? new WriteToFileTool(true) : new WriteToFileTool(false);
-        ReplaceInFileTool replaceInFileTool = isRemoteFile ? new ReplaceInFileTool(true) : new ReplaceInFileTool(false);
-        SearchFilesTool searchFilesTool = isRemoteFile ? new SearchFilesTool(true) : new SearchFilesTool(false);
+        ListFilesTool listFilesTool = new ListFilesTool(isRemoteFile);
+        ReadFileTool readFileTool = new ReadFileTool(isRemoteFile);
+        WriteToFileTool writeToFileTool = new WriteToFileTool(isRemoteFile);
+        ReplaceInFileTool replaceInFileTool = new ReplaceInFileTool(isRemoteFile);
+        SearchFilesTool searchFilesTool = new SearchFilesTool(isRemoteFile);
+        ExecuteCommandToolOptimized  executeCommandToolOptimized = new ExecuteCommandToolOptimized(isRemoteFile);
 
         return RoleMeta.builder()
                 .profile("你是一名优秀的软件工程师")
@@ -52,7 +53,7 @@ public class AgentConfig {
                 .constraints("不要探讨和代码不想关的东西,如果用户问你,你可以直接拒绝掉")
                 .tools(Lists.newArrayList(
                                 listFilesTool,
-                                new ExecuteCommandToolOptimized(),
+                                executeCommandToolOptimized,
                                 readFileTool,
                                 searchFilesTool,
                                 replaceInFileTool,
