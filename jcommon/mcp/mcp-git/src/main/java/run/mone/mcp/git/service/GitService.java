@@ -221,10 +221,7 @@ public class GitService {
             }
 
             // 设置认证
-            if (StringUtils.isNotBlank(username) && StringUtils.isNotBlank(token)) {
-                pushCommand.setCredentialsProvider(
-                        new UsernamePasswordCredentialsProvider(username, token));
-            } else if (StringUtils.isNotBlank(defaultUsername) && StringUtils.isNotBlank(defaultToken)) {
+            if (StringUtils.isNotBlank(defaultUsername) && StringUtils.isNotBlank(defaultToken)) {
                 pushCommand.setCredentialsProvider(
                         new UsernamePasswordCredentialsProvider(defaultUsername, defaultToken));
             }

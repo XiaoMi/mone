@@ -71,9 +71,7 @@ public class DubboInterfaceQpsService {
             double minQps = data.has("minQps") ? data.get("minQps").getAsDouble() : 0.0;
 
             // 格式化返回结果
-            return String.format(
-                    "应用：%s\nDubbo服务：%s\nDubbo方法：%s\n服务区域：%s\n时间范围：%d - %d\nQPS统计：\n  最大值：%.2f\n  平均值：%.2f\n  最小值：%.2f",
-                    appName, serviceName, methodName, serverZone, startTimeSec, endTimeSec, maxQps, avgQps, minQps);
+            return responseBody;
 
         } catch (Exception e) {
             log.error("查询应用{}的Dubbo接口{}.{}的QPS失败", appName, serviceName, methodName, e);
