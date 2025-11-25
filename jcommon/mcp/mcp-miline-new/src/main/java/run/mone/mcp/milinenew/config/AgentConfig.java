@@ -42,6 +42,9 @@ public class AgentConfig {
     @Value("${mcp.agent.mode:MCP}")
     private String agentMode;
 
+    @Value("${mcp.agent.name:miline_new}")
+    private String agentName;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -69,7 +72,7 @@ public class AgentConfig {
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .mcpTools(
                     RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) 
-                        ? Lists.newArrayList(new ChatFunction("miline-new", 20)) 
+                        ? Lists.newArrayList(new ChatFunction(agentName, 20)) 
                         : Lists.newArrayList(new CreatePipelineFunction(), new CreateProjectFunction(), new GenerateGitCodeFunction(), new RunPipelineFunction())
                 )
                 .workflow("""
