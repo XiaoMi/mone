@@ -45,6 +45,13 @@ public class ApiFunction implements McpFunction {
                     "url": {
                         "type": "string",
                         "description": "api url"
+                    },
+                    "applications": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of application names to filter APIs"
                     }
                 },
                 "required": ["operation", "env"]
@@ -63,6 +70,15 @@ public class ApiFunction implements McpFunction {
                 case "listApiInfo" -> {
                     ListApiInfoParam param = new ListApiInfoParam();
                     param.setUrl((String) arguments.get("keyword"));
+                    // 支持传入applications参数
+                    if (arguments.containsKey("applications")) {
+                        Object applicationsObj = arguments.get("applications");
+                        if (applicationsObj instanceof List<?> list) {
+                            @SuppressWarnings("unchecked")
+                            List<String> applications = (List<String>) list;
+                            param.setApplications(applications);
+                        }
+                    }
                     result = gatewayService.listApiInfo((String) arguments.get("env"), param);
                 }
                 case "detailByUrl" -> {
