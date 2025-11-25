@@ -1,9 +1,11 @@
 package run.mone.mcp.milinenew.config;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
@@ -24,6 +26,7 @@ import run.mone.mcp.milinenew.tools.CreateProjectTool;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
+ * @author wangmin
  * @author goodjava@qq.com
  * @date 2025/1/1
  */
@@ -49,18 +52,18 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                                 new ChatTool(),
                                 new AskTool(),
-                                new AttemptCompletionTool()
-                                // new CreateProjectTool(),
-                                // new GenerateGitCodeTool(),
-                                // new ListFilesTool(false),
-                                // new ExecuteCommandToolOptimized(),
-                                // new ReadFileTool(false),
-                                // new SearchFilesTool(false),
-                                // new ReplaceInFileTool(false),
-                                // new ListCodeDefinitionNamesTool(),
-                                // new WriteToFileTool(false),
-                                // new CreatePipelineTool(),
-                                // new RunPipelineTool()
+                                new AttemptCompletionTool(),
+                                new CreateProjectTool(),
+                                new GenerateGitCodeTool(),
+                                new ListFilesTool(false),
+                                new ExecuteCommandToolOptimized(),
+                                new ReadFileTool(false),
+                                new SearchFilesTool(false),
+                                new ReplaceInFileTool(false),
+                                new ListCodeDefinitionNamesTool(),
+                                new WriteToFileTool(false),
+                                new CreatePipelineTool(),
+                                new RunPipelineTool()
                         )
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
@@ -80,6 +83,7 @@ public class AgentConfig {
                         - 根据projectId、pipelineName、gitUrl、gitName创建流水线
                         - 根据projectId、pipelineId触发流水线进行发布
                 """)
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8082",Const.AGENT_SERVER_NAME,"miline_server"))
                 .build();
     }
 
