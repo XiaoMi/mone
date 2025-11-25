@@ -43,7 +43,7 @@ public class RunPipelineFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/startPipelineWithLatestCommit" : null;
+    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -120,16 +120,21 @@ public class RunPipelineFunction implements McpFunction {
                 String responseBody = response.body().string();
                 log.info("runPipeline response: {}", responseBody);
 
-                ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
+                            objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                String resultText = String.format("成功触发流水线，执行ID: %d", apiResponse.getData());
+                Map<String, Object> data = apiResponse.getData();
+                Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
+                String url = (String) data.get("url");
+                
+                String resultText = String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url);
 
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(resultText)),
