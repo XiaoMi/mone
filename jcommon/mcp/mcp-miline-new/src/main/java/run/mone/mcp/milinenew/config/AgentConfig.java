@@ -39,6 +39,9 @@ public class AgentConfig {
 //    @Autowired
 //    private GitPushTool gitPushTool;
 
+    @Value("${mcp.agent.mode:MCP}")
+    private String agentMode;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
