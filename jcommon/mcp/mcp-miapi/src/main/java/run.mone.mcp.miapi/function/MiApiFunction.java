@@ -93,16 +93,16 @@ public class MiApiFunction implements McpFunction {
                 String responseBody = response.body().string();
                 log.info("miapi mcp response: {}", responseBody);
 
-                ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                ApiResponse<Map<String,Object>> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Map.class)
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                String resultText = String.format("miapi项目信息: %d", apiResponse.getData());
+                String resultText = String.format("miapi项目信息: %s", apiResponse.getData());
 
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(resultText)),
