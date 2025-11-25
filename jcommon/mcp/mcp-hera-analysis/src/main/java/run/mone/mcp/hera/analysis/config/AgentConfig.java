@@ -76,7 +76,11 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool()
+                        new AttemptCompletionTool(),
+                        heraAnalysisTool,
+                        applicationMetricsTool,
+                        dubboInterfaceQpsTool,
+                        logQueryTool
                         ))
                 .mcpTools(
                     RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) 
