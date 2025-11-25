@@ -63,6 +63,7 @@
         <module>mcp-miline</module>
         <module>mcp-yijing</module>
         <module>mcp-git</module>
+        <module>mcp-cost-control</module>
     </modules>
 
     <properties>
