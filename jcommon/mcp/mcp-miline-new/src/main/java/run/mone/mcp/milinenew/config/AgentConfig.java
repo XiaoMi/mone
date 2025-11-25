@@ -52,7 +52,18 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                                 new ChatTool(),
                                 new AskTool(),
-                                new AttemptCompletionTool()
+                                new AttemptCompletionTool(),
+                                new CreateProjectTool(),
+                                new GenerateGitCodeTool(),
+                                new ListFilesTool(false),
+                                new ExecuteCommandToolOptimized(),
+                                new ReadFileTool(false),
+                                new SearchFilesTool(false),
+                                new ReplaceInFileTool(false),
+                                new ListCodeDefinitionNamesTool(),
+                                new WriteToFileTool(false),
+                                new CreatePipelineTool(),
+                                new RunPipelineTool()
                         )
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
