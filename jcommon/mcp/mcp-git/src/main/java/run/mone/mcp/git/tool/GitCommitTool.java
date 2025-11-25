@@ -70,6 +70,7 @@ public class GitCommitTool implements ITool {
         return """
                 - localPath: (必填) Git仓库本地路径
                 - message: (必填) 提交消息，描述本次更改内容
+                - gitName: Git提交的作者名称，使用pipeline detail中的gitName
                 """;
     }
 
@@ -87,6 +88,7 @@ public class GitCommitTool implements ITool {
                 <git_commit>
                 <localPath>本地仓库路径</localPath>
                 <message>提交消息</message>
+                <gitName>Git提交的作者名称，使用pipeline detail中的gitName</gitName>
                 %s
                 </git_commit>
                 """.formatted(taskProgress);
@@ -101,10 +103,11 @@ public class GitCommitTool implements ITool {
                 <message>feat: add new feature for user authentication</message>
                 </git_commit>
 
-                示例 2: 修复bug提交
+                示例 2: 修复bug提交（指定作者信息）
                 <git_commit>
                 <localPath>/home/user/projects/app</localPath>
                 <message>fix: resolve null pointer exception in login module</message>
+                <gitName>zhangsan</gitName>
                 </git_commit>
 
                 示例 3: 文档更新提交
@@ -139,16 +142,33 @@ public class GitCommitTool implements ITool {
             String localPath = inputJson.get("localPath").getAsString().trim();
             String message = inputJson.get("message").getAsString().trim();
 
-            log.info("开始提交更改，localPath: {}, message: {}", localPath, message);
+            // 获取 git 作者信息
+            String gitName = null;
+            String gitEmail = null;
+
+            // 如果入参中有 gitName，就使用它
+            if (inputJson.has("gitName") && StringUtils.isNotBlank(inputJson.get("gitName").getAsString())) {
+                gitName = inputJson.get("gitName").getAsString().trim();
+                // 拼接邮箱：gitName + 邮箱后缀
+                gitEmail = gitName + gitService.getEmailSuffix();
+                log.info("使用入参 gitName: {}, 拼接后的 gitEmail: {}", gitName, gitEmail);
+            }
+            // 如果没有 gitName，则回退为不设置 author（gitName 和 gitEmail 都为 null）
+
+            log.info("开始提交更改，localPath: {}, message: {}, gitName: {}, gitEmail: {}",
+                    localPath, message, gitName, gitEmail);
 
             // 执行提交操作
-            GitResponse response = gitService.gitCommit(localPath, message);
+            GitResponse response = gitService.gitCommit(localPath, message, gitName, gitEmail);
 
             // 设置响应
             if (response.getSuccess()) {
                 result.addProperty("success", true);
                 result.addProperty("message", response.getMessage());
                 result.addProperty("commitMessage", message);
+                if (StringUtils.isNotBlank(gitName)) {
+                    result.addProperty("author", gitName + " <" + gitEmail + ">");
+                }
                 log.info("成功提交更改，message: {}", message);
             } else {
                 result.addProperty("success", false);
