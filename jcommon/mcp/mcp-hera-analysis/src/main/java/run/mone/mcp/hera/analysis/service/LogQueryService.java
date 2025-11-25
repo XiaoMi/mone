@@ -34,23 +34,35 @@ public class LogQueryService {
     /**
      * 查询日志
      *
-     * @param level 日志级别（ERROR, WARN, INFO等）
+     * @param level 日志级别（ERROR, WARN, INFO等），可选参数
      * @param projectId 项目ID
      * @param envId 环境ID
      * @param startTime 开始时间（毫秒时间戳）
      * @param endTime 结束时间（毫秒时间戳）
+     * @param traceId 链路追踪ID（32位0-9a-f组成的字符串），可选参数
      * @return 格式化的日志查询结果
      */
-    public String queryLogs(String level, int projectId, int envId, long startTime, long endTime) {
+    public String queryLogs(String level, int projectId, int envId, long startTime, long endTime, String traceId) {
         try {
             // 构建请求体
             JsonArray requestArray = new JsonArray();
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("level", level);
+
+            // level 为可选参数，只有不为空时才添加
+            if (level != null && !level.isEmpty()) {
+                requestBody.addProperty("level", level);
+            }
+
             requestBody.addProperty("startTime", String.valueOf(startTime));
             requestBody.addProperty("endTime", String.valueOf(endTime));
             requestBody.addProperty("envId", envId);
             requestBody.addProperty("projectId", projectId);
+
+            // traceId 为可选参数，只有不为空时才添加
+            if (traceId != null && !traceId.isEmpty()) {
+                requestBody.addProperty("traceId", traceId);
+            }
+
             requestArray.add(requestBody);
 
             String requestJson = gson.toJson(requestArray);
@@ -64,7 +76,7 @@ public class LogQueryService {
             return responseBody;
 
         } catch (Exception e) {
-            log.error("查询日志失败，projectId: {}, envId: {}, level: {}", projectId, envId, level, e);
+            log.error("查询日志失败，projectId: {}, envId: {}, level: {}, traceId: {}", projectId, envId, level, traceId, e);
             return "查询失败：" + e.getMessage();
         }
     }
