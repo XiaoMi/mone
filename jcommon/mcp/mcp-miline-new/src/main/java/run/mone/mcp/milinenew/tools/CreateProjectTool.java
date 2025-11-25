@@ -149,7 +149,7 @@ public class CreateProjectTool implements ITool {
             projectCreateDto.put("desc", "");
             // projectGen固定配置
             Map<String, Object> projectGen = new HashMap<>();
-            projectGen.put("type", "spring-java21");
+            projectGen.put("type", "spring-java21-fe");
             projectGen.put("need", false);
             projectGen.put("gen", false);
             projectCreateDto.put("projectGen", projectGen);
