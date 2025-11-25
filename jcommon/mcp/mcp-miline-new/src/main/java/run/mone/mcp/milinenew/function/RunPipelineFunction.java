@@ -178,6 +178,7 @@ public class RunPipelineFunction implements McpFunction {
                 - 需要在CI/CD中触发某个流水线
                 - 验证最近一次提交是否能通过流水线
                 - 集成到自动化流程中进行构建/部署
+                - 发布/部署系统
                 """;
     }
 
