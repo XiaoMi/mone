@@ -1,9 +1,11 @@
 package run.mone.mcp.miapi.config;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
@@ -42,6 +44,7 @@ public class AgentConfig {
                 .workflow("""
                     你是智能化系统，可以根据用户输入的项目名称查询项目信息
                 """)
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8084",Const.AGENT_SERVER_NAME,"miapi_server"))
                 .build();
     }
 
