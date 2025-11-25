@@ -13,7 +13,7 @@
     </appender>
 
     <!-- Root logger -->
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="CONSOLE" />
     </root>
 
@@ -43,5 +43,5 @@
     <logger name="org.reflections" level="WARN" />
     
     <!-- 保持hive项目的DEBUG级别 -->
-    <logger name="run.mone.hive" level="DEBUG" />
+    <logger name="run.mone.hive" level="INFO" />
 </configuration>

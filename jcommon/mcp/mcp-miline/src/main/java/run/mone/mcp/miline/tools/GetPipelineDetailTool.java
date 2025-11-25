@@ -35,7 +35,7 @@ public class GetPipelineDetailTool implements ITool {
 
     public static final String name = "get_pipeline_detail";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String GET_PIPELINE_DETAIL_URL = BASE_URL + "/getPipelineDetail";
+    private static final String GET_PIPELINE_DETAIL_URL = BASE_URL + "/pipeline/detail";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -67,7 +67,7 @@ public class GetPipelineDetailTool implements ITool {
     @Override
     public String description() {
         return """
-                根据流水线（环境）ID查询流水线的详细信息。
+                根据项目ID和流水线ID查询流水线的详细信息。
 
                 **使用场景：**
                 - 查看流水线的当前配置
@@ -89,6 +89,7 @@ public class GetPipelineDetailTool implements ITool {
     @Override
     public String parameters() {
         return """
+                - projectId: (必填) 项目ID
                 - pipelineId: (必填) 流水线ID
                 """;
     }
@@ -105,6 +106,7 @@ public class GetPipelineDetailTool implements ITool {
         }
         return """
                 <get_pipeline_detail>
+                <projectId>项目ID</projectId>
                 <pipelineId>流水线ID</pipelineId>
                 %s
                 </get_pipeline_detail>
@@ -116,12 +118,8 @@ public class GetPipelineDetailTool implements ITool {
         return """
                 示例 1: 查询流水线详情
                 <get_pipeline_detail>
-                <pipelineId>12345</pipelineId>
-                </get_pipeline_detail>
-
-                示例 2: 查询另一个流水线
-                <get_pipeline_detail>
-                <pipelineId>67890</pipelineId>
+                <projectId>123465</projectId>
+                <pipelineId>456789</pipelineId>
                 </get_pipeline_detail>
                 """;
     }
@@ -132,18 +130,24 @@ public class GetPipelineDetailTool implements ITool {
 
         try {
             // 验证必填参数
+            if (!inputJson.has("projectId") || StringUtils.isBlank(inputJson.get("projectId").getAsString())) {
+                log.error("get_pipeline_detail操作缺少必填参数projectId");
+                result.addProperty("error", "缺少必填参数'projectId'");
+                return result;
+            }
             if (!inputJson.has("pipelineId") || StringUtils.isBlank(inputJson.get("pipelineId").getAsString())) {
                 log.error("get_pipeline_detail操作缺少必填参数pipelineId");
                 result.addProperty("error", "缺少必填参数'pipelineId'");
                 return result;
             }
 
-            Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
+            Long projectId = Long.parseLong(inputJson.get("projectId").getAsString());
+            Long pipelineId = Long.parseLong(inputJson.get("pipelineId").getAsString());
 
-            log.info("开始查询流水线详情，pipelineId: {}", pipelineId);
+            log.info("开始查询流水线详情，projectId: {}, pipelineId: {}", projectId, pipelineId);
 
             // 查询流水线详情
-            JsonObject pipelineDetail = getPipelineDetail(pipelineId);
+            JsonObject pipelineDetail = getPipelineDetail(projectId, pipelineId);
 
             if (pipelineDetail != null) {
                 // 直接返回流水线详情的JsonObject
@@ -154,8 +158,8 @@ public class GetPipelineDetailTool implements ITool {
             }
 
         } catch (NumberFormatException e) {
-            log.error("流水线ID格式不正确", e);
-            result.addProperty("error", "流水线ID必须是数字");
+            log.error("ID格式不正确", e);
+            result.addProperty("error", "ID必须是数字");
             return result;
         } catch (Exception e) {
             log.error("执行get_pipeline_detail操作时发生异常", e);
@@ -167,14 +171,15 @@ public class GetPipelineDetailTool implements ITool {
     /**
      * 查询流水线详情
      *
+     * @param projectId  项目ID
      * @param pipelineId 流水线ID
      * @return 流水线详情JsonObject
      * @throws Exception 查询异常
      */
-    private JsonObject getPipelineDetail(Integer pipelineId) throws Exception {
+    private JsonObject getPipelineDetail(Long projectId, Long pipelineId) throws Exception {
 
         // 构建请求体
-        List<Object> requestBody = List.of(pipelineId);
+        List<Object> requestBody = List.of(projectId, pipelineId);
 
         String requestBodyStr = objectMapper.writeValueAsString(requestBody);
         log.info("getPipelineDetail request: {}", requestBodyStr);

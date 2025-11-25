@@ -1,12 +1,18 @@
 package run.mone.mcp.milinenew.config;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.mcp.milinenew.function.CreatePipelineFunction;
+import run.mone.mcp.milinenew.function.CreateProjectFunction;
+import run.mone.mcp.milinenew.function.GenerateGitCodeFunction;
+import run.mone.mcp.milinenew.function.RunPipelineFunction;
 import run.mone.mcp.milinenew.tools.CreatePipelineTool;
 import run.mone.mcp.milinenew.tools.GenerateGitCodeTool;
 import run.mone.mcp.milinenew.tools.RunPipelineTool;
@@ -17,7 +23,10 @@ import run.mone.mcp.git.tool.GitPushTool;
 import run.mone.mcp.milinenew.tools.RunPipelineTool;
 import run.mone.mcp.milinenew.tools.CreateProjectTool;
 
+import org.springframework.beans.factory.annotation.Value;
+
 /**
+ * @author wangmin
  * @author goodjava@qq.com
  * @date 2025/1/1
  */
@@ -54,7 +63,12 @@ public class AgentConfig {
                                 new RunPipelineTool()
                         )
                 )
-                .mcpTools(Lists.newArrayList(new ChatFunction("miline-new", 20)))
+                .mode(RoleMeta.RoleMode.valueOf(agentMode))
+                .mcpTools(
+                    RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) 
+                        ? Lists.newArrayList(new ChatFunction("miline-new", 20)) 
+                        : Lists.newArrayList(new CreatePipelineFunction(), new CreateProjectFunction(), new GenerateGitCodeFunction(), new RunPipelineFunction())
+                )
                 .workflow("""
                     你是智能化系统，严格按照以下步骤执行：
                         - 根据projectName生成项目
@@ -67,6 +81,7 @@ public class AgentConfig {
                         - 根据projectId、pipelineName、gitUrl、gitName创建流水线
                         - 根据projectId、pipelineId触发流水线进行发布
                 """)
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8082",Const.AGENT_SERVER_NAME,"miline_server"))
                 .build();
     }
 

@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 public class RunPipelineTool implements ITool {
 
     public static final String name = "run_pipeline";
-    private static final String BASE_URL = System.getenv("req_staging_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL + "/startPipelineWithLatestCommit";
+    private static final String BASE_URL = System.getenv("req_base_url");
+    private static final String RUN_PIPELINE_URL = BASE_URL + "/st/startPipeline";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -68,6 +68,7 @@ public class RunPipelineTool implements ITool {
         return """
                 - projectId: (必填) 项目ID
                 - pipelineId: (必填) 流水线ID
+                - userName: (可选) 用户名，默认为 wangmin17
                 """;
     }
 
@@ -85,6 +86,7 @@ public class RunPipelineTool implements ITool {
                 <run_pipeline>
                 <projectId>项目ID</projectId>
                 <pipelineId>流水线ID</pipelineId>
+                <userName>用户名(可选)</userName>
                 %s
                 </run_pipeline>
                 """.formatted(taskProgress);
@@ -93,10 +95,17 @@ public class RunPipelineTool implements ITool {
     @Override
     public String example() {
         return """
-                示例: 运行流水线
+                示例1: 运行流水线(使用默认用户名)
                 <run_pipeline>
                 <projectId>12345</projectId>
                 <pipelineId>67890</pipelineId>
+                </run_pipeline>
+
+                示例2: 运行流水线(指定用户名)
+                <run_pipeline>
+                <projectId>12345</projectId>
+                <pipelineId>67890</pipelineId>
+                <userName>zhangsan</userName>
                 </run_pipeline>
                 """;
     }
@@ -117,7 +126,13 @@ public class RunPipelineTool implements ITool {
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
 
-            Map<String, String> userMap = Map.of("baseUserName", "wangmin17", "userType", "0");
+            // 读取可选的 userName 参数，如果未提供则使用默认值 "wangmin17"
+            String userName = "wangmin17";
+            if (inputJson.has("userName") && !StringUtils.isBlank(inputJson.get("userName").getAsString())) {
+                userName = inputJson.get("userName").getAsString();
+            }
+
+            Map<String, String> userMap = Map.of("baseUserName", userName, "userType", "0");
             List<Object> requestBody = List.of(userMap, projectId, pipelineId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("runPipeline request: {}", requestBodyStr);

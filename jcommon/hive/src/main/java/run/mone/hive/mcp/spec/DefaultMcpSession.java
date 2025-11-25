@@ -270,7 +270,7 @@ public class DefaultMcpSession implements McpSession {
             }
 
             String clientId = request.clientId();
-            Boolean complete = true;
+            Boolean complete = transport instanceof run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport ? null : true;
 
             return handler.handle(request.params())
                     .map(result -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), result, null, complete, clientId, null)
@@ -278,7 +278,7 @@ public class DefaultMcpSession implements McpSession {
                     .onErrorResume(error -> Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
                             request.id(),
                             null, new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
-                            error.getMessage(), null), true, clientId, null))); // TODO: add error message through the data field
+                            error.getMessage(), null), complete, clientId, null))); // TODO: add error message through the data field
         });
     }
 

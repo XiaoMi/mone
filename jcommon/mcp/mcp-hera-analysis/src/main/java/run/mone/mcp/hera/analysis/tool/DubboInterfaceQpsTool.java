@@ -189,6 +189,8 @@ public class DubboInterfaceQpsTool implements ITool {
                 return result;
             }
 
+            appName = appName.replace("-", "_");
+
             if (serviceName.isEmpty()) {
                 log.warn("serviceName 参数为空");
                 result.addProperty("error", "参数错误：serviceName不能为空");
