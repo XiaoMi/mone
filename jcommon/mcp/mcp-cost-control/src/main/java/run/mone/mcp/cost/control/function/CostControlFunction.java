@@ -49,11 +49,6 @@ public class CostControlFunction implements McpFunction {
                     "projectName": {
                         "type": "string",
                         "description": "要查询的服务的name"
-                    },
-                    "timeType":{
-                        "type": "string",
-                        "enum": ["1","2","3","4","5"],
-                        "description": "时间类别,1为7d 2为3d 3为1d 4为最近1h 5为30d"
                     }
                   },
                 "required": ["type"]
@@ -81,7 +76,7 @@ public class CostControlFunction implements McpFunction {
                 Map<String, String> queryParams = new HashMap<>();
                 queryParams.put("projectId", projectId);
                 queryParams.put("projectName", projectName);
-                queryParams.put("timeType", timeType);
+                queryParams.put("timeType", "5");
                 Map<String, String> headerMap = new HashMap<>();
                 headerMap.put("Content-Type", "application/json");
                 JsonObject jsonObject = new HttpClient().post(host + getOneServiceCostPath, queryParams, headerMap);
