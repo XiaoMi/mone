@@ -71,8 +71,6 @@ public class GitPushTool implements ITool {
                 - localPath: (必填) Git仓库本地路径
                 - remote: (可选) 远程仓库名称，默认为origin
                 - branch: (可选) 要推送的分支名称，不指定则推送所有分支
-                - username: (可选) 认证用户名
-                - token: (可选) 认证Token
                 """;
     }
 
@@ -91,8 +89,6 @@ public class GitPushTool implements ITool {
                 <localPath>本地仓库路径</localPath>
                 <remote>远程仓库名称（可选，默认origin）</remote>
                 <branch>分支名称（可选）</branch>
-                <username>用户名（可选）</username>
-                <token>Token（可选）</token>
                 %s
                 </git_push>
                 """.formatted(taskProgress);
@@ -117,16 +113,12 @@ public class GitPushTool implements ITool {
                 <localPath>/home/user/projects/app</localPath>
                 <remote>origin</remote>
                 <branch>develop</branch>
-                <username>your-username</username>
-                <token>your-access-token</token>
                 </git_push>
 
                 示例 4: 推送所有分支
                 <git_push>
                 <localPath>/workspace/project</localPath>
                 <remote>origin</remote>
-                <username>your-username</username>
-                <token>your-access-token</token>
                 </git_push>
                 """;
     }

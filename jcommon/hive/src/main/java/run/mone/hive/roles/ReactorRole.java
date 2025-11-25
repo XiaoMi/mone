@@ -19,6 +19,7 @@ import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.ConversationContextManager;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.llm.LLMProvider;
@@ -27,6 +28,7 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.service.IntentClassificationService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
@@ -232,6 +234,14 @@ public class ReactorRole extends Role {
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
+                // 检查 roleMeta 是否已初始化
+                if (roleMeta == null) {
+                    log.debug("roleMeta is not initialized yet, skipping scheduled task");
+                    return;
+                }
+                if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+                    return;
+                }
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
@@ -818,7 +828,20 @@ public class ReactorRole extends Role {
     private LLM getLlm(String llmProvider) {
         LLM curLLM = null;
         if (StringUtils.isNotEmpty(llmProvider)) {
-            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT))).build());
+            LLMProvider provider = LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT));
+            LLMConfig config = LLMConfig.builder().llmProvider(provider).build();
+
+            // 为 MIFY_GATEWAY 设置环境变量中的配置
+            if (provider == LLMProvider.MIFY_GATEWAY) {
+                config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
+                config.setToken(System.getenv("MIFY_API_KEY"));
+                CustomConfig customConfig = new CustomConfig();
+                customConfig.setModel(System.getenv("MIFY_MODEL"));
+                customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
+                config.setCustomConfig(customConfig);
+            }
+
+            curLLM = new LLM(config);
         } else {
             curLLM = llm;
         }

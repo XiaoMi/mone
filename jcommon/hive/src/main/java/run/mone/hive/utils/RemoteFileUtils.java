@@ -223,6 +223,52 @@ public class RemoteFileUtils {
     }
 
     /**
+     * 远程执行命令行
+     *
+     * @param command   要执行的命令
+     * @param directory 执行命令的目录
+     * @param timeout   超时时间（秒）
+     * @return 命令执行结果
+     * @throws IOException 如果执行失败
+     */
+    public static String executeCommand(String command, String directory, int timeout) throws IOException {
+        if (command == null || command.isEmpty()) {
+            throw new IOException("命令不能为空");
+        }
+
+        if (directory == null || directory.isEmpty()) {
+            directory = "";
+        }
+
+        if (directory.startsWith(File.separator)) {
+            directory = directory.substring(1);
+        }
+
+        String url = String.format("%s/executeCommand?userKey=%s&userSecret=%s&token=%s&command=%s&directory=%s&timeout=%d",
+                getHost(),
+                getUserKey(),
+                getUserSecret(),
+                getToken(),
+                command,
+                directory,
+                timeout > 0 ? timeout : 30);
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(url);
+
+            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode >= 200 && statusCode < 300) {
+                    HttpEntity entity = response.getEntity();
+                    return entity != null ? EntityUtils.toString(entity) : "";
+                } else {
+                    throw new IOException("执行命令失败，状态码: " + statusCode);
+                }
+            }
+        }
+    }
+
+    /**
      * 获取API主机地址
      *
      * @return API主机地址

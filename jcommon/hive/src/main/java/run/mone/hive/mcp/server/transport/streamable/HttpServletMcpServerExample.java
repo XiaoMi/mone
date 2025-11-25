@@ -1,4 +1,4 @@
-package run.mone.hive.mcp.server.transport;
+package run.mone.hive.mcp.server.transport.streamable;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

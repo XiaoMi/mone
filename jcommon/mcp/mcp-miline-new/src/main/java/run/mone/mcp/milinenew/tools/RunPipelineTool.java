@@ -23,7 +23,7 @@ public class RunPipelineTool implements ITool {
 
     public static final String name = "run_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/startPipelineWithLatestCommit" : null;
+    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -157,17 +157,23 @@ public class RunPipelineTool implements ITool {
                 String responseBody = response.body().string();
                 log.info("runPipeline response: {}", responseBody);
 
-                ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
                     responseBody,
-                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
+                        objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                result.addProperty("executionId", apiResponse.getData());
-                result.addProperty("result", String.format("成功触发流水线，执行ID: %d", apiResponse.getData()));
+                Map<String, Object> data = apiResponse.getData();
+                Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
+                String url = (String) data.get("url");
+                
+                result.addProperty("executionId", pipelineRecordId);
+                result.addProperty("url", url);
+                result.addProperty("result", String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url));
                 return result;
             }
         } catch (NumberFormatException e) {
