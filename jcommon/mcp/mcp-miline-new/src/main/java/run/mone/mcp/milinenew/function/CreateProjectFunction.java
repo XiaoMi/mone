@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -25,7 +26,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class CreateProjectFunction implements McpFunction {
-
+    @Value("${git.email.suffix}")
+    private String gitUserName;
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -96,7 +98,7 @@ public class CreateProjectFunction implements McpFunction {
                     : "staging";
             String baseUserName = arguments.containsKey("baseUserName") && !StringUtils.isBlank(arguments.get("baseUserName").toString())
                     ? arguments.get("baseUserName").toString()
-                    : "liguanchen";
+                    : gitUserName;
 
             // 构建第一个对象：MoneContext
             Map<String, Object> userMap = new HashMap<>();
@@ -114,7 +116,7 @@ public class CreateProjectFunction implements McpFunction {
             projectCreateDto.put("desc", "");
             // projectGen固定配置
             Map<String, Object> projectGen = new HashMap<>();
-            projectGen.put("type", "spring-java21");
+            projectGen.put("type", "spring-java21-fe");
             projectGen.put("need", false);
             projectGen.put("gen", false);
             projectCreateDto.put("projectGen", projectGen);
