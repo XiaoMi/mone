@@ -24,6 +24,7 @@ import run.mone.mcp.milinenew.tools.CreateProjectTool;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
+ * @author wangmin
  * @author goodjava@qq.com
  * @date 2025/1/1
  */
