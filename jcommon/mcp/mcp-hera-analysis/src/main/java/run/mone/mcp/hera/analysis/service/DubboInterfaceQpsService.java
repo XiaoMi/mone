@@ -1,6 +1,7 @@
 package run.mone.mcp.hera.analysis.service;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
@@ -14,6 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.DoubleSummaryStatistics;
+import java.util.List;
 
 /**
  * Dubbo接口QPS查询服务实现类
@@ -63,15 +67,60 @@ public class DubboInterfaceQpsService {
                 return "查询Dubbo接口QPS失败：" + errorMsg;
             }
 
-            // 提取数据
-            JsonObject data = jsonResponse.has("data") ? jsonResponse.getAsJsonObject("data") : new JsonObject();
+            // 提取Prometheus响应中的数据
+            JsonObject dataWrapper = jsonResponse.has("data") ? jsonResponse.getAsJsonObject("data") : new JsonObject();
+            JsonObject promData = dataWrapper.has("data") ? dataWrapper.getAsJsonObject("data") : new JsonObject();
 
-            double maxQps = data.has("maxQps") ? data.get("maxQps").getAsDouble() : 0.0;
-            double avgQps = data.has("avgQps") ? data.get("avgQps").getAsDouble() : 0.0;
-            double minQps = data.has("minQps") ? data.get("minQps").getAsDouble() : 0.0;
+            // 解析时间序列数据
+            // 注意：每个数据点是30秒内的平均QPS
+            double maxQps = 0.0;
+            double minQps = Double.MAX_VALUE;
+            double avgQps = 0.0;
+            double totalQps = 0.0;
+            int dataCount = 0;
+
+            if (promData.has("result") && promData.get("result").isJsonArray()) {
+                JsonArray resultArray = promData.getAsJsonArray("result");
+
+                List<Double> allValues = new ArrayList<>();
+
+                for (int i = 0; i < resultArray.size(); i++) {
+                    JsonObject result = resultArray.get(i).getAsJsonObject();
+
+                    if (result.has("values") && result.get("values").isJsonArray()) {
+                        JsonArray valuesArray = result.getAsJsonArray("values");
+
+                        for (int j = 0; j < valuesArray.size(); j++) {
+                            JsonArray valueEntry = valuesArray.get(j).getAsJsonArray();
+                            if (valueEntry.size() >= 2) {
+                                // 第二个元素是QPS值（每30秒的平均QPS）
+                                String qpsStr = valueEntry.get(1).getAsString();
+                                double qpsValue = Double.parseDouble(qpsStr);
+                                allValues.add(qpsValue);
+                                totalQps += qpsValue;
+                            }
+                        }
+                    }
+                }
+
+                // 计算统计信息
+                if (!allValues.isEmpty()) {
+                    DoubleSummaryStatistics stats = allValues.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .summaryStatistics();
+
+                    maxQps = stats.getMax();
+                    minQps = stats.getMin();
+                    avgQps = stats.getAverage();
+                    dataCount = allValues.size();
+                }
+            }
 
             // 格式化返回结果
-            return responseBody;
+            return String.format(
+                    "应用：%s\nDubbo服务：%s\nDubbo方法：%s\n服务区域：%s\n时间范围：%d - %d\n\n数据统计信息：\n  数据点数：%d（每点采样间隔：30秒）\n  总时间长：%d秒\n\nQPS统计（每30秒的平均值）：\n  最大值：%.2f QPS\n  平均值：%.2f QPS\n  最小值：%.2f QPS\n  所有点总和：%.2f",
+                    appName, serviceName, methodName, serverZone, startTimeSec, endTimeSec,
+                    dataCount, (endTimeSec - startTimeSec), maxQps, avgQps, minQps, totalQps);
 
         } catch (Exception e) {
             log.error("查询应用{}的Dubbo接口{}.{}的QPS失败", appName, serviceName, methodName, e);
