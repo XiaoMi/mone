@@ -40,7 +40,7 @@ export type MessageMeta = {
 };
 
 export type Message = {
-  id?: string | number;
+  id?: string;
   type: string;
   author: {
     cname: string;
@@ -55,6 +55,7 @@ export type Message = {
     files?: {
       mediaType: string;
       url: string;
+      name: string;
       input: string;
     }[];
     cmd?: {

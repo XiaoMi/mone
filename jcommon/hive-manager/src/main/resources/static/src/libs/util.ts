@@ -1,43 +1,23 @@
-import { id, pa } from "element-plus/es/locale/index.mjs";
-import { useChatContextStore } from "@/stores/chat-context";
-
 type T = any;
 
+interface ClientInfo {
+  [key: string]: any;
+}
+
+interface MessageReq {
+  [key: string]: any;
+}
+
+interface MessageRes {
+  [key: string]: any;
+}
+
+interface EventRes {
+  [key: string]: any;
+}
+
 const ideaCmd = function (cmd: string, data = {}, json = false): Promise<T> {
-  // const { chatContext } = useChatContextStore();
-  // return new Promise((resolve, reject) => {
-  //   if (!(window as any).cef) {
-  //     reject(new Error("需要在idea运行"));
-  //   }
-  //   (window as any).cef({
-  //     request:
-  //       "click:" +
-  //       JSON.stringify({
-  //         cmd: cmd,
-  //         data: {
-  //           ...data,
-  //           scope: chatContext.scope,
-  //           project: chatContext.project,
-  //           module: chatContext.module,
-  //         },
-  //       }),
-  //     onSuccess: (response: string) => {
-  //       if (json) {
-  //         try {
-  //           resolve(JSON.parse(response));
-  //         } catch (e) {
-  //           console.error("ideaCmd", e);
-  //           resolve(response);
-  //         }
-  //       } else {
-  //         resolve(response);
-  //       }
-  //     },
-  //     onFailure: (errorCode: number, errorMessage: string) => {
-  //       reject(new Error(`${errorCode}: ${errorMessage}`));
-  //     },
-  //   });
-  // });
+  return Promise.resolve();
 };
 
 const ideaCmdWithoutProjectInfo = function (
@@ -45,32 +25,10 @@ const ideaCmdWithoutProjectInfo = function (
   data = {},
   json = false
 ): Promise<T> {
-  // return new Promise((resolve, reject) => {
-  //   if (!(window as any).cef) {
-  //     reject(new Error("需要在idea运行"));
-  //   }
-  //   (window as any).cef({
-  //     request:
-  //       "click:" +
-  //       JSON.stringify({
-  //         cmd: cmd,
-  //         data: data,
-  //       }),
-  //     onSuccess: (response: string) => {
-  //       if (json) {
-  //         resolve(JSON.parse(response));
-  //       } else {
-  //         resolve(response);
-  //       }
-  //     },
-  //     onFailure: (errorCode: number, errorMessage: string) => {
-  //       reject(new Error(`${errorCode}: ${errorMessage}`));
-  //     },
-  //   });
-  // });
+  return Promise.resolve();
 };
 
-const util = {};
+const util: Record<string, any> = {};
 
 util.fetchKnowledgeBases = function (): Promise<any> {
   return ideaCmd("knowledge_bases");

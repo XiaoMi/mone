@@ -27,6 +27,7 @@
 </template>
 <script setup lang="ts">
 import ChatWindow from '@/components/Chat/ChatWindow.vue'
+import { type MessageClickPayload } from "@/components/Chat/messages/HelloMessage.vue";
 import { useUserStore } from '@/stores/user'
 import { useChatContextStore, type Message } from '@/stores/chat-context'
 import { onMounted, onBeforeUnmount, computed, ref, nextTick } from 'vue'
@@ -40,6 +41,7 @@ import { useTheme } from '@/styles/theme/useTheme'
 import { useFunctionPanelStore } from '@/stores/function-panel'
 import { useEditStore } from '@/stores/edit'
 import { useAgentConfigStore } from '@/stores/agent-config'
+
 const route = useRoute()
 const {
   getChatContext,
@@ -153,12 +155,12 @@ const scrollToTop = () => {
 
 const getAgentName = () => {
   const agent = getAgent()
-  const name = `stream_${agent.name}_chat`
+  const name = `stream_${agent!.name}_chat`
   if (agent?.mcpToolMap) {
     try {
       const toolMap = JSON.parse(agent.mcpToolMap)
       const item = Object.values(toolMap)[0]
-      const tool = JSON.parse(item)
+      const tool = JSON.parse(item as string)
       if (tool.name === name) {
         return tool.name
       }
@@ -168,7 +170,7 @@ const getAgentName = () => {
   }
   return name
 }
-const onClick2Conversion = ({ id }) => {
+const onClick2Conversion = ({ id }: { id: string }) => {
   const agent = getAgent()
   let params = {
     message: `/rollback  ${id}`,
@@ -177,7 +179,7 @@ const onClick2Conversion = ({ id }) => {
   clearHistory({
     mapData: {
       outerTag: 'use_mcp_tool',
-      server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${
+      server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${getSelectedInstance().ip}:${
         getSelectedInstance().port
       }`,
       tool_name: getAgentName(),
@@ -198,7 +200,7 @@ const onClearHistory = () => {
   clearHistory({
     mapData: {
       outerTag: 'use_mcp_tool',
-      server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${
+      server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${getSelectedInstance().ip}:${
         getSelectedInstance().port
       }`,
       tool_name: getAgentName(),
@@ -218,7 +220,7 @@ const onOfflineAgent = () => {
   offlineAgent({
     mapData: {
       outerTag: 'use_mcp_tool',
-      server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${
+      server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${getSelectedInstance().ip}:${
         getSelectedInstance().port
       }`,
       tool_name: getAgentName(),
@@ -239,7 +241,7 @@ const onPidAction = (data: { pid: string; action: string }) => {
   clearHistory({
     mapData: {
       outerTag: 'use_mcp_tool',
-      server_name: `${agent.name}:${agent.group}:${agent.version}:${getSelectedInstance().ip}:${
+      server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${getSelectedInstance().ip}:${
         getSelectedInstance().port
       }`,
       tool_name: getAgentName(),
@@ -271,7 +273,7 @@ const onPlayAudio = (text: string) => {
         {
           mapData: {
             outerTag: 'use_mcp_tool',
-            server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${
               getSelectedInstance().ip
             }:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
@@ -293,7 +295,7 @@ const onPlayAudio = (text: string) => {
         JSON.stringify({
           mapData: {
             outerTag: 'use_mcp_tool',
-            server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${getSelectedInstance().ip}:${
               getSelectedInstance().ip
             }:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
@@ -609,7 +611,7 @@ const sendMessage = async (message: Message) => {
   try {
     const agent = getAgent()
     messageId.value = uuidv4()
-    let params = {
+    let params: any = {
       message: text,
       __owner_id__: user?.username,
       __web_search__: functionPanelStore.webSearchEnabled || false,
@@ -621,7 +623,7 @@ const sendMessage = async (message: Message) => {
     if (image) {
       params.images = image
     }
-    if (message.data.files?.length > 0) {
+    if (message.data.files?.length && message.data.files.length > 0) {
       params.message += `fileName: ${message.data.files[0].name} `
       params.message += ` fileBase64: ${message.data.files[0].input}`
     }
@@ -631,7 +633,7 @@ const sendMessage = async (message: Message) => {
         {
           mapData: {
             outerTag: 'use_mcp_tool',
-            server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${
               getSelectedInstance().ip
             }:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
@@ -653,7 +655,7 @@ const sendMessage = async (message: Message) => {
         JSON.stringify({
           mapData: {
             outerTag: 'use_mcp_tool',
-            server_name: `${agent.name}:${agent.group}:${agent.version}:${
+            server_name: `${agent!.name}:${agent!.group}:${agent!.version}:${
               getSelectedInstance().ip
             }:${getSelectedInstance().port}`,
             tool_name: getAgentName(),
@@ -673,9 +675,9 @@ const onStopMsg = () => {
   sendMessage({
     type: 'md',
     author: {
-      cname: user.cname,
-      username: user.username,
-      avatar: user.avatar,
+      cname: (user?.cname as any) || '',
+      username: user?.username || '',
+      avatar: (user?.avatar as any) || '',
     },
     meta: {
       role: 'USER',
@@ -686,14 +688,14 @@ const onStopMsg = () => {
   })
 }
 
-const messageClick = async (item: { type: string; text: string; params: any }) => {
+const messageClick = async (item: MessageClickPayload) => {
   // 发消息
   addMessage({
     type: 'md',
     author: {
-      cname: user.cname,
-      username: user.username,
-      avatar: user.avatar,
+      cname: (user?.cname as any) || '',
+      username: user?.username || '',
+      avatar: (user?.avatar as any) || '',
     },
     meta: {
       role: 'USER',
@@ -712,9 +714,9 @@ const addHelloMessage = (item: any): Message => {
     return {
       type: 'md',
       author: {
-        cname: user.cname,
-        username: user.username,
-        avatar: user.avatar,
+        cname: (user?.cname as any) || '',
+        username: user?.username || '',
+        avatar: (user?.avatar as any) || '',
       },
       meta: {
         role: 'IDEA',
@@ -735,10 +737,10 @@ const addHelloMessage = (item: any): Message => {
       role: 'IDEA',
     },
     data: {
-      hello: (item.msg || '').replace('${username}', user.username).replace('${version}', `版本`),
+      hello: (item.msg || '').replace('${username}', user?.username || '').replace('${version}', `版本`),
       links:
         (item.promptInfoList &&
-          item.promptInfoList.map((it) => {
+          item.promptInfoList.map((it: any) => {
             return {
               prefix: it.prefix || '',
               suffix: it.suffix || '',
@@ -807,20 +809,20 @@ onMounted(async () => {
     const { data } = await getAgentDetail(Number(route.query.serverAgentId))
     if (data.code === 200) {
       const agent = data.data?.agent
-      setAgent(agent)
-      setInstance(data.data?.instances)
+      setAgent(agent!)
+      setInstance(data.data?.instances!)
       addMessage({
         type: 'md',
         author: {
-          cname: agent.name,
-          username: agent.name,
-          avatar: `data:image/jpeg;base64,${agent.image}`,
+          cname: agent!.name,
+          username: agent!.name,
+          avatar: `data:image/jpeg;base64,${agent!.image}`,
         },
         meta: {
           role: 'IDEA',
         },
         data: {
-          text: `你好，我是 ${agent.name}，有什么可以帮你的吗？`,
+          text: `你好，我是 ${agent!.name}，有什么可以帮你的吗？`,
         },
       })
       // 初始化WebSocket连接
