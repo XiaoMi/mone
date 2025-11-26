@@ -2,18 +2,15 @@ package run.mone.mcp.milinenew.tools;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class RunPipelineTool implements ITool {
-    @Value("${git.email.suffix}")
-    private String gitUserName;
+    private final String gitUserName;
     public static final String name = "run_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
     private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
@@ -31,6 +27,11 @@ public class RunPipelineTool implements ITool {
     private final ObjectMapper objectMapper;
 
     public RunPipelineTool() {
+        this(null);
+    }
+
+    public RunPipelineTool(String gitUserName) {
+        this.gitUserName = gitUserName;
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)

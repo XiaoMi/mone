@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -27,8 +26,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class GenerateGitCodeTool implements ITool {
-    @Value("${git.email.suffix}")
-    private String gitUserName;
+    private final String gitUserName;
     public static final String name = "generate_git_code";
     private static final String BASE_URL = System.getenv("req_base_url");
     private static final String GENERATE_GIT_CODE_URL = BASE_URL + "/generateCode";
@@ -37,6 +35,11 @@ public class GenerateGitCodeTool implements ITool {
     private final ObjectMapper objectMapper;
 
     public GenerateGitCodeTool() {
+        this(null);
+    }
+
+    public GenerateGitCodeTool(String gitUserName) {
+        this.gitUserName = gitUserName;
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)

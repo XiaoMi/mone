@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
@@ -25,8 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class CreatePipelineTool implements ITool {
-    @Value("${git.email.suffix}")
-    private String gitUserName;
+    private final String gitUserName;
 
     public static String gitName = "";
     public static final String name = "create_pipeline";
@@ -37,6 +35,11 @@ public class CreatePipelineTool implements ITool {
     private final ObjectMapper objectMapper;
 
     public CreatePipelineTool() {
+        this(null);
+    }
+
+    public CreatePipelineTool(String gitUserName) {
+        this.gitUserName = gitUserName;
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)

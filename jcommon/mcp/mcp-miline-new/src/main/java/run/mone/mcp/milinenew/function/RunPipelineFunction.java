@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -25,8 +24,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class RunPipelineFunction implements McpFunction {
-    @Value("${git.email.suffix}")
-    private String gitUserName;
+    private final String gitUserName;
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -51,6 +49,11 @@ public class RunPipelineFunction implements McpFunction {
     private final ObjectMapper objectMapper;
 
     public RunPipelineFunction() {
+        this(null);
+    }
+
+    public RunPipelineFunction(String gitUserName) {
+        this.gitUserName = gitUserName;
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
