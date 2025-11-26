@@ -46,8 +46,8 @@ public class GatewayAgentConfig {
                             - 如有需要，提供进一步的帮助和建议
                         """)
                 .meta(ImmutableMap.of(
-                        Const.HTTP_PORT, "8083",
-                        Const.AGENT_SERVER_NAME, agentName
+                        Const.HTTP_PORT, "8086",
+                        Const.AGENT_SERVER_NAME, "tesla_server"
                 ))
                 .build();
     }
