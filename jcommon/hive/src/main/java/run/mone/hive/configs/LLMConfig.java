@@ -8,6 +8,7 @@ import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLMProvider;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 @Data
@@ -99,5 +100,23 @@ public class LLMConfig {
         LLMConfig target = new LLMConfig();
         BeanUtils.copyProperties(original, target);
         return target;
+    }
+
+    /**
+     * 处理 custom configs
+     * @return
+     */
+    public LLMConfig custom() {
+        // custom configs
+        // 为 MIFY_GATEWAY 设置环境变量中的配置
+        if (this.llmProvider == LLMProvider.MIFY_GATEWAY) {
+            this.setUrl(System.getenv("MIFY_GATEWAY_URL"));
+            this.setToken(System.getenv("MIFY_API_KEY"));
+            CustomConfig customConfig = new CustomConfig();
+            customConfig.setModel(System.getenv("MIFY_MODEL"));
+            customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
+            this.setCustomConfig(customConfig);
+        }
+        return this;
     }
 } 
