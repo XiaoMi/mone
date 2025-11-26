@@ -394,6 +394,8 @@ const handleConfigResponse = (data: string) => {
   try {
     // 先处理消息显示
     // throttledFluxCodeHandler(data, configMessageId)
+    // 去除data:前缀
+    data = data.replaceAll('data:', '')
 
     // 提取tool_result标签中的JSON数据
     const toolResultMatch = data.match(/<tool_result>([\s\S]*?)<\/tool_result>/)
