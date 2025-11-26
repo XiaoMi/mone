@@ -22,8 +22,8 @@ import com.xiaomi.data.push.uds.WheelTimer.UdsWheelTimer;
 import com.xiaomi.data.push.uds.context.TraceContext;
 import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
-import com.xiaomi.data.push.uds.handler.MessageTypes;
 import com.xiaomi.data.push.uds.handler.ClientStreamCallback;
+import com.xiaomi.data.push.uds.handler.MessageTypes;
 import com.xiaomi.data.push.uds.handler.UdsClientConnetManageHandler;
 import com.xiaomi.data.push.uds.handler.UdsClientHandler;
 import com.xiaomi.data.push.uds.po.UdsCommand;
@@ -33,7 +33,6 @@ import io.netty.channel.*;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.util.Timeout;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +43,7 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author goodjava@qq.com
@@ -56,7 +56,17 @@ public class UdsClient implements IClient<UdsCommand> {
 
     private static UdsWheelTimer wheelTimer = new UdsWheelTimer();
 
-    private ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
+    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100),
+            new ThreadFactory() {
+                private final AtomicInteger id = new AtomicInteger(0);
+
+                public Thread newThread(Runnable r) {
+                    String threadName = "udsClient" + this.id.getAndIncrement();
+                    Thread thread = new Thread(r, threadName);
+                    thread.setDaemon(true);
+                    return thread;
+                }
+            });
 
     @Getter
     private volatile Channel channel;
@@ -115,7 +125,7 @@ public class UdsClient implements IClient<UdsCommand> {
             f.sync();
         } catch (Throwable ex) {
             UdsClientContext.ins().exceptionCaught(ex);
-            log.error("start error restart", ex);
+            log.error("start error:{} restart", ex.getMessage());
             if (null != group) {
                 group.shutdownGracefully();
             }
@@ -136,6 +146,9 @@ public class UdsClient implements IClient<UdsCommand> {
         Send.send(this.channel, command);
     }
 
+    /**
+     * 发送OpenAI流式请求
+     */
     public void stream(UdsCommand command, ClientStreamCallback callback) {
         Map<String, String> attachments = command.getAttachments();
         // 注册回调
@@ -145,7 +158,6 @@ public class UdsClient implements IClient<UdsCommand> {
         Send.send(this.channel, command);
     }
 
-
     @Override
     public UdsCommand call(UdsCommand req) {
         Stopwatch sw = Stopwatch.createStarted();
@@ -154,11 +166,11 @@ public class UdsClient implements IClient<UdsCommand> {
         long id = req.getId();
         try {
             CompletableFuture<Object> future = new CompletableFuture<>();
-            HashMap<String, Object> hashMap = new HashMap<>();
+            HashMap<String,Object> hashMap = new HashMap<>();
             hashMap.put("future", future);
             hashMap.put("async", req.isAsync());
             hashMap.put("returnType", req.getReturnClass());
-            reqMap.put(req.getId(), hashMap);
+            reqMap.put(req.getId(),hashMap);
             Channel channel = this.channel;
             if (null == channel || !channel.isOpen()) {
                 log.warn("client channel is close");
@@ -166,26 +178,13 @@ public class UdsClient implements IClient<UdsCommand> {
             }
             log.debug("start send,id:{}", id);
             Send.send(channel, req);
-
-            Timeout timeout = wheelTimer.newTimeout(() -> {
-                log.warn("check async udsClient time out auto close:{},{}", req.getId(), req.getTimeout());
-                HashMap<String, Object> map = reqMap.remove(req.getId());
-                if (null != map) {
-                    CompletableFuture<Object> f = (CompletableFuture<Object>) map.get("future");
-                    if (null != f && !f.isDone()) {
-                        future.completeExceptionally(
-                                new TimeoutException("Request timeout: " + req.getTimeout())
-                        );
-                    }
-                }
-            }, req.getTimeout() + 200);
-
-            // 添加完成时取消定时任务的回调
-            future.whenComplete((k, v) -> timeout.cancel());
-
             //异步还是同步
             if (req.isAsync()) {
                 req.setCompletableFuture(future);
+                wheelTimer.newTimeout(() -> {
+                    log.warn("check async udsClient time out auto close:{},{}", req.getId(), req.getTimeout());
+                    reqMap.remove(req.getId());
+                }, req.getTimeout()+350);
                 return req;
             }
             return (UdsCommand) future.get(req.getTimeout(), TimeUnit.MILLISECONDS);

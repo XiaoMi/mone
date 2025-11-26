@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>run.mone</groupId>
         <artifactId>docean-plugin</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <groupId>run.mone</groupId>
+        <version>1.4.0</version>
     </parent>
-    <artifactId>docean-plugin-mongodb</artifactId>
-    <version>1.5.0-jdk21-SNAPSHOT</version>
-    <dependencies>
+    <modelVersion>4.0.0</modelVersion>
 
+    <artifactId>docean-plugin-mongodb</artifactId>
+
+
+    <dependencies>
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-config</artifactId>
@@ -26,27 +27,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>catPlugin</artifactId>
-            <version>1.6.0-jdk21-SNAPSHOT</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
-
-        <dependency>
-            <groupId>dev.morphia.morphia</groupId>
-            <artifactId>morphia-core</artifactId>
-            <version>2.4.13</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>1.4.2.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>1.4.2.Final</version>
-        </dependency>
-
-
     </dependencies>
 </project>

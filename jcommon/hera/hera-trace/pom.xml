@@ -9,6 +9,7 @@
         <version>1.6.0-jdk21-SNAPSHOT</version>
     </parent>
     <artifactId>hera-trace</artifactId>
+    <version>1.4.0</version>
 
     <version>1.6.0-SNAPSHOT</version>
 

@@ -8,22 +8,12 @@ import java.io.IOException;
  */
 public interface ILogFile {
 
-    int LINE_MAX_LENGTH = 1100000;
-
-    void readLine() throws Exception;
+    void readLine() throws IOException;
 
     void setStop(boolean stop);
 
     void setReOpen(boolean reOpen);
 
     void initLogFile(String file, ReadListener listener, long pointer, long lineNumber);
-
-    /**
-     * It only needs to be called when an exception occurs and can only be called externally.
-     */
-    void setExceptionFinish();
-
-    boolean getExceptionFinish();
-
 
 }
