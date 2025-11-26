@@ -126,6 +126,7 @@ public class ConfigCommand extends RoleBaseCommand {
             llmOptions.put("gemini", "openrouter_gemini_25_pro");
             llmOptions.put("minimax", "minimax");
             llmOptions.put("doubao_seed_code", "doubao_seed_code");
+            llmOptions.put("mify_gateway", "mify_gateway");
             configMap.put("llmOptions", llmOptions);
 
             // 构建标准响应格式

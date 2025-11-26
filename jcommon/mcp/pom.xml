@@ -61,8 +61,11 @@
         <module>mcp-vue-temp</module>
         <module>mcp-dayu-service-query</module>
         <module>mcp-miline</module>
+        <module>mcp-miline-new</module>
         <module>mcp-yijing</module>
         <module>mcp-git</module>
+        <module>mcp-cost-control</module>
+        <module>mcp-mione</module>
     </modules>
 
     <properties>
