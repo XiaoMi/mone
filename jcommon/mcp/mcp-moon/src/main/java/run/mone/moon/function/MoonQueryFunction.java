@@ -3,12 +3,13 @@ package run.mone.moon.function;
 import cn.hutool.core.bean.BeanUtil;
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moon.function.bo.MoonMoneTpcContext;
 import run.mone.moon.function.bo.ReadTaskReq;
@@ -19,14 +20,13 @@ import run.mone.moon.utils.MoonUitl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Moon系统创建任务执行器
  */
 @Data
 @Slf4j
-public class MoonQueryFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class MoonQueryFunction implements McpFunction {
 
 
     private String name = "query_task_executor";
@@ -120,9 +120,8 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
         MoonUitl.commonParam(queryReference);
     }
 
-    @SneakyThrows
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         log.info("query moon apply function args: {}", GsonUtil.toJson(args));
         try {
             // 1. 参数验证和转换
@@ -169,18 +168,35 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             }.getType());
             // 4. 处理返回结果
             if (result.getCode() == 0) {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("Task query result: " + GsonUtil.toJson(result.getData()))),
                         false
-                );
+                ));
             } else {
-                throw new RuntimeException("Failed to query task: " + result.getMessage());
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("查询任务失败, code: " + result.getCode() + ", message: " + result.getMessage())), false));
             }
 
         } catch (Exception ex) {
-            log.error("Failed to query task", ex);
-            throw new RuntimeException("Failed to query task: " + ex.getMessage());
+            log.error("Failed to query task:", ex);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("查询任务失败：" + ex.getMessage())), true));
         }
     }
 
+    @Override
+    public String getToolScheme() {
+        return taskQuerySchema;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+
+    @Override
+    public String getDesc() {
+        return desc;
+    }
 }

@@ -2,13 +2,14 @@ package run.mone.moon.function;
 
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moon.function.bo.Result;
 import run.mone.moon.function.bo.TaskReq;
@@ -17,14 +18,13 @@ import run.mone.moon.utils.MoonUitl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Moon系统创建任务执行器
  */
 @Data
 @Slf4j
-public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class MoonGetFunction implements McpFunction {
 
 
     private String name = "get_task_by_id_executor";
@@ -63,9 +63,9 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
         MoonUitl.commonParam(queryReference);
     }
 
-    @SneakyThrows
+
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         log.info("get moon apply function args: {}", GsonUtil.toJson(args));
         try {
             // 1. 参数验证和转换
@@ -100,17 +100,19 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
                     data.setName(getCopyString(data.getName()));
                     data.setDescription(getCopyString(data.getDescription()));
                 }
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("Task query result: " + GsonUtil.toJson(data))),
                         false
-                );
+                ));
             } else {
-                throw new RuntimeException("Failed to create task: " + result.getMessage());
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("查询任务失败, code: " + result.getCode() + ", message: " + result.getMessage())), false));
             }
 
         } catch (Exception ex) {
-            log.error("Failed to query task", ex);
-            throw new RuntimeException("Failed to query task: " + ex.getMessage());
+            log.error("Failed to query task:", ex);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("查询任务失败：" + ex.getMessage())), true));
         }
     }
 
@@ -118,4 +120,20 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
         return source + " copy";
     }
 
+
+    @Override
+    public String getToolScheme() {
+        return taskQuerySchema;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+
+    @Override
+    public String getDesc() {
+        return desc;
+    }
 }

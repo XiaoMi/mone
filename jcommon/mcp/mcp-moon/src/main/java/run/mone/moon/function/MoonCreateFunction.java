@@ -2,7 +2,6 @@ package run.mone.moon.function;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -11,6 +10,8 @@ import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moon.function.bo.*;
 import run.mone.moon.utils.GsonUtil;
@@ -18,14 +19,13 @@ import run.mone.moon.utils.MoonUitl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Moon系统创建任务执行器
  */
 @Data
 @Slf4j
-public class MoonCreateFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class MoonCreateFunction implements McpFunction {
 
 
     private String name = "create_task_executor";
@@ -227,7 +227,7 @@ public class MoonCreateFunction implements Function<Map<String, Object>, McpSche
 
     @SneakyThrows
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         log.info("create moon apply function args: {}", GsonUtil.toJson(args));
         try {
             // 1. 参数验证和转换
@@ -347,17 +347,23 @@ public class MoonCreateFunction implements Function<Map<String, Object>, McpSche
             }.getType());
             // 4. 处理返回结果
             if (result.getCode() == 0) {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("Task created successfully. Task ID: " + result.getData())),
                         false
-                );
+                ));
             } else {
-                throw new RuntimeException("Failed to create task: " + result.getMessage());
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("Failed to create task code : " + result.getCode() + ", message: " + result.getMessage())),
+                        false
+                ));
             }
 
         } catch (Exception ex) {
             log.error("Failed to create task", ex);
-            throw new RuntimeException("Failed to create task: " + ex.getMessage());
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("Task created exception: " + ex.getMessage())),
+                    false
+            ));
         }
     }
 
@@ -391,4 +397,19 @@ public class MoonCreateFunction implements Function<Map<String, Object>, McpSche
         return null;
     }
 
+    @Override
+    public String getToolScheme() {
+        return taskToolSchema;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+
+    @Override
+    public String getDesc() {
+        return desc;
+    }
 }
