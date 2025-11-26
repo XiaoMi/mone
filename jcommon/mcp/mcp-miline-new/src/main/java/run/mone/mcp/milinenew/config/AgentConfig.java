@@ -32,12 +32,12 @@ import org.springframework.beans.factory.annotation.Value;
  */
 @Configuration
 public class AgentConfig {
-//    @Autowired
-//    private GitCloneTool gitCloneTool;
-//    @Autowired
-//    private GitCommitTool gitCommitTool;
-//    @Autowired
-//    private GitPushTool gitPushTool;
+    @Autowired
+    private GitCloneTool gitCloneTool;
+    @Autowired
+    private GitCommitTool gitCommitTool;
+    @Autowired
+    private GitPushTool gitPushTool;
 
     @Value("${mcp.agent.mode:MCP}")
     private String agentMode;
@@ -90,7 +90,10 @@ public class AgentConfig {
                                 createProjectTool,
                                 generateGitCodeTool,
                                 createPipelineTool,
-                                runPipelineTool
+                                runPipelineTool,
+                                gitCloneTool,
+                                gitCommitTool,
+                                gitPushTool
                         )
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
@@ -103,7 +106,7 @@ public class AgentConfig {
                     你是智能化系统，严格按照以下步骤执行：
                         - 根据projectName生成项目
                         - 根据提供的projectId、env生成代码,
-                        - 拉取代码到本地
+                        - 拉取代码到本地，也就是调用git_clone工具进行git clone 
                         - 根据需求及已有代码进行后端开发、前端开发；
                         注意：先进行后端开发，再根据后端接口定义进行前端开发
                         注意：不要使用模拟数据，严格按照需求文档的设计进行开发
