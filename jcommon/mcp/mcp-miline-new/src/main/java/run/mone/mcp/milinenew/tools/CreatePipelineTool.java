@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +26,9 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/11/18
  */
 @Slf4j
+@Component
 public class CreatePipelineTool implements ITool {
+
     @Value("${git.email.suffix}")
     private String gitUserName;
 
