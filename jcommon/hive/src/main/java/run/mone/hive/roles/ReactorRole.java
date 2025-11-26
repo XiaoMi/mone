@@ -232,23 +232,7 @@ public class ReactorRole extends Role {
         reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).profile(profile).goal(goal).constraints(constraints).ip(ip).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
 
         // Schedule task to run every 20 seconds
-        this.scheduler.scheduleAtFixedRate(() -> {
-            Safe.run(() -> {
-                // 检查 roleMeta 是否已初始化
-                if (roleMeta == null) {
-                    log.debug("roleMeta is not initialized yet, skipping scheduled task");
-                    return;
-                }
-                if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
-                    return;
-                }
-                if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
-                    scheduledTaskHandler.accept(this);
-                }
-                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
-                log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
-            });
-        }, 0, 10, TimeUnit.SECONDS);
+        startHealthCheckScheduler(ip);
 
         this.taskState = new TaskState();
         FocusChainSettings focusChainSettings = new FocusChainSettings();
@@ -271,6 +255,26 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             log.error("Failed to initialize FileCheckpointManager", e);
         }
+    }
+
+    private void startHealthCheckScheduler(String ip) {
+        this.scheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                // 检查 roleMeta 是否已初始化
+                if (roleMeta == null) {
+                    log.debug("roleMeta is not initialized yet, skipping scheduled task");
+                    return;
+                }
+                if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+                    return;
+                }
+                if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
+                    scheduledTaskHandler.accept(this);
+                }
+                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
+                log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
+            });
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
