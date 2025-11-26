@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -26,7 +27,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class GenerateGitCodeTool implements ITool {
-
+    @Value("${git.email.suffix}")
+    private String gitUserName;
     public static final String name = "generate_git_code";
     private static final String BASE_URL = System.getenv("req_base_url");
     private static final String GENERATE_GIT_CODE_URL = BASE_URL + "/generateCode";
@@ -146,7 +148,7 @@ public class GenerateGitCodeTool implements ITool {
 //            requestMap.put("projectType", projectType);
 //            requestMap.put("gitBranch", gitBranch);
 //            requestMap.put("description", description);
-            requestMap.put("baseUserName", "liguanchen");
+            requestMap.put("baseUserName", gitUserName);
             requestMap.put("userType", 0);
             // 可以从环境变量或配置中获取
 
