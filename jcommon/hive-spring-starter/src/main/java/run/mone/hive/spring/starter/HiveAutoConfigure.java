@@ -42,6 +42,9 @@ public class HiveAutoConfigure {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
+    @Value("${enable.auth:false}")
+    private String enableAuth;
+
     //传输协议
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
@@ -104,6 +107,7 @@ public class HiveAutoConfigure {
         meta.put("goal", roleMeta.getGoal());
         meta.put("constraints", roleMeta.getConstraints());
         meta.put("workflow", roleMeta.getWorkflow());
+        meta.put("http.enable.auth", enableAuth);
         meta.putAll(roleMeta.getMeta());
         return new McpServer(transport, mcpTools, meta);
     }
