@@ -16,10 +16,9 @@
 package run.mone.mcp.idea.composer.service;
 
 import com.google.gson.JsonObject;
-import io.micrometer.common.util.StringUtils;
 import lombok.SneakyThrows;
 import run.mone.mcp.idea.composer.config.Const;
-import run.mone.mcp.idea.composer.http.HttpClient;
+import run.mone.hive.http.HttpClient;
 
 public class ComposerService {
 

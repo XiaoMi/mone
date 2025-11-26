@@ -7,12 +7,15 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.AiMessage;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 @Service
 public class IdeaService {
 
-    private LLM llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
+    @Resource
+    private LLM llm;
+
 
     public Flux<String> reviewCode(String code) {
         String prompt = "请对以下代码进行review，提供改进建议：\n\n" + code;

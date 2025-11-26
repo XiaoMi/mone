@@ -1,4 +1,5 @@
-+ 可以操控本地idea的mcp
++ 支持 ide 的 agent
++ 可以操控本地idea 和 cline 的mcp
 + 支持功能
   + composer功能
 
@@ -38,3 +39,7 @@ GOOGLE_API_KEY=
 IDEA_PORT=30000
 STEPFUN_API_KEY=
 OPENROUTER_API_KEY=
+
+一些env配置
+cwd
+customInstructions

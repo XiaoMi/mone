@@ -433,7 +433,7 @@ public class McpAsyncServer {
 
 	private DefaultMcpSession.StreamRequestHandler toolsStreamRequestHandler() {
 		return params -> {
-			logger.info("Received tools stream request: {}", params);
+			//logger.info("Received tools stream request: {}", params);
 
 			//grpc
 			if (params instanceof CallToolRequest ctr) {

@@ -18,7 +18,7 @@ package com.xiaomi.youpin.docean.plugin.dubbo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
@@ -49,7 +49,7 @@ public class DubboCall {
      */
     public Object call(DubboRequest request) {
 
-        RpcContext.getContext().setAttachment(Constants.TIMEOUT_KEY, String.valueOf(request.getTimeout()));
+        RpcContext.getContext().setAttachment(CommonConstants.TIMEOUT_KEY, String.valueOf(request.getTimeout()));
         String key = ReferenceConfigCache.getKey(request.getServiceName(), request.getGroup(), request.getVersion());
         GenericService genericService = ReferenceConfigCache.getCache().get(key);
         boolean create = false;

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status.connected .status-dot {
+            background: #28a745;
+        }
+
+        .status.disconnected .status-dot {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .message-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .message {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .message-type {
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+        }
+
+        .message-time {
+            color: #999;
+        }
+
+        .message-content {
+            color: #333;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .no-messages {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 SSE 测试页面</h1>
+        <p class="subtitle">Server-Sent Events 实时推送测试工具</p>
+
+        <div class="status disconnected" id="status">
+            <span class="status-dot"></span>
+            <span id="statusText">未连接</span>
+        </div>
+
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="serverUrl">服务器地址</label>
+                <input type="text" id="serverUrl" value="http://localhost:8180" placeholder="http://localhost:8080">
+            </div>
+
+            <div class="input-group">
+                <label for="clientId">客户端 ID</label>
+                <input type="text" id="clientId" value="test-client-001" placeholder="test-client-001">
+            </div>
+
+            <div class="input-group">
+                <label for="connectParams">连接参数 (JSON 格式，可选)</label>
+                <textarea id="connectParams" rows="5">{
+  "content": "1+1=?",
+  "userId": "test-user-001",
+  "agentId": "coder"
+}</textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" id="connectBtn" onclick="connect()">连接</button>
+                <button class="btn-danger" id="disconnectBtn" onclick="disconnect()" disabled>断开</button>
+                <button class="btn-success" onclick="clearMessages()">清空消息</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="messageCount">0</div>
+                <div class="stat-label">接收消息数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="connectedTime">00:00:00</div>
+                <div class="stat-label">连接时长</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="lastMessageTime">--</div>
+                <div class="stat-label">最后消息</div>
+            </div>
+        </div>
+
+        <div class="message-panel" id="messagePanel">
+            <div class="no-messages">暂无消息，请先建立连接</div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let messageCount = 0;
+        let connectTime = null;
+        let timerInterval = null;
+
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                status.className = 'status connected';
+                statusText.textContent = '已连接';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                connectTime = Date.now();
+                startTimer();
+            } else {
+                status.className = 'status disconnected';
+                statusText.textContent = '未连接';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                connectTime = null;
+                stopTimer();
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (connectTime) {
+                    const elapsed = Date.now() - connectTime;
+                    const hours = Math.floor(elapsed / 3600000);
+                    const minutes = Math.floor((elapsed % 3600000) / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    document.getElementById('connectedTime').textContent = 
+                        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.getElementById('connectedTime').textContent = '00:00:00';
+        }
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const clientId = document.getElementById('clientId').value;
+            const connectParams = document.getElementById('connectParams').value.trim();
+
+            if (!serverUrl || !clientId) {
+                alert('请填写服务器地址和客户端ID');
+                return;
+            }
+
+            // 构建 URL，如果有参数则添加到查询字符串
+            let url = `${serverUrl}/mcp/sse/connect/${clientId}`;
+            
+            if (connectParams) {
+                try {
+                    // 验证 JSON 格式
+                    JSON.parse(connectParams);
+                    // URL 编码参数
+                    const encodedParams = encodeURIComponent(connectParams);
+                    url += `?params=${encodedParams}`;
+                } catch (e) {
+                    alert('连接参数格式错误，请输入有效的 JSON 格式: ' + e.message);
+                    return;
+                }
+            }
+            
+            try {
+                eventSource = new EventSource(url);
+
+                eventSource.addEventListener('connected', (event) => {
+                    addMessage('connected', event.data);
+                    updateStatus(true);
+                });
+
+                eventSource.addEventListener('message', (event) => {
+                    addMessage('message', event.data);
+                });
+
+                eventSource.addEventListener('broadcast', (event) => {
+                    addMessage('broadcast', event.data);
+                });
+
+                eventSource.addEventListener('heartbeat', (event) => {
+                    addMessage('heartbeat', event.data);
+                });
+
+                // Agent 响应事件
+                eventSource.addEventListener('agent_response', (event) => {
+                    addMessage('agent_response', event.data);
+                });
+
+                // Agent 错误事件
+                eventSource.addEventListener('agent_error', (event) => {
+                    addMessage('agent_error', event.data);
+                });
+
+                // Agent 完成事件
+                eventSource.addEventListener('agent_complete', (event) => {
+                    addMessage('agent_complete', event.data);
+                });
+
+                eventSource.addEventListener('error', (event) => {
+                    addMessage('error', event.data);
+                });
+
+                eventSource.onerror = (error) => {
+                    console.error('SSE Error:', error);
+                    addMessage('error', 'SSE 连接错误');
+                    disconnect();
+                };
+
+            } catch (error) {
+                console.error('Connection Error:', error);
+                alert('连接失败: ' + error.message);
+            }
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            updateStatus(false);
+            addMessage('system', '连接已断开');
+        }
+
+        function addMessage(type, content) {
+            messageCount++;
+            document.getElementById('messageCount').textContent = messageCount;
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            document.getElementById('lastMessageTime').textContent = timeStr;
+
+            const messagePanel = document.getElementById('messagePanel');
+            
+            // 移除"暂无消息"提示
+            const noMessages = messagePanel.querySelector('.no-messages');
+            if (noMessages) {
+                noMessages.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type">${type}</span>
+                    <span class="message-time">${timeStr}</span>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+
+            messagePanel.insertBefore(messageDiv, messagePanel.firstChild);
+
+            // 限制消息数量
+            if (messagePanel.children.length > 50) {
+                messagePanel.removeChild(messagePanel.lastChild);
+            }
+        }
+
+        function clearMessages() {
+            const messagePanel = document.getElementById('messagePanel');
+            messagePanel.innerHTML = '<div class="no-messages">消息已清空</div>';
+            messageCount = 0;
+            document.getElementById('messageCount').textContent = '0';
+            document.getElementById('lastMessageTime').textContent = '--';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 页面关闭时断开连接
+        window.addEventListener('beforeunload', () => {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>
+

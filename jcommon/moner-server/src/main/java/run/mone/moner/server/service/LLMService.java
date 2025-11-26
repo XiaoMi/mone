@@ -1,5 +1,6 @@
 package run.mone.moner.server.service;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -10,10 +11,12 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
+import run.mone.hive.llm.LLM.LLMCompoundMsg;
+import run.mone.hive.llm.LLM.LLMPart;
 import run.mone.hive.roles.Role;
-import run.mone.hive.schema.AiMessage;
 import run.mone.moner.server.bo.McpModel;
 import run.mone.moner.server.bo.McpModelSettingDTO;
 import run.mone.moner.server.mcp.McpModelSettingService;
@@ -21,6 +24,7 @@ import run.mone.moner.server.mcp.McpModelSettingService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -34,141 +38,32 @@ public class LLMService {
     private McpModelSettingService mcpModelSettingService;
 
     public String call(LLM llm, String text, String imgText, String sysPrompt) {
-        JsonObject req = getReq(llm, text, imgText);
-
-        List<AiMessage> messages = new ArrayList<>();
-        messages.add(AiMessage.builder().jsonContent(req).build());
-        String result = llm.chatCompletion(messages, sysPrompt);
+        String result =  llm.call(LLMPart.builder().type(LLM.TYPE_IMAGE).text(text).data(imgText).build(), sysPrompt);
         log.info("{}", result);
         return result;
 
     }
 
     public String call(LLM llm, String text, List<String> imgTexts, String sysPrompt) {
-        JsonObject req = getReq(llm, text, imgTexts);
-
-        List<AiMessage> messages = new ArrayList<>();
-        messages.add(AiMessage.builder().jsonContent(req).build());
-        String result = llm.chatCompletion(messages, sysPrompt);
+        String result = llm.call(LLMCompoundMsg.builder()
+            .content(text)
+            .parts(imgTexts == null
+                        ? new ArrayList<>()
+                        : imgTexts.stream().map(it -> LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build()).collect(Collectors.toList())).build(), sysPrompt);
         log.info("{}", result);
         return result;
 
     }
 
     public String callStream(Role role, LLM llm, String text, List<String> imgTexts, String systemPrompt) {
-        JsonObject req = getReq(llm, text, imgTexts);
-
-        List<AiMessage> messages = new ArrayList<>();
-
-        messages.add(AiMessage.builder().jsonContent(req).build());
-        String result = llm.syncChat(role, messages, systemPrompt);
+        String result = llm.callStream(role, LLMCompoundMsg.builder()
+            .content(text)
+            .parts(imgTexts == null
+                    ? new ArrayList<>()
+                    : imgTexts.stream().map(it -> LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build()).collect(Collectors.toList())).build(), systemPrompt, llm.getConfig().getCustomConfig());
         log.info("{}", result);
         return result;
 
-    }
-
-    // TODO: 2025/2/17 实现mcp的流式调用
-    public String callStreamWithMcp(LLM llm, String text, List<String> imgTexts, String systemPrompt) {
-
-        return null;
-    }
-
-    private JsonObject getReq(LLM llm, String text, List<String> imgTexts) {
-        JsonObject req = new JsonObject();
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
-            JsonArray parts = new JsonArray();
-            JsonObject obj = new JsonObject();
-            obj.addProperty("text", text);
-            parts.add(obj);
-
-            if (imgTexts != null && !imgTexts.isEmpty()) {
-                imgTexts.forEach(img -> {
-                    JsonObject obj2 = new JsonObject();
-                    JsonObject objImg = new JsonObject();
-                    objImg.addProperty("mime_type", "image/jpeg");
-                    objImg.addProperty("data", img);
-                    obj2.add("inline_data", objImg);
-                    parts.add(obj2);
-                });
-            }
-
-            req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
-                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
-            req.addProperty("role", "user");
-            JsonArray array = new JsonArray();
-
-            JsonObject obj1 = new JsonObject();
-            obj1.addProperty("type", "text");
-            obj1.addProperty("text", text);
-            array.add(obj1);
-
-            if (imgTexts != null && !imgTexts.isEmpty()) {
-                imgTexts.forEach(img -> {
-                    JsonObject obj2 = new JsonObject();
-                    obj2.addProperty("type", "image_url");
-                    JsonObject imgObj = new JsonObject();
-                    if (!img.startsWith("data:image")) {
-                        imgObj.addProperty("url", "data:image/jpeg;base64," + img);
-                    } else {
-                        imgObj.addProperty("url", img);
-                    }
-                    obj2.add("image_url", imgObj);
-                    array.add(obj2);
-                });
-            }
-
-            req.add("content", array);
-        }
-        return req;
-    }
-
-    private JsonObject getReq(LLM llm, String text, String imgText) {
-        JsonObject req = new JsonObject();
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
-            JsonArray parts = new JsonArray();
-            JsonObject obj = new JsonObject();
-            obj.addProperty("text", text);
-            parts.add(obj);
-
-            if (StringUtils.isNotEmpty(imgText)) {
-                JsonObject obj2 = new JsonObject();
-                JsonObject objImg = new JsonObject();
-                objImg.addProperty("mime_type", "image/jpeg");
-                objImg.addProperty("data", imgText);
-                obj2.add("inline_data", objImg);
-                parts.add(obj2);
-            }
-
-            req.add("parts", parts);
-        }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
-                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
-            req.addProperty("role", "user");
-            JsonArray array = new JsonArray();
-
-            JsonObject obj1 = new JsonObject();
-            obj1.addProperty("type", "text");
-            obj1.addProperty("text", text);
-            array.add(obj1);
-
-            if (StringUtils.isNotEmpty(imgText)) {
-                JsonObject obj2 = new JsonObject();
-                obj2.addProperty("type", "image_url");
-                JsonObject img = new JsonObject();
-                img.addProperty("url", "data:image/jpeg;base64," + imgText);
-                obj2.add("image_url", img);
-                array.add(obj2);
-            }
-
-            req.add("content", array);
-        }
-        return req;
     }
 
     public Pair<LLM, McpModel> getLLM(String from) {
@@ -178,6 +73,7 @@ public class LLMService {
         String selectedProvider = setting.getSelectedProvider();
         String apiKey = "";
         String model = "";
+        String mifyProvider = "";
 
         if (StringUtils.isNotBlank(selectedProvider)) {
             selectedProvider = selectedProvider.toLowerCase(Locale.ROOT);
@@ -224,6 +120,15 @@ public class LLMService {
                     model = gemini.getModel();
                     break;
                 }
+                case "mify": {
+                    McpModelSettingDTO.Mify mify = setting.getMify();
+                    provider = LLMProvider.valueOf("MIFY_GATEWAY");
+                    apiKey = mify.getApiKey();
+                    url = mify.getBaseUrl();
+                    model = mify.getModel();
+                    mifyProvider = mify.getProvider();
+                    break;
+                }
                 default: {
                     provider = LLMProvider.valueOf("GOOGLE_2");
                     apiKey = System.getenv(provider.getEnvName());
@@ -237,12 +142,13 @@ public class LLMService {
         LLMConfig.LLMConfigBuilder configBuilder = LLMConfig.builder();
         if (provider.equals(LLMProvider.OPENROUTER)
                 || provider.equals(LLMProvider.GOOGLE_2)
-                || provider.equals(LLMProvider.OPENAICOMPATIBLE)) {
+                || provider.equals(LLMProvider.OPENAICOMPATIBLE)
+                || provider.equals(LLMProvider.MIFY_GATEWAY)) {
             if (StringUtils.isNotEmpty(url)) {
                 configBuilder.url(url);
             }
         }
-        LLMConfig config = configBuilder.llmProvider(provider).build();
+        LLMConfig config = configBuilder.llmProvider(provider).token(apiKey).customConfig(CustomConfig.DUMMY).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2
                 && StringUtils.isNotEmpty(System.getenv("GOOGLE_AI_GATEWAY"))) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
@@ -251,6 +157,13 @@ public class LLMService {
         if (config.getLlmProvider() == LLMProvider.OPENROUTER
                 && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
             config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        }
+
+        if (config.getLlmProvider() == LLMProvider.MIFY_GATEWAY) {
+            CustomConfig customConfig = new CustomConfig();
+            customConfig.setModel(model);
+            customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, mifyProvider);
+            config.setCustomConfig(customConfig);
         }
 
         return Pair.of(new LLM(config), new McpModel(apiKey, model));

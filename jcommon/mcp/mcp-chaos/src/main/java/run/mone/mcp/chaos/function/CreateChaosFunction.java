@@ -3,6 +3,8 @@ package run.mone.mcp.chaos.function;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.http.HttpClient;
 
@@ -16,7 +18,7 @@ import com.google.gson.JsonObject;
 // 处理不同种类型的混沌故障演练
 @Data
 @Slf4j
-public class CreateChaosFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class CreateChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_creator";
 
@@ -113,6 +115,9 @@ public class CreateChaosFunction implements Function<Map<String, Object>, Flux<M
         String taskType = getStringParam(params, "taskType");
         String depth = getStringParam(params, "depth");
         String operateParam = getOperateParam(taskType, depth);
+
+        String userName = getStringParam(params, Const.USER_INTERNAL_NAME);
+        log.info("apply userName create chaos user:{}", userName);
         
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("taskType", getFinalType(taskType));
@@ -123,7 +128,7 @@ public class CreateChaosFunction implements Function<Map<String, Object>, Flux<M
         queryParams.put("projectName", "chaos-mcp");
         queryParams.put("duration", getStringParam(params, "duration"));
         queryParams.put("containerName", "main");
-        queryParams.put("createUser", getStringParam(params, "userName"));
+        queryParams.put("createUser", userName);
         queryParams.put("containerNum", getStringParam(params, "containerNum"));
         queryParams.put("operateParam", operateParam);
         
@@ -165,5 +170,10 @@ public class CreateChaosFunction implements Function<Map<String, Object>, Flux<M
             case "11" -> "1";
             default -> "2";
         };
+    }
+
+    @Override
+    public String getToolScheme() {
+        return chaosToolSchema;
     }
 }

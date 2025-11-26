@@ -34,8 +34,12 @@ public class RedisPlugin implements IPlugin {
 
     @Override
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
-        Redis redis = new Redis();
         Config config = ioc.getBean(Config.class);
+        if (config.get("close_redis_plugin", "false").equals("true")) {
+            return;
+        }
+
+        Redis redis = new Redis();
         redis.setRedisHosts(config.get("redis_hosts", ""));
         redis.setServerType(config.get("redis_type", ""));
         redis.init();

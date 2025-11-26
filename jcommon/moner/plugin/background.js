@@ -277,10 +277,102 @@ function connectWebSocket() {
                                         },
                                         args: [selector]
                                     });
+                                } else if (action.attributes.name === 'focus') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: (selector) => {
+                                            const element = document.querySelector(selector);
+                                            if (element) {
+                                                element.focus();
+                                                // 模拟用户焦点，触发相关事件
+                                                element.dispatchEvent(new Event('focus', { bubbles: true }));
+                                            }
+                                        },
+                                        args: [selector]
+                                    });
+                                } else if (action.attributes.name === 'search') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: (selector, value) => {
+                                            const element = document.querySelector(selector);
+                                            if (element) {
+                                                // 聚焦元素
+                                                element.focus();
+                                                // 设置搜索值
+                                                if (element.tagName.toLowerCase() === 'input') {
+                                                    element.value = value;
+                                                    // 触发输入事件
+                                                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                                                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                                                    // 触发搜索事件（如果支持的话）
+                                                    if (element.type === 'search') {
+                                                        element.dispatchEvent(new Event('search', { bubbles: true }));
+                                                    }
+                                                    // 模拟按下Enter键来触发搜索
+                                                    element.dispatchEvent(new KeyboardEvent('keydown', {
+                                                        key: 'Enter',
+                                                        keyCode: 13,
+                                                        bubbles: true
+                                                    }));
+                                                    element.dispatchEvent(new KeyboardEvent('keyup', {
+                                                        key: 'Enter',
+                                                        keyCode: 13,
+                                                        bubbles: true
+                                                    }));
+                                                }
+                                            }
+                                        },
+                                        args: [selector, action.attributes.value]
+                                    });
+                                } else if (action.attributes.name === 'select') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: (selector, value) => {
+                                            const element = document.querySelector(selector);
+                                            if (element) {
+                                                element.focus();
+                                                if (element.tagName.toLowerCase() === 'select') {
+                                                    // 对于select元素，按值或文本选择
+                                                    element.value = value;
+                                                    // 如果按值没找到，尝试按文本内容选择
+                                                    if (!element.value || element.value !== value) {
+                                                        const options = Array.from(element.options);
+                                                        const optionByText = options.find(option =>
+                                                            option.text.trim().toLowerCase() === value.toLowerCase() ||
+                                                            option.text.trim() === value
+                                                        );
+                                                        if (optionByText) {
+                                                            element.value = optionByText.value;
+                                                        }
+                                                    }
+                                                    // 触发change事件
+                                                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                                                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                                                } else if (element.getAttribute('role') === 'combobox' ||
+                                                         element.getAttribute('role') === 'listbox') {
+                                                    // 处理ARIA下拉框
+                                                    element.click(); // 先点击打开下拉框
+                                                    setTimeout(() => {
+                                                        // 查找选项
+                                                        const options = document.querySelectorAll('[role="option"]');
+                                                        const targetOption = Array.from(options).find(option =>
+                                                            option.textContent.trim().toLowerCase() === value.toLowerCase() ||
+                                                            option.textContent.trim() === value
+                                                        );
+                                                        if (targetOption) {
+                                                            targetOption.click();
+                                                        }
+                                                    }, 200);
+                                                }
+                                            }
+                                        },
+                                        args: [selector, action.attributes.value]
+                                    });
                                 }
                                 
                                 await sendWebSocketMessage(JSON.stringify({
                                     actionType: 'action',
+                                    attributes: action.attributes,
                                     success: true,
                                     details: {
                                         selector: selector,
@@ -1181,7 +1273,7 @@ async function removeHighlightIfNeeded(tabId, shouldRemove = false) {
 stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
     try {
         // 添加延迟确保页面重绘完成
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2000ms 延迟
 
         // 使用stateUpdate中的tabId，不再需要查询当前tab
         if (!stateUpdate.tabId) {

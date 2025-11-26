@@ -37,6 +37,16 @@ public class Message implements Serializable {
 
     private long createTime;
 
+    private String clientId;
+
+    private String voiceBase64;
+
+    private String userId;
+
+    private String agentId;
+
+    private boolean error;
+
     public Message(String content) {
         this(content, "user", null, null);
     }

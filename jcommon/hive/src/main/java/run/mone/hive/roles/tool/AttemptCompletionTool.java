@@ -5,6 +5,12 @@ package run.mone.hive.roles.tool;
  * @date 2025/4/9 11:10
  */
 public class AttemptCompletionTool implements ITool {
+
+    @Override
+    public boolean completed() {
+       return true;
+    }
+
     @Override
     public String getName() {
         return "attempt_completion";

@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.http.HttpClient;
 
@@ -16,7 +18,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class ChaosFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class ChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_executor";
 
@@ -70,7 +72,8 @@ public class ChaosFunction implements Function<Map<String, Object>, Flux<McpSche
             try {
                 String type = getStringParam(args, "type");
                 String host = System.getenv().getOrDefault("CHAOS_HOST", "");
-                String userName = getStringParam(args, "userName");
+                String userName = getStringParam(args, Const.USER_INTERNAL_NAME);
+                log.info("apply userName:{}, type:{},host:{}", userName,type,host);
                 
                 if (host.isEmpty()) {
                     log.warn("CHAOS_HOST 环境变量未设置，使用默认空值");
@@ -283,4 +286,8 @@ public class ChaosFunction implements Function<Map<String, Object>, Flux<McpSche
         }
     }
 
+    @Override
+    public String getToolScheme() {
+        return chaosToolSchema;
+    }
 }

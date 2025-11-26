@@ -87,6 +87,8 @@ public class RpcServer implements Service {
      */
     private boolean regNacos = true;
 
+    private boolean useVirtual = false;
+
 
     public RpcServer(String nacosAddrs, String name) {
         this(nacosAddrs, name, true);
@@ -97,7 +99,16 @@ public class RpcServer implements Service {
         this.nacosAddrs = nacosAddrs;
         this.name = name;
         this.regNacos = regNacos;
-        this.defaultPool = creatThreadPool(200);
+        this.defaultPool = creatThreadPool(1000, 20000);
+
+        String v = System.getenv("UseVirtual");
+        if ("true".equals(v)) {
+            logger.info("use virtual");
+            this.defaultPool = Executors.newVirtualThreadPerTaskExecutor();
+            useVirtual = true;
+        }
+
+
         if (regNacos) {
             String[] ss = this.nacosAddrs.split("\\$");
             Arrays.stream(ss).forEach(it -> {
@@ -109,10 +120,10 @@ public class RpcServer implements Service {
         }
     }
 
-    private ThreadPoolExecutor creatThreadPool(int size) {
+    private ThreadPoolExecutor creatThreadPool(int size, int queueSize) {
         return new ThreadPoolExecutor(size, size,
                 0L, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(1000));
+                new ArrayBlockingQueue<>(queueSize));
     }
 
     @Override
@@ -145,8 +156,9 @@ public class RpcServer implements Service {
         server = new NettyRemotingServer(config, listener);
         processorList.stream().forEach(it -> {
             ExecutorService p = defaultPool;
+            //指定了 poolsize 就会用线程池而不是协程
             if (it.getObject2().poolSize() > 0) {
-                p = creatThreadPool(it.getObject2().poolSize());
+                p = creatThreadPool(it.getObject2().poolSize(), it.getObject2().queueSize());
             }
             server.registerProcessor(it.getObject1(), it.getObject2(), p);
         });

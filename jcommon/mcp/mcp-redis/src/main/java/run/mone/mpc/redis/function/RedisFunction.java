@@ -2,21 +2,23 @@
 package run.mone.mpc.redis.function;
 
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 @Data
 @Slf4j
-public class RedisFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class RedisFunction implements McpFunction {
 
-    private String name = "redisOperation";
+    private String name = "stream_redisOperation";
 
     private String desc = "Redis operations including string operations, list operations, set operations, hash operations, and key operations";
 
@@ -62,19 +64,18 @@ public class RedisFunction implements Function<Map<String, Object>, McpSchema.Ca
             }
             """;
 
+    @ToString.Exclude
     private JedisPool jedisPool;
 
     public RedisFunction() {
-        this.jedisPool = new JedisPool("localhost", 6379);
+        this.jedisPool = new JedisPool("127.0.0.1", 6379, "default",System.getenv("REDIS_PASS"));
     }
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String operation = (String) arguments.get("operation");
         String key = (String) arguments.get("key");
-
         log.info("operation: {} key: {}", operation, key);
-
         try (Jedis jedis = jedisPool.getResource()) {
             String result = switch (operation) {
                 case "set" -> setOperation(jedis, key, (String) arguments.get("value"));
@@ -95,12 +96,17 @@ public class RedisFunction implements Function<Map<String, Object>, McpSchema.Ca
                 case "hdel" -> hdelOperation(jedis, key, (List<String>) arguments.get("field"));
                 case "hgetall" -> hgetallOperation(jedis, key);
                 case "keys" -> keysOperation(jedis, (String) arguments.get("pattern"));
-                default -> throw new IllegalArgumentException("Unknown operation: " + operation);
+                default -> "ok";
             };
-
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            return Flux.create(sink->{
+                sink.next(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false));
+                sink.complete();
+            });
         } catch (Exception e) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
+            return Flux.create(sink->{
+                sink.next(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
+                sink.complete();
+            });
         }
     }
 

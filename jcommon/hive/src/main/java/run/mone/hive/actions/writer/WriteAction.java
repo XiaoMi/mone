@@ -6,6 +6,7 @@ import run.mone.hive.actions.ActionGraph;
 import run.mone.hive.actions.ActionNode;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Expr;
@@ -18,19 +19,20 @@ import java.util.concurrent.CompletableFuture;
  * @author goodjava@qq.com
  * Action for breaking down requirements into specific tasks
  * 本质上是允许Action 里边执行 Dag ActionNode
+ * 一个Action 底层可以是一个复杂的Dag
  */
 @Slf4j
 public class WriteAction extends Action {
 
     public WriteAction() {
-        super("写作", "写出好的文章");
+        super("作家", "写出好的文章");
     }
 
     @Override
     public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             ActionNode node0 = new ActionNode("node0", String.class, "准备信息", this.getRole());
-            node0.setLlm(new LLM(LLMConfig.builder().build()) {
+            node0.setLlm(new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build()) {
                 @Override
                 public CompletableFuture<String> ask(String prompt) {
                     StringBuilder instruction = new StringBuilder();

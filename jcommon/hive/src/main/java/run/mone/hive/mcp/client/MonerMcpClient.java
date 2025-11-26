@@ -1,92 +1,153 @@
 package run.mone.hive.mcp.client;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.mutable.MutableObject;
-import run.mone.hive.common.GsonUtils;
-import run.mone.hive.common.McpResult;
-import run.mone.hive.common.Result;
-import run.mone.hive.common.Safe;
+import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import run.mone.hive.common.*;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.ReactorRole;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 @Slf4j
 public class MonerMcpClient {
 
-    public static void mcpCall(List<Result> list, String from, MutableObject<McpResult> callToolResult, AtomicBoolean completion, MonerMcpInterceptor monerMcpInterceptor) {
-        Safe.run(() -> {
-            for(Result it : list) {
-                if (it.getTag().equals("use_mcp_tool")) {
-                    String serviceName = it.getKeyValuePairs().get("server_name");
-                    String toolName = it.getKeyValuePairs().get("tool_name");
-                    String arguments = it.getKeyValuePairs().get("arguments");
-//                    arguments = cleanJsonString(arguments);
-                    Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
+    public static McpResult mcpCall(ReactorRole role, ToolDataInfo toolDataInfo, String from, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink, Function<String, McpFunction> f) {
+        return Safe.call(() -> {
+            String serviceName = toolDataInfo.getKeyValuePairs().get("server_name");
+            String toolName = toolDataInfo.getKeyValuePairs().get("tool_name");
+            String arguments = toolDataInfo.getKeyValuePairs().getOrDefault("arguments", "");
+            String internalName = toolDataInfo.getKeyValuePairs().getOrDefault(Const.USER_INTERNAL_NAME, "");
+            if (StringUtils.isEmpty(internalName) && role != null) {
+                internalName = role.getRoleConfig().getOrDefault(Const.USER_INTERNAL_NAME, "");
+            }
 
-                    // 调用before方法并检查返回值
-                    boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
+            Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
+            if (StringUtils.isNotEmpty(toolDataInfo.getFrom())) {
+                toolArguments.put(Constants.FROM, toolDataInfo.getFrom());
+            }
+            toolArguments.put(Const.USER_ID, toolDataInfo.getUserId());
+            toolArguments.put(Const.USER_INTERNAL_NAME, internalName);
+            toolArguments.put(Const.AGENT_ID, toolDataInfo.getAgentId());
+            Safe.run(() -> {
+                toolArguments.put(Const.OWNER_ID, toolDataInfo.getUserId()+"_"+toolDataInfo.getAgentId());
+            });
+            if (null != toolDataInfo.getRole()) {
+                toolArguments.put(Const.ROLE, toolDataInfo.getRole());
+            }
 
-                    if (shouldProceed) {
-                        // 只有当before返回true时才调用工具
-                        McpSchema.CallToolResult toolRes = McpHubHolder.get(from).callTool(serviceName, toolName,
-                                toolArguments);
-
-                        monerMcpInterceptor.after(toolName, toolRes);
-
-                        log.info("执行{} 的 工具{}, toolRes:{}", serviceName, toolName, toolRes);
-                        callToolResult.setValue(McpResult.builder().toolName(toolName).content(toolRes.content().get(0)).build());
+            AtomicBoolean error = new AtomicBoolean(false);
+            // 调用before方法并检查返回值
+            boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
+            if (shouldProceed) {
+                McpSchema.CallToolResult toolRes = null;
+                //流式调用
+                if (toolName.startsWith("stream")) {
+                    StringBuilder sb = new StringBuilder();
+                    //内部调用(直接调用本地的mcp)
+                    if (serviceName.equals(Const.INTERNAL_SERVER)) {
+                        log.info("call internal mcp:{} type:{}", toolName, "stream");
+                        internalCall(sink, f, toolName, toolArguments, sb, error);
                     } else {
-                        // 如果before返回false，构造一个文本内容的结果
-                        log.info("工具 {} 执行被拦截，不执行实际调用", toolName);
-                        McpSchema.TextContent textContent = new McpSchema.TextContent("操作已取消，可以结束此轮操作。");
-                        callToolResult.setValue(McpResult.builder().toolName(toolName).content(textContent).build());
+                        //外部的mcp
+                        call(role, from, sink, serviceName, toolName, toolArguments, sb, error);
                     }
-                    // 确保只执行一个use_mcp_tool
-                    return;
-                }else if (it.getTag().equals("attempt_completion") || it.getTag().equals("ask_followup_question") || it.getTag().equals("chat")) {
-                    completion.set(true);
-                    return;
+                    log.debug("res:{}", sb);
+                    toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
+                } else { //非流式调用
+                    if (serviceName.equals(Const.INTERNAL_SERVER)) {
+                        log.info("call internal mcp:{} type:{}", toolName, "internal");
+                        McpFunction function = f.apply(toolName);
+                        Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
+                        String c = function.formatResult(((McpSchema.TextContent) flux.blockLast().content().get(0)).text());
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(c)).error(error.get()).build();
+                    }
+                    // 只有当before返回true时才调用工具
+                    McpHub hub = null;
+                    if (null != role) {
+                        //调用绑定在这个用户的mcp
+                        hub = role.getMcpHub();
+                    } else {
+                        //主要用来调用chat
+                        hub = McpHubHolder.get(from);
+                    }
+                    if (null == hub) {
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
+                    }
+                    try {
+                        toolRes = hub.callTool(serviceName, toolName,
+                                toolArguments);
+                    } catch (Throwable ex) {
+                        log.error(ex.getMessage(),ex);
+                        error.set(true);
+                    }
                 }
+                monerMcpInterceptor.after(toolName, toolRes);
+                return McpResult.builder().toolName(toolName).content(toolRes.content().get(0)).error(error.get()).build();
+            } else {
+                log.info("工具 {} 执行被拦截，不执行实际调用", toolName);
+                McpSchema.TextContent textContent = new McpSchema.TextContent("操作已取消，可以结束此轮操作。");
+                return McpResult.builder().toolName(toolName).content(textContent).build();
             }
         });
     }
 
-    public static String parseContent(McpSchema.Content content) {
-        if (content instanceof McpSchema.TextContent) {
-            return ((McpSchema.TextContent) content).text();
-        } else if (content instanceof McpSchema.ImageContent) {
-            McpSchema.ImageContent imageContent = (McpSchema.ImageContent) content;
-            return imageContent.data();
-        } 
-        return "不支持的内容类型";
+    private static void call(ReactorRole role, String from, FluxSink sink, String serviceName, String toolName, Map<String, Object> toolArguments, StringBuilder sb, AtomicBoolean error) {
+        Safe.run(() -> {
+            McpHub hub = null;
+            if (null != role) {
+                //调用绑定在这个用户的mcp
+                hub = role.getMcpHub();
+            } else {
+                //主要用来调用chat
+                hub = McpHubHolder.get(from);
+            }
+            hub.callToolStream(serviceName, toolName, toolArguments)
+                    .doOnNext(tr -> {
+                                if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                    Optional.ofNullable(sink).ifPresent(s -> {
+                                        //直接返回给前端
+                                        s.next(tc.text());
+                                        sb.append(tc.text());
+                                    });
+                                    if (null == sink) {
+                                        sb.append(tc.text());
+                                    }
+                                }
+                            }
+                    )
+                    .doOnError(ex -> {
+                        error.set(true);
+                        sb.append(ex.getMessage());
+                        sink.next(ex.getMessage());
+                    })
+                    .blockLast();
+        });
     }
 
-    private static String cleanJsonString(String json) {
-        if (json == null) {
-            return "{}";
-        }
-        
-        // 移除所有控制字符
-        json = json.replaceAll("[\\x00-\\x1F\\x7F]", "");
-        
-        // 移除零宽字符
-        json = json.replaceAll("[\\u200B-\\u200D\\uFEFF]", "");
-        
-        // 移除其他可能导致问题的特殊字符
-        json = json.replaceAll("[\\u2028\\u2029]", "");
-        
-        // 确保字符串是有效的 JSON 格式
-        if (!json.trim().startsWith("{")) {
-            json = "{" + json;
-        }
-        if (!json.trim().endsWith("}")) {
-            json = json + "}";
-        }
-        
-        return json;
+    private static void internalCall(FluxSink sink, Function<String, McpFunction> f, String toolName, Map<String, Object> toolArguments, StringBuilder sb, AtomicBoolean error) {
+        McpFunction function = f.apply(toolName);
+        Flux<McpSchema.CallToolResult> flux = function.apply(toolArguments);
+        flux.doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
+            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                //直接返回给前端
+                s.next(tc.text());
+                sb.append(tc.text());
+            }
+        })).doOnError(e->{
+            error.set(true);
+                })
+                .blockLast();
     }
+
 
 }

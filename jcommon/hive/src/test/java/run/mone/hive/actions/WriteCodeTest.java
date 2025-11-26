@@ -20,8 +20,6 @@ class WriteCodeTest {
     private WriteCode writeCode;
     private CodingContext context;
 
-    private LLM baseLLM = new LLM(LLMConfig.builder().json(false).build());
-
     @BeforeEach
     void setUp() {
         context = new CodingContext();

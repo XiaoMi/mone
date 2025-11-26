@@ -37,6 +37,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 
@@ -49,6 +50,29 @@ public class CommonTest {
     @Test
     public void testBoolean() {
         System.out.println(Boolean.TRUE.toString());
+    }
+
+
+    @Test
+    public void testTimeout() {
+        Future f = CompletableFuture.supplyAsync(()->{
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return "abc";
+        });
+        try {
+            f.get(1, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("finish");
     }
 
 

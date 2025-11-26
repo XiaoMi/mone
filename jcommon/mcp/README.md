@@ -26,6 +26,10 @@ The mcp-redis module is responsible for Redis operations. It offers functionalit
 
 This module provides shell operation capabilities. It allows execution of shell commands and scripts, making it possible to perform system-level operations within the MCP framework. The module includes implementations for different operating systems, such as the MacShellFunction for macOS.
 
+### mcp-custom-model
+
+This module is responsible for custom model operations. It supports text classification and intent recognition.
+
 Each of these sub-modules contributes to the overall functionality of the MCP, providing a comprehensive set of tools for various database and system operations.
 ```
 

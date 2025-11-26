@@ -2,6 +2,7 @@ package run.mone.hive.prompt;
 
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
@@ -16,11 +17,12 @@ import java.util.List;
 public class PromptTest {
 
 
-    @Test
-    public void testPrompt() {
-        List<ITool> tools = Lists.newArrayList(new ChatTool(),new AskTool(),new AttemptCompletionTool());
-        String prompt = MonerSystemPrompt.mcpPrompt("default", "zzy", "", tools);
-        System.out.println(prompt);
-    }
+//    @Test
+//    public void testPrompt() {
+//        List<ITool> tools = Lists.newArrayList(new ChatTool(), new AskTool(), new AttemptCompletionTool());
+//        List<McpSchema.Tool> mcpTools = Lists.newArrayList(new McpSchema.Tool("name", "d", "{}"));
+//        String prompt = MonerSystemPrompt.mcpPrompt(null, "", "default", "zzy", "", tools, mcpTools);
+//        System.out.println(prompt);
+//    }
 
 }

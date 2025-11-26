@@ -1,6 +1,6 @@
 package run.mone.mcp.idea.composer.function;
 
-import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -8,6 +8,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
+import run.mone.hive.common.Constants;
+import run.mone.hive.common.Safe;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.composer.config.Const;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCall;
@@ -15,23 +18,34 @@ import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Data
 @Slf4j
-public class ComposerFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+public class ComposerFunction implements McpFunction {
 
     public ComposerFunction(String port) {
         this.ideaPort = port;
     }
 
-    private String name = "stream_composer";
+    private static String name = "stream_composer";
 
-    private String desc = "根据需求或者需求图片，生成业务代码或者单元测试等一切涉及项目的改动，支持创建新文件、修改现有代码、重构代码结构、添加注释文档、修复bug、更新配置文件（如pom.xml）、生成API接口、编写数据库操作逻辑等。可以处理项目中的任何文件类型，包括但不限于Java、XML、YAML、JSON、SQL等。如果有图片，无需知道图片内容，只按要求返回即可";
+    private static String desc = "根据需求或者需求图片，生成业务代码或者单元测试等一切涉及项目的改动，支持创建新文件、修改现有代码、重构代码结构、添加注释文档、修复bug、添加高危元素注解、更新配置文件（如pom.xml）、生成API接口、编写数据库操作逻辑等。可以处理项目中的任何文件类型，包括但不限于Java、XML、YAML、JSON、SQL等。如果有图片，无需知道图片内容，只按要求返回即可";
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public String getToolScheme() {
+        return toolScheme;
+    }
 
     private String ideaPort;
 
-    private String toolScheme = """
+    private static String toolScheme = """
             {
                 "type": "object",
                 "properties": {
@@ -56,10 +70,27 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         try {
             JsonObject req = new JsonObject();
-            req.addProperty("from", "idea_mcp");
+
+            if (req.has(Constants.FROM)) {
+                req.addProperty("from", req.get(Constants.FROM).toString());
+            } else {
+                req.addProperty("from", "idea_mcp");
+            }
+
             req.addProperty("requirement", (String) arguments.get("requirement"));
-            req.addProperty("projectName", (String) arguments.get("projectName"));
-            req.add("fileLists", JsonParser.parseString((String) arguments.get("fileLists")));
+
+            if (arguments.containsKey("projectName")) {
+                req.addProperty("projectName", (String) arguments.get("projectName"));
+            }
+
+            Safe.run(() -> {
+                if (arguments.containsKey("fileLists")) {
+                    req.add("fileLists", JsonParser.parseString((String) arguments.get("fileLists")));
+                } else {
+                    req.add("fileLists", new JsonArray());
+                }
+            });
+
             req.addProperty("folder", (String) arguments.get("folder"));
             req.addProperty("codebase", (Boolean) arguments.get("codebase"));
             req.addProperty("analyze", (Boolean) arguments.get("analyze"));
@@ -121,7 +152,7 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
 
     private boolean get(JsonObject obj, String key, boolean defaultValue) {
         if (obj.has(key)) {
-            if(!(obj.get(key) instanceof JsonNull)) {
+            if (!(obj.get(key) instanceof JsonNull)) {
                 return Boolean.valueOf(obj.get(key).getAsString());
             }
         }
@@ -130,7 +161,7 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
 
     private String get(JsonObject obj, String key, String defaultValue) {
         if (obj.has(key)) {
-            if(!(obj.get(key) instanceof JsonNull)) {
+            if (!(obj.get(key) instanceof JsonNull)) {
                 return obj.get(key).getAsString();
             }
         }

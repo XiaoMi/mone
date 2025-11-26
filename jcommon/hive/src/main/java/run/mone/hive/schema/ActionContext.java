@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import reactor.core.publisher.FluxSink;
 
 import java.util.Map;
 
@@ -18,8 +19,28 @@ import java.util.Map;
 @NoArgsConstructor
 public class ActionContext {
 
+    private String roleName;
+
+    private Message msg;
+
     private JsonObject ctx = new JsonObject();
 
+    private RoleContext.ReactMode reactMode;
+
     private Map<String, String> data;
+
+    //和外部通信的
+    private FluxSink sink;
+
+    private String lastTool;
+
+
+    public void reset() {
+        if (null != sink) {
+            sink.complete();
+        }
+        lastTool = "";
+        msg = null;
+    }
 
 }

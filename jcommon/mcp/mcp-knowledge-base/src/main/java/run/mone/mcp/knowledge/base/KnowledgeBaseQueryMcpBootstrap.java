@@ -6,14 +6,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.knowledge.base")
+@ComponentScan(basePackages = {"run.mone.mcp.knowledge.base", "run.mone.hive.mcp.service"})
 @Slf4j
 public class KnowledgeBaseQueryMcpBootstrap {
     public static void main(String[] args) {
-        try {
-            SpringApplication.run(KnowledgeBaseQueryMcpBootstrap.class, args);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
+        SpringApplication.run(KnowledgeBaseQueryMcpBootstrap.class, args);
     }
 }

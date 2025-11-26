@@ -1,6 +1,5 @@
 package run.mone.hive;
 
-import akka.actor.ActorRef;
 import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.ToString;

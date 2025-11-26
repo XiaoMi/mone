@@ -112,6 +112,19 @@ public class Prompt {
 
              IMPORTANT: When choosing databases or npm packages, prefer options that don't rely on native binaries. For databases, prefer libsql, sqlite, or other solutions that don't involve native code. WebContainer CANNOT execute arbitrary native binaries.
 
+             IMPORTANT: When handling high-risk elements in code (such as those involving money or sensitive operations), you should:
+             - Add the @HighRisk annotation to the relevant methods
+             - Import com.xiaomi.mone.docs.annotations.dubbo.HighRisk if not already imported
+             - Example:
+               ```java
+               import com.xiaomi.mone.docs.annotations.dubbo.HighRisk;
+               
+               @HighRisk
+               public BigDecimal calculatePayment() {
+                   // method implementation
+               }
+               ```
+
              Available shell commands: cat, chmod, cp, echo, hostname, kill, ln, ls, mkdir, mv, ps, pwd, rm, rmdir, xxd, alias, cd, clear, curl, env, false, getconf, head, sort, tail, touch, true, uptime, which, code, jq, loadenv, node, python3, wasm, xdg-open, command, exit, export, source
 
              EXTRA: Here are some extra constraint you should follow: ${prompt_value('rulesForAi','do your best!')}\s

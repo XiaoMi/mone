@@ -1,8 +1,8 @@
 package run.mone.hive.reactor;
 
 import com.google.common.collect.Lists;
-import com.google.gson.JsonSyntaxException;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
@@ -11,15 +11,47 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author goodjava@qq.com
  * @date 2025/4/5 21:16
  */
 public class ReactorTest {
+
+
+    @Test
+    public void testOptional() {
+        Optional<String> optional = Optional.of("abc");
+        String v = optional.map(it->it.toUpperCase(Locale.ROOT)).orElse("ccc");
+        System.out.println(v);
+    }
+
+    @Test
+    public void testStream() {
+        @NotNull List<Integer> list = Stream.of(1, 2, 3).map(it -> it + 1).filter(it -> it % 2 == 0).toList();
+        System.out.println(list);
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void test2() {
+        Flux.create(sink->{
+            sink.complete();
+            sink.complete();
+            System.out.println("complete");
+        }).subscribe();
+
+        System.in.read();
+    }
+
 
     @Test
     public void testMono() {

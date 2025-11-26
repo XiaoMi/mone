@@ -2,21 +2,27 @@ package run.mone.hive.prompt;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.Nullable;
+import run.mone.hive.bo.InternalServer;
+import run.mone.hive.bo.AgentMarkdownDocument;
 import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
+import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
 import run.mone.hive.mcp.hub.McpHub;
-import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.schema.Message;
 import run.mone.hive.utils.CacheService;
+import run.mone.hive.utils.FileUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -41,62 +47,231 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static final String mcpPrompt(String from, String name, String customInstructions, List<ITool> tools) {
+    //当前工作目录
+    public static String cwd(ReactorRole role) {
+        if (role.getRoleConfig().containsKey(Constants.WORKSPACE_PATH)) {
+            return role.getRoleConfig().get(Constants.WORKSPACE_PATH);
+        }
+        return role.getRoleConfig().getOrDefault("cwd", getHomeDir());
+    }
+
+    public static String hiveCwd(ReactorRole role) {
+        String workspacePath = cwd(role);
+        return workspacePath
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
+                + ".hive";
+    }
+
+    /**
+     * 获取自定义指令
+     * <p>
+     * 首先尝试从工作目录下的.hive/agent.md文件读取自定义指令
+     * 如果文件不存在或读取失败，则从角色配置中获取
+     *
+     * @param role               反应堆角色
+     * @param customInstructions 默认指令（如果文件不存在且配置中无指令时使用）
+     * @return 自定义指令内容
+     */
+    public static String customInstructions(ReactorRole role, String customInstructions) {
+        String workspacePath = cwd(role);
+        if (StringUtils.isBlank(workspacePath)) {
+            log.warn("工作空间路径为空，使用默认指令");
+            return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+        }
+
+        // 构建.hive/agent.md文件路径
+        String mdStr = getAgentMd(workspacePath);
+        if (mdStr != null) {
+            return mdStr;
+        }
+
+        // 从角色配置中获取自定义指令，如果不存在则使用默认指令
+        return role.getRoleConfig().getOrDefault("customInstructions", customInstructions);
+    }
+
+    /**
+     * 获取.hive目录下所有md文件的内容并拼接
+     *
+     * @param workspacePath 工作空间路径
+     * @return 拼接后的md内容，如果没有找到任何md文件则返回null
+     */
+    @Nullable
+    private static String getAllMdFiles(String workspacePath) {
+        String hiveDir = workspacePath
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
+                + ".hive";
+
+        File hiveDirFile = new File(hiveDir);
+        if (!hiveDirFile.exists() || !hiveDirFile.isDirectory()) {
+            log.debug(".hive目录不存在: {}", hiveDir);
+            return null;
+        }
+
+        // 获取所有.md文件
+        File[] mdFiles = hiveDirFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".md"));
+        if (mdFiles == null || mdFiles.length == 0) {
+            log.debug(".hive目录下没有找到md文件: {}", hiveDir);
+            return null;
+        }
+
+        StringBuilder result = new StringBuilder();
+        boolean hasContent = false;
+
+        // 按文件名排序，确保输出顺序一致
+        Arrays.sort(mdFiles, (f1, f2) -> f1.getName().compareTo(f2.getName()));
+
+        for (File mdFile : mdFiles) {
+            try {
+                String content = FileUtils.readMarkdownFile(mdFile.getAbsolutePath());
+                if (StringUtils.isNotBlank(content)) {
+                    if (hasContent) {
+                        result.append("\n\n");
+                    }
+                    result.append(content);
+                    hasContent = true;
+                    log.debug("成功读取md文件: {}", mdFile.getName());
+                }
+            } catch (Exception e) {
+                log.debug("读取md文件失败: {}, 原因: {}", mdFile.getName(), e.getMessage());
+            }
+        }
+
+        return hasContent ? result.toString() : null;
+    }
+
+    @Nullable
+    public static String getAgentMd(String workspacePath) {
+        String filePath = workspacePath
+                + (workspacePath.endsWith(File.separator) ? "" : File.separator)
+                + ".hive" + File.separator + "agent.md";
+
+        try {
+            // 尝试读取文件内容
+            String mdStr = FileUtils.readMarkdownFile(filePath);
+            if (StringUtils.isNotBlank(mdStr)) {
+                log.debug("成功从{}读取自定义指令", filePath);
+                return mdStr;
+            }
+        } catch (Exception e) {
+            log.debug("无法读取自定义指令文件: {}, 原因: {}", filePath, e.getMessage());
+        }
+        return null;
+    }
+
+
+    // 为了向后兼容，提供不带enableTaskProgress参数的重载方法
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow) {
+        return mcpPrompt(message, role, roleDescription, from, name, customInstructions, tools, mcpTools, workFlow, false);
+    }
+
+    public static String mcpPrompt(Message message, ReactorRole role, String roleDescription, String from, String name, String customInstructions, List<ITool> tools, List<McpSchema.Tool> mcpTools, String workFlow, boolean enableTaskProgress) {
         Map<String, Object> data = new HashMap<>();
+        data.put("tool_use_info", MonerSystemPrompt.TOOL_USE_INFO);
         data.put("config", "");
         data.put("name", name);
         data.put("osName", MonerSystemPrompt.getSystemName());
         data.put("defaultShell", MonerSystemPrompt.getDefaultShellName());
         data.put("homeDir", MonerSystemPrompt.getHomeDir());
-        data.put("cwd", "cwd");
-        data.put("customInstructions", customInstructions);
-
-        List<Map<String, Object>> serverList = getMcpInfo(from);
+        data.put("cwd", MonerSystemPrompt.cwd(role));
+        data.put("hiveCwd", MonerSystemPrompt.hiveCwd(role));
+        //这里也会处理下agent.md的逻辑,需要注意(这个的agent.md的优先级并不高,有可能会被后边的覆盖掉)
+        data.put("customInstructions", MonerSystemPrompt.customInstructions(role, customInstructions));
+        data.put("roleDescription", roleDescription);
+        data.put("enableTaskProgress", enableTaskProgress);
+        List<Map<String, Object>> serverList = getMcpInfo(from, role);
         data.put("serverList", serverList);
+        // 添加开关控制,如果serverList为空则不加载MCP相关内容
+        data.put("enableMcp", !serverList.isEmpty());
+        if (StringUtils.isEmpty(workFlow)) {
+            workFlow = "";
+        }
+        data.put("workflow", workFlow);
 
         //注入工具
         data.put("toolList", tools);
-        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data, Lists.newArrayList(Pair.of("invoke", new InvokeMethodFunction())));
+        //注入mcp工具
+        data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
+        data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+        data.put("toolConfig", getToolConfig(role));
+
+        //markdown文件会根本上重置这些配置
+        if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
+            String rd = """
+                    \n
+                    profile: %s
+                    goal: %s
+                    constraints: %s
+                    \n
+                    """.formatted(md.getProfile(), md.getGoal(), md.getConstraints());
+
+            data.put("name", md.getName());
+            data.put("roleDescription", rd);
+            data.put("customInstructions", md.getAgentPrompt());
+            data.put("workflow", md.getWorkflow());
+        }
+
+        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
+                Lists.newArrayList(
+                        //反射执行
+                        Pair.of("invoke", new InvokeMethodFunction()),
+                        //可以使用默认值
+                        Pair.of("value", new DefaultValueFunction())
+                ));
     }
 
-    public static List<Map<String, Object>> getMcpInfo(String from) {
-        final List<Map<String, Object>> serverList = new ArrayList<>();
-        List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
-        if (null != sl) {
-            serverList.addAll(sl);
-        } else {
-            McpHub mcpHub = McpHubHolder.get(from);
-            if (mcpHub == null) {
-                log.warn("mcpHub is null, from: {}", from);
-                return serverList;
+    private static String getToolConfig(ReactorRole role) {
+        StringBuilder sb = new StringBuilder();
+        role.getRoleConfig().forEach((key, value) -> {
+            if (key.startsWith("$")) {
+                sb.append(key).append("=").append(value).append("\n");
             }
-            McpHubHolder.get(from).getConnections().forEach((key, value) -> Safe.run(() -> {
-                Map<String, Object> server = new HashMap<>();
-                server.put("name", key);
-                server.put("args", "");
-                server.put("connection", value);
-                McpSchema.ListToolsResult tools = value.getClient().listTools();
-                String toolsStr = tools
-                        .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
-                                + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
-                        .collect(Collectors.joining("\n\n"));
-                server.put("tools", toolsStr);
-                serverList.add(server);
-            }));
-            CacheService.ins().cacheObject(CacheService.tools_key, serverList);
+        });
+        return sb.toString();
+    }
+
+    //获取mcp的信息(主要是tool的信息)
+    public static List<Map<String, Object>> getMcpInfo(String from, ReactorRole role) {
+        List<Map<String, Object>> serverList = new ArrayList<>();
+        McpHub mcpHub = role.getMcpHub();
+        if (mcpHub == null) {
+            return serverList;
         }
+        mcpHub.getConnections().forEach((key, value) -> Safe.run(() -> {
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", key);
+            server.put("args", "");
+            server.put("connection", value);
+            server.put("agent",value.getServer().getServerInfo().meta());
+            McpSchema.ListToolsResult tools = value.getClient().getTools();
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+
+            serverList.add(server);
+        }));
         return serverList;
     }
 
+    public static final String TOOL_USE_INFO = """
+            You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
+            (任何工具每次只使用一个,不要一次返回多个工具,不管是mcp tool 还是 tool,你必须严格遵守这个条款,不然系统会崩溃 thx)
+            """;
+
+
     // mcp 调用的会使用这个prompt
     public static final String MCP_PROMPT = """
-            You are ${name}, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+            You are ${name}, ${value(roleDescription,' a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.')}
             
             ====
             
+            You are very good at using tools, these are some rules for using tools and the tools you can use.
+            
+            
             TOOL USE
             
-            You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
+            ${tool_use_info}
             
             # Tool Use Formatting
             
@@ -110,12 +285,14 @@ public class MonerSystemPrompt {
             
             
             
+            <% if(enableMcp) { %>
             ## use_mcp_tool
             Description: Request to use a tool provided by a connected MCP server. Each MCP server can provide multiple tools with different capabilities. Tools have defined input schemas that specify required and optional parameters.
             Parameters:
             - server_name: (required) The name of the MCP server providing the tool
             - tool_name: (required) The name of the tool to execute
             - arguments: (required) A JSON object containing the tool's input parameters, following the tool's input schema
+            <% if(enableTaskProgress) { %>- task_progress: (optional) A checklist showing task progress after this tool use is completed. (See 'Updating Task Progress' section for more details)<% } %>
             Usage:
             <use_mcp_tool>
             <server_name>server name here</server_name>
@@ -126,10 +303,28 @@ public class MonerSystemPrompt {
               "param2": "value2"
             }
             </arguments>
+            <% if(enableTaskProgress) { %><task_progress>
+            Checklist here (optional)
+            </task_progress><% } %>
             </use_mcp_tool>
+            <% } %>
             
             # Tool Use Examples
-            ## Example 1: Requesting to use an MCP tool
+            
+            ## Example 1: Requesting to execute a command
+            
+            <execute_command>
+            <command>npm run dev</command>
+            <requires_approval>false</requires_approval>
+            <% if(enableTaskProgress) { %><task_progress>
+            - [x] Set up project structure
+            - [x] Install dependencies
+            - [ ] Run command to start server
+            - [ ] Test application
+            </task_progress><% } %>
+            </execute_command>
+            
+            ## Example 2: Requesting to use an MCP tool
             
             <use_mcp_tool>
             <server_name>weather-server</server_name>
@@ -140,7 +335,28 @@ public class MonerSystemPrompt {
               "days": 5
             }
             </arguments>
+            <% if(enableTaskProgress) { %><task_progress>
+            - [x] Set up project structure
+            - [x] Install dependencies  
+            - [ ] Get weather data
+            - [ ] Test application
+            </task_progress><% } %>
             </use_mcp_tool>
+            
+            ## execute_command
+            Description: Request to execute a CLI command on the system. Use this when you need to perform system operations or run specific commands to accomplish any step in the user's task. You must tailor your command to the user's system and provide a clear explanation of what the command does. For command chaining, use the appropriate chaining syntax for the user's shell. Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run. Commands will be executed in the current working directory: ${cwd}
+            Parameters:
+            - command: (required) The CLI command to execute. This should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.
+            - requires_approval: (required) A boolean indicating whether this command requires explicit user approval before execution in case the user has auto-approve mode enabled. Set to 'true' for potentially impactful operations like installing/uninstalling packages, deleting/overwriting files, system configuration changes, network operations, or any commands that could have unintended side effects. Set to 'false' for safe operations like reading files/directories, running development servers, building projects, and other non-destructive operations.
+            <% if(enableTaskProgress) { %>- task_progress: (optional) A checklist showing task progress after this tool use is completed. (See 'Updating Task Progress' section for more details)<% } %>
+            Usage:
+            <execute_command>
+            <command>Your command here</command>
+            <requires_approval>true or false</requires_approval>
+            <% if(enableTaskProgress) { %><task_progress>
+            Checklist here (optional)
+            </task_progress><% } %>
+            </execute_command>
             
             <% for(tool in toolList){%>
             ## ${invoke(tool, "getName")}
@@ -152,6 +368,11 @@ public class MonerSystemPrompt {
             
             
             <% } %>
+            
+            # 我这里有一些内部mcp工具,如果发现内部mcp工具就可以用来解决问题,请优先使用内部mcp工具
+            ## serverName:${internalServer.name}  ${internalServer.args}
+            ### Available Tools
+            ${mcpToolList}
             
             # Tool Use Guidelines
             
@@ -177,6 +398,7 @@ public class MonerSystemPrompt {
             
             ====
             
+            <% if(enableMcp) { %>
             MCP SERVERS
             
             The Model Context Protocol (MCP) enables communication between the system and locally running MCP servers that provide additional tools and resources to extend your capabilities.
@@ -184,15 +406,34 @@ public class MonerSystemPrompt {
             # Connected MCP Servers
             
             When a server is connected, you can use the server's tools via the `use_mcp_tool` tool, and access the server's resources via the `access_mcp_resource` tool.
-            
+           
+            # 调用这些tool会有一些参数,如果发现用户没提供,可以参考这些用户已经配置好的默认参数
+            用户的默认参数:
+            ${toolConfig}
+             
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
-            ### Available Tools
+            ## 这个Agent的信息
+            名字:${server.agent["name"]} 
+            proflie:${server.agent["profile"]}    
+            goal:${server.agent["goal"]}    
+            constraints:${server.agent["constraints"]} 
+            workflow:
+            ${server.agent["workflow"]} 
+            
+            ### 这个Agent的Tools
             ${server.tools}
             <% } %>
             
             
+            请记住这三个参数必须提供:  
+            <server_name>
+            <tool_name>
+            <arguments>
+            
+            
             ====
+            <% } %>
             
             RULES
             
@@ -232,6 +473,50 @@ public class MonerSystemPrompt {
             The following additional instructions are provided by the user, and should be followed to the best of your ability without interfering with the TOOL USE guidelines.
             
             ${customInstructions}
+            
+            用户可能会定义一些使用工作的流程(Flow),会使用内部工具和Mcp工具,这个时候你需要严格按照用户的定义来执行这个工作流.如果用户没有定义则忽略掉这条规则.
+            用户定义的工作流:
+            ${workflow}
+            
+            ====
+            
+            
+            
+            <% if(enableTaskProgress) { %>
+            ====
+            
+            UPDATING TASK PROGRESS
+            
+            Every tool use supports an optional task_progress parameter that allows you to provide an updated checklist to keep the user informed of your overall progress on the task. This should be used regularly throughout the task to keep the user informed of completed and remaining steps. Before using the attempt_completion tool, ensure the final checklist item is checked off to indicate task completion.
+            
+            - You probably wouldn't use this while in PLAN mode until the user has approved your plan and switched you to ACT mode.
+            - Use standard Markdown checklist format: "- [ ]" for incomplete items and "- [x]" for completed items
+            - Provide the whole checklist of steps you intend to complete in the task, and keep the checkboxes updated as you make progress. It's okay to rewrite this checklist as needed if it becomes invalid due to scope changes or new information.
+            - Keep items focused on meaningful progress milestones rather than minor technical details. The checklist should not be so granular that minor implementation details clutter the progress tracking.
+            - If you are creating this checklist for the first time, and the tool use completes the first step in the checklist, make sure to mark it as completed in your parameter input since this checklist will be displayed after this tool use is completed.
+            - For simple tasks, short checklists with even a single item are acceptable. For complex tasks, avoid making the checklist too long or verbose.
+            - If a checklist is being used, be sure to update it any time a step has been completed.
+            
+            Example:
+            <use_mcp_tool>
+            <server_name>weather-server</server_name>
+            <tool_name>get_forecast</tool_name>
+            <arguments>
+            {
+              "city": "San Francisco",
+              "days": 5
+            }
+            </arguments>
+            <task_progress>
+            - [x] Set up project structure
+            - [x] Install dependencies
+            - [ ] Get weather data
+            - [ ] Test application
+            </task_progress>
+            </use_mcp_tool>
+            
+            ====
+            <% } %>
             
             """;
 

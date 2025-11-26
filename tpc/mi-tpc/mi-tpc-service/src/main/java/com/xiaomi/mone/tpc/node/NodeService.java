@@ -928,4 +928,16 @@ public class NodeService implements NodeHelper{
         return ResponseCode.SUCCESS.build();
     }
 
+    /**
+     * 单个查询
+     * @param param
+     * @return
+     */
+    public ResultVo<NodeVo> getNodeByOutId(NodeQryParam param) {
+        NodeEntity nodeEntity = nodeDao.getOneByOutId(param.getOutIdType(), param.getOutId());
+        if (nodeEntity == null) {
+            return ResponseCode.SUCCESS.build();
+        }
+        return ResponseCode.SUCCESS.build(NodeUtil.toVo(nodeEntity));
+    }
 }

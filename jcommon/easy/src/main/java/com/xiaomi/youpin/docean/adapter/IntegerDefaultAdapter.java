@@ -14,13 +14,13 @@ public class IntegerDefaultAdapter implements JsonSerializer<Integer>, JsonDeser
 
     @Override
     public Integer deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        if (json.getAsString().equals("") || json.getAsString().equals("null")) {
+        if ("".equals(json.getAsString()) || "null".equals(json.getAsString())) {
             return null;
         }
         try {
             return json.getAsInt();
         } catch (NumberFormatException e) {
-            throw new JsonSyntaxException(e);
+            return null;
         }
     }
 

@@ -4,21 +4,19 @@ import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.Team;
-import run.mone.hive.actions.AnalyzeArchitecture;
-import run.mone.hive.actions.programmer.WriteCode;
-import run.mone.hive.actions.WriteDesign;
-import run.mone.hive.actions.python.ExecutePythonCode;
-import run.mone.hive.actions.python.FixPythonBug;
-import run.mone.hive.actions.python.WritePythonCode;
 import run.mone.hive.actions.writer.WriteAction;
+import run.mone.hive.common.RoleType;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.roles.*;
+import run.mone.hive.llm.LLMProvider;
+import run.mone.hive.roles.Coordinator;
+import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.roles.Teacher;
+import run.mone.hive.roles.Writer;
 import run.mone.hive.schema.Message;
-import run.mone.hive.schema.RoleContext;
 
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 
@@ -58,7 +56,7 @@ public class RoleTest {
 
     @Test
     public void testWriter() {
-        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+        LLM llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
         Context context = new Context();
         context.setDefaultLLM(llm);
         Team team = new Team(context);
@@ -73,30 +71,26 @@ public class RoleTest {
     }
 
 
-    /**
-     * 测试写代码
-     */
-    // @Test
-    // public void testWriteCode() {
-    //     LLM llm = new LLM(LLMConfig.builder().debug(false).build());
-    //     Context context = new Context();
-    //     context.setDefaultLLM(llm);
-    //     Team team = new Team(context);
-    //     team.hire(new Architect().setActions(new AnalyzeArchitecture()), new Design().setActions(new WriteDesign()), new Engineer().setActions(new WriteCode()));
-
-    //     Message message = Message.builder()
-    //             .id(java.util.UUID.randomUUID().toString())
-    //             .role("Human")
-    //             .sentFrom("user")
-    //             .sendTo(List.of("Architect"))
-    //             .content("帮我开发一个java的登录模块")
-    //             .build();
-
-    //     team.publishMessage(message);
-
-    //     team.run(3);
-    //     System.out.println(team);
-    // }
+    //不是团队,就是一个Agent 直接执行
+    @SneakyThrows
+    @Test
+    public void testWriter2() {
+        LLM llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
+        Context context = new Context();
+        context.setDefaultLLM(llm);
+        Writer writer = new Writer("鲁迅");
+        writer.setGoal("写一篇200字的有关秋天的作文");
+        writer.setProfile("你是一名优秀的作家");
+        writer.setConstraints("作文水平大概是高考的水平");
+        writer.setLlm(llm);
+        writer.setActions(new WriteAction());
+        writer.putMessage(Message.builder().content("写一篇200字的有关秋天的作文")
+                .role(RoleType.user.name())
+                .causeBy("鲁迅")//处理者
+                .build());
+        CompletableFuture<Message> future = writer.run();
+        future.get();
+    }
 
 
     //辩论,人类决定是否退出

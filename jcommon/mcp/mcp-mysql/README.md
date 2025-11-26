@@ -15,3 +15,6 @@
 "port": "9786"
 }
 }
+
+
+//数据库管理的mcp 支持sqlite 和 mysql

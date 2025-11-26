@@ -134,7 +134,7 @@ public interface McpClient {
 
         private ClientCapabilities capabilities;
 
-        private Implementation clientInfo = new Implementation("Spring AI MCP Client", "0.3.1");
+        private Implementation clientInfo = new Implementation("Hive AI Agent Client", "0.3.1", new HashMap<>());
 
         private Map<String, Root> roots = new HashMap<>();
 
@@ -364,7 +364,7 @@ public interface McpClient {
                     gct.setConsumer(msgConsumers.get(0));
                 }
 
-                gct.observer(new StreamObserver<>() {
+                StreamObserver<StreamResponse> so = new StreamObserver<>() {
                     @Override
                     public void onNext(StreamResponse streamResponse) {
 
@@ -379,7 +379,9 @@ public interface McpClient {
                     public void onCompleted() {
 
                     }
-                });
+
+                };
+                gct.observer(so);
             }
             return client;
         }

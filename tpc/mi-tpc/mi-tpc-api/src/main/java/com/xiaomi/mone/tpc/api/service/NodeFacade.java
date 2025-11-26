@@ -74,4 +74,6 @@ public interface NodeFacade {
      */
     Result<PageDataVo<OrgInfoVo>> orgList(NodeOrgQryParam param);
 
+    Result<NodeVo> getNodeByOutId(NodeQryParam param);
+
 }
