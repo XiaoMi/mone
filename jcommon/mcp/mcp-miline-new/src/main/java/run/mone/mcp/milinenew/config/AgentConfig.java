@@ -45,6 +45,18 @@ public class AgentConfig {
     @Value("${mcp.agent.name:miline_new}")
     private String agentName;
 
+    @Autowired
+    private CreatePipelineFunction createPipelineFunction;
+
+    @Autowired
+    private CreateProjectFunction createProjectFunction;
+    
+    @Autowired
+    private GenerateGitCodeFunction generateGitCodeFunction;
+    
+    @Autowired
+    private RunPipelineFunction runPipelineFunction;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -73,7 +85,7 @@ public class AgentConfig {
                 .mcpTools(
                     RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) 
                         ? Lists.newArrayList(new ChatFunction(agentName, 20)) 
-                        : Lists.newArrayList(new CreatePipelineFunction(), new CreateProjectFunction(), new GenerateGitCodeFunction(), new RunPipelineFunction())
+                        : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction)
                 )
                 .workflow("""
                     你是智能化系统，严格按照以下步骤执行：
