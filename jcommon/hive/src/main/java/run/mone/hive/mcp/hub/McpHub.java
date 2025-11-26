@@ -38,8 +38,6 @@ public class McpHub {
 
     private WatchService watchService;
 
-    private final String prefix;
-
     private volatile boolean isConnecting = false;
 
     private volatile boolean skipFile = false;
@@ -50,37 +48,25 @@ public class McpHub {
 
     public McpHub(Path settingsPath) throws IOException {
         this(settingsPath, msg -> {
-        }, false, "");
+        }, false);
     }
-
-    public McpHub(Path settingsPath, String prefix) throws IOException {
-        this(settingsPath, msg -> {
-        }, false, prefix);
-    }
-
-
 
 
     public McpHub() {
         this(null, msg -> {
-        }, true, "");
+        }, true);
     }
 
 
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
-        this(settingsPath, msgConsumer, false, "");
-    }
-
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) throws IOException {
-        this(settingsPath, msgConsumer, skipFile, "");
+        this(settingsPath, msgConsumer, false);
     }
 
     @SneakyThrows
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile, String prefix) {
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
         this.settingsPath = settingsPath;
         this.msgConsumer = msgConsumer;
         this.skipFile = skipFile;
-        this.prefix = prefix != null ? prefix : "";
 
         if (!skipFile) {
             this.watchService = FileSystems.getDefault().newWatchService();
@@ -219,10 +205,7 @@ public class McpHub {
     public synchronized void updateServerConnections(Map<String, ServerParameters> newServers, boolean removeOld) {
         isConnecting = true;
         Set<String> currentNames = new HashSet<>(connections.keySet());
-        Set<String> newNames = new HashSet<>();
-        for (String key : newServers.keySet()) {
-            newNames.add(prefix + key);
-        }
+        Set<String> newNames = new HashSet<>(newServers.keySet());
 
         if (removeOld) {
             // Delete removed servers
@@ -236,7 +219,7 @@ public class McpHub {
 
         // Update or add servers
         for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
-            String name = prefix + entry.getKey();
+            String name = entry.getKey();
             ServerParameters config = entry.getValue();
             McpConnection currentConnection = connections.get(name);
 
@@ -268,7 +251,7 @@ public class McpHub {
 
         // Update or add servers
         for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
-            String name = prefix + entry.getKey();
+            String name = entry.getKey();
             ServerParameters config = entry.getValue();
             McpConnection currentConnection = connections.get(name);
 

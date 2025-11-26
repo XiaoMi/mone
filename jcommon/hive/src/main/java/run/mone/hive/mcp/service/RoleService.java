@@ -121,7 +121,7 @@ public class RoleService {
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
         //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
-            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath), "default_"));
+            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
         if (roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
             //创建一个默认Agent
