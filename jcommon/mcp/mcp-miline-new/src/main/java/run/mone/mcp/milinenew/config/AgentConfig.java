@@ -92,8 +92,7 @@ public class AgentConfig {
                         - 根据projectName生成项目
                         - 根据提供的projectId、env生成代码,
                         - 拉取代码到本地
-             
-                        - 根据需求进行代码修改(如果提供了要实现的需求则进行代码实现，否则跳过代码实现并检查下没有语法bug后，再进行后续提交操作)
+                        - 根据需求及已有代码进行开发；注意：前端样式要按照pc端展示进行开发(如果提供了要实现的需求则进行代码实现，否则跳过代码实现并检查下没有语法bug后，再进行后续提交操作)
                         - 先进入xxx-server/src/main/resources/static目录，执行npm i && npm run build
                          - 添加完代码后，一定要将本地代码使用git_commit工具进行git commit，commit信息是如果是修复代码提交信息为：自动代码修复否则根据commit提交范式进行补充, 使用git_push进行git push
                         - 根据projectId、pipelineName、gitUrl、gitName创建流水线
