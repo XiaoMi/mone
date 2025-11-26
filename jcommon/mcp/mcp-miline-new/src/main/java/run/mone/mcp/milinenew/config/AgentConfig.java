@@ -57,6 +57,18 @@ public class AgentConfig {
     @Autowired
     private RunPipelineFunction runPipelineFunction;
 
+    @Autowired
+    private CreatePipelineTool createPipelineTool;
+
+    @Autowired
+    private CreateProjectTool createProjectTool;
+
+    @Autowired
+    private GenerateGitCodeTool generateGitCodeTool;
+
+    @Autowired
+    private RunPipelineTool runPipelineTool;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -68,8 +80,6 @@ public class AgentConfig {
                                 new ChatTool(),
                                 new AskTool(),
                                 new AttemptCompletionTool(),
-                                new CreateProjectTool(),
-                                new GenerateGitCodeTool(),
                                 new ListFilesTool(false),
                                 new ExecuteCommandToolOptimized(),
                                 new ReadFileTool(false),
@@ -77,8 +87,10 @@ public class AgentConfig {
                                 new ReplaceInFileTool(false),
                                 new ListCodeDefinitionNamesTool(),
                                 new WriteToFileTool(false),
-                                new CreatePipelineTool(),
-                                new RunPipelineTool()
+                                createProjectTool,
+                                generateGitCodeTool,
+                                createPipelineTool,
+                                runPipelineTool
                         )
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
