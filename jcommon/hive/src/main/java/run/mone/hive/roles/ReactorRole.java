@@ -833,18 +833,7 @@ public class ReactorRole extends Role {
         LLM curLLM = null;
         if (StringUtils.isNotEmpty(llmProvider)) {
             LLMProvider provider = LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT));
-            LLMConfig config = LLMConfig.builder().llmProvider(provider).build();
-
-            // 为 MIFY_GATEWAY 设置环境变量中的配置
-            if (provider == LLMProvider.MIFY_GATEWAY) {
-                config.setUrl(System.getenv("MIFY_GATEWAY_URL"));
-                config.setToken(System.getenv("MIFY_API_KEY"));
-                CustomConfig customConfig = new CustomConfig();
-                customConfig.setModel(System.getenv("MIFY_MODEL"));
-                customConfig.addCustomHeader(CustomConfig.X_MODEL_PROVIDER_ID, System.getenv("MIFY_MODEL_PROVIDER_ID"));
-                config.setCustomConfig(customConfig);
-            }
-
+            LLMConfig config = LLMConfig.builder().llmProvider(provider).build().custom();
             curLLM = new LLM(config);
         } else {
             curLLM = llm;
