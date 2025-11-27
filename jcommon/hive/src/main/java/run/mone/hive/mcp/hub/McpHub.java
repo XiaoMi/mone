@@ -65,11 +65,11 @@ public class McpHub {
     }
 
 
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer) {
         this(settingsPath, msgConsumer, false, "");
     }
 
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) throws IOException {
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
         this(settingsPath, msgConsumer, skipFile, "");
     }
 
