@@ -87,7 +87,7 @@ public class HeraLogDetailTool implements ITool {
                 - spaceId: (必填) 空间ID，数字类型
                 - storeId: (必填) 存储ID，数字类型
                 - input: (必填) 搜索输入内容，可能包含双引号等特殊字符
-                - tailName: (必填) 日志尾部名称，例如：matrix_activity-main-test
+                - tailName: (必填) 日志尾部名称，例如：test-tail-name
                 - startTime: (可选) 查询开始时间，毫秒时间戳字符串，不提供则使用当前时间前1小时
                 - endTime: (可选) 查询结束时间，毫秒时间戳字符串，不提供则使用当前时间
                 """;
@@ -121,10 +121,10 @@ public class HeraLogDetailTool implements ITool {
         return """
                 示例 1: 查询日志详情（使用默认时间范围）
                 <hera_log_detail_query>
-                <spaceId>90036</spaceId>
-                <storeId>90204</storeId>
-                <input>"468647c3c9bc5f23c7a151b0ab71c63d"</input>
-                <tailName>matrix_activity-main-test</tailName>
+                <spaceId>90123</spaceId>
+                <storeId>90456</storeId>
+                <input>"468647c3c9bc5f23c7a151b0ab711234"</input>
+                <tailName>test-tail-name</tailName>
                 </hera_log_detail_query>
 
                 示例 2: 查询指定时间段的日志详情
@@ -132,7 +132,7 @@ public class HeraLogDetailTool implements ITool {
                 <spaceId>90036</spaceId>
                 <storeId>90204</storeId>
                 <input>"468647c3c9bc5f23c7a151b0ab71c63d"</input>
-                <tailName>matrix_activity-main-test</tailName>
+                <tailName>test-tail-name</tailName>
                 <startTime>1764110685906</startTime>
                 <endTime>1764139485906</endTime>
                 </hera_log_detail_query>

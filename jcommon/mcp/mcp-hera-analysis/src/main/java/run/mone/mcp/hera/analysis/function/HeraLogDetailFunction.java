@@ -58,7 +58,7 @@ public class HeraLogDetailFunction implements McpFunction {
                     },
                     "tailName": {
                         "type": "string",
-                        "description": "tail名称，例如：matrix_activity-main-test"
+                        "description": "tail名称，例如：test-tail-name"
                     },
                     "startTime": {
                         "type": "string",
