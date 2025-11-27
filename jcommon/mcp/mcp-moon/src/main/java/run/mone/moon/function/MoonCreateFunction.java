@@ -202,11 +202,45 @@ public class MoonCreateFunction implements McpFunction {
                     },
                     "httpParam": {
                         "type": "object",
-                        "description": "http相关配置"
+                        "description": "http相关配置",
+                        "url": {
+                            "type": "string",
+                            "description": "http url 路径",
+                        },
+                        "method": {
+                            "type": "string",
+                            "enum": ["get", "post", "delete", "update"],
+                            "description": "http请求方式",
+                        },
+                        "headers": {
+                            "type": "Map<String,String>",
+                            "description": "http请求头",
+                        }
                     },
                     "dubboParam": {
                         "type": "object",
-                        "description": "dubbo相关配置"
+                        "description": "dubbo相关配置",
+                        "version": {
+                            "type": "string",
+                            "description": "dubbo分组的版本",
+                        },
+                        "serviceName": {
+                            "type": "string",
+                            "description": "dubbo provider 的类路径",
+                        },
+                        "methodName": {
+                            "type": "string",
+                            "description": "dubbo provider的方法名称",
+                        },
+                        "group": {
+                            "type": "string",
+                            "description": "dubbo provider 的分组名称",
+                        },
+                        "retries": {
+                            "type": "integer",
+                            "description": "dubbo provider 单次执行重试次数",
+                            "default": 1
+                        }
                     }
                 },
                 "required": ["tenant", "name", "projectID", "type", "execParam"]
