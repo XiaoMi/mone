@@ -194,6 +194,8 @@ public class AgentController {
             return Mono.just(ApiResponse.error(400, "Missing required parameters: agentId and userId"));
         }
 
+        log.info("getAgentConfig in agentId:{}, userId:{}", agentId, userId);
+
         // 首先获取配置
         Mono<Map<String, String>> configMapMono = agentConfigService.getUserConfigsAsMap(agentId, userId);
         
