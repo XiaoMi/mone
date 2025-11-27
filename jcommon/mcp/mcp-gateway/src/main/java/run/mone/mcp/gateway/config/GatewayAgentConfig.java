@@ -28,6 +28,9 @@ public class GatewayAgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Value("${mcp.http.port}")
+    private String httpPort;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -46,7 +49,7 @@ public class GatewayAgentConfig {
                             - 如有需要，提供进一步的帮助和建议
                         """)
                 .meta(ImmutableMap.of(
-                        Const.HTTP_PORT, "8086",
+                        Const.HTTP_PORT, httpPort,
                         Const.AGENT_SERVER_NAME, agentName
                 ))
                 .build();
