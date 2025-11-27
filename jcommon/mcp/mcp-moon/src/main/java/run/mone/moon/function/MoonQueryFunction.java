@@ -11,6 +11,7 @@ import org.apache.dubbo.rpc.service.GenericService;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.moon.constants.Constants;
 import run.mone.moon.function.bo.MoonMoneTpcContext;
 import run.mone.moon.function.bo.ReadTaskReq;
 import run.mone.moon.function.bo.Result;
@@ -27,7 +28,6 @@ import java.util.Map;
 @Data
 @Slf4j
 public class MoonQueryFunction implements McpFunction {
-
 
     private String name = "query_task_executor";
 
@@ -107,7 +107,7 @@ public class MoonQueryFunction implements McpFunction {
             }
             """;
 
-    ReferenceConfig<GenericService> queryReference = null;
+    ReferenceConfig<GenericService> queryReference;
 
     public MoonQueryFunction(ApplicationConfig applicationConfig, RegistryConfig registryConfig, String group) {
         queryReference = new ReferenceConfig<>();
@@ -130,32 +130,26 @@ public class MoonQueryFunction implements McpFunction {
             }
 
             // 必填参数校验
-            if (args.get("tenant") == null) {
+            if (args.get(Constants.PARAM_TENANT) == null) {
                 throw new IllegalArgumentException("tenant is required");
             }
 
             MoonMoneTpcContext context = new MoonMoneTpcContext();
-            Number tenant = MoonUitl.getNumber(args.get("tenant"));
+            Number tenant = MoonUitl.getNumber(args.get(Constants.PARAM_TENANT));
             Integer tenantInt = tenant == null ? null : tenant.intValue();
             context.setTenant(MoonUitl.getString(tenantInt));
+            
             // 构建查询参数对象
             ReadTaskReq queryParams = new ReadTaskReq();
-            // 处理String类型参数
-            queryParams.setTaskName(MoonUitl.getString(args.get("taskName")));
-            queryParams.setTaskType(MoonUitl.getString(args.get("taskType")));
-            queryParams.setCreator(MoonUitl.getString(args.get("creator")));
-            queryParams.setServicePath(MoonUitl.getString(args.get("servicePath")));
-
-            // 处理Long类型参数
-            queryParams.setStatus(MoonUitl.getLong(args.get("status")));
-            queryParams.setMischeduleID(MoonUitl.getLong(args.get("mischeduleID")));
-            queryParams.setProjectID(MoonUitl.getLong(args.get("projectID")));
-
-            // 处理必填的Number类型参数
-            Number page = MoonUitl.getNumber(args.get("page"));
-            queryParams.setPage(page == null ? 1 : page.intValue());
-            Number pageSize = MoonUitl.getNumber(args.get("pageSize"));
-            queryParams.setPageSize(pageSize == null ? 10 : pageSize.intValue());
+            
+            // 使用 Hutool 的 BeanUtil 将 Map 转换为 Bean
+            BeanUtil.fillBeanWithMap(args, queryParams, true);
+            
+            // 处理必填的Number类型参数 (Hutool 无法处理的默认值)
+            Number page = MoonUitl.getNumber(args.get(Constants.PARAM_PAGE));
+            queryParams.setPage(page == null ? Constants.DEFAULT_PAGE : page.intValue());
+            Number pageSize = MoonUitl.getNumber(args.get(Constants.PARAM_PAGE_SIZE));
+            queryParams.setPageSize(pageSize == null ? Constants.DEFAULT_PAGE_SIZE : pageSize.intValue());
 
             // 3. 调用服务创建任务
             log.info("查询moon任务列表参数 context: {}, queryParams: {}", GsonUtil.toJsonTree(context), GsonUtil.toJson(queryParams));
@@ -193,7 +187,6 @@ public class MoonQueryFunction implements McpFunction {
     public String getName() {
         return name;
     }
-
 
     @Override
     public String getDesc() {

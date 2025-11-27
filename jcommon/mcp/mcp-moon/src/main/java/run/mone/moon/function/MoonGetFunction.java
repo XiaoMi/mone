@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.moon.constants.Constants;
 import run.mone.moon.function.bo.Result;
 import run.mone.moon.function.bo.TaskReq;
 import run.mone.moon.utils.GsonUtil;
@@ -25,7 +26,6 @@ import java.util.Map;
 @Data
 @Slf4j
 public class MoonGetFunction implements McpFunction {
-
 
     private String name = "get_task_by_id_executor";
 
@@ -50,7 +50,7 @@ public class MoonGetFunction implements McpFunction {
             }
             """;
 
-    ReferenceConfig<GenericService> queryReference = null;
+    ReferenceConfig<GenericService> queryReference;
 
     public MoonGetFunction(ApplicationConfig applicationConfig, RegistryConfig registryConfig, String group) {
         queryReference = new ReferenceConfig<>();
@@ -63,7 +63,6 @@ public class MoonGetFunction implements McpFunction {
         MoonUitl.commonParam(queryReference);
     }
 
-
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         log.info("get moon apply function args: {}", GsonUtil.toJson(args));
@@ -74,14 +73,14 @@ public class MoonGetFunction implements McpFunction {
             }
 
             // 必填参数校验
-            if (args.get("id") == null) {
+            if (args.get(Constants.PARAM_ID) == null) {
                 throw new IllegalArgumentException("id is required");
             }
 
-            Number idNum = MoonUitl.getNumber(args.get("id"));
+            Number idNum = MoonUitl.getNumber(args.get(Constants.PARAM_ID));
             Long id = idNum == null ? null : idNum.longValue();
 
-            boolean isCopy = args.get("isCopy") == null ? false : (Boolean) args.get("isCopy");
+            boolean isCopy = args.get(Constants.PARAM_IS_COPY) != null && (Boolean) args.get(Constants.PARAM_IS_COPY);
             // 设置必填参数
             // 构建查询参数对象
             // 3. 调用服务创建任务
@@ -120,7 +119,6 @@ public class MoonGetFunction implements McpFunction {
         return source + " copy";
     }
 
-
     @Override
     public String getToolScheme() {
         return taskQuerySchema;
@@ -130,7 +128,6 @@ public class MoonGetFunction implements McpFunction {
     public String getName() {
         return name;
     }
-
 
     @Override
     public String getDesc() {

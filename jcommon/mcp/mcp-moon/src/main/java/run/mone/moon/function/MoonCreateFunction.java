@@ -13,6 +13,7 @@ import org.apache.dubbo.rpc.service.GenericService;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.moon.constants.Constants;
 import run.mone.moon.function.bo.*;
 import run.mone.moon.utils.GsonUtil;
 import run.mone.moon.utils.MoonUitl;
@@ -212,7 +213,7 @@ public class MoonCreateFunction implements McpFunction {
             }
             """;
 
-    ReferenceConfig<GenericService> createReferenceConfig = null;
+    ReferenceConfig<GenericService> createReferenceConfig;
 
     public MoonCreateFunction(ApplicationConfig applicationConfig, RegistryConfig registryConfig, String group) {
         createReferenceConfig = new ReferenceConfig<>();
@@ -236,105 +237,78 @@ public class MoonCreateFunction implements McpFunction {
             }
 
             // 必填参数校验
-            if (args.get("tenant") == null) {
+            if (args.get(Constants.PARAM_TENANT) == null) {
                 throw new IllegalArgumentException("tenant is required");
             }
-            if (args.get("name") == null || ((String) args.get("name")).trim().isEmpty()) {
+            if (args.get(Constants.PARAM_NAME) == null || ((String) args.get(Constants.PARAM_NAME)).trim().isEmpty()) {
                 throw new IllegalArgumentException("task name is required and cannot be empty");
             }
-            if (args.get("projectID") == null) {
+            if (args.get(Constants.PARAM_PROJECT_ID) == null) {
                 throw new IllegalArgumentException("task projectID is required");
             }
-            if (args.get("type") == null || ((String) args.get("type")).trim().isEmpty()) {
+            if (args.get(Constants.PARAM_TYPE) == null || ((String) args.get(Constants.PARAM_TYPE)).trim().isEmpty()) {
                 throw new IllegalArgumentException("type is required and cannot be empty");
             }
-            String type = (String) args.get("type");
-            if (!"httpTask".equals(type) && !"dubboTask".equals(type) && !"faasTask".equals(type)) {
+            String type = (String) args.get(Constants.PARAM_TYPE);
+            if (!Constants.TASK_TYPE_HTTP.equals(type) && !Constants.TASK_TYPE_DUBBO.equals(type) && !Constants.TASK_TYPE_FAAS.equals(type)) {
                 throw new IllegalArgumentException("type must be one of: httpTask, dubboTask, faasTask");
             }
 
             // 2. 构建任务参数
             TaskReq taskParam = new TaskReq();
             MoonMoneTpcContext context = new MoonMoneTpcContext();
-            Integer tenant = ((Number) args.get("tenant")).intValue();
+            Integer tenant = ((Number) args.get(Constants.PARAM_TENANT)).intValue();
             context.setTenant(String.valueOf(tenant));
-            context.setAccount(args.containsKey("account") ?
-                    (String) args.get("account") : "mcp_user");
+            context.setAccount(args.containsKey(Constants.PARAM_ACCOUNT) ?
+                    (String) args.get(Constants.PARAM_ACCOUNT) : Constants.DEFAULT_ACCOUNT);
 
             // 设置必填参数
-            taskParam.setName((String) args.get("name"));
-            taskParam.setProjectID(((Number) args.get("projectID")).longValue());
+            taskParam.setName((String) args.get(Constants.PARAM_NAME));
+            taskParam.setProjectID(((Number) args.get(Constants.PARAM_PROJECT_ID)).longValue());
             taskParam.setType(type);
 
             // 设置默认值和可选参数
-            taskParam.setDescription(args.containsKey("description") ?
-                    (String) args.get("description") : "Task created by MCP");
-            taskParam.setExecMode(args.containsKey("execMode") ?
-                    (String) args.get("execMode") : "broadcast");
-            taskParam.setPriority(args.containsKey("priority") ?
-                    (String) args.get("priority") : "P2");
-            taskParam.setExecParam(args.containsKey("execParam") ?
-                    (String) args.get("execParam") : "{}");
-            taskParam.setRetryWait(args.containsKey("retryWait") ?
-                    ((Number) args.get("retryWait")).intValue() : 1);
-            taskParam.setConcurrency(args.containsKey("concurrency") ?
-                    ((Number) args.get("concurrency")).intValue() : 1);
-            taskParam.setMachine(args.containsKey("machine") ?
-                    (String) args.get("machine") : "");
-            taskParam.setScheduleMode(args.containsKey("scheduleMode") ?
-                    (String) args.get("scheduleMode") : "cron");
-            taskParam.setScheduleParam(args.containsKey("scheduleParam") ?
-                    (String) args.get("scheduleParam") : "0 0 * * * ?"); // 默认每小时执行
-            taskParam.setStartTime(args.containsKey("startTime") ?
-                    ((Number) args.get("startTime")).longValue() : System.currentTimeMillis());
-            taskParam.setConcurrencyStrategy(args.containsKey("concurrencyStrategy") ?
-                    (String) args.get("concurrencyStrategy") : "cancel_new");
+            taskParam.setDescription((String) args.getOrDefault(Constants.PARAM_DESCRIPTION, "Task created by MCP"));
+            taskParam.setExecMode((String) args.getOrDefault(Constants.PARAM_EXEC_MODE, Constants.DEFAULT_EXEC_MODE));
+            taskParam.setPriority((String) args.getOrDefault(Constants.PARAM_PRIORITY, Constants.DEFAULT_PRIORITY));
+            taskParam.setExecParam((String) args.getOrDefault(Constants.PARAM_EXEC_PARAM, Constants.DEFAULT_EXEC_PARAM));
+            taskParam.setRetryWait(((Number) args.getOrDefault(Constants.PARAM_RETRY_WAIT, Constants.DEFAULT_RETRY_WAIT)).intValue());
+            taskParam.setConcurrency(((Number) args.getOrDefault(Constants.PARAM_CONCURRENCY, Constants.DEFAULT_CONCURRENCY)).intValue());
+            taskParam.setMachine((String) args.getOrDefault(Constants.PARAM_MACHINE, ""));
+            taskParam.setScheduleMode((String) args.getOrDefault(Constants.PARAM_SCHEDULE_MODE, Constants.DEFAULT_SCHEDULE_MODE));
+            taskParam.setScheduleParam((String) args.getOrDefault(Constants.PARAM_SCHEDULE_PARAM, Constants.DEFAULT_SCHEDULE_PARAM));
+            taskParam.setStartTime(args.containsKey(Constants.PARAM_START_TIME) ? 
+                    ((Number) args.get(Constants.PARAM_START_TIME)).longValue() : System.currentTimeMillis());
+            taskParam.setConcurrencyStrategy((String) args.getOrDefault(Constants.PARAM_CONCURRENCY_STRATEGY, Constants.DEFAULT_CONCURRENCY_STRATEGY));
 
             // 报警相关默认参数，根据schema更新默认值
-            taskParam.setAlertTimeout(args.containsKey("alertTimeout") ?
-                    (Boolean) args.get("alertTimeout") : true);
-            taskParam.setAlertTimeoutLevel(args.containsKey("alertTimeoutLevel") ?
-                    (String) args.get("alertTimeoutLevel") : "P1");
-            taskParam.setTimeout(args.containsKey("timeout") ?
-                    ((Number) args.get("timeout")).longValue() : 300L);
-            taskParam.setTimeoutHalt(args.containsKey("timeoutHalt") ?
-                    (Boolean) args.get("timeoutHalt") : true);
-            taskParam.setAlertSuccess(args.containsKey("alertSuccess") ?
-                    (Boolean) args.get("alertSuccess") : false);
-            taskParam.setAlertSuccessLevel(args.containsKey("alertSuccessLevel") ?
-                    (String) args.get("alertSuccessLevel") : "P2");
-            taskParam.setAlertFail(args.containsKey("alertFail") ?
-                    (Boolean) args.get("alertFail") : true);
-            taskParam.setAlertFailLevel(args.containsKey("alertFailLevel") ?
-                    (String) args.get("alertFailLevel") : "P1");
-            taskParam.setAlertStop(args.containsKey("alertStop") ?
-                    (Boolean) args.get("alertStop") : true);
-            taskParam.setAlertStopLevel(args.containsKey("alertStopLevel") ?
-                    (String) args.get("alertStopLevel") : "P0");
-            taskParam.setAlertSkip(args.containsKey("alertSkip") ?
-                    (Boolean) args.get("alertSkip") : false);
-            taskParam.setAlertSkipLevel(args.containsKey("alertSkipLevel") ?
-                    (String) args.get("alertSkipLevel") : "P0");
-            taskParam.setMaxRetry(args.containsKey("maxRetry") ?
-                    ((Number) args.get("maxRetry")).intValue() : 0);
-            taskParam.setAlertNoMachine(args.containsKey("alertNoMachine") ?
-                    (Boolean) args.get("alertNoMachine") : true);
-            taskParam.setAlertNoMachineLevel(args.containsKey("alertNoMachineLevel") ?
-                    (String) args.get("alertNoMachineLevel") : "P0");
-            taskParam.setAlertConfig(args.containsKey("alertConfig") ?
-                    (String) args.get("alertConfig") : "{}");
-            taskParam.setHistoryKeep(args.containsKey("historyKeep") ?
-                    ((Number) args.get("historyKeep")).intValue() : 7);
+            taskParam.setAlertTimeout((Boolean) args.getOrDefault(Constants.PARAM_ALERT_TIMEOUT, Constants.DEFAULT_ALERT_TIMEOUT));
+            taskParam.setAlertTimeoutLevel((String) args.getOrDefault(Constants.PARAM_ALERT_TIMEOUT_LEVEL, Constants.DEFAULT_ALERT_TIMEOUT_LEVEL));
+            taskParam.setTimeout(((Number) args.getOrDefault(Constants.PARAM_TIMEOUT, Constants.DEFAULT_TIMEOUT)).longValue());
+            taskParam.setTimeoutHalt((Boolean) args.getOrDefault(Constants.PARAM_TIMEOUT_HALT, Constants.DEFAULT_TIMEOUT_HALT));
+            taskParam.setAlertSuccess((Boolean) args.getOrDefault(Constants.PARAM_ALERT_SUCCESS, Constants.DEFAULT_ALERT_SUCCESS));
+            taskParam.setAlertSuccessLevel((String) args.getOrDefault(Constants.PARAM_ALERT_SUCCESS_LEVEL, Constants.DEFAULT_ALERT_SUCCESS_LEVEL));
+            taskParam.setAlertFail((Boolean) args.getOrDefault(Constants.PARAM_ALERT_FAIL, Constants.DEFAULT_ALERT_FAIL));
+            taskParam.setAlertFailLevel((String) args.getOrDefault(Constants.PARAM_ALERT_FAIL_LEVEL, Constants.DEFAULT_ALERT_FAIL_LEVEL));
+            taskParam.setAlertStop((Boolean) args.getOrDefault(Constants.PARAM_ALERT_STOP, Constants.DEFAULT_ALERT_STOP));
+            taskParam.setAlertStopLevel((String) args.getOrDefault(Constants.PARAM_ALERT_STOP_LEVEL, Constants.DEFAULT_ALERT_STOP_LEVEL));
+            taskParam.setAlertSkip((Boolean) args.getOrDefault(Constants.PARAM_ALERT_SKIP, Constants.DEFAULT_ALERT_SKIP));
+            taskParam.setAlertSkipLevel((String) args.getOrDefault(Constants.PARAM_ALERT_SKIP_LEVEL, Constants.DEFAULT_ALERT_SKIP_LEVEL));
+            taskParam.setMaxRetry(((Number) args.getOrDefault(Constants.PARAM_MAX_RETRY, Constants.DEFAULT_MAX_RETRY)).intValue());
+            taskParam.setAlertNoMachine((Boolean) args.getOrDefault(Constants.PARAM_ALERT_NO_MACHINE, Constants.DEFAULT_ALERT_NO_MACHINE));
+            taskParam.setAlertNoMachineLevel((String) args.getOrDefault(Constants.PARAM_ALERT_NO_MACHINE_LEVEL, Constants.DEFAULT_ALERT_NO_MACHINE_LEVEL));
+            taskParam.setAlertConfig((String) args.getOrDefault(Constants.PARAM_ALERT_CONFIG, Constants.DEFAULT_ALERT_CONFIG));
+            taskParam.setHistoryKeep(((Number) args.getOrDefault(Constants.PARAM_HISTORY_KEEP, Constants.DEFAULT_HISTORY_KEEP)).intValue());
 
             // 特殊参数处理
-            if (args.containsKey("faasParam")) {
-                taskParam.setFaasParam(convertToFaasParam(args.get("faasParam")));
+            if (args.containsKey(Constants.PARAM_FAAS_PARAM)) {
+                taskParam.setFaasParam(convertToFaasParam(args.get(Constants.PARAM_FAAS_PARAM)));
             }
-            if (args.containsKey("httpParam")) {
-                taskParam.setHttpParam(convertToHttpParam(args.get("httpParam")));
+            if (args.containsKey(Constants.PARAM_HTTP_PARAM)) {
+                taskParam.setHttpParam(convertToHttpParam(args.get(Constants.PARAM_HTTP_PARAM)));
             }
-            if (args.containsKey("dubboParam")) {
-                taskParam.setDubboParam(convertToDubboParam(args.get("dubboParam")));
+            if (args.containsKey(Constants.PARAM_DUBBO_PARAM)) {
+                taskParam.setDubboParam(convertToDubboParam(args.get(Constants.PARAM_DUBBO_PARAM)));
             }
 
             // 3. 调用服务创建任务
