@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
@@ -102,12 +103,12 @@ public class HiveAutoConfigure {
     public McpServer mcpServer(RoleService roleService, ServerMcpTransport transport, Map<String, String> meta, RoleMeta roleMeta) {
         List<McpFunction> mcpTools = roleMeta.getMcpTools();
         mcpTools.forEach(it -> it.setRoleService(roleService));
-        meta.put("name", roleMeta.getName());
-        meta.put("profile", roleMeta.getProfile());
-        meta.put("goal", roleMeta.getGoal());
-        meta.put("constraints", roleMeta.getConstraints());
-        meta.put("workflow", roleMeta.getWorkflow());
-        meta.put("http.enable.auth", enableAuth);
+        meta.put(Const.NAME, roleMeta.getName());
+        meta.put(Const.PROFILE, roleMeta.getProfile());
+        meta.put(Const.GOAL, roleMeta.getGoal());
+        meta.put(Const.CONSTRAINTS, roleMeta.getConstraints());
+        meta.put(Const.WORKFLOW, roleMeta.getWorkflow());
+        meta.put(Const.HTTP_ENABLE_AUTH, enableAuth);
         meta.putAll(roleMeta.getMeta());
         return new McpServer(transport, mcpTools, meta);
     }

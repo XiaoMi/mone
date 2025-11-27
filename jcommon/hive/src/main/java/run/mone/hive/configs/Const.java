@@ -66,11 +66,33 @@ public class Const {
 
     public static final String CMD = "cmd";
 
+    // Agent 相关
     public static final String AGENT_SERVER_NAME = "agent_server_name";
 
+    public static final String NAME = "name";
+
+    public static final String PROFILE = "profile";
+
+    public static final String GOAL = "goal";
+
+    public static final String CONSTRAINTS = "constraints";
+
+    public static final String WORKFLOW = "workflow";
+
+    public static final String META = "meta";
+
     public static final String HTTP_PORT = "http.port";
+
+    public static final String HTTP_ENABLE_AUTH = "http.enable.auth";
+
+    public static final String HTTP_ENDPOINT = "http.endpoint";
+
+    public static final String HTTP_KEEPALIVE_SECONDS = "http.keepalive.seconds";
+
+    public static final String HTTP_DISALLOW_DELETE = "http.disallow.delete";
 
     public static final String AGENT_SERVER_VERSION = "agent_server_version";
 
     public static final String TASK_PROGRESS = "task_progress";
+
 }
