@@ -228,7 +228,7 @@ public class HiveManagerService {
             String configUrl = baseUrl + "/api/v1/agents/config";
             Map<String, Object> response = restTemplate.postForObject(configUrl, httpRequest, Map.class);
 
-            log.info("Config retrieval response: {}", response);
+            log.info("Config retrieval response: {}, request:{}", response, request);
 
             if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
                 Map<String, Object> data = (Map<String, Object>) response.get("data");
