@@ -53,7 +53,7 @@ public class AgentConfig {
                                 Lists.newArrayList(
                                         new ChatFunction(agentName, 60)
                                 ) : Lists.newArrayList(new AddTwoNumbersFunction()))
-                .meta(ImmutableMap.of(Const.HTTP_PORT,"8081",Const.AGENT_SERVER_NAME,"chat_server", "http.enable.auth", "true"))
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8081",Const.AGENT_SERVER_NAME,"chat_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();
     }
 
