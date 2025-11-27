@@ -16,7 +16,7 @@
       <div class="sc-message--content">
         <div class="sc-message--user-content" :class="{'sc-message--user-content-audio': message.type === 'audio'}">
           <MarkdownMessage v-if="message.type === 'md'" :id="id" :message="message" @pidAction="handlePidAction" @onClick2Conversion="(id) => {
-            $emit('onClick2Conversion', id)
+            emit('onClick2Conversion', id)
           }">
             <template v-slot:default="scopedProps">
               <slot
@@ -174,7 +174,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Avatar from "./Avatar.vue";
-import HelloMessage from "./messages/HelloMessage.vue";
+import HelloMessage, { type MessageClickPayload } from "./messages/HelloMessage.vue";
 import MarkdownMessage from "./messages/MarkdownMessage.vue";
 import MarkdownRender from "./messages/MarkdownRender.vue";
 import MediaMessage from "./messages/MediaMessage.vue";
@@ -182,8 +182,9 @@ import FormMessage from "./messages/FormMessage.vue";
 import UnknownMessage from "./messages/UnknownMessage.vue";
 import ListMessage from "./messages/ListMessage.vue";
 import FlowData from "./FlowData/index.vue";
-import AudioPlayer from "@/components/audio-player/index.vue";
-import { ArrowRight } from '@element-plus/icons-vue';
+import type {
+  Message as TypeMessage,
+} from "@/stores/chat-context"
 
 interface User {
   cname?: string;
@@ -204,25 +205,18 @@ interface MessageMeta {
   };
 }
 
-interface Message {
-  id: string;
-  type: string;
-  data: MessageData;
-  meta: MessageMeta;
-}
-
 interface Props {
   id: number;
-  message: Message;
+  message: TypeMessage;
   user: User;
-  onMessageClick: (message: Message) => void;
-  onMessageCmd: (cmd: string, message: Message) => void;
+  onMessageClick: (message: MessageClickPayload) => void;
+  onMessageCmd: (cmd: string, message: TypeMessage) => void;
   onPlayAudio: (text: string) => void;
 }
 
 interface Emits {
   (e: 'pidAction', data: { pid: string; action: string }): void;
-  (e: 'onClick2Conversion', id: string): void;
+  (e: 'onClick2Conversion', id: { id: string }): void;
 }
 
 const props = defineProps<Props>();
@@ -242,7 +236,7 @@ const handlePlay = async (text: string) => {
   }
 };
 
-const playAudio = (cmd: string, message: Message) => {
+const playAudio = (cmd: string, message: TypeMessage) => {
   if (message.data.sound) {
     // Note: $refs is not directly available in setup, would need ref() if used
     // This method appears unused in the template, keeping for compatibility

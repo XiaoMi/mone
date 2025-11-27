@@ -133,6 +133,17 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private Function<String, Boolean> authFunction = token -> true;
 
     /**
+     * Token validator for bearer token authentication
+     */
+    @Setter
+    private TokenValidator tokenValidator;
+
+    /**
+     * Token authentication cache
+     */
+    private TokenAuthCache tokenAuthCache;
+
+    /**
      * Constructs a new HttpServletStreamableServerTransport instance.
      * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization of
      * messages.
@@ -142,13 +153,16 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * @throws IllegalArgumentException if any parameter is null
      */
     private HttpServletStreamableServerTransport(ObjectMapper objectMapper, String mcpEndpoint,
-            boolean disallowDelete, Duration keepAliveInterval) {
+            boolean disallowDelete, Duration keepAliveInterval, Duration tokenCacheTtl) {
         Assert.notNull(objectMapper, "ObjectMapper must not be null");
         Assert.notNull(mcpEndpoint, "MCP endpoint must not be null");
 
         this.objectMapper = objectMapper;
         this.mcpEndpoint = mcpEndpoint;
         this.disallowDelete = disallowDelete;
+
+        // Initialize token auth cache with default TTL of 5 minutes
+        this.tokenAuthCache = new TokenAuthCache(tokenCacheTtl != null ? tokenCacheTtl : Duration.ofMinutes(5));
 
         // 启用会话清理机制，定期清理已关闭的会话
         this.keepAliveScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -271,6 +285,73 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         return null;
     }
 
+    /**
+     * Extracts bearer token from the Authorization header or URL parameter.
+     * Priority:
+     * 1. Authorization header (Bearer token)
+     * 2. URL query parameter (?token=xxx)
+     * @param request The HTTP servlet request
+     * @return The bearer token, or null if not found
+     */
+    private String extractBearerToken(HttpServletRequest request) {
+        // First, try to get from Authorization header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7).trim();
+        }
+
+        // If not found in header, try to get from URL query parameter
+        String tokenParam = request.getParameter("token");
+        if (tokenParam != null && !tokenParam.trim().isEmpty()) {
+            return tokenParam.trim();
+        }
+
+        return null;
+    }
+
+    /**
+     * Validates a bearer token using the configured token validator and cache.
+     * @param token The bearer token to validate
+     * @return true if the token is valid, false otherwise
+     */
+    private boolean validateBearerToken(String token) {
+        if (token == null || token.isEmpty()) {
+            logger.debug("Token is null or empty");
+            return false;
+        }
+
+        // Check cache first
+        Boolean cachedResult = tokenAuthCache.get(token);
+        if (cachedResult != null) {
+            logger.debug("Token validation result from cache: {}", cachedResult);
+            return cachedResult;
+        }
+
+        // Token not in cache, validate using the token validator
+        if (tokenValidator == null) {
+            logger.warn("Token validator is not configured");
+            return false;
+        }
+
+        try {
+            TokenValidator.ValidationResult result = tokenValidator.validate(token);
+            boolean isValid = result.isValid();
+
+            // Cache the result with custom TTL if provided
+            if (result.getTtl() != null) {
+                tokenAuthCache.put(token, isValid, result.getTtl());
+            } else {
+                tokenAuthCache.put(token, isValid);
+            }
+
+            logger.info("Token validation result from validator: {}", isValid);
+            return isValid;
+        } catch (Exception e) {
+            logger.error("Error validating token: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
     private void sendMessageToSession(McpSession session, String jsonText) {
         try {
             logger.debug("Sending message to session: {}, message:{}", session.getId(), jsonText);
@@ -317,11 +398,21 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             badRequestErrors.add("text/event-stream required in Accept header");
         }
 
+        // Bearer token authentication
+        if (tokenValidator != null) {
+            String bearerToken = extractBearerToken(request);
+            if (!validateBearerToken(bearerToken)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing bearer token");
+                return;
+            }
+        }
+
         String sessionId = request.getHeader(Const.MC_CLIENT_ID);
         if (sessionId == null || sessionId.isBlank()) {
             sessionId = java.util.UUID.randomUUID().toString();
         }
 
+        // Legacy auth function support
         if (!authFunction.apply(sessionId)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
             return;
@@ -418,6 +509,16 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
+        // Bearer token authentication
+        if (tokenValidator != null) {
+            String bearerToken = extractBearerToken(request);
+            if (!validateBearerToken(bearerToken)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing bearer token");
+                return;
+            }
+        }
+
+        // Legacy auth
         String clientId = request.getHeader(Const.MC_CLIENT_ID);
         if (clientId != null && !authFunction.apply(clientId)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
@@ -805,6 +906,15 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
+        // Bearer token authentication
+        if (tokenValidator != null) {
+            String bearerToken = extractBearerToken(request);
+            if (!validateBearerToken(bearerToken)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing bearer token");
+                return;
+            }
+        }
+
 //        String sessionId = request.getHeader(Const.MC_CLIENT_ID);
         String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
         if (sessionId == null) {
@@ -813,6 +923,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
+        // Legacy auth function support
         if (!authFunction.apply(sessionId)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
             return;
@@ -965,6 +1076,11 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     Thread.currentThread().interrupt();
                     this.keepAliveScheduler.shutdownNow();
                 }
+            }
+
+            // Shutdown token auth cache
+            if (this.tokenAuthCache != null) {
+                this.tokenAuthCache.shutdown();
             }
 
             logger.info("Graceful shutdown completed");
@@ -1133,6 +1249,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         private String mcpEndpoint = "/mcp";
         private boolean disallowDelete = false;
         private Duration keepAliveInterval;
+        private TokenValidator tokenValidator;
+        private Duration tokenCacheTtl;
 
         /**
          * Sets the ObjectMapper to use for JSON serialization/deserialization of MCP
@@ -1182,6 +1300,26 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
 
         /**
+         * Sets the token validator for bearer token authentication.
+         * @param tokenValidator The token validator instance. If null, bearer token auth is disabled.
+         * @return this builder instance
+         */
+        public Builder tokenValidator(TokenValidator tokenValidator) {
+            this.tokenValidator = tokenValidator;
+            return this;
+        }
+
+        /**
+         * Sets the TTL for token authentication cache entries.
+         * @param tokenCacheTtl The cache TTL. If null, defaults to 5 minutes.
+         * @return this builder instance
+         */
+        public Builder tokenCacheTtl(Duration tokenCacheTtl) {
+            this.tokenCacheTtl = tokenCacheTtl;
+            return this;
+        }
+
+        /**
          * Builds a new instance of {@link HttpServletStreamableServerTransport}
          * with the configured settings.
          * @return A new HttpServletStreamableServerTransport instance
@@ -1189,9 +1327,16 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
          */
         public HttpServletStreamableServerTransport build() {
             Assert.notNull(this.mcpEndpoint, "MCP endpoint must be set");
-            return new HttpServletStreamableServerTransport(
+            HttpServletStreamableServerTransport transport = new HttpServletStreamableServerTransport(
                     objectMapper != null ? objectMapper : new ObjectMapper(),
-                    mcpEndpoint, disallowDelete, keepAliveInterval);
+                    mcpEndpoint, disallowDelete, keepAliveInterval, tokenCacheTtl);
+
+            // Set token validator if provided
+            if (tokenValidator != null) {
+                transport.setTokenValidator(tokenValidator);
+            }
+
+            return transport;
         }
     }
 }
