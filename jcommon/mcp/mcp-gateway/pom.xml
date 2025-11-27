@@ -41,8 +41,22 @@
 
     <build>
 
-        <plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/META-INF</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>app.properties</include>
+                </includes>
+                <targetPath>META-INF/</targetPath>
+            </resource>
+        </resources>
 
+        <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -64,5 +78,33 @@
         </plugins>
 
     </build>
+
+    <profiles>
+
+        <profile>
+            <id>agent</id>
+            <properties>
+                <profiles.active>agent</profiles.active>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/config/agent.properties</filter>
+                </filters>
+            </build>
+        </profile>
+
+        <profile>
+            <id>mcp</id>
+            <properties>
+                <profiles.active>mcp</profiles.active>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/config/mcp.properties</filter>
+                </filters>
+            </build>
+        </profile>
+
+    </profiles>
 
 </project>
