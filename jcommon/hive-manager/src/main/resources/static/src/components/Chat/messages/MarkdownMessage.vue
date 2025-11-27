@@ -19,6 +19,7 @@ import mdKatex from "@traptitech/markdown-it-katex";
 // @ts-expect-error No type definitions available for markdown-it-link-attributes
 import mila from "markdown-it-link-attributes";
 import hljs from "highlight.js";
+// @ts-ignore
 import MarkdownIt from "markdown-it";
 import util from "@/libs/util";
 import { copyToClip } from "@/libs/copy";
@@ -34,16 +35,13 @@ import { markdownItMcp } from '@/plugins/markdown-it-mcp'
 import { markdownItStock } from '@/plugins/markdown-it-stock'
 import { useChatContextStore } from '@/stores/chat-context'
 import { usePidLogStore } from '@/stores/pid-log'
+import type {
+  Message as TypeMessage,
+} from "@/stores/chat-context"
 
 // Props
 const props = defineProps<{
-  message: {
-    data: {
-      text: string
-      cmd?: { label: string }
-      knowledgeBase?: { label: string }
-    }
-  }
+  message: TypeMessage
   id: number
 }>()
 
@@ -85,13 +83,23 @@ mdi.use(mdKatex, {
   blockClass: "katexmath-block rounded-md p-[10px]",
   errorColor: " #cc0000",
 });
-mdi.renderer.rules.fence = (tokens, idx) => {
+interface Token {
+  content: string;
+  [key: string]: any;
+}
+
+interface HighlightResult {
+  value: string;
+  language?: string;
+}
+
+mdi.renderer.rules.fence = (tokens: Token[], idx: number): string => {
   const t = tokens[idx];
   const code = t.content.trim();
   if (!code) {
     return '';
   }
-  const res = hljs.highlightAuto(code);
+  const res: HighlightResult = hljs.highlightAuto(code);
   return highlightBlock(res.value, res.language);
 }
 mdi.use(markdownItBolt)
@@ -114,10 +122,32 @@ function highlightBlock(str: string, lang?: string) {
   }</pre>`;
 }
 
-// Computed
-const messageText = computed(() => {
-  return mdi.render(props.message.data.text);
-})
+// // Computed
+// const messageText = computed(() => {
+//   return mdi.render(props.message.data.text);
+// })
+
+const messageText = ref('');
+let debounceTimer: number | null = null;
+
+watch(
+  () => props.message.data.text,
+  (newText) => {
+    // 清除之前的定时器
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+    
+    // 设置新的定时器
+    debounceTimer = setTimeout(() => {
+      nextTick(() => {
+        if (textRef.value) {
+          messageText.value = mdi.render(newText);
+        }
+      });
+    }, 300); // 300ms 防抖延迟
+  }, { immediate: true }
+);
 
 const cmd = computed(() => {
   if (props.message.data.cmd) {
@@ -613,13 +643,17 @@ onMounted(() => {
       textRef.value.querySelectorAll('.hive-checkpoint-btn').forEach((ele) => {
         ele?.removeEventListener('click', () => {
           const id = ele?.getAttribute('data-msg-id')
-          clearMessageAfterId(id)
-          emit('onClick2Conversion', { id })
+          if (id) {
+            clearMessageAfterId(id)
+            emit('onClick2Conversion', { id })
+          }
         })
         ele?.addEventListener('click', () => {
           const id = ele?.getAttribute('data-msg-id')
-          clearMessageAfterId(id)
-          emit('onClick2Conversion', { id })
+          if (id) {
+            clearMessageAfterId(id)
+            emit('onClick2Conversion', { id })
+          }
         })
       })
   }
@@ -640,25 +674,33 @@ onUpdated(() => {
     textRef.value.querySelectorAll('.hive-btn').forEach((ele) => {
       ele?.removeEventListener('click', () => {
         const id = ele?.id
-        clearMessageAfterId(id)
-        emit('onClick2Conversion', { id })
+        if (id) {
+          clearMessageAfterId(id)
+          emit('onClick2Conversion', { id })
+        }
       })
       ele?.addEventListener('click', () => {
         const id = ele?.id
-        clearMessageAfterId(id)
-        emit('onClick2Conversion', { id })
+        if (id) {
+          clearMessageAfterId(id)
+          emit('onClick2Conversion', { id })
+        }
       })
     })
       textRef.value.querySelectorAll('.hive-checkpoint-btn').forEach((ele) => {
         ele?.removeEventListener('click', () => {
           const id = ele?.getAttribute('data-msg-id')
-          clearMessageAfterId(id)
-          emit('onClick2Conversion', { id })
+          if (id) {
+            clearMessageAfterId(id)
+            emit('onClick2Conversion', { id })
+          }
         })
         ele?.addEventListener('click', () => {
           const id = ele?.getAttribute('data-msg-id')
-          clearMessageAfterId(id)
-          emit('onClick2Conversion', { id })
+          if (id) {
+            clearMessageAfterId(id)
+            emit('onClick2Conversion', { id })
+          }
         })
       })
   }
