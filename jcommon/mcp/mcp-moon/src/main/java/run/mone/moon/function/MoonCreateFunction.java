@@ -256,7 +256,8 @@ public class MoonCreateFunction implements McpFunction {
             // 2. 构建任务参数
             TaskReq taskParam = new TaskReq();
             MoonMoneTpcContext context = new MoonMoneTpcContext();
-            context.setTenant(String.valueOf(args.get("tenant")));
+            Integer tenant = ((Number) args.get("tenant")).intValue();
+            context.setTenant(String.valueOf(tenant));
             context.setAccount(args.containsKey("account") ?
                     (String) args.get("account") : "mcp_user");
 
@@ -295,7 +296,7 @@ public class MoonCreateFunction implements McpFunction {
             taskParam.setAlertTimeoutLevel(args.containsKey("alertTimeoutLevel") ?
                     (String) args.get("alertTimeoutLevel") : "P1");
             taskParam.setTimeout(args.containsKey("timeout") ?
-                    ((Number) args.get("timeout")).longValue() : 7200L);
+                    ((Number) args.get("timeout")).longValue() : 300L);
             taskParam.setTimeoutHalt(args.containsKey("timeoutHalt") ?
                     (Boolean) args.get("timeoutHalt") : true);
             taskParam.setAlertSuccess(args.containsKey("alertSuccess") ?
