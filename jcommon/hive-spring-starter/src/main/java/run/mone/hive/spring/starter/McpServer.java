@@ -75,9 +75,10 @@ public class McpServer {
 
         // 从 meta 中获取配置参数，如果没有则使用默认值
         int port = Integer.parseInt(meta.getOrDefault(Const.HTTP_PORT, "8081"));
-        String mcpEndpoint = meta.getOrDefault("http.endpoint", "/mcp");
-        int keepAliveSeconds = Integer.parseInt(meta.getOrDefault("http.keepalive.seconds", "30"));
-        boolean disallowDelete = Boolean.parseBoolean(meta.getOrDefault("http.disallow.delete", "false"));
+        String mcpEndpoint = meta.getOrDefault(Const.HTTP_ENDPOINT, "/mcp");
+        int keepAliveSeconds = Integer.parseInt(meta.getOrDefault(Const.HTTP_KEEPALIVE_SECONDS, "30"));
+        boolean disallowDelete = Boolean.parseBoolean(meta.getOrDefault(Const.HTTP_DISALLOW_DELETE, "false"));
+        boolean enableAuth = Boolean.parseBoolean(meta.getOrDefault(Const.HTTP_ENABLE_AUTH, "false"));
 
         // 创建 ObjectMapper
         ObjectMapper objectMapper = new ObjectMapper()
@@ -89,6 +90,7 @@ public class McpServer {
                 .mcpEndpoint(mcpEndpoint)
                 .keepAliveInterval(Duration.ofSeconds(keepAliveSeconds))
                 .disallowDelete(disallowDelete)
+                .enableAuth(enableAuth)
                 .objectMapper(objectMapper)
                 .authFunction(this::authenticateClient)
                 .build();

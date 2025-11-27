@@ -38,6 +38,8 @@ public class McpHub {
 
     private WatchService watchService;
 
+    private final String prefix;
+
     private volatile boolean isConnecting = false;
 
     private volatile boolean skipFile = false;
@@ -48,25 +50,35 @@ public class McpHub {
 
     public McpHub(Path settingsPath) throws IOException {
         this(settingsPath, msg -> {
-        }, false);
+        }, false, "");
+    }
+
+    public McpHub(Path settingsPath, String prefix) throws IOException {
+        this(settingsPath, msg -> {
+        }, false, prefix);
     }
 
 
     public McpHub() {
         this(null, msg -> {
-        }, true);
+        }, true, "");
     }
 
 
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer) throws IOException {
-        this(settingsPath, msgConsumer, false);
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer) {
+        this(settingsPath, msgConsumer, false, "");
+    }
+
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
+        this(settingsPath, msgConsumer, skipFile, "");
     }
 
     @SneakyThrows
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile, String prefix) {
         this.settingsPath = settingsPath;
         this.msgConsumer = msgConsumer;
         this.skipFile = skipFile;
+        this.prefix = prefix != null ? prefix : "";
 
         if (!skipFile) {
             this.watchService = FileSystems.getDefault().newWatchService();
@@ -108,7 +120,7 @@ public class McpHub {
                         String name = conn.getServer().getName();
                         ServerParameters params = conn.getServer().getServerParameters();
                         log.info("reconnect:{}", name);
-                        updateServerConnections(ImmutableMap.of(name,params),true);
+                        reconnect(name, params);
                     }
                 }
             })));
@@ -178,7 +190,7 @@ public class McpHub {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
             Map<String, ServerParameters> config = parseServerConfig(content);
-            updateServerConnections(config,true);
+            updateServerConnections(config, true);
         } catch (IOException e) {
             log.error("Failed to initialize MCP servers: ", e);
         }
@@ -196,16 +208,28 @@ public class McpHub {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
             Map<String, ServerParameters> newConfig = parseServerConfig(content);
-            updateServerConnections(newConfig,true);
+            updateServerConnections(newConfig, true);
         } catch (IOException e) {
             System.err.println("Failed to process MCP settings change: " + e.getMessage());
         }
     }
 
+    public synchronized void reconnect(String name, ServerParameters serverParameters) {
+        Safe.run(() -> {
+            deleteConnection(name);
+        });
+        Safe.run(() -> {
+            connectToServer(name, serverParameters);
+        });
+    }
+
     public synchronized void updateServerConnections(Map<String, ServerParameters> newServers, boolean removeOld) {
         isConnecting = true;
         Set<String> currentNames = new HashSet<>(connections.keySet());
-        Set<String> newNames = new HashSet<>(newServers.keySet());
+        Set<String> newNames = new HashSet<>();
+        for (String key : newServers.keySet()) {
+            newNames.add(prefix + key);
+        }
 
         if (removeOld) {
             // Delete removed servers
@@ -219,7 +243,7 @@ public class McpHub {
 
         // Update or add servers
         for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
-            String name = entry.getKey();
+            String name = prefix + entry.getKey();
             ServerParameters config = entry.getValue();
             McpConnection currentConnection = connections.get(name);
 
@@ -251,7 +275,7 @@ public class McpHub {
 
         // Update or add servers
         for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
-            String name = entry.getKey();
+            String name = prefix + entry.getKey();
             ServerParameters config = entry.getValue();
             McpConnection currentConnection = connections.get(name);
 
@@ -279,13 +303,13 @@ public class McpHub {
 
     public void connectToServer(String name, ServerParameters config) {
         String configType = config.getType().toLowerCase();
-        
+
         // HTTP类型使用V2的实现
         if ("http".equals(configType)) {
             connectToServerHttp(name, config);
             return;
         }
-        
+
         // 其他类型使用原有实现
         ClientMcpTransport transport = null;
         switch (configType) {
@@ -341,7 +365,7 @@ public class McpHub {
             }
         }
     }
-    
+
     /**
      * HTTP类型的连接方法，使用 io.modelcontextprotocol 的实现
      */
@@ -349,28 +373,28 @@ public class McpHub {
         ObjectMapper objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport transportV2 = 
-            io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport
-                .builder(config.getUrl())
-                    .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-                    .endpoint(config.getUrl())
-                .connectTimeout(Duration.ofSeconds(30))
-                .build();
+        io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport transportV2 =
+                io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport
+                        .builder(config.getUrl())
+                        .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+                        .endpoint(config.getUrl())
+                        .connectTimeout(Duration.ofSeconds(30))
+                        .build();
 
-        io.modelcontextprotocol.client.McpSyncClient clientV2 = 
-            io.modelcontextprotocol.client.McpClient.sync(transportV2)
-                .requestTimeout(Duration.ofSeconds(120))
-                .capabilities(io.modelcontextprotocol.spec.McpSchema.ClientCapabilities.builder()
-                    .roots(true)
-                    .build())
-                .build();
+        io.modelcontextprotocol.client.McpSyncClient clientV2 =
+                io.modelcontextprotocol.client.McpClient.sync(transportV2)
+                        .requestTimeout(Duration.ofSeconds(120))
+                        .capabilities(io.modelcontextprotocol.spec.McpSchema.ClientCapabilities.builder()
+                                .roots(true)
+                                .build())
+                        .build();
 
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
         McpConnection connection = new McpConnection(server, clientV2, transportV2, McpType.fromString(config.getType()));
         connection.setKey(name);
         connections.put(name, connection);
-        
+
         try {
             //这里真的会连接过去
             io.modelcontextprotocol.spec.McpSchema.InitializeResult res = clientV2.initialize();
@@ -461,17 +485,17 @@ public class McpHub {
         if (connection == null) {
             throw new IllegalArgumentException("No connection found for server: " + serverName);
         }
-        
+
         // 如果是HTTP类型，使用V2的客户端
         if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
-            io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 = 
-                new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
+            io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 =
+                    new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
             io.modelcontextprotocol.spec.McpSchema.CallToolResult resultV2 = connection.getClientV2().callTool(requestV2);
-            
+
             // 转换结果为旧版本的类型
             return convertCallToolResultFromV2(resultV2);
         }
-        
+
         // 其他类型使用原有的客户端
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callTool(request);
@@ -487,12 +511,12 @@ public class McpHub {
                 sink.complete();
             });
         }
-        
+
         // 如果是HTTP类型，使用V2的客户端
         if (connection.getType() == McpType.HTTP && connection.getClientV2() != null) {
-            io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 = 
-                new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
-            
+            io.modelcontextprotocol.spec.McpSchema.CallToolRequest requestV2 =
+                    new io.modelcontextprotocol.spec.McpSchema.CallToolRequest(toolName, toolArguments);
+
             // V2的客户端只有同步方法 callTool，没有 callToolStream
             // 所以这里调用 callTool 并包装成 Flux
             return Flux.create(sink -> {
@@ -506,12 +530,12 @@ public class McpHub {
                 }
             });
         }
-        
+
         // 其他类型使用原有的客户端
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callToolStream(request);
     }
-    
+
     /**
      * 将V2版本的CallToolResult转换为旧版本
      */
@@ -521,22 +545,22 @@ public class McpHub {
         if (resultV2.content() != null) {
             for (io.modelcontextprotocol.spec.McpSchema.Content contentV2 : resultV2.content()) {
                 if (contentV2 instanceof io.modelcontextprotocol.spec.McpSchema.TextContent) {
-                    io.modelcontextprotocol.spec.McpSchema.TextContent textContentV2 = 
-                        (io.modelcontextprotocol.spec.McpSchema.TextContent) contentV2;
+                    io.modelcontextprotocol.spec.McpSchema.TextContent textContentV2 =
+                            (io.modelcontextprotocol.spec.McpSchema.TextContent) contentV2;
                     contents.add(new McpSchema.TextContent(textContentV2.text()));
                 } else if (contentV2 instanceof io.modelcontextprotocol.spec.McpSchema.ImageContent) {
-                    io.modelcontextprotocol.spec.McpSchema.ImageContent imageContentV2 = 
-                        (io.modelcontextprotocol.spec.McpSchema.ImageContent) contentV2;
+                    io.modelcontextprotocol.spec.McpSchema.ImageContent imageContentV2 =
+                            (io.modelcontextprotocol.spec.McpSchema.ImageContent) contentV2;
                     contents.add(new McpSchema.ImageContent(imageContentV2.data(), imageContentV2.mimeType()));
                 } else if (contentV2 instanceof io.modelcontextprotocol.spec.McpSchema.EmbeddedResource) {
-                    io.modelcontextprotocol.spec.McpSchema.EmbeddedResource resourceV2 = 
-                        (io.modelcontextprotocol.spec.McpSchema.EmbeddedResource) contentV2;
+                    io.modelcontextprotocol.spec.McpSchema.EmbeddedResource resourceV2 =
+                            (io.modelcontextprotocol.spec.McpSchema.EmbeddedResource) contentV2;
                     // 创建对应的旧版本资源对象
                     contents.add(new McpSchema.TextContent("Embedded Resource: " + resourceV2.resource().uri()));
                 }
             }
         }
-        
+
         return new McpSchema.CallToolResult(contents, resultV2.isError());
     }
 

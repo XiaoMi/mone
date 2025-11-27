@@ -57,12 +57,14 @@ public class LogQueryTool implements ITool {
     @Override
     public String description() {
         return """
-                查询指定项目和环境下的日志信息。该工具可以根据日志级别、时间范围等条件进行过滤查询，
+                查询指定项目和环境下的日志信息。该工具可以根据日志级别、时间范围、链路ID等条件进行过滤查询，
                 帮助快速定位和分析应用日志。
 
                 **使用场景：**
                 - 查询应用的错误日志（ERROR级别）
                 - 查询警告日志（WARN级别）
+                - 查询所有级别的日志（不指定level）
+                - 根据traceId追踪特定请求的完整调用链路
                 - 分析特定时间段的日志信息
                 - 排查线上问题和异常
                 - 监控应用运行状态
@@ -73,7 +75,8 @@ public class LogQueryTool implements ITool {
                 - 日志的详细信息（时间、级别、内容等）
 
                 **重要提示：**
-                - level为日志级别（ERROR、WARN、INFO、DEBUG等）
+                - level为日志级别（ERROR、WARN、INFO、DEBUG等），可选参数。如果需要查询错误日志，则传入ERROR；如果需要查询所有日志，则不传
+                - traceId为链路追踪ID（32位由0-9a-f组成的字符串），可选参数，用于追踪特定请求
                 - projectId为项目ID（数字）
                 - envId为环境ID（数字）
                 - startTime和endTime为毫秒时间戳
@@ -84,11 +87,12 @@ public class LogQueryTool implements ITool {
     @Override
     public String parameters() {
         return """
-                - level: (必填) 日志级别，可选值：ERROR、WARN、INFO、DEBUG等
+                - level: (可选) 日志级别，可选值：ERROR、WARN、INFO、DEBUG等。如果需要查询错误日志，则传入ERROR；如果需要查询所有日志，则不传
                 - projectId: (必填) 项目ID，数字类型
                 - envId: (必填) 环境ID，数字类型
                 - startTime: (可选) 查询开始时间，毫秒时间戳，不提供则使用当前时间前1小时
                 - endTime: (可选) 查询结束时间，毫秒时间戳，不提供则使用当前时间
+                - traceId: (可选) 链路追踪ID，32位由0-9a-f组成的字符串，用于追踪特定请求的完整调用链路
                 """;
     }
 
@@ -104,11 +108,12 @@ public class LogQueryTool implements ITool {
         }
         return """
                 <log_query>
-                <level>日志级别</level>
+                <level>日志级别（可选）</level>
                 <projectId>项目ID</projectId>
                 <envId>环境ID</envId>
                 <startTime>开始时间戳（可选）</startTime>
                 <endTime>结束时间戳（可选）</endTime>
+                <traceId>链路追踪ID（可选）</traceId>
                 %s
                 </log_query>
                 """.formatted(taskProgress);
@@ -133,11 +138,27 @@ public class LogQueryTool implements ITool {
                 <endTime>1763519383000</endTime>
                 </log_query>
 
-                示例 3: 查询INFO级别日志
+                示例 3: 查询所有级别的日志（不指定level）
                 <log_query>
-                <level>INFO</level>
                 <projectId>301316</projectId>
                 <envId>1170008</envId>
+                <startTime>1763515783000</startTime>
+                <endTime>1763519383000</endTime>
+                </log_query>
+
+                示例 4: 根据traceId追踪特定请求的日志
+                <log_query>
+                <projectId>301316</projectId>
+                <envId>1170008</envId>
+                <traceId>4dd8195561b938dc11a05881173a9263</traceId>
+                </log_query>
+
+                示例 5: 查询特定traceId的ERROR日志
+                <log_query>
+                <level>ERROR</level>
+                <projectId>301316</projectId>
+                <envId>1170008</envId>
+                <traceId>4dd8195561b938dc11a05881173a9263</traceId>
                 <startTime>1763515783000</startTime>
                 <endTime>1763519383000</endTime>
                 </log_query>
@@ -149,13 +170,6 @@ public class LogQueryTool implements ITool {
         JsonObject result = new JsonObject();
 
         try {
-            // 验证必填参数：level
-            if (!inputJson.has("level") || StringUtils.isBlank(inputJson.get("level").getAsString())) {
-                log.error("log_query 操作缺少必填参数 level");
-                result.addProperty("error", "缺少必填参数 'level'");
-                return result;
-            }
-
             // 验证必填参数：projectId
             if (!inputJson.has("projectId")) {
                 log.error("log_query 操作缺少必填参数 projectId");
@@ -171,14 +185,25 @@ public class LogQueryTool implements ITool {
             }
 
             // 获取必填参数
-            String level = inputJson.get("level").getAsString().trim().toUpperCase();
             int projectId = inputJson.get("projectId").getAsInt();
             int envId = inputJson.get("envId").getAsInt();
 
-            if (level.isEmpty()) {
-                log.warn("level 参数为空");
-                result.addProperty("error", "参数错误：level不能为空");
-                return result;
+            // 获取可选参数：level
+            String level = null;
+            if (inputJson.has("level") && !StringUtils.isBlank(inputJson.get("level").getAsString())) {
+                level = inputJson.get("level").getAsString().trim().toUpperCase();
+            }
+
+            // 获取可选参数：traceId
+            String traceId = null;
+            if (inputJson.has("traceId") && !StringUtils.isBlank(inputJson.get("traceId").getAsString())) {
+                traceId = inputJson.get("traceId").getAsString().trim();
+                // 验证traceId格式（32位，由0-9a-f组成）
+                if (!traceId.matches("^[0-9a-fA-F]{32}$")) {
+                    log.warn("traceId 格式不正确：{}", traceId);
+                    result.addProperty("error", "参数错误：traceId必须是32位由0-9a-f组成的字符串");
+                    return result;
+                }
             }
 
             // 获取时间参数，如果未提供则使用默认值（最近1小时）
@@ -190,22 +215,27 @@ public class LogQueryTool implements ITool {
                     ? inputJson.get("startTime").getAsLong()
                     : endTime - 3600000; // 默认查询最近1小时（毫秒）
 
-            log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}",
-                    level, projectId, envId, startTime, endTime);
+            log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}",
+                    level, projectId, envId, startTime, endTime, traceId);
 
             // 调用服务查询日志
-            String logResult = logQueryService.queryLogs(level, projectId, envId, startTime, endTime);
+            String logResult = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId);
 
             // 设置成功响应
             result.addProperty("result", logResult);
-            result.addProperty("level", level);
+            if (level != null) {
+                result.addProperty("level", level);
+            }
+            if (traceId != null) {
+                result.addProperty("traceId", traceId);
+            }
             result.addProperty("projectId", projectId);
             result.addProperty("envId", envId);
             result.addProperty("startTime", startTime);
             result.addProperty("endTime", endTime);
             result.addProperty("success", true);
 
-            log.info("成功查询日志，level: {}, projectId: {}, envId: {}", level, projectId, envId);
+            log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}", level, projectId, envId, traceId);
 
             return result;
 

@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -18,8 +21,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@Component
 public class CreateProjectTool implements ITool {
 
+    @Value("${git.email.suffix}")
+    private String gitUserName;
+    
     public static final String name = "create_project";
     private static final String BASE_URL = System.getenv("req_base_url");
     private static final String CREATE_PROJECT_URL = BASE_URL != null ? BASE_URL + "/createProject" : null;
@@ -131,7 +138,7 @@ public class CreateProjectTool implements ITool {
                     : "staging";
             String baseUserName = inputJson.has("baseUserName") && !StringUtils.isBlank(inputJson.get("baseUserName").getAsString())
                     ? inputJson.get("baseUserName").getAsString()
-                    : "liguanchen";
+                    : gitUserName;
 
             // 构建第一个对象：MoneContext
             Map<String, Object> userMap = new HashMap<>();
@@ -149,7 +156,7 @@ public class CreateProjectTool implements ITool {
             projectCreateDto.put("desc", "");
             // projectGen固定配置
             Map<String, Object> projectGen = new HashMap<>();
-            projectGen.put("type", "spring-java21");
+            projectGen.put("type", "spring-java21-fe");
             projectGen.put("need", false);
             projectGen.put("gen", false);
             projectCreateDto.put("projectGen", projectGen);

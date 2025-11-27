@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +26,12 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/11/18
  */
 @Slf4j
+@Component
 public class CreatePipelineTool implements ITool {
+
+    @Value("${git.email.suffix}")
+    private String gitUserName;
+
     public static String gitName = "";
     public static final String name = "create_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
@@ -165,7 +173,7 @@ public class CreatePipelineTool implements ITool {
 
             // 构建用户信息
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", "liguanchen");
+            userMap.put("baseUserName", gitUserName);
             userMap.put("userType", 0);
 
             List<Object> requestBody = List.of(userMap, pipelineConfig);
@@ -304,7 +312,7 @@ public class CreatePipelineTool implements ITool {
         template.put("templateName", "K8sJob");
 
         List<Map<String, Object>> steps = new ArrayList<>();
-        
+
         // 1. 下载代码步骤
         steps.add(createStep("k8s_checkout", "k8s下载代码",
                 Map.of("image", "MIONE/checkout", "checkoutPath", "")));
@@ -365,7 +373,7 @@ public class CreatePipelineTool implements ITool {
         template.put("templateName", "K8sDeploy");
 
         List<Map<String, Object>> steps = new ArrayList<>();
-        
+
         // K8s部署步骤
         Map<String, Object> deployParams = new HashMap<>();
         deployParams.put("type", "k8s");
@@ -390,11 +398,11 @@ public class CreatePipelineTool implements ITool {
         deployParams.put("_pipeline.min_ready_seconds", 30);
         deployParams.put("_pipeline.probe", "");
         deployParams.put("_pipeline.envs", "");
-        
+
         // 根据环境设置zone
         String zone = env.equals("staging") ? "pub-st:mione-staging" : "auto";
         deployParams.put("_pipeline.zone", zone);
-        
+
         deployParams.put("_pipeline.iamTree", "{\"fullIamId\":\"2;3;43;12087;313362\",\"fullIamName\":\"小米;中国区;系统组(待废弃);mione;miline\"}");
         deployParams.put("init_scripts", "");
         deployParams.put("_pipeline.pvcs", "");

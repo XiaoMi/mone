@@ -1,5 +1,6 @@
 package run.mone.hive.spring.starter;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,10 +31,10 @@ public class CorsConfig {
         
         // 允许所有请求方法
         config.addAllowedMethod("*");
-        
+
         // 允许发送 Cookie
         config.setAllowCredentials(true);
-        
+
         // 预检请求的有效期（秒）
         config.setMaxAge(3600L);
         
