@@ -78,6 +78,7 @@ public class McpServer {
         String mcpEndpoint = meta.getOrDefault("http.endpoint", "/mcp");
         int keepAliveSeconds = Integer.parseInt(meta.getOrDefault("http.keepalive.seconds", "30"));
         boolean disallowDelete = Boolean.parseBoolean(meta.getOrDefault("http.disallow.delete", "false"));
+        boolean enableAuth = Boolean.parseBoolean(meta.getOrDefault("http.enable.auth", "false"));
 
         // 创建 ObjectMapper
         ObjectMapper objectMapper = new ObjectMapper()
@@ -89,6 +90,7 @@ public class McpServer {
                 .mcpEndpoint(mcpEndpoint)
                 .keepAliveInterval(Duration.ofSeconds(keepAliveSeconds))
                 .disallowDelete(disallowDelete)
+                .enableAuth(enableAuth)
                 .objectMapper(objectMapper)
                 .authFunction(this::authenticateClient)
                 .build();

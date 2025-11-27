@@ -49,6 +49,7 @@ public class HttpServletServerLoader {
     private final String mcpEndpoint;
     private final Duration keepAliveInterval;
     private final boolean disallowDelete;
+    private final boolean enableAuth;
     private final ObjectMapper objectMapper;
     private final Function<String, Boolean> authFunction;
     
@@ -61,6 +62,7 @@ public class HttpServletServerLoader {
         this.mcpEndpoint = builder.mcpEndpoint;
         this.keepAliveInterval = builder.keepAliveInterval;
         this.disallowDelete = builder.disallowDelete;
+        this.enableAuth = builder.enableAuth;
         this.objectMapper = builder.objectMapper;
         this.authFunction = builder.authFunction;
     }
@@ -145,6 +147,10 @@ public class HttpServletServerLoader {
             if (keepAliveInterval != null) {
                 builder.keepAliveInterval(keepAliveInterval);
             }
+            if (enableAuth) {
+                builder.tokenValidator(new HttpTokenValidator()); // Reads from TOKEN_VALIDATION_ENDPOINT
+                builder.tokenCacheTtl(Duration.ofMinutes(5)); // Cache tokens for 5 minutes
+            }
             
             transport = builder.build();
             
@@ -202,6 +208,7 @@ public class HttpServletServerLoader {
         private String mcpEndpoint = "/mcp";
         private Duration keepAliveInterval;
         private boolean disallowDelete = false;
+        private boolean enableAuth = false;
         private ObjectMapper objectMapper = new ObjectMapper();
         private Function<String, Boolean> authFunction;
         
@@ -242,6 +249,16 @@ public class HttpServletServerLoader {
          */
         public Builder disallowDelete(boolean disallowDelete) {
             this.disallowDelete = disallowDelete;
+            return this;
+        }
+
+        /**
+         * 设置是否启用认证
+         * @param enableAuth
+         * @return
+         */
+        public Builder enableAuth(boolean enableAuth) {
+            this.enableAuth = enableAuth;
             return this;
         }
         

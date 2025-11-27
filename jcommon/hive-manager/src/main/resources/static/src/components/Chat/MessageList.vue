@@ -3,45 +3,40 @@
     <div ref="scrollList1">
       <Message
         v-for="(message, idx) in messages"
-        v-memo="[(message as TypeMessage).data.text]"
+        v-memo="[message.data.text]"
         :key="idx"
         :id="idx"
-        :message="(message as TypeMessageList)"
-        :user="profile((message as TypeMessage).author)"
+        :message="message"
+        :user="profile(message.author)"
         :onMessageClick="onMessageClick"
         :onMessageCmd="onMessageCmd"
         :onPlayAudio="onPlayAudio"
         @pidAction="handlePidAction"
         @onClick2Conversion="(id) => {
-            $emit('onClick2Conversion', id)
+            emit('onClick2Conversion', id)
           }"
       >
-        <template v-slot:user-avatar="scopedProps">
+        <template #user-avatar="scopedProps">
           <slot
             name="user-avatar"
-            :user="scopedProps.user"
-            :message="scopedProps.message"
+            v-bind="scopedProps"
           ></slot>
         </template>
-        <template v-slot:text-message-body="scopedProps">
+        <template #text-message-body="scopedProps">
           <slot
             name="text-message-body"
-            :message="scopedProps.message"
-            :messageText="scopedProps.messageText"
-            :messageColors="scopedProps.messageColors"
-            :me="scopedProps.me"
+            v-bind="scopedProps"
           >
           </slot>
         </template>
-        <template v-slot:system-message-body="scopedProps">
-          <slot name="system-message-body" :message="scopedProps.message">
+        <template #system-message-body="scopedProps">
+          <slot name="system-message-body" v-bind="scopedProps">
           </slot>
         </template>
-        <template v-slot:text-message-toolbox="scopedProps">
+        <template #text-message-toolbox="scopedProps">
           <slot
             name="text-message-toolbox"
-            :message="scopedProps.message"
-            :me="scopedProps.me"
+            v-bind="scopedProps"
           >
           </slot>
         </template>
@@ -63,137 +58,166 @@
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount, onUpdated, nextTick, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import type {
   MessageList as TypeMessageList,
   Message as TypeMessage,
-} from "@/stores/chat-context";
-import Message from "./Message.vue";
-
+} from "@/stores/chat-context"
+import Message from "./Message.vue"
 import { useChatContextStore } from "@/stores/chat-context"
-import { mapState } from "pinia";
 import { useEditStore } from '@/stores/edit'
+import { type MessageClickPayload } from "./messages/HelloMessage.vue";
 
-let resizeObserver: ResizeObserver;
-
-export default {
-  components: {
-    Message,
-  },
-  props: {
-    messages: {
-      type: Array,
-      required: true,
-    },
-    onMessageClick: {
-      type: Function,
-      required: true,
-    },
-    onMessageCmd: {
-      type: Function,
-      required: true,
-    },
-    alwaysScrollToBottom: {
-      type: Boolean,
-      required: true,
-    },
-    onPlayAudio: {
-      type: Function,
-      required: true,
-    },
-  },
-  data() {
-    return {
-      initialScrollTop: null,
-      isUserScrolling: false,
-      scrollTimer: null,
-      timer: 0,
-    };
-  },
-  watch: {
-    isLoading: {
-      handler(val){
-        console.log(val)
-      },
-      deep: true,
-      immediate: true
+// Message 组件期望的类型
+interface MessageComponentMessage {
+  id: string
+  type: string
+  data: {
+    text?: string
+    sound?: string
+    flowData?: any
+    [key: string]: any
+  }
+  meta: {
+    role: string
+    ask?: {
+      prompt?: string
     }
-  },
-  computed: {
-    ...mapState(useChatContextStore, ["isLoading"]),
-    ...mapState(useEditStore, ['isFollow', 'showFollow']),
+    [key: string]: any
+  }
+  [key: string]: any
+}
 
-  },
-  mounted() {
-    this.watchScrollList();
-    this.$nextTick(this._scrollDown());
-  },
-  beforeUnmount() {
-    resizeObserver.unobserve(this.$refs.scrollList);
-    clearTimeout(this.timer);
-  },
-  updated() {
-    if (this.shouldScrollToBottom()) this.$nextTick(() => this._scrollDown());
-  },
-  methods: {
-    _scrollDown() {
-      if (this.isFollow) {
-        this.$nextTick(() => {
-          this.$refs.scrollList.scrollTop = this.$refs.scrollList.scrollHeight;
-          if (!this.initialScrollTop) {
-            this.initialScrollTop = this.$refs.scrollList.scrollTop;
-          }
-        });
-      }
-    },
-    // _scrollDown() {
-    //   this.$refs.scrollList.scrollTop = this.$refs.scrollList.scrollHeight;
-    //   !this.initialScrollTop
-    //     ? (this.initialScrollTop = this.$refs.scrollList.scrollTop)
-    //     : "";
-    // },
-    handleScroll(e: any) {
-      if (e.target.scrollTop === 0) {
-        this.$emit("scrollToTop");
-      }
-    },
-    isNearBottom() {
-      const { scrollTop, scrollHeight, clientHeight } = this.$refs.scrollList;
-      return scrollHeight - scrollTop - clientHeight < 100;
-    },
-    shouldScrollToBottom() {
-      const scrollTop = this.$refs.scrollList.scrollTop;
-      const scrollable = scrollTop > this.$refs.scrollList.scrollHeight - 600;
-      return this.alwaysScrollToBottom || scrollable;
-    },
-    profile(author: { username: string; cname: string; avatar: string }) {
-      return author;
-    },
-    watchScrollList() {
-      resizeObserver = new ResizeObserver(() => {
-        const value =
-          this.$refs.scrollList.scrollHeight - this.$refs.scrollList.scrollTop;
-        if (
-          this.initialScrollTop === this.$refs.scrollList.scrollTop ||
-          (this.$refs.scrollList.scrollTop > this.initialScrollTop &&
-            value > this.$refs.scrollList.offsetHeight)
-        ) {
-          this._scrollDown();
+// Props 定义
+interface Props {
+  messages: TypeMessageList
+  onMessageClick: (message: MessageClickPayload) => Promise<void>
+  onMessageCmd: (cmd: string, message: TypeMessage) => Promise<void>
+  alwaysScrollToBottom: boolean
+  onPlayAudio: (audio: any) => void
+}
+
+const props = defineProps<Props>()
+
+// Emits 定义
+interface Emits {
+  (e: 'scrollToTop'): void
+  (e: 'pidAction', data: { pid: string; action: string }): void
+  (e: 'onClick2Conversion', id: { id: string }): void
+}
+
+const emit = defineEmits<Emits>()
+
+// Store
+const chatContextStore = useChatContextStore()
+const editStore = useEditStore()
+const { isLoading } = storeToRefs(chatContextStore)
+const { isFollow, showFollow } = storeToRefs(editStore)
+
+// Refs
+const scrollList = ref<HTMLElement | null>(null)
+const scrollList1 = ref<HTMLElement | null>(null)
+
+// Data
+const initialScrollTop = ref<number | null>(null)
+const isUserScrolling = ref(false)
+const scrollTimer = ref<number | null>(null)
+const timer = ref(0)
+
+let resizeObserver: ResizeObserver | null = null
+
+// Watch
+watch(isLoading, (val) => {
+  console.log(val)
+}, { deep: true, immediate: true })
+
+// Methods
+const _scrollDown = () => {
+  if (isFollow.value && scrollList.value) {
+    nextTick(() => {
+      if (scrollList.value) {
+        scrollList.value.scrollTop = scrollList.value.scrollHeight
+        if (!initialScrollTop.value) {
+          initialScrollTop.value = scrollList.value.scrollTop
         }
-      });
+      }
+    })
+  }
+}
 
-      resizeObserver.observe(this.$refs.scrollList1);
-    },
-    handlePidAction(data: { pid: string; action: string }) {
-      // 向上传递 pidAction 事件
-      this.$emit('pidAction', data);
-    },
-    toggleFollow() {
-      const editStore = useEditStore();
-      editStore.setIsFollow(!this.isFollow);
-    },
-  },
-};
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (target.scrollTop === 0) {
+    emit("scrollToTop")
+  }
+}
+
+const isNearBottom = () => {
+  if (!scrollList.value) return false
+  const { scrollTop, scrollHeight, clientHeight } = scrollList.value
+  return scrollHeight - scrollTop - clientHeight < 100
+}
+
+const shouldScrollToBottom = () => {
+  if (!scrollList.value) return false
+  const scrollTop = scrollList.value.scrollTop
+  const scrollable = scrollTop > scrollList.value.scrollHeight - 600
+  return props.alwaysScrollToBottom || scrollable
+}
+
+const profile = (author: { username: string; cname: string; avatar: string }) => {
+  return author
+}
+
+const watchScrollList = () => {
+  if (!scrollList.value || !scrollList1.value) return
+
+  resizeObserver = new ResizeObserver(() => {
+    if (!scrollList.value || !initialScrollTop.value) return
+    
+    const value = scrollList.value.scrollHeight - scrollList.value.scrollTop
+    if (
+      initialScrollTop.value === scrollList.value.scrollTop ||
+      (scrollList.value.scrollTop > initialScrollTop.value &&
+        value > scrollList.value.offsetHeight)
+    ) {
+      _scrollDown()
+    }
+  })
+
+  resizeObserver.observe(scrollList1.value)
+}
+
+const handlePidAction = (data: { pid: string; action: string }) => {
+  emit('pidAction', data)
+}
+
+const toggleFollow = () => {
+  editStore.setIsFollow(!isFollow.value)
+}
+
+// Lifecycle
+onMounted(() => {
+  watchScrollList()
+  nextTick(_scrollDown)
+})
+
+onBeforeUnmount(() => {
+  if (resizeObserver && scrollList.value) {
+    resizeObserver.unobserve(scrollList.value)
+  }
+  if (timer.value) {
+    clearTimeout(timer.value)
+  }
+})
+
+onUpdated(() => {
+  if (shouldScrollToBottom()) {
+    nextTick(() => _scrollDown())
+  }
+})
 </script>
 
 <style scoped lang="scss">
