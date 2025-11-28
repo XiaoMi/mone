@@ -39,11 +39,16 @@ public class SecurityConfig {
                                 , "/api/v1/users/internal-account"
                         ).permitAll()
                         .requestMatchers("/scripts/**").permitAll()
-                        .anyRequest().authenticated()
+                        // 对于其他请求，允许JWT过滤器处理，如果JWT过滤器没有设置认证，则由Spring Security处理
+                        // 这样可以保持与旧API的兼容性
+                        .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // JWT过滤器会在UsernamePasswordAuthenticationFilter之前执行，负责设置认证信息
+                // 如果JWT过滤器没有设置认证，请求仍然可以通过（因为anyRequest().permitAll()）
+                // 但JWT过滤器内部会检查token并返回403（如果需要的话）
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
-   
+
 }

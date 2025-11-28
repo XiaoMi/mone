@@ -7,6 +7,8 @@ interface User {
   username: string
   internalAccount: string
   // 添加其他用户字段
+  cname: string
+  avatar: string
 }
 
 export const useUserStore = defineStore('user', () => {

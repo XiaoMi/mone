@@ -97,6 +97,8 @@ public class RoleService {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
+    private String agentId;
+
 
     //支持延时创建agent(单位是s)
     @Value("${mcp.agent.delay:0}")
@@ -121,7 +123,7 @@ public class RoleService {
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
         //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
-            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
+            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath), "default_"));
         }
         if (roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
             //创建一个默认Agent
@@ -155,13 +157,6 @@ public class RoleService {
 
     private static @NotNull McpHub getMcpHub(ReactorRole role) {
         return role.getMcpHub() != null ? role.getMcpHub() : new McpHub();
-    }
-
-    //合并两个List<String>注意去重(method)
-    public List<String> mergeLists(List<String> list1, List<String> list2) {
-        Set<String> mergedSet = new HashSet<>(list1);
-        mergedSet.addAll(list2);
-        return new ArrayList<>(mergedSet);
     }
 
     private void shutdownHook() {
@@ -245,6 +240,7 @@ public class RoleService {
             public void reg(RegInfo info) {
                 if (owner.equals(Const.DEFAULT)) {
                     hiveManagerService.register(info);
+                    setAgentId(hiveManagerService.getAgentId());
                 }
             }
 

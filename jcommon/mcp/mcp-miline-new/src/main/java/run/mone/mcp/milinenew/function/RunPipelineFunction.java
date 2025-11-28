@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -23,8 +26,12 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/11/18
  */
 @Slf4j
+@Component
 public class RunPipelineFunction implements McpFunction {
 
+    @Value("${git.email.suffix}")
+    private String gitUserName;
+    
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -43,7 +50,7 @@ public class RunPipelineFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/startPipelineWithLatestCommit" : null;
+    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -90,7 +97,7 @@ public class RunPipelineFunction implements McpFunction {
             Integer pipelineId = convertToInteger(pipelineIdObj);
 
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", "zhangzhiyong1");
+            userMap.put("baseUserName", gitUserName);
             userMap.put("userType", 0);
             List<Object> requestBody = List.of(userMap, projectId, pipelineId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
@@ -120,16 +127,21 @@ public class RunPipelineFunction implements McpFunction {
                 String responseBody = response.body().string();
                 log.info("runPipeline response: {}", responseBody);
 
-                ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
+                            objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                String resultText = String.format("成功触发流水线，执行ID: %d", apiResponse.getData());
+                Map<String, Object> data = apiResponse.getData();
+                Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
+                String url = (String) data.get("url");
+                
+                String resultText = String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url);
 
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(resultText)),
@@ -178,6 +190,7 @@ public class RunPipelineFunction implements McpFunction {
                 - 需要在CI/CD中触发某个流水线
                 - 验证最近一次提交是否能通过流水线
                 - 集成到自动化流程中进行构建/部署
+                - 发布/部署系统
                 """;
     }
 

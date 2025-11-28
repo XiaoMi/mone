@@ -206,8 +206,9 @@
   <FormParams v-bind:dialog-visible="showFormParams" :form-ui="formUi" @submit="updateText" />
 </template>
 
-<script lang="ts">
-import { mapState } from "pinia";
+<script setup lang="ts">
+import { ref, computed, watch, nextTick, type PropType } from 'vue';
+import { storeToRefs } from 'pinia';
 import util from "@/libs/util";
 import { useUserStore } from "@/stores/user";
 import { useEditStore } from "@/stores/edit";
@@ -217,9 +218,6 @@ import { useFunctionPanelStore } from "@/stores/function-panel";
 import Recoder from "@/components/recorder/index.vue";
 import UserInputButton from "./UserInputButton.vue";
 import IconSend from "./components/icons/IconSend.vue";
-import IconLines from "./components/icons/IconLines.vue";
-import IconDelete from "./components/icons/IconDelete.vue";
-import IconContext from "./components/icons/IconContext.vue";
 import ImageUpload from "./components/image-upload/index.vue";
 import Screenshot from "./components/screenshot/index.vue";
 import PasteImage from "./components/paste-image/index.vue";
@@ -228,12 +226,7 @@ import AutoCompleteInput from "./AutoCompleteInput.vue";
 import { ElMessage } from "element-plus";
 import AddDoc from "./components/add-doc/index.vue";
 import KnowledgeIcon from "./components/knowledge-icon/index.vue";
-import { vClickOutside } from '@/plugins/click-outside'
-import { voiceToText } from "@/api/audio";
-import { ArrowUp, ArrowDown, Operation } from '@element-plus/icons-vue';
-const { disableContext, enableContext, setMaxNum, setKnowledgeLoading } =
-  useChatContextStore();
-const functionPanelStore = useFunctionPanelStore();
+import { vClickOutside } from '@/plugins/click-outside';
 
 interface IFileItem {
   id: string | number;
@@ -253,6 +246,29 @@ interface IItems {
   recentOpen: boolean;
 }
 
+interface ISuggestion {
+  id: string;
+  label: string;
+  value: string;
+  cmd: string;
+  params: any;
+}
+
+interface IFormUi {
+  labelWidth: number;
+  listUi: Array<{
+    label: string;
+    value: string;
+    type: 'input';
+  }>;
+}
+
+interface IMediaItem {
+  mediaType: string;
+  url: string;
+  input: string;
+}
+
 const TYPE_LIST = {
   project: -1,
   floder: -2,
@@ -260,1138 +276,1129 @@ const TYPE_LIST = {
   git: -4,
   doc: -5,
   miapi: -6,
+} as const;
+
+// Props
+const props = defineProps({
+  onSubmit: {
+    type: Function as PropType<(data: any) => Promise<void>>,
+    required: true,
+  },
+  placeholder: {
+    type: String,
+    default: "Shift + Enter = 发送",
+  },
+  initCodePrompt: {
+    type: Function as PropType<() => void>,
+    required: true,
+  },
+  changeSendMethod: {
+    type: Function as PropType<(val: string) => void>,
+    required: true,
+  },
+});
+
+// Stores
+const userStore = useUserStore();
+const editStore = useEditStore();
+const chatContextStore = useChatContextStore();
+const ideaInfoStore = useIdeaInfoStore();
+const functionPanelStore = useFunctionPanelStore();
+
+const { user } = storeToRefs(userStore);
+const { edit } = storeToRefs(editStore);
+const { chatContext, knowledgeLoading, knowledgeData } = storeToRefs(chatContextStore);
+const { vision, showFileMenu } = storeToRefs(ideaInfoStore);
+const { webSearchEnabled, ragEnabled, showFunctionPanel } = storeToRefs(functionPanelStore);
+
+const { disableContext, enableContext, setMaxNum, setKnowledgeLoading } = chatContextStore;
+
+// Refs
+const autoCompleteInput = ref<InstanceType<typeof AutoCompleteInput>>();
+const isEnter = ref(localStorage.getItem("isEnter") === "true");
+const text = ref("");
+const inputActive = ref(false);
+const percentage = ref(0);
+const bizUpdate = ref(false);
+const isSelectingSuggestion = ref(false);
+const screenshotImages = ref<IMediaItem[]>([]);
+const files = ref<IMediaItem[]>([]);
+const images = ref<IMediaItem[]>([]);
+const formUi = ref<IFormUi>({
+  labelWidth: 80,
+  listUi: [
+    {
+      label: "你好",
+      value: "text",
+      type: "input" as const,
+    },
+  ],
+});
+const showFormParams = ref(false);
+const maxNums = ref(legalMaxNums);
+const activeCommond = ref("");
+const commandVisible = ref(false);
+const knowledgeBasesValue = ref<IFileItem[]>([]);
+const filesVisible = ref(false);
+const addDocVisible = ref(false);
+const currentSelectItem = ref<IFileItem>({} as IFileItem);
+const rootKey = ref(0);
+const filterKeyword = ref<string | undefined>(undefined);
+const selectedKeys = ref<string[]>([]);
+const allSuggestions = ref<ISuggestion[]>([]);
+const suggestions = ref<ISuggestion[]>([]);
+const originalBases = ref<{ [propName: string]: IFileItem[] }>({});
+const originalList = ref<IItems[]>([]);
+const highlightedIndex = ref(0);
+const gitTimer = ref(0);
+const composerConfig = ref(['bugfix', 'bizJar', 'Codebase', 'Analyze', 'Knowledge', 'UnitTest']);
+const composerList = ref<string[]>([]);
+const sendMethod = ref('ws');
+
+// Computed
+const cmds = computed(() => {
+  if (activeCommondLabel.value?.length) {
+    return activeCommondLabel.value;
+  }
+  return [];
+});
+
+const iconSendColor = computed(() => {
+  const textVal = (text.value || "").trim();
+  return textVal && edit.value.isEdit ? "rgba(255, 255, 255, 0.8)" : "#565867";
+});
+
+const iconContextColor = computed(() => {
+  const isAllow = chatContext.value.isAllow;
+  return isAllow ? "#67C23A" : "#F56C6C";
+});
+
+const activeCommondLabel = computed(() => {
+  const cmd = allSuggestions.value.find(
+    (it) => it.value === activeCommond.value
+  );
+  return cmd ? [cmd.label] : [];
+});
+
+const activeCommondObj = computed(() => {
+  const cmd = allSuggestions.value.find(
+    (it) => it.value === activeCommond.value
+  );
+  return cmd ? cmd : null;
+});
+
+const activeKnowledgeBasesLabel = computed(() => {
+  return knowledgeBasesValue.value?.length
+    ? knowledgeBasesValue.value.map((v) => `@${v.label}`)
+    : [];
+});
+
+const cFileVisible = computed(() => {
+  return filesVisible.value && cFileList.value?.length > 0;
+});
+
+const suggestionVisible = computed(() => {
+  return commandVisible.value && suggestions.value.length > 0;
+});
+
+const cFileList = computed(() => {
+  if (selectedKeys.value?.length) {
+    return (
+      originalBases.value[selectedKeys.value[selectedKeys.value.length - 1]] ||
+      []
+    );
+  }
+  return [];
+});
+
+const activeFunctionCount = computed(() => {
+  return functionPanelStore.getActiveFunctionCount();
+});
+
+const webSearchModel = computed({
+  get() {
+    return webSearchEnabled.value;
+  },
+  set(value: boolean) {
+    functionPanelStore.setWebSearchEnabled(value);
+  }
+});
+
+const ragModel = computed({
+  get() {
+    return ragEnabled.value;
+  },
+  set(value: boolean) {
+    functionPanelStore.setRagEnabled(value);
+  }
+});
+
+// Watchers
+watch(images, (newValue) => {
+  if (newValue.length > 0 && screenshotImages.value.length > 0) {
+    screenshotImages.value = [];
+  }
+});
+
+watch(screenshotImages, (newValue) => {
+  if (images.value.length > 0 && newValue.length > 0) {
+    images.value = [];
+  }
+});
+
+watch(text, (newValue, oldValue) => {
+  if (newValue?.trim() === "@") {
+    toggleKnowledgeBase(true);
+  } else if (newValue !== oldValue) {
+    if (!isSelectingSuggestion.value) {
+      querySuggestion(newValue);
+    }
+    if (!newValue) {
+      // activeCommond.value = "";
+    }
+  }
+});
+
+watch(knowledgeLoading, (newValue) => {
+  if (!newValue) {
+    clearTimeout(gitTimer.value);
+  }
+});
+
+watch(knowledgeData, (newValue) => {
+  if (rootKey.value !== TYPE_LIST.file && !cFileVisible.value) {
+    handleInitKnowledge(newValue);
+    highlightedIndex.value = 0;
+    //@ts-ignore
+    window.setUserCode?.("");
+  } else if (cFileVisible.value && knowledgeLoading.value) {
+    handleKnowledge(currentSelectItem.value, newValue);
+    //@ts-ignore
+    window.setUserCode?.("");
+    highlightedIndex.value = 0;
+  }
+  setKnowledgeLoading(false);
+});
+
+watch(rootKey, (val, old) => {
+  if (val === TYPE_LIST.file) {
+    knowledgeBasesValue.value = [];
+  }
+});
+
+watch(cFileVisible, (val) => {
+  if (!val) {
+    filterKeyword.value = undefined;
+  }
+});
+
+// Methods
+const handleClickOutside = () => {
+  if (filesVisible.value) {
+    handleKeyEscape();
+  }
 };
 
-export default {
-  components: {
-    UserInputButton,
-    IconSend,
-    IconLines,
-    IconDelete,
-    IconContext,
-    Recoder,
-    ImageUpload,
-    Screenshot,
-    PasteImage,
-    FormParams,
-    AutoCompleteInput,
-    AddDoc,
-    KnowledgeIcon,
-    ArrowUp,
-    ArrowDown,
-  },
-  directives: {
-    clickOutside: vClickOutside
-  },
-  props: {
-    onSubmit: {
-      type: Function,
-      required: true,
-    },
-    placeholder: {
-      type: String,
-      default: "Shift + Enter = 发送",
-    },
-    initCodePrompt: {
-      type: Function,
-      required: true,
-    },
-    changeSendMethod: {
-      type: Function,
-      required: true,
-    },
-  },
-  watch: {
-    images(newValue) {
-      if (newValue.length > 0 && this.screenshotImages.length > 0) {
-        this.screenshotImages = []
-      }
-    },
-    screenshotImages(newValue) {
-      if (this.images.length > 0 && newValue.length > 0) {
-        this.images = []
-      }
-    },
-    text(newValue, oldValue) {
-      if (newValue?.trim() == "@") {
-        this.toggleKnowledgeBase(true);
-      }
-      // else if (
-      //   (this.rootKey == TYPE_LIST.file || this.rootKey == TYPE_LIST.floder) &&
-      //   this.cFileVisible
-      // ) {
-      //   this.searchFiles(newValue);
-      // }
-      else if (newValue != oldValue) {
-        // 如果正在选择命令建议，不触发 querySuggestion，避免重新打开建议列表
-        if (!this.isSelectingSuggestion) {
-          this.querySuggestion(newValue);
-        }
-        // this.queryKnowledgeBases(newValue);
-        if (!newValue) {
-          // this.activeCommond = "";
-          // this.knowledgeBasesId = "";
-        }
-      }
-    },
-    knowledgeLoading(newValue) {
-      if (!newValue) {
-        clearTimeout(this.gitTimer);
-      }
-    },
-    knowledgeData(newValue) {
-      if (this.rootKey != TYPE_LIST.file && !this.cFileVisible) {
-        this.handleInitKnowledge(newValue);
-        this.highlightedIndex = 0;
-        //@ts-ignore
-        window.setUserCode?.("");
-      } else if (this.cFileVisible && this.knowledgeLoading) {
-        this.handleKnowledge(this.currentSelectItem, newValue);
-        //@ts-ignore
-        window.setUserCode?.("");
-        this.highlightedIndex = 0;
-      }
-      setKnowledgeLoading(false);
-    },
-    rootKey(val, old) {
-      if (val == TYPE_LIST.file) {
-        this.knowledgeBasesValue = [];
-      }
-    },
-    cFileVisible(val) {
-      if (!val) {
-        this.filterKeyword = undefined
-      }
-    }
-  },
-  data() {
-    let isEnter = localStorage.getItem("isEnter") == "true";
-    return {
-      isEnter,
-      TYPE_LIST,
-      text: "",
-      inputActive: false,
-      percentage: 0,
-      bizUpdate: false,
-      isSelectingSuggestion: false, // 标志位：正在选择命令建议
-      screenshotImages: [] as {
-        mediaType: string;
-        url: string;
-        input: string;
-      }[],
-      files: [] as {
-        mediaType: string;
-        url: string;
-        input: string;
-      }[],
-      images: [] as {
-        mediaType: string;
-        url: string;
-        input: string;
-      }[],
-      formUi: {
-        labelWidth: 80,
-        listUi: [
-          {
-            label: "你好",
-            value: "text",
-            type: "input" as "input",
-          },
-        ],
-      },
-      showFormParams: false,
-      maxNums: legalMaxNums,
-      activeCommond: "",
-      commandVisible: false,
-      knowledgeBasesValue: [] as Array<IFileItem>,
-      filesVisible: false,
-      addDocVisible: false,
-      currentSelectItem: {} as IFileItem,
-      rootKey: 0,
-      filterKeyword: undefined,
-      selectedKeys: [] as string[],
-      allSuggestions: [] as {
-        id: string;
-        label: string;
-        value: string;
-        cmd: string;
-        params: any;
-      }[],
-      suggestions: [] as {
-        id: string;
-        label: string;
-        value: string;
-        cmd: string;
-        params: any;
-      }[],
-      originalBases: {} as {
-        [propName: string]: IFileItem[];
-      },
-      originalList: [] as Array<IItems>,
-      highlightedIndex: 0,
-      gitTimer: 0,
-      composerConfig: ['bugfix', 'bizJar', 'Codebase', 'Analyze', 'Knowledge', 'UnitTest'],
-      composerList: [],
-      sendMethod: 'ws',
-    };
-  },
-  computed: {
-    ...mapState(useUserStore, ["user"]),
-    ...mapState(useEditStore, ["edit"]),
-    ...mapState(useChatContextStore, [
-      "chatContext",
-      "knowledgeLoading",
-      "knowledgeData",
-    ]),
-    ...mapState(useIdeaInfoStore, ["vision", "showFileMenu"]),
-    ...mapState(useFunctionPanelStore, ["webSearchEnabled", "ragEnabled", "showFunctionPanel"]),
-    cmds() {
-      if (this.activeCommondLabel?.length) {
-        return this.activeCommondLabel;
-      }
-      return [];
-    },
-    iconSendColor() {
-      const text = (this.text || "").trim();
-      return text && this.edit.isEdit ? "rgba(255, 255, 255, 0.8)" : "#565867";
-    },
-    iconContextColor() {
-      const isAllow = this.chatContext.isAllow;
-      return isAllow ? "#67C23A" : "#F56C6C";
-    },
-    activeCommondLabel() {
-      const cmd = this.allSuggestions.find(
-        (it) => it.value === this.activeCommond
-      );
-      return cmd ? [cmd.label] : [];
-    },
-    activeCommondObj() {
-      const cmd = this.allSuggestions.find(
-        (it) => it.value === this.activeCommond
-      );
-      return cmd ? cmd : null;
-    },
-    activeKnowledgeBasesLabel() {
-      return this.knowledgeBasesValue?.length
-        ? this.knowledgeBasesValue.map((v) => `@${v.label}`)
-        : [];
-    },
-    cFileVisible() {
-      return this.filesVisible && this.cFileList?.length > 0;
-    },
-    suggestionVisible() {
-      return this.commandVisible && this.suggestions.length > 0;
-    },
-    cFileList() {
-      if (this.selectedKeys?.length) {
-        return (
-          this.originalBases[this.selectedKeys[this.selectedKeys.length - 1]] ||
-          []
-        );
-      }
-      return [];
-    },
-    activeFunctionCount() {
-      return functionPanelStore.getActiveFunctionCount();
-    },
-    webSearchModel: {
-      get() {
-        return this.webSearchEnabled;
-      },
-      set(value: boolean) {
-        functionPanelStore.setWebSearchEnabled(value);
-      }
-    },
-    ragModel: {
-      get() {
-        return this.ragEnabled;
-      },
-      set(value: boolean) {
-        functionPanelStore.setRagEnabled(value);
-      }
-    },
-  },
-  created() {
-    // 定义内置的斜杠命令列表
-    this.allSuggestions = [
-      {
-        id: 'init',
-        label: '/init',
-        value: '/init',
-        cmd: '/init',
-        params: {
-          description: '分析代码库并创建MCODE.md文件'
-        }
-      },
-      {
-        id: 'clear',
-        label: '/clear',
-        value: '/clear',
-        cmd: '/clear',
-        params: {
-          description: '清空对话历史记录'
-        }
-      },
-      {
-        id: 'cancel',
-        label: '/cancel',
-        value: '/cancel',
-        cmd: '/cancel',
-        params: {
-          description: '取消当前正在执行的任务'
-        }
-      },
-      {
-        id: 'config',
-        label: '/config',
-        value: '/config',
-        cmd: '/config',
-        params: {
-          description: '查看或修改配置'
-        }
-      },
-      {
-        id: 'interrupt',
-        label: '/interrupt',
-        value: '/interrupt',
-        cmd: '/interrupt',
-        params: {
-          description: '中断Agent执行'
-        }
-      },
-      {
-        id: 'refresh',
-        label: '/refresh',
-        value: '/refresh',
-        cmd: '/refresh',
-        params: {
-          description: '刷新配置'
-        }
-      },
-      {
-        id: 'switch',
-        label: '/switch',
-        value: '/switch',
-        cmd: '/switch',
-        params: {
-          description: '切换Agent'
-        }
-      },
-      {
-        id: 'create',
-        label: '/create',
-        value: '/create',
-        cmd: '/create',
-        params: {
-          description: '创建新的Agent'
-        }
-      }
-    ];
+const handleDeleteFile = (item: IFileItem) => {
+  if (item.path) {
+    knowledgeBasesValue.value = knowledgeBasesValue.value.filter(v => v.path !== item.path);
+  } else if (rootKey.value === TYPE_LIST.miapi) {
+    knowledgeBasesValue.value = [];
+  } else if (rootKey.value === TYPE_LIST.git) {
+    knowledgeBasesValue.value = knowledgeBasesValue.value.filter(v => v.id !== item.id);
+  }
+};
 
-    // 如果需要从服务器加载更多命令，可以取消注释
-    // util.fetchCommonds().then((res) => {
-    //   if (Array.isArray(res)) {
-    //     const serverCommands = (res || []).map((it: any) => {
-    //       return {
-    //         id: it.id,
-    //         label: `${it.label}`,
-    //         value: it.id,
-    //         cmd: it.value,
-    //         params: {
-    //           ...it,
-    //         },
-    //       };
-    //     });
-    //     this.allSuggestions = [...this.allSuggestions, ...serverCommands];
-    //   }
-    // });
-  },
-  mounted() {
-    const that = this;
-    // window.useSubmitText = (text: string) => {
-    //   that.text = text;
-    //   that.submitText();
-    // };
-  },
-  methods: {
-    handleClickOutside() {
-      if (this.filesVisible) {
-        this.handleKeyEscape()
-      }
-    },
-    handleDeleteFile(item) {
-      if (item.path) { // 文件、文件夹、mi-api、文档
-        this.knowledgeBasesValue = this.knowledgeBasesValue.filter(v => v.path !== item.path)
-      } else if (this.rootKey == TYPE_LIST.miapi) {
-        this.knowledgeBasesValue = []
-      } else if (this.rootKey == TYPE_LIST.git) {
-        this.knowledgeBasesValue = this.knowledgeBasesValue.filter(v => v.id !== item.id)
-      }
-    },
-    searchFiles(newValue) {
-      let search = (newValue || "").trim();
-      if (newValue?.indexOf("@") != -1) {
-        search = newValue.split("@").pop();
-      }
-      let key = this.selectedKeys[this.selectedKeys.length - 1];
-      if (!search) {
-        if (this.originalList.some((v) => v.recentOpen)) {
-          this.originalBases[key] = this.originalList
-            .filter((v) => v.recentOpen)
-            .map((v) => ({ ...this.handleFileItem(v) }))
-            .map((v: any, i: number) => ({
-              ...this.handleFileItem(v, true, i),
-            }));
-        } else {
-          this.originalBases[key] = this.filterJavaFile(this.originalList)
-            .map((v) => ({ ...this.handleFileItem(v) }))
-            .map((v: any, i: number) => ({
-              ...this.handleFileItem(v, true, i),
-            }));
-        }
-      } else {
-        let arr = this.originalList
-          .map((v) => ({ ...this.handleFileItem(v) }))
-          .filter(
-            (v) =>
-              v.fileName.toLowerCase().indexOf(search.toLowerCase()) != -1
-          );
-        if (arr?.length) {
-          this.originalBases[key] = arr.map((v: any, i: number) => ({
-            ...this.handleFileItem(v, true, i),
-          }));
-        }
-      }
-    },
-    toggleSendShiftEnter() {
-      if (this.isEnter) {
-        localStorage.setItem("isEnter", "false");
-      } else {
-        localStorage.setItem("isEnter", "true");
-      }
-      this.isEnter = !this.isEnter;
-    },
-    toggleSendMethod(val: string) {
-      this.$props.changeSendMethod(val)
-      // if (this.isEnter) {
-      //   localStorage.setItem("isEnter", "false");
-      // } else {
-      //   localStorage.setItem("isEnter", "true");
-      // }
-      // this.isEnter = !this.isEnter;
-    },
-    toggleFunctionPanel() {
-      functionPanelStore.toggleFunctionPanel();
-    },
-    getFunctionConfig() {
-      return {
-        webSearch: this.webSearchEnabled,
-        rag: this.ragEnabled,
-      };
-    },
-    filterJavaFile(list: Array<IItems>) {
-      if (this.rootKey == TYPE_LIST.file) {
-        return list.filter((v) => v.fileName.endsWith(".java"));
-      }
-      return list;
-    },
-    handleFileItem(v: any, bool?: boolean, i?: number) {
-      if (bool) {
-        return {
-          id: new Date().getTime() + i! * 100,
-          label: v.name,
-          value: v.name,
-          expend: v.expend,
-          path: v.path,
-          subTitle: v.subTitle,
-          params: {
-            ...v,
-          },
-        };
-      }
-      return {
+const searchFiles = (newValue: string) => {
+  let search = (newValue || "").trim();
+  if (newValue?.indexOf("@") !== -1) {
+    search = newValue.split("@").pop() || "";
+  }
+  let key = selectedKeys.value[selectedKeys.value.length - 1];
+  if (!search) {
+    if (originalList.value.some((v) => v.recentOpen)) {
+      originalBases.value[key] = originalList.value
+        .filter((v) => v.recentOpen)
+        .map((v) => ({ ...handleFileItem(v) }))
+        .map((v: any, i: number) => ({
+          ...handleFileItem(v, true, i),
+        }));
+    } else {
+      originalBases.value[key] = filterJavaFile(originalList.value)
+        .map((v) => ({ ...handleFileItem(v) }))
+        .map((v: any, i: number) => ({
+          ...handleFileItem(v, true, i),
+        }));
+    }
+  } else {
+    let arr = originalList.value
+      .map((v) => ({ ...handleFileItem(v) }))
+      .filter(
+        (v) =>
+          v.fileName.toLowerCase().indexOf(search.toLowerCase()) !== -1
+      );
+    if (arr?.length) {
+      originalBases.value[key] = arr.map((v: any, i: number) => ({
+        ...handleFileItem(v, true, i),
+      }));
+    }
+  }
+};
+
+const toggleSendShiftEnter = () => {
+  if (isEnter.value) {
+    localStorage.setItem("isEnter", "false");
+  } else {
+    localStorage.setItem("isEnter", "true");
+  }
+  isEnter.value = !isEnter.value;
+};
+
+const toggleSendMethod = (val: string) => {
+  props.changeSendMethod(val);
+};
+
+const toggleFunctionPanel = () => {
+  functionPanelStore.toggleFunctionPanel();
+};
+
+const getFunctionConfig = () => {
+  return {
+    webSearch: webSearchEnabled.value,
+    rag: ragEnabled.value,
+  };
+};
+
+const filterJavaFile = (list: IItems[]) => {
+  if (rootKey.value === TYPE_LIST.file) {
+    return list.filter((v) => v.fileName.endsWith(".java"));
+  }
+  return list;
+};
+
+const handleFileItem = (v: any, bool?: boolean, i?: number): IFileItem | any => {
+  if (bool) {
+    return {
+      id: new Date().getTime() + i! * 100,
+      label: v.name,
+      value: v.name,
+      expend: v.expend,
+      path: v.path,
+      subTitle: v.subTitle,
+      params: {
         ...v,
-        name: v.fileName,
-        value: v.path,
-        subTitle: v.path,
-        expend: false,
-      };
+      },
+    };
+  }
+  return {
+    ...v,
+    name: v.fileName,
+    value: v.path,
+    subTitle: v.path,
+    expend: false,
+  };
+};
+
+const handleKnowLedgeItem = (it: {
+  id: string;
+  name: string;
+  auth: number;
+  expend: boolean;
+  path: string;
+  groupId: string;
+}): IFileItem => {
+  return {
+    id: it.id,
+    label: `${it.name}`,
+    value: it.id,
+    expend: it.expend,
+    path: it.path,
+    params: {
+      ...it,
     },
-    handleKnowLedgeItem(it: {
-      id: number;
-      name: string;
-      auth: number;
-      expend: boolean;
-      path: string;
-      groupId: string;
-    }) {
+  };
+};
+
+const querySuggestion = (textVal: string) => {
+  if (textVal.startsWith("/")) {
+    suggestions.value = allSuggestions.value
+      .filter((it) => it.label.startsWith(textVal))
+      .map((it) => {
+        return it;
+      });
+    commandVisible.value = true;
+    highlightedIndex.value = suggestions.value.length > 0 ? 0 : -1;
+  } else {
+    commandVisible.value = false;
+    suggestions.value = [];
+    highlightedIndex.value = -1;
+  }
+};
+
+const highlight = (index: number) => {
+  if (index < 0) {
+    highlightedIndex.value = -1;
+    return;
+  }
+  if (suggestionVisible.value) {
+    const suggestionsList = suggestions.value;
+    if (index >= suggestionsList.length) {
+      index = suggestionsList.length - 1;
+    }
+    highlightedIndex.value = index;
+  } else if (cFileVisible.value) {
+    const suggestionsList = cFileList.value;
+    if (index >= suggestionsList.length) {
+      index = suggestionsList.length - 1;
+    }
+    highlightedIndex.value = index;
+  }
+};
+
+const handleKeyEscape = (evt?: Event) => {
+  if (suggestionVisible.value) {
+    evt?.preventDefault();
+    evt?.stopPropagation();
+    close();
+  } else if (cFileVisible.value) {
+    evt?.preventDefault();
+    evt?.stopPropagation();
+    highlightedIndex.value = -1;
+    commandVisible.value = false;
+    currentSelectItem.value = {} as IFileItem;
+    filesVisible.value = false;
+    close();
+  }
+};
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  const suggestionsList = suggestions.value;
+  const highlightedIdx = highlightedIndex.value;
+  const suggestionVis = suggestionVisible.value;
+  
+  if (event.key === "Delete" || event.key === "Backspace") {
+    if (
+      text.value === "" &&
+      (activeCommond.value || knowledgeBasesValue.value?.length)
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      activeCommond.value = "";
+      if (knowledgeBasesValue.value?.length) {
+        knowledgeBasesValue.value.pop();
+      }
+      close();
+    }
+  } else if (
+    (event.key === "Enter" && !event.shiftKey && !isEnter.value) ||
+    (isEnter.value && event.key === "Enter" && event.shiftKey)
+  ) {
+    if (suggestionVis && suggestionsList[highlightedIdx]) {
+      event.preventDefault();
+      event.stopPropagation();
+      selectSuggestion(suggestionsList[highlightedIdx].value);
+    } else if (cFileVisible.value && cFileList.value) {
+      event.preventDefault();
+      event.stopPropagation();
+      setFileItem(cFileList.value[highlightedIdx]);
+      close();
+    }
+  } else if (
+    (event.key === "Enter" && event.shiftKey && !isEnter.value) ||
+    (event.key === "Enter" && !event.shiftKey && isEnter.value)
+  ) {
+    if (text.value.trim() !== "" || images.value.length > 0 || screenshotImages.value.length > 0 || files.value.length > 0) {
+      submitText();
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    close();
+  }
+};
+
+const close = () => {
+  text.value = "";
+  suggestions.value = [];
+  highlightedIndex.value = -1;
+  currentSelectItem.value = {} as IFileItem;
+  autoCompleteInput.value?.cleanTextContent();
+};
+
+const closeSuggestions = () => {
+  suggestions.value = [];
+  commandVisible.value = false;
+  highlightedIndex.value = -1;
+};
+
+const sendText = () => {
+  submitText();
+  close();
+};
+
+const toggleKnowledgeBase = async (isWatch: boolean) => {
+  highlightedIndex.value = -1;
+  commandVisible.value = false;
+  currentSelectItem.value = {} as IFileItem;
+  if (!isWatch) {
+    if (filesVisible.value) {
+      filesVisible.value = false;
+      if (rootKey.value !== TYPE_LIST.file) {
+        originalBases.value = {};
+        selectedKeys.value = [];
+      }
+      return;
+    }
+  }
+  if (!rootKey.value || rootKey.value !== TYPE_LIST.file) {
+    originalBases.value = {};
+    originalList.value = [];
+    selectedKeys.value = [];
+    rootKey.value = 0;
+    util.fetchKnowledgeBases();
+    clearTimeout(gitTimer.value);
+    setKnowledgeLoading(true);
+    gitTimer.value = window.setTimeout(() => {
+      setKnowledgeLoading(false);
+    }, 5000);
+  } else {
+    filesVisible.value = true;
+    highlightedIndex.value = 0;
+  }
+};
+
+const handleInitKnowledge = (jRes: any) => {
+  console.log("fetchKnowledgeBases:", jRes);
+  if (
+    jRes.code !== 0 ||
+    (Array.isArray(jRes.data) && jRes.data.length === 0)
+  ) {
+    ElMessage.error("请先绑定知识库");
+    return;
+  }
+  let arr = jRes.data.map((it: any) => {
+    return handleKnowLedgeItem(it);
+  });
+  originalBases.value = {
+    root: [...arr],
+  };
+  selectedKeys.value = ["root"];
+  filesVisible.value = true;
+};
+
+const toggleCommond = async () => {
+  const res = await util.fetchCommonds();
+  if (Array.isArray(res)) {
+    allSuggestions.value = res.map((it: any) => {
       return {
         id: it.id,
-        label: `${it.name}`,
+        label: `${it.label}`,
         value: it.id,
-        expend: it.expend,
-        path: it.path,
+        cmd: it.value,
         params: {
           ...it,
         },
       };
-    },
-    querySuggestion(text: string) {
-      if (text.startsWith("/")) {
-        this.suggestions = this.allSuggestions
-          .filter((it) => it.label.startsWith(text))
-          .map((it) => {
-            return it;
-          });
-        this.commandVisible = true;
-        // 默认高亮第一个命令，这样用户可以直接按回车选择
-        this.highlightedIndex = this.suggestions.length > 0 ? 0 : -1;
-      } else {
-        this.commandVisible = false;
-        this.suggestions = [];
-        this.highlightedIndex = -1;
-      }
-    },
-    highlight(index: number) {
-      if (index < 0) {
-        this.highlightedIndex = -1;
-        return;
-      }
-      if (this.suggestionVisible) {
-        const suggestions = this.suggestions;
-        if (index >= suggestions.length) {
-          index = suggestions.length - 1;
-        }
-        this.highlightedIndex = index;
-      } else if (this.cFileVisible) {
-        const suggestions = this.cFileList;
-        if (index >= suggestions.length) {
-          index = suggestions.length - 1;
-        }
-        this.highlightedIndex = index;
-      }
-    },
-    handleKeyEscape(evt: Event) {
-      if (this.suggestionVisible) {
-        evt?.preventDefault();
-        evt?.stopPropagation();
-        this.close();
-      } else if (this.cFileVisible) {
-        evt?.preventDefault();
-        evt?.stopPropagation();
-        this.highlightedIndex = -1;
-        this.commandVisible = false;
-        this.currentSelectItem = {} as IFileItem;
-        this.filesVisible = false;
-        this.close();
-      }
-    },
-    handleKeyDown(event: KeyboardEvent) {
-      const suggestions = this.suggestions;
-      const highlightedIndex = this.highlightedIndex;
-      const suggestionVisible = this.suggestionVisible;
-      // const cKnowledgeBasesVisible = this.cKnowledgeBasesVisible;
-      if (event.key === "Delete" || event.key === "Backspace") {
-        if (
-          this.text == "" &&
-          (this.activeCommond || this.knowledgeBasesValue?.length)
-        ) {
-          event.preventDefault();
-          event.stopPropagation();
-          this.activeCommond = "";
-          if (this.knowledgeBasesValue?.length) {
-            this.knowledgeBasesValue.pop()
-          }
-          this.close();
-        }
-      } else if (
-        (event.key === "Enter" && !event.shiftKey && !this.isEnter) ||
-        (this.isEnter && event.key === "Enter" && event.shiftKey)
-      ) {
-        if (suggestionVisible && suggestions[highlightedIndex]) {
-          event.preventDefault();
-          event.stopPropagation();
-          this.selectSuggestion(suggestions[highlightedIndex].value);
-        } else if (this.cFileVisible && this.cFileList) {
-          event.preventDefault();
-          event.stopPropagation();
-          this.setFileItem(this.cFileList[highlightedIndex]);
-          this.close();
-        }
-      } else if (
-        (event.key === "Enter" && event.shiftKey && !this.isEnter) ||
-        (event.key === "Enter" && !event.shiftKey && this.isEnter)
-      ) {
-        if (this.text.trim() !== "" || this.images.length > 0 || this.screenshotImages.length > 0 || this.files.length > 0) {
-          this.submitText();
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        this.close();
-      }
-    },
-    close() {
-      this.text = "";
-      this.suggestions = [];
-      this.highlightedIndex = -1;
-      this.currentSelectItem = {} as IFileItem;
-      // @ts-ignore
-      this.$refs?.autoCompleteInput?.cleanTextContent();
-    },
-    closeSuggestions() {
-      // 只关闭建议列表，不清空已选择的命令文本
-      this.suggestions = [];
-      this.commandVisible = false;
-      this.highlightedIndex = -1;
-    },
-    sendText() {
-      this.submitText();
-      this.close();
-    },
-    async toggleKnowledgeBase(isWatch: boolean) {
-      this.highlightedIndex = -1;
-      this.commandVisible = false;
-      this.currentSelectItem = {} as IFileItem;
-      if (!isWatch) {
-        if (this.filesVisible) {
-          this.filesVisible = false;
-          if (this.rootKey != TYPE_LIST.file) {
-            this.originalBases = {};
-            this.selectedKeys = [];
-          }
-          return;
-        }
-      }
-      if (!this.rootKey || this.rootKey != TYPE_LIST.file) {
-        this.originalBases = {};
-        this.originalList = [];
-        this.selectedKeys = [];
-        this.rootKey = 0;
-        util.fetchKnowledgeBases();
-        clearTimeout(this.gitTimer);
-        setKnowledgeLoading(true);
-        this.gitTimer = setTimeout(() => {
-          setKnowledgeLoading(false);
-        }, 5000);
-      } else {
-        this.filesVisible = true;
-        this.highlightedIndex = 0;
-      }
-    },
-    handleInitKnowledge(jRes: any) {
-      console.log("fetchKnowledgeBases:", jRes);
-      if (
-        jRes.code != 0 ||
-        (Array.isArray(jRes.data) && jRes.data.length == 0)
-      ) {
-        ElMessage.error("请先绑定知识库");
-        return;
-      }
-      let arr = jRes.data.map((it: any) => {
-        return this.handleKnowLedgeItem(it);
-      });
-      this.originalBases = {
-        root: [...arr],
-      };
-      this.selectedKeys = ["root"];
-      this.filesVisible = true;
-    },
-    async toggleCommond() {
-      const res = await util.fetchCommonds();
-      if (Array.isArray(res)) {
-        this.allSuggestions = res.map((it: any) => {
-          return {
-            id: it.id,
-            label: `${it.label}`,
-            value: it.id,
-            cmd: it.value,
-            params: {
-              ...it,
-            },
-          };
-        });
-      }
-      this.highlightedIndex = -1;
-      this.filesVisible = false;
-      this.selectedKeys = [];
-      this.originalBases = {};
-      this.suggestions = [...this.allSuggestions];
-      this.commandVisible = !this.commandVisible;
-    },
-    handleSelectKnowItem(item: IFileItem) {
-      if (item.params.value == "noDoc") {
-        return;
-      }
-      if (this.rootKey == TYPE_LIST.file) {
-        if (this.knowledgeBasesValue.some(v => v.path == item.path)) {
-          this.knowledgeBasesValue = this.knowledgeBasesValue.filter(v => v.path != item.path)
-        } else {
-          this.knowledgeBasesValue.push(item);
-        }
-      } else {
-        this.knowledgeBasesValue = [item];
-        this.originalBases = {};
-        this.selectedKeys = [];
-      }
+    });
+  }
+  highlightedIndex.value = -1;
+  filesVisible.value = false;
+  selectedKeys.value = [];
+  originalBases.value = {};
+  suggestions.value = [...allSuggestions.value];
+  commandVisible.value = !commandVisible.value;
+};
 
-      if (this.rootKey != TYPE_LIST.file) {
-        this.filesVisible = false;
-        this.close();
-      }
+const handleSelectKnowItem = (item: IFileItem) => {
+  if (item.params.value === "noDoc") {
+    return;
+  }
+  if (rootKey.value === TYPE_LIST.file) {
+    if (knowledgeBasesValue.value.some(v => v.path === item.path)) {
+      knowledgeBasesValue.value = knowledgeBasesValue.value.filter(v => v.path !== item.path);
+    } else {
+      knowledgeBasesValue.value.push(item);
+    }
+  } else {
+    knowledgeBasesValue.value = [item];
+    originalBases.value = {};
+    selectedKeys.value = [];
+  }
 
-    },
-    async setFileItem(item: IFileItem) {
-      this.currentSelectItem = item;
-      this.activeCommond = "";
-      // 存储第一层类型
-      if (this.selectedKeys?.length == 1) {
-        this.rootKey = item.id as number;
-      }
-      // 不是文件夹则是选中当前内容
-      if (!item.expend) {
-        this.handleSelectKnowItem(item);
-        return;
-      } else if (this.rootKey !== TYPE_LIST.file) {
-        // 只有在不是文件的情况下才会清空当前选项
-        this.knowledgeBasesValue = [];
-      }
-      // 不同类型请求的入参不同
-      let param = {};
-      if (this.rootKey == TYPE_LIST.file || this.rootKey == TYPE_LIST.floder) {
-        param = {
-          groupId: item.params.id || item.params.groupId,
-          path: item.params.path,
-        };
-      } else if (this.rootKey == TYPE_LIST.doc) {
-        param = {
-          groupId: item.params.id,
-          path: item.params.path,
-          getDocList: 1,
-        };
-      } else {
-        param = {
-          groupId: item.params.id || item.params.groupId,
-        };
-      }
-      await util.filesBases(param);
-      clearTimeout(this.gitTimer);
-      setKnowledgeLoading(true);
-      this.gitTimer = setTimeout(() => {
-        setKnowledgeLoading(false);
-      }, 5000);
-    },
-    handleKnowledge(item: IFileItem, list: any) {
-      if (this.rootKey == TYPE_LIST.doc) {
-        if (list?.length == 0) {
-          // 为了显示出新增按钮，填充一个不可点击的数据
-          list = [
-            {
-              name: "暂无文档",
-              value: "noDoc",
-              expend: false,
-            },
-          ];
-        } else {
-          list = list.map((v: any) => ({
-            name: v.fileName,
-            value: v.id,
-            baseId: v.knowledgeBaseId,
-            expend: false,
-            path: v.filePath,
-          }));
-        }
-      } else if (this.rootKey == TYPE_LIST.git) {
-        list = list.map((v: any) => ({
-          name: v.title,
-          value: v.id,
+  if (rootKey.value !== TYPE_LIST.file) {
+    filesVisible.value = false;
+    close();
+  }
+};
+
+const setFileItem = async (item: IFileItem) => {
+  currentSelectItem.value = item;
+  activeCommond.value = "";
+  
+  if (selectedKeys.value?.length === 1) {
+    rootKey.value = item.id as number;
+  }
+  
+  if (!item.expend) {
+    handleSelectKnowItem(item);
+    return;
+  } else if (rootKey.value !== TYPE_LIST.file) {
+    knowledgeBasesValue.value = [];
+  }
+  
+  let param: any = {};
+  if (rootKey.value === TYPE_LIST.file || rootKey.value === TYPE_LIST.floder) {
+    param = {
+      groupId: item.params.id || item.params.groupId,
+      path: item.params.path,
+    };
+  } else if (rootKey.value === TYPE_LIST.doc) {
+    param = {
+      groupId: item.params.id,
+      path: item.params.path,
+      getDocList: 1,
+    };
+  } else {
+    param = {
+      groupId: item.params.id || item.params.groupId,
+    };
+  }
+  await util.filesBases(param);
+  clearTimeout(gitTimer.value);
+  setKnowledgeLoading(true);
+  gitTimer.value = window.setTimeout(() => {
+    setKnowledgeLoading(false);
+  }, 5000);
+};
+
+const handleKnowledge = (item: IFileItem, list: any) => {
+  if (rootKey.value === TYPE_LIST.doc) {
+    if (list?.length === 0) {
+      list = [
+        {
+          name: "暂无文档",
+          value: "noDoc",
           expend: false,
-          subTitle: v.committerName,
-          ...v,
-        }));
-      } else if (
-        this.rootKey == TYPE_LIST.file ||
-        this.rootKey == TYPE_LIST.floder
-      ) {
-        this.originalList = [...list].filter((v: IItems) =>
-          this.rootKey === TYPE_LIST.file ? !v.dir : v.dir
-        );
-        if (this.originalList.some((v) => v.recentOpen)) {
-          list = this.originalList
-            .filter((v) => v.recentOpen)
-            .map((v: any) => this.handleFileItem(v));
-        } else {
-          list = this.filterJavaFile(this.originalList).map((v: any) =>
-            this.handleFileItem(v)
-          );
-        }
-      }
-      if (!list?.length) {
-        this.filesVisible = false;
-        this.selectedKeys = [];
-        return;
-      }
-      let key = `${item.id}&${item.label}`;
-      this.selectedKeys.push(key);
-      this.originalBases[key] = list.map((v: any, i: number) => ({
-        id: new Date().getTime() + i! * 100,
-        label: v.name,
-        value: v.name,
-        expend: v.expend,
-        path: v.path,
-        subTitle: v.subTitle,
-        params: {
-          ...v,
         },
+      ];
+    } else {
+      list = list.map((v: any) => ({
+        name: v.fileName,
+        value: v.id,
+        baseId: v.knowledgeBaseId,
+        expend: false,
+        path: v.filePath,
       }));
+    }
+  } else if (rootKey.value === TYPE_LIST.git) {
+    list = list.map((v: any) => ({
+      name: v.title,
+      value: v.id,
+      expend: false,
+      subTitle: v.committerName,
+      ...v,
+    }));
+  } else if (
+    rootKey.value === TYPE_LIST.file ||
+    rootKey.value === TYPE_LIST.floder
+  ) {
+    originalList.value = [...list].filter((v: IItems) =>
+      rootKey.value === TYPE_LIST.file ? !v.dir : v.dir
+    );
+    if (originalList.value.some((v) => v.recentOpen)) {
+      list = originalList.value
+        .filter((v) => v.recentOpen)
+        .map((v: any) => handleFileItem(v));
+    } else {
+      list = filterJavaFile(originalList.value).map((v: any) =>
+        handleFileItem(v)
+      );
+    }
+  }
+  if (!list?.length) {
+    filesVisible.value = false;
+    selectedKeys.value = [];
+    return;
+  }
+  let key = `${item.id}&${item.label}`;
+  selectedKeys.value.push(key);
+  originalBases.value[key] = list.map((v: any, i: number) => ({
+    id: new Date().getTime() + i! * 100,
+    label: v.name,
+    value: v.name,
+    expend: v.expend,
+    path: v.path,
+    subTitle: v.subTitle,
+    params: {
+      ...v,
     },
-    setPreItem() {
-      this.filterKeyword = undefined
-      let arr = [...this.selectedKeys];
-      let pre = arr.pop();
-      this.selectedKeys = arr;
-      delete this.originalBases[pre!];
-      if (arr?.length == 1) {
-        this.rootKey = 0;
-      }
-      if (this.cFileVisible) {
-        this.highlightedIndex = 0;
-      } else {
-        this.highlightedIndex = -1;
-      }
-    },
-    addDoc() {
-      this.addDocVisible = true;
-      this.filesVisible = false;
-      this.selectedKeys = [];
-      this.rootKey = 0;
-      this.originalBases = {};
-      this.close();
-    },
-    async handleDelete(item: IFileItem) {
-      await util.filesBases({
-        deleteDoc: 1,
-        knowledgeId: item.params.baseId,
-        fileId: item.params.value,
-        groupId: this.rootKey,
-      });
+  }));
+};
 
-      this.filesVisible = false;
-      this.selectedKeys = [];
-      this.originalBases = {};
-      this.rootKey = 0;
-      this.close();
+const setPreItem = () => {
+  filterKeyword.value = undefined;
+  let arr = [...selectedKeys.value];
+  let pre = arr.pop();
+  selectedKeys.value = arr;
+  delete originalBases.value[pre!];
+  if (arr?.length === 1) {
+    rootKey.value = 0;
+  }
+  if (cFileVisible.value) {
+    highlightedIndex.value = 0;
+  } else {
+    highlightedIndex.value = -1;
+  }
+};
+
+const addDoc = () => {
+  addDocVisible.value = true;
+  filesVisible.value = false;
+  selectedKeys.value = [];
+  rootKey.value = 0;
+  originalBases.value = {};
+  close();
+};
+
+const handleDelete = async (item: IFileItem) => {
+  await util.filesBases({
+    deleteDoc: 1,
+    knowledgeId: item.params.baseId,
+    fileId: item.params.value,
+    groupId: rootKey.value,
+  });
+
+  filesVisible.value = false;
+  selectedKeys.value = [];
+  originalBases.value = {};
+  rootKey.value = 0;
+  close();
+};
+
+const setSuggestion = (suggestion: string) => {
+  text.value = suggestion;
+  knowledgeBasesValue.value = [];
+  nextTick(() => {
+    autoCompleteInput.value?.focus();
+  });
+};
+
+const selectSuggestion = (suggestion: string) => {
+  isSelectingSuggestion.value = true;
+  setSuggestion(suggestion);
+  closeSuggestions();
+  nextTick(() => {
+    isSelectingSuggestion.value = false;
+  });
+};
+
+const setInputActive = (onoff: boolean) => {
+  inputActive.value = onoff;
+};
+
+const submitAudio = async (url: string, base64: string) => {
+  props.onSubmit({
+    type: "audio",
+    meta: {
+      role: "USER",
     },
-    setSuggestion(suggestion: string) {
-      // 只将命令填充到输入框作为普通文本，不设置为activeCommond
-      // 这样用户可以继续编辑命令或添加参数
-      this.text = suggestion;
-      this.knowledgeBasesValue = [];
-      // 让输入框获得焦点
-      this.$nextTick(() => {
-        this.$refs?.autoCompleteInput?.focus();
-      });
+    author: {
+      username: user.value.username,
+      cname: user.value.cname,
+      avatar: user.value.avatar,
     },
-    selectSuggestion(suggestion: string) {
-      // 点击或回车选择命令时调用
-      this.isSelectingSuggestion = true; // 设置标志位，避免触发 watch
-      this.setSuggestion(suggestion);
-      this.closeSuggestions(); // 关闭建议列表
-      this.$nextTick(() => {
-        this.isSelectingSuggestion = false; // 重置标志位
-      });
+    data: {
+      composer_config: composerList.value,
+      text: url,
+      content: base64,
+      ...getFunctionConfig(),
     },
-    setInputActive(onoff: boolean) {
-      this.inputActive = onoff;
-    },
-    async submitAudio(url: string, base64: string) {
-      this.onSubmit({
-        type: "audio",
+  });
+};
+
+const updateText = (textVal: string) => {
+  console.log("updateText", textVal);
+  text.value = "" + textVal;
+  showFormParams.value = false;
+};
+
+const submitText = async () => {
+  handleKeyEscape();
+  const activeCommondVal = activeCommond.value;
+  const activeCommondLabelVal = activeCommondLabel.value[0];
+  const activeKnowledgeBasesLabelVal = activeKnowledgeBasesLabel.value.join();
+  let knowledgeBasesVal = knowledgeBasesValue.value
+    .map((v) => v.value)
+    .join(",");
+  const textVal = text.value;
+  
+  if (
+    edit.value.isEdit &&
+    ((textVal && textVal.length > 0) ||
+      knowledgeBasesValue.value ||
+      activeCommond.value)
+  ) {
+    if (textVal === "?clear" || activeCommondVal === "clear") {
+      deleteMsg();
+    } else if (textVal === "?state_ask") {
+      askState();
+    } else if (textVal.startsWith("?state_fullback=")) {
+      const ss = textVal.split("=");
+      setStateFullback(ss[1]);
+    } else if (
+      (images.value && images.value.length > 0) ||
+      (screenshotImages.value && screenshotImages.value.length > 0) ||
+      (files.value && files.value.length > 0)
+    ) {
+      const image = images.value[0] || screenshotImages.value[0];
+      props.onSubmit({
+        type: "image",
         meta: {
           role: "USER",
         },
         author: {
-          username: this.user.username,
-          cname: this.user.cname,
-          avatar: this.user.avatar,
+          username: user.value.username,
+          cname: user.value.cname,
+          avatar: user.value.avatar,
         },
         data: {
-          composer_config: this.composerList,
-          text: url,
-          content: base64,
-          ...this.getFunctionConfig(),
+          composer_config: composerList.value,
+          text: image?.url,
+          content: textVal,
+          files: files.value,
+          ...getFunctionConfig(),
         },
       });
-    },
-    updateText(text: string) {
-      console.log("updateText", text);
-      this.text = "" + text;
-      this.showFormParams = false;
-    },
-    async submitText() {
-      this.handleKeyEscape()
-      const activeCommond = this.activeCommond;
-      const activeCommondLabel = this.activeCommondLabel[0];
-      const activeKnowledgeBasesLabel = this.activeKnowledgeBasesLabel.join();
-      let knowledgeBasesValue = this.knowledgeBasesValue
-        .map((v) => v.value)
-        .join(",");
-      const text = this.text;
-      if (
-        this.edit.isEdit &&
-        ((text && text.length > 0) ||
-          this.knowledgeBasesValue ||
-          this.activeCommond)
-      ) {
-        if (text === "?clear" || activeCommond == "clear") {
-          //清除
-          this.deleteMsg();
-        } else if (text === "?state_ask") {
-          this.askState();
-        } else if (text.startsWith("?state_fullback=")) {
-          const ss = text.split("=");
-          this.setStateFullback(ss[1]);
-        } else if (
-          (this.images && this.images.length > 0) ||
-          (this.screenshotImages && this.screenshotImages.length > 0) ||
-          (this.files && this.files.length > 0)
-        ) {
-          const image = this.images[0] || this.screenshotImages[0];
-          this.onSubmit({
-            type: "image",
-            meta: {
-              role: "USER",
-            },
-            author: {
-              username: this.user.username,
-              cname: this.user.cname,
-              avatar: this.user.avatar,
-            },
-            data: {
-              composer_config: this.composerList,
-              text: image?.url,
-              content: text,
-              files: this.files,
-              ...this.getFunctionConfig(),
-            },
-          });
-          await util.myVision({
-            mediaType: image?.mediaType,
-            input: image?.input,
-            postscript: text,
-          });
-          this.images = [];
-          this.screenshotImages = [];
-          this.files = [];
-          // this.composerList = []
-        } else {
-          let code = text;
-          // code = await util.modifyPrompt(text);
-          let _p = {};
-          if (this.rootKey == TYPE_LIST.floder) {
-            _p = {
-              path: this.knowledgeBasesValue
-                .map((v) => v.params.path)
-                .join(","),
-            };
-          } else if (this.rootKey == TYPE_LIST.doc) {
-            knowledgeBasesValue = this.knowledgeBasesValue[0].params.baseId;
-            _p = {
-              fileId: this.knowledgeBasesValue[0].params.value,
-            };
-          } else if (this.rootKey == TYPE_LIST.project) {
-            knowledgeBasesValue = `${this.rootKey}`;
-          } else if (this.rootKey == TYPE_LIST.git) {
-            _p = {
-              commitId: this.knowledgeBasesValue[0].params.id,
-            };
-          }
-          if (this.rootKey == TYPE_LIST.file && this.knowledgeBasesValue.length) {
-            let str = "";
-            this.knowledgeBasesValue.forEach(v => {
-              str += `@${v.label}`
-            })
-            code = `${str}  ${code}`
-          }
-          try {
-            await this.onSubmit({
-              type: "md",
-              meta: {
-                role: code.startsWith("?") ? "IDEA" : "USER",
-              },
-              author: {
-                username: this.user.username,
-                cname: this.user.cname,
-                avatar: this.user.avatar,
-              },
-              data: {
-                composer_config: this.composerList,
-                text: code,
-                cmd: activeCommond
-                  ? {
-                    id: this.activeCommondObj?.id,
-                    label: activeCommondLabel,
-                    value: this.activeCommondObj?.cmd,
-                    params: this.activeCommondObj?.params,
-                  }
-                  : undefined,
-                knowledgeBase:
-                  (this.rootKey == TYPE_LIST.floder || knowledgeBasesValue) && this.rootKey != TYPE_LIST.file
-                    ? {
-                      label: activeKnowledgeBasesLabel,
-                      value:
-                        this.rootKey == TYPE_LIST.floder
-                          ? ""
-                          : knowledgeBasesValue,
-                      params: {
-                        // groupId: this.rootKey,
-                        ..._p,
-                      },
-                    }
-                    : undefined,
-                ...this.getFunctionConfig(),
-              },
-            });
-          } catch (e) {
-            // ElMessage.error("处理失败");
-            console.error("onSubmit", e);
-          }
-        }
-        this.text = "";
-        this.activeCommond = "";
-        // this.knowledgeBasesValue = [];
-        // this.composerList = [];
+      await util.myVision({
+        mediaType: image?.mediaType,
+        input: image?.input,
+        postscript: textVal,
+      });
+      images.value = [];
+      screenshotImages.value = [];
+      files.value = [];
+    } else {
+      let code = textVal;
+      let _p: any = {};
+      if (rootKey.value === TYPE_LIST.floder) {
+        _p = {
+          path: knowledgeBasesValue.value
+            .map((v) => v.params.path)
+            .join(","),
+        };
+      } else if (rootKey.value === TYPE_LIST.doc) {
+        knowledgeBasesVal = knowledgeBasesValue.value[0].params.baseId;
+        _p = {
+          fileId: knowledgeBasesValue.value[0].params.value,
+        };
+      } else if (rootKey.value === TYPE_LIST.project) {
+        knowledgeBasesVal = `${rootKey.value}`;
+      } else if (rootKey.value === TYPE_LIST.git) {
+        _p = {
+          commitId: knowledgeBasesValue.value[0].params.id,
+        };
       }
-    },
-    async deleteMsg() {
-      // try {
-      //   await util.clearMessage();
-      //   this.$props.initCodePrompt && this.$props.initCodePrompt();
-      // } catch (e) {
-      //   console.error(e);
-      // }
-      await this.onSubmit({
-        type: "md",
-        meta: {
-          role: "IDEA",
-        },
-        author: {
-          username: this.user.username,
-          cname: this.user.cname,
-          avatar: this.user.avatar,
-        },
-        data: {
-          text: "",
-          cmd: {
-            label: "/清空会话",
-            value: "clear",
+      if (rootKey.value === TYPE_LIST.file && knowledgeBasesValue.value.length) {
+        let str = "";
+        knowledgeBasesValue.value.forEach(v => {
+          str += `@${v.label}`;
+        });
+        code = `${str}  ${code}`;
+      }
+      try {
+        await props.onSubmit({
+          type: "md",
+          meta: {
+            role: code.startsWith("?") ? "IDEA" : "USER",
           },
-          knowledgeBase: undefined,
-          ...this.getFunctionConfig(),
-        },
-      });
-    },
-    async askState() {
-      try {
-        const res = await util.askState();
-        console.log("res", res);
-        window.showErrorCode(
-          decodeURIComponent(
-            JSON.stringify({
-              type: "list",
-              code: 0,
-              message: res,
-            })
-          )
-        );
+          author: {
+            username: user.value.username,
+            cname: user.value.cname,
+            avatar: user.value.avatar,
+          },
+          data: {
+            composer_config: composerList.value,
+            text: code,
+            cmd: activeCommondVal
+              ? {
+                id: activeCommondObj.value?.id,
+                label: activeCommondLabelVal,
+                value: activeCommondObj.value?.cmd,
+                params: activeCommondObj.value?.params,
+              }
+              : undefined,
+            knowledgeBase:
+              (rootKey.value === TYPE_LIST.floder || knowledgeBasesVal) && rootKey.value !== TYPE_LIST.file
+                ? {
+                  label: activeKnowledgeBasesLabelVal,
+                  value:
+                    rootKey.value === TYPE_LIST.floder
+                      ? ""
+                      : knowledgeBasesVal,
+                  params: {
+                    ..._p,
+                  },
+                }
+                : undefined,
+            ...getFunctionConfig(),
+          },
+        });
       } catch (e) {
-        console.error(e);
+        console.error("onSubmit", e);
       }
-    },
-    async setStateFullback(index: string | undefined) {
-      if (!index) {
-        // @ts-ignore
-        this.$message.error("回退的index不能为空");
-        return;
-      }
-      try {
-        const res = await util.setStateFullback(index);
-        // @ts-ignore
-        this.$message.success(res);
-        //回退提示
-      } catch (e) {
-        // @ts-ignore
-        this.$message.error("执行失败");
-        console.error(e);
-      }
-    },
-    setContextMaxNum(num: number) {
-      setMaxNum(num);
-    },
-    toggleContext() {
-      const isAllow = this.chatContext.isAllow;
-      if (isAllow) {
-        disableContext();
-        // @ts-ignore
-        this.$message.warning("当前模式下, 发送消息不会携带之前的聊天记录");
-      } else {
-        enableContext();
-        // @ts-ignore
-        this.$message.success("当前模式下, 发送消息会携带之前的聊天记录");
-      }
-    },
-    async getPercentage(target: any) {
-      try {
-        const { msg } = await this.commond("embedding_status");
-        if (!msg) {
-          target.bizUpdate = false;
-          return;
-        }
-        console.log(msg);
-        const data = JSON.parse(msg.substring(0, msg.lastIndexOf(":")));
-        if (data?.success === "true" || data.successCnt >= data.total) {
-          target.bizUpdate = false;
-          return;
-        }
-        if (data.total > 0) {
-          this.percentage = Number(
-            ((data.successCnt / data.total) * 100).toFixed(2)
-          );
-        }
-        setTimeout(() => {
-          this.getPercentage(target);
-        }, 300);
-      } catch (e) {
-        target.bizUpdate = false;
-        console.error(e);
-      }
-    },
-    async commond(cmd: string) {
-      return util.getAiGuide(cmd);
-    },
-    async flushBiz() {
-      let err = false;
-      try {
-        this.bizUpdate = true;
-        const { msg } = await this.commond("flush_biz");
-        window.showErrorCode(
-          decodeURIComponent(
-            JSON.stringify({
-              code: 0,
-              message: msg,
-            })
-          )
-        );
-      } catch (e) {
-        console.error(e);
-        err = true;
-        this.bizUpdate = false;
-      }
-      if (!err) {
-        await this.getPercentage(this);
-      }
-    },
-  },
+    }
+    text.value = "";
+    activeCommond.value = "";
+  }
 };
+
+const deleteMsg = async () => {
+  await props.onSubmit({
+    type: "md",
+    meta: {
+      role: "IDEA",
+    },
+    author: {
+      username: user.value.username,
+      cname: user.value.cname,
+      avatar: user.value.avatar,
+    },
+    data: {
+      text: "",
+      cmd: {
+        label: "/清空会话",
+        value: "clear",
+      },
+      knowledgeBase: undefined,
+      ...getFunctionConfig(),
+    },
+  });
+};
+
+const askState = async () => {
+  try {
+    const res = await util.askState();
+    console.log("res", res);
+    window.showErrorCode(
+      decodeURIComponent(
+        JSON.stringify({
+          type: "list",
+          code: 0,
+          message: res,
+        })
+      )
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const setStateFullback = async (index: string | undefined) => {
+  if (!index) {
+    //@ts-ignore
+    ElMessage.error("回退的index不能为空");
+    return;
+  }
+  try {
+    const res = await util.setStateFullback(index);
+    //@ts-ignore
+    ElMessage.success(res);
+  } catch (e) {
+    //@ts-ignore
+    ElMessage.error("执行失败");
+    console.error(e);
+  }
+};
+
+const setContextMaxNum = (num: number) => {
+  setMaxNum(num);
+};
+
+const toggleContext = () => {
+  const isAllow = chatContext.value.isAllow;
+  if (isAllow) {
+    disableContext();
+    //@ts-ignore
+    ElMessage.warning("当前模式下, 发送消息不会携带之前的聊天记录");
+  } else {
+    enableContext();
+    //@ts-ignore
+    ElMessage.success("当前模式下, 发送消息会携带之前的聊天记录");
+  }
+};
+
+const getPercentage = async (target: any) => {
+  try {
+    const { msg } = await commond("embedding_status");
+    if (!msg) {
+      target.bizUpdate = false;
+      return;
+    }
+    console.log(msg);
+    const data = JSON.parse(msg.substring(0, msg.lastIndexOf(":")));
+    if (data?.success === "true" || data.successCnt >= data.total) {
+      target.bizUpdate = false;
+      return;
+    }
+    if (data.total > 0) {
+      percentage.value = Number(
+        ((data.successCnt / data.total) * 100).toFixed(2)
+      );
+    }
+    setTimeout(() => {
+      getPercentage(target);
+    }, 300);
+  } catch (e) {
+    target.bizUpdate = false;
+    console.error(e);
+  }
+};
+
+const commond = async (cmd: string) => {
+  return util.getAiGuide(cmd);
+};
+
+const flushBiz = async () => {
+  let err = false;
+  try {
+    bizUpdate.value = true;
+    const { msg } = await commond("flush_biz");
+    window.showErrorCode(
+      decodeURIComponent(
+        JSON.stringify({
+          code: 0,
+          message: msg,
+        })
+      )
+    );
+  } catch (e) {
+    console.error(e);
+    err = true;
+    bizUpdate.value = false;
+  }
+  if (!err) {
+    await getPercentage({ bizUpdate });
+  }
+};
+
+// Initialize
+allSuggestions.value = [
+  {
+    id: 'init',
+    label: '/init',
+    value: '/init',
+    cmd: '/init',
+    params: {
+      description: '分析代码库并创建MCODE.md文件'
+    }
+  },
+  {
+    id: 'clear',
+    label: '/clear',
+    value: '/clear',
+    cmd: '/clear',
+    params: {
+      description: '清空对话历史记录'
+    }
+  },
+  {
+    id: 'cancel',
+    label: '/cancel',
+    value: '/cancel',
+    cmd: '/cancel',
+    params: {
+      description: '取消当前正在执行的任务'
+    }
+  },
+  {
+    id: 'config',
+    label: '/config',
+    value: '/config',
+    cmd: '/config',
+    params: {
+      description: '查看或修改配置'
+    }
+  },
+  {
+    id: 'interrupt',
+    label: '/interrupt',
+    value: '/interrupt',
+    cmd: '/interrupt',
+    params: {
+      description: '中断Agent执行'
+    }
+  },
+  {
+    id: 'refresh',
+    label: '/refresh',
+    value: '/refresh',
+    cmd: '/refresh',
+    params: {
+      description: '刷新配置'
+    }
+  },
+  {
+    id: 'switch',
+    label: '/switch',
+    value: '/switch',
+    cmd: '/switch',
+    params: {
+      description: '切换Agent'
+    }
+  },
+  {
+    id: 'create',
+    label: '/create',
+    value: '/create',
+    cmd: '/create',
+    params: {
+      description: '创建新的Agent'
+    }
+  }
+];
+
+// Expose methods for template refs
+defineExpose({
+  handleClickOutside,
+  handleDeleteFile,
+  searchFiles,
+  toggleSendShiftEnter,
+  toggleSendMethod,
+  toggleFunctionPanel,
+  getFunctionConfig,
+  filterJavaFile,
+  handleFileItem,
+  handleKnowLedgeItem,
+  querySuggestion,
+  highlight,
+  handleKeyEscape,
+  handleKeyDown,
+  close,
+  closeSuggestions,
+  sendText,
+  toggleKnowledgeBase,
+  handleInitKnowledge,
+  toggleCommond,
+  handleSelectKnowItem,
+  setFileItem,
+  handleKnowledge,
+  setPreItem,
+  addDoc,
+  handleDelete,
+  setSuggestion,
+  selectSuggestion,
+  setInputActive,
+  submitAudio,
+  updateText,
+  submitText,
+  deleteMsg,
+  askState,
+  setStateFullback,
+  setContextMaxNum,
+  toggleContext,
+  getPercentage,
+  commond,
+  flushBiz,
+});
 </script>
 
 <style scoped lang="scss">

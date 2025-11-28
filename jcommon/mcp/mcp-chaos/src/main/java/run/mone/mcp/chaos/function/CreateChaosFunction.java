@@ -85,7 +85,7 @@ public class CreateChaosFunction implements McpFunction {
                 
                 // 构建请求参数
                 Map<String, String> queryParams = buildQueryParams(params);
-                log.debug("构建的请求参数: {}", queryParams);
+                log.info("构建的请求参数: {}", queryParams);
                 
                 // 发送请求
                 Map<String, String> headerMap = Map.of("Content-Type", "application/json");
@@ -128,7 +128,7 @@ public class CreateChaosFunction implements McpFunction {
         queryParams.put("projectName", "chaos-mcp");
         queryParams.put("duration", getStringParam(params, "duration"));
         queryParams.put("containerName", "main");
-        queryParams.put("createUser", userName);
+        queryParams.put("createUser", "zhangxiaowei6");
         queryParams.put("containerNum", getStringParam(params, "containerNum"));
         queryParams.put("operateParam", operateParam);
         

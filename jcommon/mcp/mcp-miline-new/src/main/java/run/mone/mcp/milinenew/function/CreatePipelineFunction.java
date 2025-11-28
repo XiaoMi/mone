@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -23,7 +26,11 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/11/18
  */
 @Slf4j
+@Component
 public class CreatePipelineFunction implements McpFunction {
+
+    @Value("${git.email.suffix}")
+    private String gitUserName;
 
     public static final String TOOL_SCHEMA = """
             {
@@ -138,7 +145,7 @@ public class CreatePipelineFunction implements McpFunction {
 
             // 构建用户信息
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", "liguanchen");
+            userMap.put("baseUserName", gitUserName);
             userMap.put("userType", 0);
 
             List<Object> requestBody = List.of(userMap, pipelineConfig);

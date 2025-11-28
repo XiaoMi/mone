@@ -47,7 +47,7 @@ public class LogQueryFunction implements McpFunction {
                 "properties": {
                     "level": {
                         "type": "string",
-                        "description": "日志级别，可选值：ERROR、WARN、INFO、DEBUG等"
+                        "description": "日志级别，可选值：ERROR、WARN、INFO、DEBUG等。如果需要查询错误日志，则传入ERROR；如果需要查询所有日志，则不传"
                     },
                     "projectId": {
                         "type": "integer",
@@ -64,9 +64,13 @@ public class LogQueryFunction implements McpFunction {
                     "endTime": {
                         "type": "number",
                         "description": "查询结束时间，毫秒时间戳，不提供则使用当前时间"
+                    },
+                    "traceId": {
+                        "type": "string",
+                        "description": "链路追踪ID，32位由0-9a-f组成的字符串，用于追踪特定请求的完整调用链路"
                     }
                 },
-                "required": ["level", "projectId", "envId"]
+                "required": ["projectId", "envId"]
             }
             """;
 
@@ -81,17 +85,10 @@ public class LogQueryFunction implements McpFunction {
         return Flux.defer(() -> {
             try {
                 // 获取必填参数
-                String level = getStringParam(args, "level");
                 int projectId = getIntParam(args, "projectId", 0);
                 int envId = getIntParam(args, "envId", 0);
 
                 // 验证必填参数
-                if (level.isEmpty()) {
-                    log.warn("level 参数为空");
-                    return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("参数错误：level不能为空")), true));
-                }
-
                 if (projectId == 0) {
                     log.warn("projectId 参数为空或无效");
                     return Flux.just(new McpSchema.CallToolResult(
@@ -104,20 +101,38 @@ public class LogQueryFunction implements McpFunction {
                         List.of(new McpSchema.TextContent("参数错误：envId不能为空或无效")), true));
                 }
 
-                // 转换level为大写
-                level = level.toUpperCase();
+                // 获取可选参数：level
+                String level = getStringParam(args, "level");
+                if (!level.isEmpty()) {
+                    level = level.toUpperCase();
+                } else {
+                    level = null;
+                }
+
+                // 获取可选参数：traceId
+                String traceId = getStringParam(args, "traceId");
+                if (!traceId.isEmpty()) {
+                    // 验证traceId格式（32位，由0-9a-f组成）
+                    if (!traceId.matches("^[0-9a-fA-F]{32}$")) {
+                        log.warn("traceId 格式不正确：{}", traceId);
+                        return Flux.just(new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent("参数错误：traceId必须是32位由0-9a-f组成的字符串")), true));
+                    }
+                } else {
+                    traceId = null;
+                }
 
                 // 获取时间参数，如果未提供则使用默认值（最近1小时）
                 long endTime = getLongParam(args, "endTime", System.currentTimeMillis());
                 long startTime = getLongParam(args, "startTime", endTime - 3600000); // 默认1小时（毫秒）
 
-                log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}",
-                        level, projectId, envId, startTime, endTime);
+                log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}",
+                        level, projectId, envId, startTime, endTime, traceId);
 
                 // 调用服务查询日志
-                String result = logQueryService.queryLogs(level, projectId, envId, startTime, endTime);
+                String result = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId);
 
-                log.info("成功查询日志，level: {}, projectId: {}, envId: {}", level, projectId, envId);
+                log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}", level, projectId, envId, traceId);
 
                 return createSuccessFlux(result);
             } catch (Exception e) {

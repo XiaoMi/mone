@@ -102,7 +102,8 @@ public class ChatFunction implements McpFunction {
 
         //完成id修正
         userId = res.getUserId();
-        String agentId = arguments.getOrDefault(Const.AGENT_ID, "").toString();
+        String agentId = getAgentId(arguments);
+
         String message = (String) arguments.get("message");
 
         log.info("message:{}", message);
@@ -121,6 +122,15 @@ public class ChatFunction implements McpFunction {
         } catch (Exception e) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("ERROR: " + e.getMessage())), true));
         }
+    }
+
+    private String getAgentId(Map<String, Object> arguments) {
+        String agentId = arguments.getOrDefault(Const.AGENT_ID, "").toString();
+
+        if (StringUtils.isNotEmpty(roleService.getAgentId())) {
+            agentId = roleService.getAgentId();
+        }
+        return agentId;
     }
 
     private static @Nullable List<String> getImages(Map<String, Object> arguments) {

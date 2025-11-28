@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -24,8 +27,10 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/1/17
  */
 @Slf4j
+@Component
 public class GenerateGitCodeFunction implements McpFunction {
-
+    @Value("${git.email.suffix}")
+    private String gitUserName;
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -87,7 +92,7 @@ public class GenerateGitCodeFunction implements McpFunction {
 
             // 构建请求体
             Map<String, Object> requestMap = new HashMap<>();
-            requestMap.put("baseUserName", "liguanchen");
+            requestMap.put("baseUserName", gitUserName);
             requestMap.put("userType", 0);
 
             List<Object> requestBody = List.of(requestMap, projectId, env);
