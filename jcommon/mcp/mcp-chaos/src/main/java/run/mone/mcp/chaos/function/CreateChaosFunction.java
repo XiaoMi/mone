@@ -128,7 +128,7 @@ public class CreateChaosFunction implements McpFunction {
         queryParams.put("projectName", "chaos-mcp");
         queryParams.put("duration", getStringParam(params, "duration"));
         queryParams.put("containerName", "main");
-        queryParams.put("createUser", "zhangxiaowei6");
+        queryParams.put("createUser", userName);
         queryParams.put("containerNum", getStringParam(params, "containerNum"));
         queryParams.put("operateParam", operateParam);
         

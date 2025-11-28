@@ -72,7 +72,7 @@ public class ChaosFunction implements McpFunction {
             try {
                 String type = getStringParam(args, "type");
                 String host = System.getenv().getOrDefault("CHAOS_HOST", "");
-                String userName = "zhangxiaowei6"; //getStringParam(args, Const.USER_INTERNAL_NAME);
+                String userName = getStringParam(args, Const.USER_INTERNAL_NAME);
                 log.info("apply userName:{}, type:{},host:{}", userName,type,host);
                 
                 if (host.isEmpty()) {
