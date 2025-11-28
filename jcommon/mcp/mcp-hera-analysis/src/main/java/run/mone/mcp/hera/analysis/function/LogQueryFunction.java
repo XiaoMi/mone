@@ -36,7 +36,7 @@ public class LogQueryFunction implements McpFunction {
     /**
      * Function描述
      */
-    private String desc = "查询指定项目和环境下的日志信息";
+    private String desc = "查询指定项目和环境(流水线)下的日志信息";
 
     /**
      * Function参数Schema定义

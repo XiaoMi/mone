@@ -33,7 +33,7 @@ public class ApplicationMetricsFunction implements McpFunction {
     /**
      * Function描述
      */
-    private String desc = "查询指定应用近一分钟的指标监控数据";
+    private String desc = "查询指定应用、项目近一分钟的指标监控数据，QPS、CPU、heap的平均值，例如帮我查询111_test的监控指标";
 
     /**
      * Function参数Schema定义
@@ -44,7 +44,7 @@ public class ApplicationMetricsFunction implements McpFunction {
                 "properties": {
                     "application": {
                         "type": "string",
-                        "description": "需要查询的项目ID和项目名称的组合"
+                        "description": "需要查询的项目ID和项目名称的组合，例如：111_test"
                     }
                   },
                 "required": ["application"]
