@@ -526,13 +526,16 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
 
         try {
+            // 设置请求字符编码为UTF-8，避免中文乱码
+            request.setCharacterEncoding(UTF_8);
+
             // 检查请求体是否为空
             if (request.getContentLength() == 0) {
                 logger.warn("Received empty POST request");
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Empty request body");
                 return;
             }
-            
+
             BufferedReader reader = request.getReader();
             StringBuilder body = new StringBuilder();
             String line;
