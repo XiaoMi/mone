@@ -10,23 +10,28 @@ import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class MiApiFunction implements McpFunction {
+public class SearchApiFunction implements McpFunction {
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
                 "properties": {
-                    "projectName": {
+                    "keyword": {
                         "type": "string",
-                        "description": "项目(组)名称（必填）"
+                        "description": "接口关键字"
+                    },
+                    "protocol": {
+                        "type": "string",
+                        "description": "接口类型，http为1，dubbo为3，可不指定类型"
                     }
                 },
-                "required": ["projectName"]
+                "required": ["keyword"]
             }
             """;
 
@@ -35,7 +40,7 @@ public class MiApiFunction implements McpFunction {
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
-    public MiApiFunction() {
+    public SearchApiFunction() {
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
@@ -56,26 +61,34 @@ public class MiApiFunction implements McpFunction {
             }
 
             // 验证必填参数
-            Object projectName = arguments.get("projectName");
+            Object keyword = arguments.get("keyword");
+            Object protocol = arguments.get("protocol");
 
-            if (projectName == null || StringUtils.isBlank(projectName.toString())) {
+            if (keyword == null || StringUtils.isBlank(keyword.toString())) {
                 return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("错误：缺少必填参数'projectName'")),
+                        List.of(new McpSchema.TextContent("错误：缺少必填参数'keyword'")),
                         true
                 ));
             }
 
+            if (protocol == null || StringUtils.isBlank(protocol.toString())) {
+                protocol = "";
+            }
+
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("projectName", projectName);
+            userMap.put("keyword", keyword);
+            userMap.put("protocol", protocol);
+            userMap.put("userName", "");
             String params = objectMapper.writeValueAsString(userMap);
-            log.info("projectName request: {}", params);
+            log.info("keyword request: {}", params);
+            MediaType JSON = MediaType.get("application/json; charset=utf-8");
             RequestBody body = RequestBody.create(
-                    params,
-                    MediaType.parse("application/json; charset=utf-8")
+                    params.getBytes(StandardCharsets.UTF_8),
+                    JSON
             );
 
             Request request = new Request.Builder()
-                    .url(BASE_URL + "/mtop/miapitest/getProjectByName")
+                    .url(BASE_URL + "/mtop/miapitest/getApiList")
                     .post(body)
                     .build();
 
@@ -102,7 +115,7 @@ public class MiApiFunction implements McpFunction {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                String resultText = String.format("miapi项目信息: %s", apiResponse.getData());
+                String resultText = String.format("查询到的接口信息为: %s", apiResponse.getData());
 
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(resultText)),
@@ -120,14 +133,16 @@ public class MiApiFunction implements McpFunction {
 
     @Override
     public String getName() {
-        return "query_project";
+        return "query_api";
     }
 
     @Override
     public String getDesc() {
         return """
-                根据项目(组)名称，查询miapi项目信息。
-                如：帮我查询mock-server项目信息。
+                根据关键字（path或apiName）查询接口信息。
+                如：帮我查询dubbo的user接口。
+                如：帮我查询http的user接口。
+                如：帮我查询userinfo接口。
                 """;
     }
 

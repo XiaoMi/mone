@@ -1,22 +1,29 @@
 package run.mone.mcp.chaos.config;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
 import run.mone.mcp.chaos.function.ChaosFunction;
 import run.mone.mcp.chaos.function.CreateChaosFunction;
+import scala.collection.immutable.Stream;
 
 /**
  * @author zhangxiaowei6
  * @Date 2025/5/7 16:20
  */
-
 @Configuration
 public class AgentConfig {
+
     private String agentName = "mione_chaos";
+
+    @Value("${mcp.agent.mode:MCP}")
+    private String agentMode;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -28,11 +35,11 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool(),
-                        new SpeechToTextTool(),
-                        new TextToSpeechTool()))
+                        new AttemptCompletionTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName,30),new ChaosFunction(),new CreateChaosFunction()))
+                .mode(RoleMeta.RoleMode.valueOf(agentMode))
+                .mcpTools(Lists.newArrayList(new ChaosFunction(),new CreateChaosFunction()))
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8901",Const.AGENT_SERVER_NAME,"chaos_server", Const.HTTP_ENABLE_AUTH, Const.TRUE))
                 .build();
     }
 }

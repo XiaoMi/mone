@@ -45,6 +45,9 @@ public class AgentConfig {
     @Value("${mcp.agent.name:miline_new}")
     private String agentName;
 
+    @Value("${mcp.http.port:8082}")
+    private String httpPort;
+
     @Autowired
     private CreatePipelineFunction createPipelineFunction;
 
@@ -72,7 +75,7 @@ public class AgentConfig {
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
-                .profile("你是一名优秀的miline助手行")
+                .profile("你是一名优秀的miline助手")
                 .goal("你的目标是更好的帮助用户")
                 .constraints("专注于提供帮助")
                 //内部工具
@@ -108,8 +111,8 @@ public class AgentConfig {
                         - 根据提供的projectId、env生成代码,
                         - 拉取代码到本地，也就是调用git_clone工具进行git clone 
                         - 根据需求及已有代码进行后端开发、前端开发；
-                        注意：先进行后端开发，再根据后端接口定义进行前端开发
-                        注意：不要使用模拟数据，严格按照需求文档的设计进行开发
+                        注意：根据需求生成接口文档后，前后端再根据接口文档进行开发
+                        注意：不要使用模拟数据，严格按照需求/接口文档的设计进行开发
                         注意：前端开发时，样式一定要按照pc端展示进行开发,页面主内容宽度是1280px,左右居中
                         注意：如果提供了要实现的需求则进行代码实现，否则跳过代码实现并检查下没有语法bug后，再进行后续提交操作
                         - 先进入xxx-server/src/main/resources/static目录，执行npm i && npm run build
@@ -117,7 +120,7 @@ public class AgentConfig {
                         - 根据projectId、pipelineName、gitUrl、gitName创建流水线
                         - 根据projectId、pipelineId触发流水线进行发布
                 """)
-                .meta(ImmutableMap.of(Const.HTTP_PORT,"8082",Const.AGENT_SERVER_NAME,"miline_server"))
+                .meta(ImmutableMap.of(Const.HTTP_PORT,httpPort,Const.AGENT_SERVER_NAME,"miline_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();
     }
 
