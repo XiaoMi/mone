@@ -1,0 +1,181 @@
+package run.mone.hive.service;
+
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.bo.SkillDocument;
+import run.mone.hive.markdown.MarkdownDocument;
+import run.mone.hive.markdown.MarkdownParserService;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Service for loading and managing skill definitions
+ * Skills are typically stored in the .hive/skills directory
+ */
+@Slf4j
+public class SkillService {
+
+    private static final String SKILLS_DIR = "skills";
+    private final MarkdownParserService markdownParser;
+
+    public SkillService() {
+        this.markdownParser = new MarkdownParserService();
+    }
+
+    /**
+     * Load all skills from the .hive/skills directory
+     *
+     * @param hiveCwd The .hive directory path
+     * @return List of skill documents
+     */
+    public List<SkillDocument> loadSkills(String hiveCwd) {
+        List<SkillDocument> skills = new ArrayList<>();
+
+        if (StringUtils.isBlank(hiveCwd)) {
+            log.debug("Hive directory is empty, no skills to load");
+            return skills;
+        }
+
+        String skillsPath = hiveCwd
+                + (hiveCwd.endsWith(File.separator) ? "" : File.separator)
+                + SKILLS_DIR;
+
+        File skillsDir = new File(skillsPath);
+        if (!skillsDir.exists() || !skillsDir.isDirectory()) {
+            log.debug("Skills directory does not exist: {}", skillsPath);
+            return skills;
+        }
+
+        // Get all .md files in the skills directory and subdirectories
+        List<File> skillFileList = new ArrayList<>();
+
+        File[] entries = skillsDir.listFiles();
+        if (entries == null || entries.length == 0) {
+            log.debug("No files found in: {}", skillsPath);
+            return skills;
+        }
+
+        for (File entry : entries) {
+            if (entry.isDirectory()) {
+                // Look for .md files in subdirectory
+                File[] mdFiles = entry.listFiles((dir, name) -> name.toLowerCase().endsWith(".md"));
+                if (mdFiles != null && mdFiles.length > 0) {
+                    skillFileList.addAll(Arrays.asList(mdFiles));
+                }
+            } else if (entry.getName().toLowerCase().endsWith(".md")) {
+                // Also include .md files directly in skills directory
+                skillFileList.add(entry);
+            }
+        }
+
+        if (skillFileList.isEmpty()) {
+            log.debug("No skill files found in: {}", skillsPath);
+            return skills;
+        }
+
+        // Parse each skill file
+        for (File skillFile : skillFileList) {
+            try {
+                SkillDocument skill = parseSkillFile(skillFile);
+                if (skill != null) {
+                    skills.add(skill);
+                    log.debug("Loaded skill: {} from {}", skill.getName(), skillFile.getName());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse skill file: {}, error: {}", skillFile.getName(), e.getMessage());
+            }
+        }
+
+        return skills;
+    }
+
+    /**
+     * Parse a skill markdown file
+     * Expected format:
+     * ---
+     * name: skill-name
+     * description: Skill description
+     * ---
+     * Skill content here...
+     *
+     * @param skillFile Skill file
+     * @return SkillDocument or null if parsing fails
+     */
+    private SkillDocument parseSkillFile(File skillFile) throws IOException {
+        String content = Files.readString(skillFile.toPath());
+        MarkdownDocument md = markdownParser.parseMarkdown(content);
+
+        String name = md.getDefinitionAsString("name");
+        String description = md.getDefinitionAsString("description");
+
+        if (StringUtils.isBlank(name)) {
+            log.warn("Skill file missing 'name' field: {}", skillFile.getName());
+            return null;
+        }
+
+        return SkillDocument.builder()
+                .name(name)
+                .description(StringUtils.isNotBlank(description) ? description : "")
+                .location(skillFile.getParentFile().getAbsolutePath())
+                .content(md.getContent())
+                .build();
+    }
+
+    /**
+     * Format skills for prompt inclusion
+     * Returns a formatted string describing available skills and how to use them
+     *
+     * @param skills List of skills
+     * @return Formatted skill information
+     */
+    public String formatSkillsForPrompt(List<SkillDocument> skills) {
+        if (skills == null || skills.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("## Available Skills\n\n");
+        sb.append("You have access to the following skills. ");
+        sb.append("To request a skill definition, use the XML format:\n\n");
+        sb.append("```xml\n");
+        sb.append("<skill_request>\n");
+        sb.append("<skill_name>skill-name-here</skill_name>\n");
+        sb.append("</skill_request>\n");
+        sb.append("```\n\n");
+        sb.append("### Skill List:\n\n");
+
+        for (SkillDocument skill : skills) {
+            sb.append("**").append(skill.getName()).append("**\n");
+            if (StringUtils.isNotBlank(skill.getDescription())) {
+                sb.append("- Description: ").append(skill.getDescription()).append("\n");
+            }
+            sb.append("- Location: ").append(skill.getLocation()).append("\n\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Get skill by name
+     *
+     * @param skills List of all skills
+     * @param name   Skill name to find
+     * @return SkillDocument or null if not found
+     */
+    public SkillDocument getSkillByName(List<SkillDocument> skills, String name) {
+        if (skills == null || StringUtils.isBlank(name)) {
+            return null;
+        }
+
+        return skills.stream()
+                .filter(skill -> name.equals(skill.getName()))
+                .findFirst()
+                .orElse(null);
+    }
+}

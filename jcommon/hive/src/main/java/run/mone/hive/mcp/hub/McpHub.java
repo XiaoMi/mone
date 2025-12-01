@@ -115,12 +115,15 @@ public class McpHub {
                             } else if (conn.getTransport() != null) {
                                 conn.getTransport().close();
                             }
+                            if (conn.getType() != McpType.HTTP) {
+                                //尝试再连接过去
+                                String name = conn.getServer().getName();
+                                ServerParameters params = conn.getServer().getServerParameters();
+                                log.info("reconnect:{}", name);
+                                reconnect(name, params);
+                            }
+
                         });
-                        //尝试再连接过去
-                        String name = conn.getServer().getName();
-                        ServerParameters params = conn.getServer().getServerParameters();
-                        log.info("reconnect:{}", name);
-                        reconnect(name, params);
                     }
                 }
             })));
