@@ -103,6 +103,7 @@ public class McpHub {
                 if (null == ex) {
                     value.setErrorNum(0);
                 } else {
+                    log.error("ping error:{}", key);
                     //发生错误了
                     value.setErrorNum(value.getErrorNum() + 1);
                     if (value.getErrorNum() >= 3) {
@@ -122,7 +123,6 @@ public class McpHub {
                                 log.info("reconnect:{}", name);
                                 reconnect(name, params);
                             }
-
                         });
                     }
                 }
