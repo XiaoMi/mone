@@ -180,15 +180,11 @@ public class GetDeployMachinesFunction implements McpFunction {
             return "暂无部署机器信息";
         }
 
-        // 遍历每台机器的信息
-        for (int i = 0; i < data.size(); i++) {
-            Map<String, Object> machine = data.get(i);
-            sb.append(String.format("机器 %d:\n", i + 1));
-            machine.forEach((key, value) -> {
-                sb.append(String.format("  %s: %s\n", key, value));
-            });
-            sb.append("\n");
-        }
+        Map<String, Object> machine = data.getFirst();
+        machine.forEach((key, value) -> {
+            sb.append(String.format("  %s: %s\n", key, value));
+        });
+        sb.append("\n");
 
         return sb.toString().trim();
     }
