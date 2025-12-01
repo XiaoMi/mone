@@ -133,6 +133,17 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private Function<String, Boolean> authFunction = token -> true;
 
     /**
+     * Token validator for bearer token authentication
+     */
+    @Setter
+    private TokenValidator tokenValidator;
+
+    /**
+     * Token authentication cache
+     */
+    private TokenAuthCache tokenAuthCache;
+
+    /**
      * Constructs a new HttpServletStreamableServerTransport instance.
      * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization of
      * messages.
@@ -142,13 +153,16 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * @throws IllegalArgumentException if any parameter is null
      */
     private HttpServletStreamableServerTransport(ObjectMapper objectMapper, String mcpEndpoint,
-            boolean disallowDelete, Duration keepAliveInterval) {
+            boolean disallowDelete, Duration keepAliveInterval, Duration tokenCacheTtl) {
         Assert.notNull(objectMapper, "ObjectMapper must not be null");
         Assert.notNull(mcpEndpoint, "MCP endpoint must not be null");
 
         this.objectMapper = objectMapper;
         this.mcpEndpoint = mcpEndpoint;
         this.disallowDelete = disallowDelete;
+
+        // Initialize token auth cache with default TTL of 5 minutes
+        this.tokenAuthCache = new TokenAuthCache(tokenCacheTtl != null ? tokenCacheTtl : Duration.ofMinutes(5));
 
         // 启用会话清理机制，定期清理已关闭的会话
         this.keepAliveScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -271,6 +285,134 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         return null;
     }
 
+    /**
+     * Extracts bearer token from the Authorization header or URL parameter.
+     * Priority:
+     * 1. Authorization header (Bearer token)
+     * 2. URL query parameter (?token=xxx)
+     * @param request The HTTP servlet request
+     * @return The bearer token, or null if not found
+     */
+    private String extractBearerToken(HttpServletRequest request) {
+        // First, try to get from Authorization header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7).trim();
+        }
+
+        // If not found in header, try to get from URL query parameter
+        String tokenParam = request.getParameter("token");
+        if (tokenParam != null && !tokenParam.trim().isEmpty()) {
+            return tokenParam.trim();
+        }
+
+        return null;
+    }
+
+    /**
+     * Injects user information into tool call parameters.
+     * This adds user info to the arguments of CallToolRequest.
+     * @param params The original request params
+     * @param userInfo User information to inject
+     * @return Enriched params with user info injected into arguments
+     */
+    private Object injectUserInfoToToolCall(Object params, Map<String, Object> userInfo) {
+        if (params == null || userInfo == null || userInfo.isEmpty()) {
+            return params;
+        }
+
+        try {
+            // Deserialize params to CallToolRequest
+            McpSchema.CallToolRequest callToolRequest = objectMapper.convertValue(params,
+                new TypeReference<McpSchema.CallToolRequest>() {});
+
+            if (callToolRequest != null && callToolRequest.arguments() != null) {
+                // Create new arguments map with user info
+                Map<String, Object> enrichedArguments = new java.util.HashMap<>(callToolRequest.arguments());
+
+                // Inject user info with special prefix to avoid conflicts
+                enrichedArguments.put(Const.USER_INFO, userInfo);
+
+                // Also inject individual user fields for convenience
+                if (userInfo.containsKey("userId")) {
+                    enrichedArguments.putIfAbsent(Const.TOKEN_USER_ID, userInfo.get("userId"));
+                }
+                if (userInfo.containsKey("username")) {
+                    enrichedArguments.putIfAbsent(Const.TOKEN_USERNAME, userInfo.get("username"));
+                }
+
+                logger.debug("Injected user info into tool call arguments: userId={}, username={}",
+                    userInfo.get("userId"), userInfo.get("username"));
+
+                // Create new CallToolRequest with enriched arguments
+                return new McpSchema.CallToolRequest(
+                    callToolRequest.name(),
+                    enrichedArguments
+                );
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to inject user info into tool call parameters: {}", e.getMessage());
+        }
+
+        return params;
+    }
+
+    /**
+     * Validates a bearer token using the configured token validator and cache.
+     * @param token The bearer token to validate
+     * @return true if the token is valid, false otherwise
+     * @deprecated Use {@link #validateBearerTokenWithUserInfo(String)} instead to get user info
+     */
+    @Deprecated
+    private boolean validateBearerToken(String token) {
+        TokenValidator.ValidationResult result = validateBearerTokenWithUserInfo(token);
+        return result != null && result.isValid();
+    }
+
+    /**
+     * Validates a bearer token and returns the full validation result including user info.
+     * @param token The bearer token to validate
+     * @return ValidationResult containing validity status and user info, or null if token is invalid
+     */
+    private TokenValidator.ValidationResult validateBearerTokenWithUserInfo(String token) {
+        if (token == null || token.isEmpty()) {
+            logger.debug("Token is null or empty");
+            return null;
+        }
+
+        // Check cache first
+        TokenValidator.ValidationResult cachedResult = tokenAuthCache.get(token);
+        if (cachedResult != null) {
+            logger.debug("Token validation result from cache: valid={}, userInfo={}",
+                cachedResult.isValid(), cachedResult.getUserInfo());
+            return cachedResult;
+        }
+
+        // Token not in cache, validate using the token validator
+        if (tokenValidator == null) {
+            logger.warn("Token validator is not configured");
+            return null;
+        }
+
+        try {
+            TokenValidator.ValidationResult result = tokenValidator.validate(token);
+
+            // Cache the result with custom TTL if provided
+            if (result.getTtl() != null) {
+                tokenAuthCache.put(token, result, result.getTtl());
+            } else {
+                tokenAuthCache.put(token, result);
+            }
+
+            logger.info("Token validation result from validator: valid={}, userInfo={}",
+                result.isValid(), result.getUserInfo());
+            return result;
+        } catch (Exception e) {
+            logger.error("Error validating token: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
     private void sendMessageToSession(McpSession session, String jsonText) {
         try {
             logger.debug("Sending message to session: {}, message:{}", session.getId(), jsonText);
@@ -317,11 +459,21 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             badRequestErrors.add("text/event-stream required in Accept header");
         }
 
+        // Bearer token authentication
+        if (tokenValidator != null) {
+            String bearerToken = extractBearerToken(request);
+            if (!validateBearerToken(bearerToken)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing bearer token");
+                return;
+            }
+        }
+
         String sessionId = request.getHeader(Const.MC_CLIENT_ID);
         if (sessionId == null || sessionId.isBlank()) {
             sessionId = java.util.UUID.randomUUID().toString();
         }
 
+        // Legacy auth function support
         if (!authFunction.apply(sessionId)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
             return;
@@ -418,20 +570,39 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
+        // Bearer token authentication with user info extraction
+        TokenValidator.ValidationResult validationResult = null;
+        if (tokenValidator != null) {
+            String bearerToken = extractBearerToken(request);
+            validationResult = validateBearerTokenWithUserInfo(bearerToken);
+
+            if (validationResult == null || !validationResult.isValid()) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing bearer token");
+                return;
+            }
+        }
+
+        // Legacy auth
         String clientId = request.getHeader(Const.MC_CLIENT_ID);
         if (clientId != null && !authFunction.apply(clientId)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
             return;
         }
 
+        // Extract user info for later injection
+        final Map<String, Object> userInfo = (validationResult != null) ? validationResult.getUserInfo() : new java.util.HashMap<>();
+
         try {
+            // 设置请求字符编码为UTF-8，避免中文乱码
+            request.setCharacterEncoding(UTF_8);
+
             // 检查请求体是否为空
             if (request.getContentLength() == 0) {
                 logger.warn("Received empty POST request");
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Empty request body");
                 return;
             }
-            
+
             BufferedReader reader = request.getReader();
             StringBuilder body = new StringBuilder();
             String line;
@@ -603,7 +774,10 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
                 if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
                     try {
-                        Object handlerResult = mcpServer.toolsCallRequestHandler().handle(req.params()).block();
+                        // Inject user info into tool call arguments
+                        Object enrichedParams = injectUserInfoToToolCall(req.params(), userInfo);
+
+                        Object handlerResult = mcpServer.toolsCallRequestHandler().handle(enrichedParams).block();
                         McpSchema.CallToolResult result;
 
                         // Handle both direct result and Flux wrapped result
@@ -805,6 +979,15 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
+        // Bearer token authentication
+        if (tokenValidator != null) {
+            String bearerToken = extractBearerToken(request);
+            if (!validateBearerToken(bearerToken)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing bearer token");
+                return;
+            }
+        }
+
 //        String sessionId = request.getHeader(Const.MC_CLIENT_ID);
         String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
         if (sessionId == null) {
@@ -813,6 +996,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return;
         }
 
+        // Legacy auth function support
         if (!authFunction.apply(sessionId)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
             return;
@@ -965,6 +1149,11 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     Thread.currentThread().interrupt();
                     this.keepAliveScheduler.shutdownNow();
                 }
+            }
+
+            // Shutdown token auth cache
+            if (this.tokenAuthCache != null) {
+                this.tokenAuthCache.shutdown();
             }
 
             logger.info("Graceful shutdown completed");
@@ -1133,6 +1322,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         private String mcpEndpoint = "/mcp";
         private boolean disallowDelete = false;
         private Duration keepAliveInterval;
+        private TokenValidator tokenValidator;
+        private Duration tokenCacheTtl;
 
         /**
          * Sets the ObjectMapper to use for JSON serialization/deserialization of MCP
@@ -1182,6 +1373,26 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
 
         /**
+         * Sets the token validator for bearer token authentication.
+         * @param tokenValidator The token validator instance. If null, bearer token auth is disabled.
+         * @return this builder instance
+         */
+        public Builder tokenValidator(TokenValidator tokenValidator) {
+            this.tokenValidator = tokenValidator;
+            return this;
+        }
+
+        /**
+         * Sets the TTL for token authentication cache entries.
+         * @param tokenCacheTtl The cache TTL. If null, defaults to 5 minutes.
+         * @return this builder instance
+         */
+        public Builder tokenCacheTtl(Duration tokenCacheTtl) {
+            this.tokenCacheTtl = tokenCacheTtl;
+            return this;
+        }
+
+        /**
          * Builds a new instance of {@link HttpServletStreamableServerTransport}
          * with the configured settings.
          * @return A new HttpServletStreamableServerTransport instance
@@ -1189,9 +1400,16 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
          */
         public HttpServletStreamableServerTransport build() {
             Assert.notNull(this.mcpEndpoint, "MCP endpoint must be set");
-            return new HttpServletStreamableServerTransport(
+            HttpServletStreamableServerTransport transport = new HttpServletStreamableServerTransport(
                     objectMapper != null ? objectMapper : new ObjectMapper(),
-                    mcpEndpoint, disallowDelete, keepAliveInterval);
+                    mcpEndpoint, disallowDelete, keepAliveInterval, tokenCacheTtl);
+
+            // Set token validator if provided
+            if (tokenValidator != null) {
+                transport.setTokenValidator(tokenValidator);
+            }
+
+            return transport;
         }
     }
 }

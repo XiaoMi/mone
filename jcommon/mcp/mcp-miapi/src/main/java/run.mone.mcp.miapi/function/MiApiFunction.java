@@ -37,9 +37,9 @@ public class MiApiFunction implements McpFunction {
 
     public MiApiFunction() {
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
     }
@@ -80,9 +80,9 @@ public class MiApiFunction implements McpFunction {
                     .build();
 
             OkHttpClient miapiClient = client.newBuilder()
-                    .connectTimeout(3, TimeUnit.SECONDS)
-                    .readTimeout(3, TimeUnit.SECONDS)
-                    .writeTimeout(3, TimeUnit.SECONDS)
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
                     .build();
 
             try (Response response = miapiClient.newCall(request).execute()) {
@@ -120,13 +120,14 @@ public class MiApiFunction implements McpFunction {
 
     @Override
     public String getName() {
-        return "miapi_project";
+        return "query_project";
     }
 
     @Override
     public String getDesc() {
         return """
                 根据项目(组)名称，查询miapi项目信息。
+                如：帮我查询mock-server项目信息。
                 """;
     }
 

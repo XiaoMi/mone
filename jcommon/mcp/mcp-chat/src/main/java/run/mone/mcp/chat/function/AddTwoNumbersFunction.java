@@ -2,6 +2,7 @@ package run.mone.mcp.chat.function;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -37,7 +38,24 @@ public class AddTwoNumbersFunction implements McpFunction {
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("AddTwoNumbers arguments: {}", arguments);
-
+        // ===== 获取用户信息（来自 Bearer Token 验证）=====
+        // 方式1: 获取完整的用户信息 Map
+        @SuppressWarnings("unchecked")
+        Map<String, Object> userInfo = (Map<String, Object>) arguments.get(Const.USER_INFO);
+        if (userInfo != null && !userInfo.isEmpty()) {
+            log.info("从 Bearer Token 获取到用户信息: {}", userInfo);
+            String tokenUserId = (String) userInfo.get("userId");
+            String tokenUsername = (String) userInfo.get("username");
+            String tokenAvatar = (String) userInfo.get("avatar");
+            log.info("Token验证用户 - userId: {}, username: {}, avatar: {}", tokenUserId, tokenUsername, tokenAvatar);
+        }
+        // 方式2: 直接获取 userId 和 username（便捷方式）
+        String tokenUserId = (String) arguments.get(Const.TOKEN_USER_ID);
+        String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
+        if (tokenUserId != null) {
+            log.info("便捷方式获取用户 - userId: {}, username: {}", tokenUserId, tokenUsername);
+        }
+        // ===== 原有业务逻辑 =====
         try {
             // 获取参数
             Object aObj = arguments.get("a");

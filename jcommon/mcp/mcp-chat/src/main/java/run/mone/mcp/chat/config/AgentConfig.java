@@ -1,7 +1,7 @@
 package run.mone.mcp.chat.config;
 
 import com.google.common.collect.Lists;
-
+import com.google.common.collect.ImmutableMap;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +10,7 @@ import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.Rag;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.hive.configs.Const;
 import run.mone.mcp.chat.function.AddTwoNumbersFunction;
 
 /**
@@ -52,6 +53,7 @@ public class AgentConfig {
                                 Lists.newArrayList(
                                         new ChatFunction(agentName, 60)
                                 ) : Lists.newArrayList(new AddTwoNumbersFunction()))
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8081",Const.AGENT_SERVER_NAME,"chat_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();
     }
 

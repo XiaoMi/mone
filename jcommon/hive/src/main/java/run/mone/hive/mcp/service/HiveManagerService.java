@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.service;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -8,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import run.mone.hive.bo.*;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 
 import java.util.HashMap;
@@ -17,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
+@Data
 public class HiveManagerService {
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -30,6 +33,8 @@ public class HiveManagerService {
 
     @Value("${hive.manager.reg.switch:true}")
     private Boolean enableRegHiveManager;
+
+    private String agentId;
 
     /**
      * 注册Agent
@@ -52,10 +57,23 @@ public class HiveManagerService {
             String registerUrl = baseUrl + "/api/v1/agents/register";
             Object response = restTemplate.postForObject(registerUrl, request, Object.class);
 
+            getAgentId(response);
             log.info("Registration response: {}", response);
         } catch (Exception e) {
             log.error("Error during registration: {}", e.getMessage(), e);
         }
+    }
+
+    private void getAgentId(Object response) {
+        Safe.run(() -> {
+            if (response instanceof Map m) {
+                Object o = m.get("data");
+                if (o instanceof Map m2) {
+                    this.agentId = m2.get("agentId").toString();
+                    log.info("agentId:{}", agentId);
+                }
+            }
+        });
     }
 
     /**
@@ -228,7 +246,7 @@ public class HiveManagerService {
             String configUrl = baseUrl + "/api/v1/agents/config";
             Map<String, Object> response = restTemplate.postForObject(configUrl, httpRequest, Map.class);
 
-            log.info("Config retrieval response: {}", response);
+            log.info("Config retrieval response: {}, request:{}", response, request);
 
             if (response != null && response.containsKey("data") && response.get("data") instanceof Map) {
                 Map<String, Object> data = (Map<String, Object>) response.get("data");
@@ -252,11 +270,11 @@ public class HiveManagerService {
      * 从ReactorRole保存配置到HiveManager
      * 自动过滤系统配置，只保存用户自定义配置
      *
-     * @param roleConfig ReactorRole的完整配置
+     * @param roleConfig    ReactorRole的完整配置
      * @param workspacePath 工作区路径
      * @return 保存结果
      */
-    public boolean saveRoleConfig(Map<String, String> roleConfig, String workspacePath,String agentIdStr, String userIdStr) {
+    public boolean saveRoleConfig(Map<String, String> roleConfig, String workspacePath, String agentIdStr, String userIdStr) {
         if (roleConfig == null || roleConfig.isEmpty()) {
             log.debug("RoleConfig is empty, skipping config save");
             return false;
@@ -307,7 +325,7 @@ public class HiveManagerService {
      * 保存配置信息
      *
      * @param agentId Agent ID
-     * @param userId 用户ID
+     * @param userId  用户ID
      * @param configs 配置信息映射
      * @return 保存结果
      */
