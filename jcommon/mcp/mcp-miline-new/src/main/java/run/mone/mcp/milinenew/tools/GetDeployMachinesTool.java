@@ -27,7 +27,7 @@ public class GetDeployMachinesTool implements ITool {
 
     public static final String name = "get_deploy_machines";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String GET_DEPLOY_MACHINES = BASE_URL != null ? "http://mione-gw.test.mi.com/mtop/miline" + "/qryDeployCurrentMachines" : null;
+    private static final String GET_DEPLOY_MACHINES = BASE_URL != null ? BASE_URL + "/qryDeployCurrentMachines" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
