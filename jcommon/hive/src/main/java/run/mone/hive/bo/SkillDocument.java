@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * Represents a skill definition with name, description and location
  */
@@ -33,6 +35,12 @@ public class SkillDocument {
      * Optional: Skill content (the actual XML or definition)
      */
     private String content;
+
+    /**
+     * List of all files in the skill directory (absolute paths)
+     * Excludes hidden files and directories starting with '.'
+     */
+    private List<String> files;
 
     @Override
     public String toString() {

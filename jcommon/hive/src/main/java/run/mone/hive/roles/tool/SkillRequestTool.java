@@ -1,5 +1,6 @@
 package run.mone.hive.roles.tool;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -182,8 +183,21 @@ public class SkillRequestTool implements ITool {
             result.addProperty("skillLocation", skill.getLocation());
             result.addProperty("contentLength", skillContent.length());
 
-            log.info("Successfully retrieved skill: {}, content length: {} characters",
-                     skillName, skillContent.length());
+            // Add file list (all files in the skill directory)
+            if (skill.getFiles() != null && !skill.getFiles().isEmpty()) {
+                JsonArray filesArray = new JsonArray();
+                for (String filePath : skill.getFiles()) {
+                    filesArray.add(filePath);
+                }
+                result.add("files", filesArray);
+                result.addProperty("fileCount", skill.getFiles().size());
+
+                log.info("Successfully retrieved skill: {}, content length: {} characters, file count: {}",
+                         skillName, skillContent.length(), skill.getFiles().size());
+            } else {
+                log.info("Successfully retrieved skill: {}, content length: {} characters",
+                         skillName, skillContent.length());
+            }
 
             return result;
 

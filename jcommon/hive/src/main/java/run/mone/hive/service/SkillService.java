@@ -119,12 +119,55 @@ public class SkillService {
             return null;
         }
 
+        // Get the skill directory (parent of the skill file)
+        File skillDir = skillFile.getParentFile();
+
+        // Collect all files in the skill directory (recursively)
+        List<String> files = collectFilesRecursively(skillDir);
+
         return SkillDocument.builder()
                 .name(name)
                 .description(StringUtils.isNotBlank(description) ? description : "")
-                .location(skillFile.getParentFile().getAbsolutePath())
+                .location(skillDir.getAbsolutePath())
                 .content(md.getContent())
+                .files(files)
                 .build();
+    }
+
+    /**
+     * Recursively collect all files in a directory (excluding hidden files/directories starting with '.')
+     *
+     * @param directory Directory to scan
+     * @return List of absolute file paths
+     */
+    private List<String> collectFilesRecursively(File directory) {
+        List<String> filePaths = new ArrayList<>();
+
+        if (directory == null || !directory.exists() || !directory.isDirectory()) {
+            return filePaths;
+        }
+
+        File[] entries = directory.listFiles();
+        if (entries == null) {
+            return filePaths;
+        }
+
+        for (File entry : entries) {
+            // Skip hidden files and directories (starting with '.')
+            if (entry.getName().startsWith(".")) {
+                continue;
+            }
+
+            if (entry.isFile()) {
+                // Add file's absolute path
+                filePaths.add(entry.getAbsolutePath());
+            } else if (entry.isDirectory()) {
+                // Recursively collect files from subdirectory
+                filePaths.addAll(collectFilesRecursively(entry));
+            }
+        }
+
+        return filePaths;
     }
 
     /**
