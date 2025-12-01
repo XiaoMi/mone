@@ -9,19 +9,13 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
-import run.mone.mcp.milinenew.function.CreatePipelineFunction;
-import run.mone.mcp.milinenew.function.CreateProjectFunction;
-import run.mone.mcp.milinenew.function.GenerateGitCodeFunction;
-import run.mone.mcp.milinenew.function.RunPipelineFunction;
-import run.mone.mcp.milinenew.tools.CreatePipelineTool;
-import run.mone.mcp.milinenew.tools.GenerateGitCodeTool;
-import run.mone.mcp.milinenew.tools.RunPipelineTool;
+import run.mone.mcp.milinenew.function.*;
+import run.mone.mcp.milinenew.tools.*;
 
 import run.mone.mcp.git.tool.GitCloneTool;
 import run.mone.mcp.git.tool.GitCommitTool;
 import run.mone.mcp.git.tool.GitPushTool;
 import run.mone.mcp.milinenew.tools.RunPipelineTool;
-import run.mone.mcp.milinenew.tools.CreateProjectTool;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -53,12 +47,15 @@ public class AgentConfig {
 
     @Autowired
     private CreateProjectFunction createProjectFunction;
-    
+
     @Autowired
     private GenerateGitCodeFunction generateGitCodeFunction;
-    
+
     @Autowired
     private RunPipelineFunction runPipelineFunction;
+
+    @Autowired
+    private GetDeployMachinesFunction getDeployMachinesFunction;
 
     @Autowired
     private CreatePipelineTool createPipelineTool;
@@ -71,6 +68,9 @@ public class AgentConfig {
 
     @Autowired
     private RunPipelineTool runPipelineTool;
+
+    @Autowired
+    GetDeployMachinesTool getDeployMachinesTool;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -94,6 +94,7 @@ public class AgentConfig {
                                 generateGitCodeTool,
                                 createPipelineTool,
                                 runPipelineTool,
+                                getDeployMachinesTool,
                                 gitCloneTool,
                                 gitCommitTool,
                                 gitPushTool
@@ -101,24 +102,21 @@ public class AgentConfig {
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .mcpTools(
-                    RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) 
-                        ? Lists.newArrayList(new ChatFunction(agentName, 20)) 
-                        : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction)
+                        RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
+                                ? Lists.newArrayList(new ChatFunction(agentName, 20))
+                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction)
                 )
                 .workflow("""
                     你是智能化系统，严格按照以下步骤执行：
                         - 根据projectName生成项目
-                        - 根据提供的projectId、env生成代码,
-                        - 拉取代码到本地，也就是调用git_clone工具进行git clone 
-                        - 根据需求及已有代码进行后端开发、前端开发；
-                        注意：根据需求生成接口文档后，前后端再根据接口文档进行开发
-                        注意：不要使用模拟数据，严格按照需求/接口文档的设计进行开发
-                        注意：前端开发时，样式一定要按照pc端展示进行开发,页面主内容宽度是1280px,左右居中
-                        注意：如果提供了要实现的需求则进行代码实现，否则跳过代码实现并检查下没有语法bug后，再进行后续提交操作
-                        - 先进入xxx-server/src/main/resources/static目录，执行npm i && npm run build
-                        - 添加完代码后，一定要将本地代码使用git_commit工具进行git commit，commit信息是如果是修复代码提交信息为：自动代码修复否则根据commit提交范式进行补充, 使用git_push进行git push
-                        - 根据projectId、pipelineName、gitUrl、gitName创建流水线
-                        - 根据projectId、pipelineId触发流水线进行发布
+                                - 根据提供的projectId、env生成代码,
+                                - 拉取代码到本地
+                                - 根据需求及已有代码进行开发；注意：前端样式要按照pc端展示进行开发(如果提供了要实现的需求则进行代码实现，否则跳过代码实现并检查下没有语法bug后，再进行后续提交操作)
+                                - 先进入xxx-server/src/main/resources/static目录，执行npm i && npm run build
+                                - 添加完代码后，一定要将本地代码使用git_commit工具进行git commit，commit信息是如果是修复代码提交信息为：自动代码修复否则根据commit提交范式进行补充, 使用git_push进行git push
+                                - 根据projectId、pipelineName、gitUrl、gitName创建流水线
+                                - 根据projectId、pipelineId触发流水线进行发布
+                                - (询问的话)获取流水线部署机器信息
                 """)
                 .meta(ImmutableMap.of(Const.HTTP_PORT,httpPort,Const.AGENT_SERVER_NAME,"miline_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();

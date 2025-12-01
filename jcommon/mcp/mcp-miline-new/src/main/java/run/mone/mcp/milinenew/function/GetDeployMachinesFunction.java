@@ -10,9 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
-import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import scala.Int;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,18 +21,19 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行
+ * 查看流水线部署机器信息工具
+ * 用于获取当前流水线部署的机器列表
  *
  * @author liguanchen
- * @date 2025/11/18
+ * @date 2025/12/01
  */
 @Slf4j
 @Component
-public class RunPipelineFunction implements McpFunction {
+public class GetDeployMachinesFunction implements McpFunction {
 
     @Value("${git.email.suffix}")
     private String gitUserName;
-    
+
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -44,6 +45,10 @@ public class RunPipelineFunction implements McpFunction {
                     "pipelineId": {
                         "type": "number",
                         "description": "流水线ID（必填）"
+                    },
+                    "executionId": {
+                        "type": "number",
+                        "description": "流水线ID（选填）"
                     }
                 },
                 "required": ["projectId", "pipelineId"]
@@ -51,26 +56,26 @@ public class RunPipelineFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
+    private static final String GET_DEPLOY_MACHINES_URL = BASE_URL != null ? BASE_URL + "/qryDeployCurrentMachines" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
-    public RunPipelineFunction() {
+    public GetDeployMachinesFunction() {
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(1000, TimeUnit.SECONDS)
+                .readTimeout(1000, TimeUnit.SECONDS)
+                .writeTimeout(1000, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
     }
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
-        log.info("RunPipeline arguments: {}", arguments);
+        log.info("GetDeployMachines arguments: {}", arguments);
 
         try {
-            if (BASE_URL == null || RUN_PIPELINE_URL == null) {
+            if (BASE_URL == null || GET_DEPLOY_MACHINES_URL == null) {
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("错误：配置错误: req_base_url 环境变量未设置")),
                         true
@@ -80,6 +85,7 @@ public class RunPipelineFunction implements McpFunction {
             // 验证必填参数
             Object projectIdObj = arguments.get("projectId");
             Object pipelineIdObj = arguments.get("pipelineId");
+            Object executionId = arguments.get("executionId") == null ? 0 : arguments.get("executionId");
 
             if (projectIdObj == null || StringUtils.isBlank(projectIdObj.toString())) {
                 return Flux.just(new McpSchema.CallToolResult(
@@ -94,16 +100,15 @@ public class RunPipelineFunction implements McpFunction {
                 ));
             }
 
+
             Integer projectId = convertToInteger(projectIdObj);
             Integer pipelineId = convertToInteger(pipelineIdObj);
-            String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
+            Integer execId = convertToInteger(executionId);
 
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName);
-            userMap.put("userType", 0);
-            List<Object> requestBody = List.of(userMap, projectId, pipelineId);
+            List<Object> requestBody = List.of(projectId, pipelineId, execId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
-            log.info("runPipeline request: {}", requestBodyStr);
+            log.info("getDeployMachines request: {}", requestBodyStr);
 
             RequestBody body = RequestBody.create(
                     requestBodyStr,
@@ -111,40 +116,40 @@ public class RunPipelineFunction implements McpFunction {
             );
 
             Request request = new Request.Builder()
-                    .url(RUN_PIPELINE_URL)
+                    .url(GET_DEPLOY_MACHINES_URL)
                     .post(body)
                     .build();
 
-            OkHttpClient pipelineClient = client.newBuilder()
+            OkHttpClient deployMachinesClient = client.newBuilder()
                     .connectTimeout(3, TimeUnit.SECONDS)
                     .readTimeout(3, TimeUnit.SECONDS)
                     .writeTimeout(3, TimeUnit.SECONDS)
                     .build();
 
-            try (Response response = pipelineClient.newCall(request).execute()) {
+            try (Response response = deployMachinesClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
                 }
 
                 String responseBody = response.body().string();
-                log.info("runPipeline response: {}", responseBody);
+                log.info("getDeployMachines response: {}", responseBody);
 
-                ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
+                ApiResponse<List<Map<String, Object>>> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
-                            objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                Map<String, Object> data = apiResponse.getData();
-                Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
-                String url = (String) data.get("url");
-                
-                String resultText = String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url);
+                List<Map<String, Object>> data = apiResponse.getData();
 
+                // 格式化机器信息输出
+                String resultText = formatMachineInfo(data);
+                System.out.println("resultText:");
+                System.out.println(resultText);
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(resultText)),
                         false
@@ -157,12 +162,31 @@ public class RunPipelineFunction implements McpFunction {
                     true
             ));
         } catch (Exception e) {
-            log.error("执行run_pipeline操作时发生异常", e);
+            log.error("执行get_deploy_machines操作时发生异常", e);
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("错误：执行操作失败: " + e.getMessage())),
                     true
             ));
         }
+    }
+
+    /**
+     * 格式化机器信息输出
+     */
+    private String formatMachineInfo(List<Map<String, Object>> data) {
+        StringBuilder sb = new StringBuilder("流水线部署机器信息：\n\n");
+
+        if (data == null || data.isEmpty()) {
+            return "暂无部署机器信息";
+        }
+
+        Map<String, Object> machine = data.getFirst();
+        machine.forEach((key, value) -> {
+            sb.append(String.format("  %s: %s\n", key, value));
+        });
+        sb.append("\n");
+
+        return sb.toString().trim();
     }
 
     /**
@@ -180,19 +204,16 @@ public class RunPipelineFunction implements McpFunction {
 
     @Override
     public String getName() {
-        return "run_pipeline";
+        return "get_deploy_machines";
     }
 
     @Override
     public String getDesc() {
         return """
-                运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行。
-
+                查看流水线部署机器信息。
+                
                 **使用场景：**
-                - 需要在CI/CD中触发某个流水线
-                - 验证最近一次提交是否能通过流水线
-                - 集成到自动化流程中进行构建/部署
-                - 发布/部署系统
+                - 获取当前流水线部署的机器列表，以便输出机器信息等操作。
                 """;
     }
 
