@@ -12,6 +12,7 @@ import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.mcp.miapi.function.MiApiFunction;
+import run.mone.mcp.miapi.function.SearchApiFunction;
 
 @Configuration
 public class AgentConfig {
@@ -39,12 +40,12 @@ public class AgentConfig {
                 .mcpTools(
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
                                 ? Lists.newArrayList(new ChatFunction("new-miapi", 20))
-                                : Lists.newArrayList(new MiApiFunction())
+                                : Lists.newArrayList(new MiApiFunction(), new SearchApiFunction())
                 )
                 .workflow("""
                     你是智能化系统，可以根据用户输入的项目名称查询项目信息
                 """)
-                .meta(ImmutableMap.of(Const.HTTP_PORT,"8084",Const.AGENT_SERVER_NAME,"miapi_server"))
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8084",Const.AGENT_SERVER_NAME,"miapi_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();
     }
 

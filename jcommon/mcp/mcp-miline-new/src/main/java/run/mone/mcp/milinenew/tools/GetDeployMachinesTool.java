@@ -2,7 +2,6 @@ package run.mone.mcp.milinenew.tools;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -10,12 +9,10 @@ import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,27 +20,26 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class RunPipelineTool implements ITool {
+public class GetDeployMachinesTool implements ITool {
 
     @Value("${git.email.suffix}")
     private String gitUserName;
-    
-    public static final String name = "run_pipeline";
+
+    public static final String name = "get_deploy_machines";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
+    private static final String GET_DEPLOY_MACHINES = BASE_URL != null ? BASE_URL + "/qryDeployCurrentMachines" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
-    public RunPipelineTool() {
+    public GetDeployMachinesTool() {
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(100, TimeUnit.SECONDS)
-                .readTimeout(100, TimeUnit.SECONDS)
-                .writeTimeout(100, TimeUnit.SECONDS)
+                .connectTimeout(1000, TimeUnit.SECONDS)
+                .readTimeout(1000, TimeUnit.SECONDS)
+                .writeTimeout(1000, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
     }
-
 
 
     @Override
@@ -64,12 +60,10 @@ public class RunPipelineTool implements ITool {
     @Override
     public String description() {
         return """
-                运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行。
+                查看流水线部署机器信息。
                 
                 **使用场景：**
-                - 需要在CI/CD中触发某个流水线
-                - 验证最近一次提交是否能通过流水线
-                - 集成到自动化流程中进行构建/部署
+                - 获取当前流水线部署的机器列表，以便输出机器信息等操作。
                 """;
     }
 
@@ -78,6 +72,7 @@ public class RunPipelineTool implements ITool {
         return """
                 - projectId: (必填) 项目ID
                 - pipelineId: (必填) 流水线ID
+                - executionId: (可填) 流水线ID
                 """;
     }
 
@@ -92,22 +87,24 @@ public class RunPipelineTool implements ITool {
             taskProgress = "";
         }
         return """
-                <run_pipeline>
+                <get_deploy_machines>
                 <projectId>项目ID</projectId>
                 <pipelineId>流水线ID</pipelineId>
+                <executionId>流水线记录ID（可选）</executionId>
                 %s
-                </run_pipeline>
+                </get_deploy_machines>
                 """.formatted(taskProgress);
     }
 
     @Override
     public String example() {
         return """
-                示例: 运行流水线
-                <run_pipeline>
+                示例: 查看流水线部署机器信息
+                <get_deploy_machines>
                 <projectId>12345</projectId>
                 <pipelineId>67890</pipelineId>
-                </run_pipeline>
+                <executionId>111213</executionId>
+                </get_deploy_machines>
                 """;
     }
 
@@ -115,7 +112,7 @@ public class RunPipelineTool implements ITool {
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {
-            if (BASE_URL == null || RUN_PIPELINE_URL == null) {
+            if (BASE_URL == null || GET_DEPLOY_MACHINES == null) {
                 result.addProperty("error", "配置错误: req_base_url 环境变量未设置");
                 log.error("req_base_url 环境变量未设置，无法执行流水线操作");
                 return result;
@@ -131,30 +128,29 @@ public class RunPipelineTool implements ITool {
 
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
+            Integer executionId = inputJson.has("executionId") ? Integer.parseInt(inputJson.get("executionId").getAsString()) : 0;
 
 //            Map<String, String> userMap = Map.of("baseUserName", "liguanchen");
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", gitUserName);
-            userMap.put("userType", 0);
-            List<Object> requestBody = List.of(userMap, projectId, pipelineId);
+            List<Object> requestBody = List.of(projectId, pipelineId, executionId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
-            log.info("runPipeline request: {}", requestBodyStr);
+            log.info("get_deploy_machines request: {}", requestBodyStr);
 
             RequestBody body = RequestBody.create(
-                requestBodyStr,
-                MediaType.parse("application/json; charset=utf-8")
+                    requestBodyStr,
+                    MediaType.parse("application/json; charset=utf-8")
             );
 
             Request request = new Request.Builder()
-                .url(RUN_PIPELINE_URL)
-                .post(body)
-                .build();
+                    .url(GET_DEPLOY_MACHINES)
+                    .post(body)
+                    .build();
 
             OkHttpClient pipelineClient = client.newBuilder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
+                    .connectTimeout(3, TimeUnit.SECONDS)
+                    .readTimeout(3, TimeUnit.SECONDS)
+                    .writeTimeout(3, TimeUnit.SECONDS)
+                    .build();
 
             try (Response response = pipelineClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
@@ -162,25 +158,23 @@ public class RunPipelineTool implements ITool {
                 }
 
                 String responseBody = response.body().string();
-                log.info("runPipeline response: {}", responseBody);
+                log.info("get_deploy_machines response: {}", responseBody);
 
-                ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
-                    responseBody,
-                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
-                        objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
+                ApiResponse<List<Map<String, Object>>> apiResponse = objectMapper.readValue(
+                        responseBody,
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                Map<String, Object> data = apiResponse.getData();
-                Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
-                String url = (String) data.get("url");
-                
-                result.addProperty("executionId", pipelineRecordId);
-                result.addProperty("url", url);
-                result.addProperty("result", String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url));
+                List<Map<String, Object>> data = apiResponse.getData();
+
+                // 格式化机器信息输出
+                String machineInfo = formatMachineInfo(data);
+                result.addProperty("result", machineInfo);
                 return result;
             }
         } catch (NumberFormatException e) {
@@ -188,10 +182,30 @@ public class RunPipelineTool implements ITool {
             result.addProperty("error", "'projectId'与'pipelineId'必须是数字");
             return result;
         } catch (Exception e) {
-            log.error("执行run_pipeline操作时发生异常", e);
+            log.error("执行get_deploy_machines操作时发生异常", e);
             result.addProperty("error", "执行操作失败: " + e.getMessage());
             return result;
         }
+    }
+
+    /**
+     * 格式化机器信息输出
+     */
+    private String formatMachineInfo(List<Map<String, Object>> data) {
+        StringBuilder sb = new StringBuilder("流水线部署机器信息：\n\n");
+
+        if (data == null || data.isEmpty()) {
+            return "暂无部署机器信息";
+        }
+
+        // 遍历每台机器的信息
+        Map<String, Object> machine = data.getFirst();
+        machine.forEach((key, value) -> {
+            sb.append(String.format("  %s: %s\n", key, value));
+        });
+        sb.append("\n");
+
+        return sb.toString().trim();
     }
 
     @Data

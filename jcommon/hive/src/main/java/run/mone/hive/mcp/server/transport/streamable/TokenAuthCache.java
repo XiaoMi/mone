@@ -21,7 +21,7 @@ public class TokenAuthCache {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenAuthCache.class);
 
-    private final Cache<String, Boolean> cache;
+    private final Cache<String, TokenValidator.ValidationResult> cache;
     private final Duration defaultTtl;
 
     /**
@@ -44,11 +44,12 @@ public class TokenAuthCache {
     /**
      * Puts a validation result into the cache.
      * @param token The bearer token
-     * @param isValid Whether the token is valid
+     * @param validationResult The validation result containing validity, TTL and user info
      */
-    public void put(String token, boolean isValid) {
-        cache.put(token, isValid);
-        logger.debug("Cached token validation result: valid={}, ttl={}", isValid, defaultTtl);
+    public void put(String token, TokenValidator.ValidationResult validationResult) {
+        cache.put(token, validationResult);
+        logger.debug("Cached token validation result: valid={}, ttl={}, userInfo={}",
+            validationResult.isValid(), defaultTtl, validationResult.getUserInfo());
     }
 
     /**
@@ -56,17 +57,17 @@ public class TokenAuthCache {
      * Note: Guava Cache does not support per-entry TTL, so this method uses the default TTL.
      * If you need per-entry TTL, consider using a different cache implementation.
      * @param token The bearer token
-     * @param isValid Whether the token is valid
+     * @param validationResult The validation result
      * @param ttl The time-to-live for this cache entry (ignored, uses default TTL)
      */
-    public void put(String token, boolean isValid, Duration ttl) {
+    public void put(String token, TokenValidator.ValidationResult validationResult, Duration ttl) {
         // Guava Cache doesn't support per-entry TTL easily
         // We'll just use the default TTL and log a warning if different
         if (!ttl.equals(defaultTtl)) {
             logger.debug("Custom TTL {} requested but using default TTL {} (Guava Cache limitation)",
                         ttl, defaultTtl);
         }
-        put(token, isValid);
+        put(token, validationResult);
     }
 
     /**
@@ -74,15 +75,33 @@ public class TokenAuthCache {
      * @param token The bearer token
      * @return The cached validation result, or null if not found or expired
      */
-    public Boolean get(String token) {
-        Boolean result = cache.getIfPresent(token);
+    public TokenValidator.ValidationResult get(String token) {
+        TokenValidator.ValidationResult result = cache.getIfPresent(token);
         if (result == null) {
             logger.debug("Token not found in cache or expired");
             return null;
         }
 
-        logger.debug("Token cache hit: valid={}", result);
+        logger.debug("Token cache hit: valid={}, userInfo={}", result.isValid(), result.getUserInfo());
         return result;
+    }
+
+    // ===== Legacy methods for backward compatibility =====
+
+    /**
+     * @deprecated Use {@link #put(String, TokenValidator.ValidationResult)} instead
+     */
+    @Deprecated
+    public void put(String token, boolean isValid) {
+        put(token, new TokenValidator.ValidationResult(isValid));
+    }
+
+    /**
+     * @deprecated Use {@link #put(String, TokenValidator.ValidationResult, Duration)} instead
+     */
+    @Deprecated
+    public void put(String token, boolean isValid, Duration ttl) {
+        put(token, new TokenValidator.ValidationResult(isValid, ttl), ttl);
     }
 
     /**

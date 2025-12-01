@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -97,13 +98,12 @@ public class CreateProjectFunction implements McpFunction {
                 log.info("从路径中提取项目名: {} -> {}", projectNameRaw, projectName);
             }
             String gitName = projectName; // gitName与projectName相同
+            String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
 
             String env = arguments.containsKey("env") && !StringUtils.isBlank(arguments.get("env").toString())
                     ? arguments.get("env").toString()
                     : "staging";
-            String baseUserName = arguments.containsKey("baseUserName") && !StringUtils.isBlank(arguments.get("baseUserName").toString())
-                    ? arguments.get("baseUserName").toString()
-                    : gitUserName;
+            String baseUserName = StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName;
 
             // 构建第一个对象：MoneContext
             Map<String, Object> userMap = new HashMap<>();
