@@ -20,7 +20,7 @@ import java.util.function.Function;
 @Slf4j
 public class ChaosFunction implements McpFunction {
 
-    private String name = "chaos_executor";
+    private String name = "stream_chaos_executor";
 
     private String desc = "负责混沌故障平台的基本操作";
 
