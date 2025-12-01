@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 @Slf4j
 public class CreateChaosFunction implements McpFunction {
 
-    private String name = "stream_chaos_creator";
+    private String name = "chaos_creator";
 
     private String desc = "负责创建不同种类的混沌故障类型";
 

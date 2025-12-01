@@ -112,4 +112,6 @@ public class Const {
 
     public static final String TASK_PROGRESS = "task_progress";
 
+    public static final String TRUE = "true";
+
 }
