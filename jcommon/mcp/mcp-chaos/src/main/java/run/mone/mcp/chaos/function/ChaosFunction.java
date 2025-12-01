@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
@@ -18,6 +19,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
+@Component
 public class ChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_executor";
@@ -52,10 +54,6 @@ public class ChaosFunction implements McpFunction {
                     "taskId": {
                         "type": "string",
                         "description": "要获取混沌故障注入详情的任务ID"
-                    },
-                    "userName":{
-                        "type": "string",
-                        "description": "操作者用户名"
                     }
                   },
                 "required": ["type"]
@@ -72,7 +70,7 @@ public class ChaosFunction implements McpFunction {
             try {
                 String type = getStringParam(args, "type");
                 String host = System.getenv().getOrDefault("CHAOS_HOST", "");
-                String userName = getStringParam(args, Const.USER_INTERNAL_NAME);
+                String userName = "zhangxiaowei6";//getStringParam(args, Const.USER_INTERNAL_NAME);
                 log.info("apply userName:{}, type:{},host:{}", userName,type,host);
                 
                 if (host.isEmpty()) {

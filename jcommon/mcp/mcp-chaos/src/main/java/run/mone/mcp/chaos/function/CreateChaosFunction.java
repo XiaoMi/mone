@@ -2,6 +2,7 @@ package run.mone.mcp.chaos.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
@@ -18,6 +19,7 @@ import com.google.gson.JsonObject;
 // 处理不同种类型的混沌故障演练
 @Data
 @Slf4j
+@Component
 public class CreateChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_creator";
@@ -59,10 +61,6 @@ public class CreateChaosFunction implements McpFunction {
                     "containerNum": {
                         "type": "string",
                         "description": "容器数量"
-                    },
-                    "userName": {
-                        "type": "string",
-                        "description": "操作者用户名"
                     },
                     "depth": {
                         "type": "string",
@@ -116,7 +114,7 @@ public class CreateChaosFunction implements McpFunction {
         String depth = getStringParam(params, "depth");
         String operateParam = getOperateParam(taskType, depth);
 
-        String userName = getStringParam(params, Const.USER_INTERNAL_NAME);
+        String userName = "zhangxiaowei6";//getStringParam(params, Const.USER_INTERNAL_NAME);
         log.info("apply userName create chaos user:{}", userName);
         
         Map<String, String> queryParams = new HashMap<>();
