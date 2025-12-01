@@ -94,7 +94,7 @@ public class AgentConfig {
                                 generateGitCodeTool,
                                 createPipelineTool,
                                 runPipelineTool,
-                                getDeployMachinesTool
+                                getDeployMachinesTool,
                                 gitCloneTool,
                                 gitCommitTool,
                                 gitPushTool
