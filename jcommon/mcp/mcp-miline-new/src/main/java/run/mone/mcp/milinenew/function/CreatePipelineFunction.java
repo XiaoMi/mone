@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -142,10 +143,11 @@ public class CreatePipelineFunction implements McpFunction {
                     projectId, pipelineName, pipelineCname, desc,
                     gitUrl, gitBranch, gitAddress, gitGroup, gitProject, env
             );
+            String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
 
             // 构建用户信息
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", gitUserName);
+            userMap.put("baseUserName", StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName);
             userMap.put("userType", 0);
 
             List<Object> requestBody = List.of(userMap, pipelineConfig);
