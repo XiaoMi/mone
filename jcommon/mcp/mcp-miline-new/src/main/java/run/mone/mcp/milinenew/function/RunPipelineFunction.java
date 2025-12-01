@@ -99,7 +99,7 @@ public class RunPipelineFunction implements McpFunction {
             String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
 
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("baseUserName", StringUtils.isNoneBlank(tokenUsername) ? tokenUsername : gitUserName);
+            userMap.put("baseUserName", StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName);
             userMap.put("userType", 0);
             List<Object> requestBody = List.of(userMap, projectId, pipelineId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
