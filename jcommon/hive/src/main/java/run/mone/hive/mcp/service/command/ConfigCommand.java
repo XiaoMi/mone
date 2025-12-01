@@ -124,6 +124,7 @@ public class ConfigCommand extends RoleBaseCommand {
             llmOptions.put("deepseek", "deepseek");
             llmOptions.put("claude", "openrouter_claude_sonnet_45");
             llmOptions.put("gemini", "openrouter_gemini_25_pro");
+            llmOptions.put("gemini3", "openrouter_gemini_3_pro");
             llmOptions.put("minimax", "minimax");
             llmOptions.put("doubao_seed_code", "doubao_seed_code");
             llmOptions.put("mify_gateway", "mify_gateway");
