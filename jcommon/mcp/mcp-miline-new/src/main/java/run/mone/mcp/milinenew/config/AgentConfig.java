@@ -45,7 +45,7 @@ public class AgentConfig {
     @Value("${mcp.agent.name:miline_new}")
     private String agentName;
 
-    @Value("${mcp.http.port:8080}")
+    @Value("${mcp.http.port:8082}")
     private String httpPort;
 
     @Autowired
