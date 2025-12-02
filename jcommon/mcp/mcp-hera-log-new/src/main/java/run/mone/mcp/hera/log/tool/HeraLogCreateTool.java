@@ -26,7 +26,7 @@ public class HeraLogCreateTool implements ITool {
     @Override
     public String description() {
         return """
-                为miline流水线创建Hera日志。该工具可以根据projectId、envId、tailName、logPath创建Hera日志，
+                为miline流水线创建Hera日志。该工具可以根据projectId、pipelineId(有时也会称为envId)、tailName、logPath创建Hera日志，
                 帮助快速定位和分析日志详情。
 
                 **使用场景：**
