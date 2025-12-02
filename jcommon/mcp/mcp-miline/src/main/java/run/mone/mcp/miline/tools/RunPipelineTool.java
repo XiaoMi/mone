@@ -67,8 +67,8 @@ public class RunPipelineTool implements ITool {
     public String parameters() {
         return """
                 - projectId: (必填) 项目ID
-                - pipelineId: (必填) 流水线ID
-                - userName: (可选) 用户名，默认为 wangmin17
+                - pipelineId: (必填) 流水线ID（或者是envId）
+                - userName: (可选) 用户名，可以从gitName获取
                 """;
     }
 

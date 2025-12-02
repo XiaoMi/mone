@@ -37,9 +37,9 @@ public class RunPipelineTool implements ITool {
 
     public RunPipelineTool() {
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(100, TimeUnit.SECONDS)
+                .readTimeout(100, TimeUnit.SECONDS)
+                .writeTimeout(100, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
     }
@@ -132,7 +132,6 @@ public class RunPipelineTool implements ITool {
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
 
-//            Map<String, String> userMap = Map.of("baseUserName", "liguanchen");
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("baseUserName", gitUserName);
             userMap.put("userType", 0);
@@ -151,9 +150,9 @@ public class RunPipelineTool implements ITool {
                 .build();
 
             OkHttpClient pipelineClient = client.newBuilder()
-                .connectTimeout(3, TimeUnit.SECONDS)
-                .readTimeout(3, TimeUnit.SECONDS)
-                .writeTimeout(3, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
 
             try (Response response = pipelineClient.newCall(request).execute()) {
@@ -178,7 +177,7 @@ public class RunPipelineTool implements ITool {
                 Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
                 String url = (String) data.get("url");
                 
-                result.addProperty("executionId", pipelineRecordId);
+                result.addProperty("pipelineRecordId", pipelineRecordId);
                 result.addProperty("url", url);
                 result.addProperty("result", String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url));
                 return result;

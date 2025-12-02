@@ -103,6 +103,7 @@ public class McpHub {
                 if (null == ex) {
                     value.setErrorNum(0);
                 } else {
+                    log.error("ping error:{}", key);
                     //发生错误了
                     value.setErrorNum(value.getErrorNum() + 1);
                     if (value.getErrorNum() >= 3) {
@@ -115,12 +116,14 @@ public class McpHub {
                             } else if (conn.getTransport() != null) {
                                 conn.getTransport().close();
                             }
+                            if (conn.getType() != McpType.HTTP) {
+                                //尝试再连接过去
+                                String name = conn.getServer().getName();
+                                ServerParameters params = conn.getServer().getServerParameters();
+                                log.info("reconnect:{}", name);
+                                reconnect(name, params);
+                            }
                         });
-                        //尝试再连接过去
-                        String name = conn.getServer().getName();
-                        ServerParameters params = conn.getServer().getServerParameters();
-                        log.info("reconnect:{}", name);
-                        reconnect(name, params);
                     }
                 }
             })));

@@ -2,6 +2,7 @@ package run.mone.mcp.chaos.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
@@ -18,6 +19,7 @@ import com.google.gson.JsonObject;
 // 处理不同种类型的混沌故障演练
 @Data
 @Slf4j
+@Component
 public class CreateChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_creator";
@@ -33,11 +35,11 @@ public class CreateChaosFunction implements McpFunction {
                     "taskType": {
                         "type": "string",
                         "enum": ["1", "2", "11", "4"],
-                        "description": "故障类型：cpu(压力测试)传1,内存压力测试传11, network(网络延迟)传2，杀死pod传4"
+                        "description": "故障类型：cpu(压力测试)传1,内存压力测试传11, network(网络延迟)传2，杀死pod传4，如果不传默认就为1"
                     },
                     "experimentName": {
                         "type": "string",
-                        "description": "混沌实验名称"
+                        "description": "混沌实验名称，如果不传，默认叫mcp-chaos-create-${秒级时间戳}"
                     },
                     "pipelineId": {
                         "type": "string",
@@ -50,23 +52,19 @@ public class CreateChaosFunction implements McpFunction {
                     "mode": {
                         "type": "string",
                         "enum": ["1", "2", "3"],
-                        "description": "实验执行模式：1: 任意数量实例, 2: 全部实例, 3: 指定实例"
+                        "description": "实验执行模式：1: 任意数量实例, 2: 全部实例, 3: 指定实例，如果不传默认为1"
                     },
                     "duration": {
                         "type": "string",
-                        "description": "实验持续时间（秒）"
+                        "description": "实验持续时间（ms），如果不传默认为300000"
                     },
                     "containerNum": {
                         "type": "string",
-                        "description": "容器数量"
-                    },
-                    "userName": {
-                        "type": "string",
-                        "description": "操作者用户名"
+                        "description": "容器数量，如果不传默认为1"
                     },
                     "depth": {
                         "type": "string",
-                        "description": "操作的参数，例如对于cpu就是${depth}核，内存就是${depth}M内存等等"
+                        "description": "操作的参数，例如对于cpu就是${depth}核，内存就是${depth}M内存等等，如果不传默认为1"
                     }
                 },
                 "required": ["taskType", "experimentName", "projectId", "duration","pipelineId","mode","depth","containerNum"]
@@ -85,7 +83,7 @@ public class CreateChaosFunction implements McpFunction {
                 
                 // 构建请求参数
                 Map<String, String> queryParams = buildQueryParams(params);
-                log.debug("构建的请求参数: {}", queryParams);
+                log.info("构建的请求参数: {}", queryParams);
                 
                 // 发送请求
                 Map<String, String> headerMap = Map.of("Content-Type", "application/json");

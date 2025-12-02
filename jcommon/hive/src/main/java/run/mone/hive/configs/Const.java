@@ -20,6 +20,23 @@ public class Const {
 
     public static final String USER_INTERNAL_NAME = "__user_internal_name__";
 
+    // User info from Bearer Token authentication
+    /**
+     * Complete user information Map from token validation
+     * Contains all user fields extracted from the authentication endpoint
+     */
+    public static final String USER_INFO = "__userInfo";
+
+    /**
+     * User ID extracted from token validation (convenience field)
+     */
+    public static final String TOKEN_USER_ID = "__userId";
+
+    /**
+     * Username extracted from token validation (convenience field)
+     */
+    public static final String TOKEN_USERNAME = "__username";
+
     public static final String AGENT_ID = "__agent_id__";
 
     public static final String SEND_FROM = "__send_from__";
@@ -66,11 +83,35 @@ public class Const {
 
     public static final String CMD = "cmd";
 
+    // Agent 相关
     public static final String AGENT_SERVER_NAME = "agent_server_name";
 
+    public static final String NAME = "name";
+
+    public static final String PROFILE = "profile";
+
+    public static final String GOAL = "goal";
+
+    public static final String CONSTRAINTS = "constraints";
+
+    public static final String WORKFLOW = "workflow";
+
+    public static final String META = "meta";
+
     public static final String HTTP_PORT = "http.port";
+
+    public static final String HTTP_ENABLE_AUTH = "http.enable.auth";
+
+    public static final String HTTP_ENDPOINT = "http.endpoint";
+
+    public static final String HTTP_KEEPALIVE_SECONDS = "http.keepalive.seconds";
+
+    public static final String HTTP_DISALLOW_DELETE = "http.disallow.delete";
 
     public static final String AGENT_SERVER_VERSION = "agent_server_version";
 
     public static final String TASK_PROGRESS = "task_progress";
+
+    public static final String TRUE = "true";
+
 }

@@ -8,6 +8,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import run.mone.hive.bo.InternalServer;
 import run.mone.hive.bo.AgentMarkdownDocument;
+import run.mone.hive.bo.SkillDocument;
+import run.mone.hive.roles.tool.SkillRequestTool;
+import run.mone.hive.service.SkillService;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
@@ -192,14 +195,52 @@ public class MonerSystemPrompt {
         }
         data.put("workflow", workFlow);
 
-        //注入工具
-        data.put("toolList", tools);
+        //注入skill定义
+        SkillService skillService = new SkillService();
+        List<SkillDocument> skills = skillService.loadSkills(MonerSystemPrompt.hiveCwd(role));
+        data.put("skillList", skills);
+        data.put("enableSkills", !skills.isEmpty());
+        data.put("skillsPrompt", skillService.formatSkillsForPrompt(skills));
+
+        prepareToolList(tools, skills, data);
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
         data.put("toolConfig", getToolConfig(role));
 
         //markdown文件会根本上重置这些配置
+        epopulateAgentData(message, data);
+
+        return renderSystemPrompt(data);
+    }
+
+    private static String renderSystemPrompt(Map<String, Object> data) {
+        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
+                Lists.newArrayList(
+                        //反射执行
+                        Pair.of("invoke", new InvokeMethodFunction()),
+                        //可以使用默认值
+                        Pair.of("value", new DefaultValueFunction())
+                ));
+    }
+
+    private static void prepareToolList(List<ITool> tools, List<SkillDocument> skills, Map<String, Object> data) {
+        //如果有skills可用，自动添加 SkillRequestTool 到工具列表
+        List<ITool> finalTools = new ArrayList<>(tools);
+        if (!skills.isEmpty()) {
+            //检查是否已经有 skill_request 工具
+            boolean hasSkillRequestTool = finalTools.stream()
+                    .anyMatch(t -> SkillRequestTool.name.equals(t.getName()));
+            if (!hasSkillRequestTool) {
+                finalTools.add(new SkillRequestTool());
+                log.debug("Auto-added SkillRequestTool because {} skills are available", skills.size());
+            }
+        }
+        //注入工具
+        data.put("toolList", finalTools);
+    }
+
+    private static void epopulateAgentData(Message message, Map<String, Object> data) {
         if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
             String rd = """
                     \n
@@ -214,14 +255,6 @@ public class MonerSystemPrompt {
             data.put("customInstructions", md.getAgentPrompt());
             data.put("workflow", md.getWorkflow());
         }
-
-        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
-                Lists.newArrayList(
-                        //反射执行
-                        Pair.of("invoke", new InvokeMethodFunction()),
-                        //可以使用默认值
-                        Pair.of("value", new DefaultValueFunction())
-                ));
     }
 
     private static String getToolConfig(ReactorRole role) {
@@ -480,15 +513,45 @@ public class MonerSystemPrompt {
             <% } %>
             
             
-            如果是mcp工具,请记住这三个参数必须提供:  
+            如果是mcp工具,请记住这三个参数必须提供:
             <server_name>
             <tool_name>
             <arguments>
-            
-            
+
+
             ====
             <% } %>
-            
+
+            <% if(enableSkills) { %>
+            ====
+
+            SKILLS
+
+            Skills are reusable definitions that can help you accomplish specific tasks.
+
+            IMPORTANT: You should execute skills directly without reading their source code unless one of the following conditions applies:
+            - Code execution fails with errors that require understanding the skill's implementation
+            - The user explicitly asks you to read or examine the skill code
+            - The skill's description does not provide enough information about the interface or parameters needed for execution
+
+            In most cases, the skill description and parameters should be sufficient for direct execution.
+
+            When you need to use a skill, you can request its definition using the following format:
+
+            ## skill_request
+            Description: Request the definition of a specific skill. This will return the complete XML definition that you can use to understand how to apply the skill.
+            Parameters:
+            - skill_name: (required) The name of the skill you want to retrieve
+            Usage:
+            <skill_request>
+            <skill_name>skill-name-here</skill_name>
+            </skill_request>
+
+            ${skillsPrompt}
+
+            ====
+            <% } %>
+
             RULES
             
             - NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.

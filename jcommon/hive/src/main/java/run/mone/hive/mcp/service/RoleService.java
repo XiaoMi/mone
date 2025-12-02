@@ -24,7 +24,6 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
-import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.service.command.RoleBaseCommand;
@@ -42,7 +41,10 @@ import javax.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -96,6 +98,8 @@ public class RoleService {
 
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
+
+    private String agentId;
 
 
     //支持延时创建agent(单位是s)
@@ -155,13 +159,6 @@ public class RoleService {
 
     private static @NotNull McpHub getMcpHub(ReactorRole role) {
         return role.getMcpHub() != null ? role.getMcpHub() : new McpHub();
-    }
-
-    //合并两个List<String>注意去重(method)
-    public List<String> mergeLists(List<String> list1, List<String> list2) {
-        Set<String> mergedSet = new HashSet<>(list1);
-        mergedSet.addAll(list2);
-        return new ArrayList<>(mergedSet);
     }
 
     private void shutdownHook() {
@@ -245,6 +242,7 @@ public class RoleService {
             public void reg(RegInfo info) {
                 if (owner.equals(Const.DEFAULT)) {
                     hiveManagerService.register(info);
+                    setAgentId(hiveManagerService.getAgentId());
                 }
             }
 

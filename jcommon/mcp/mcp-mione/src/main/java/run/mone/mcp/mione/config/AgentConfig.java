@@ -37,7 +37,6 @@ public class AgentConfig {
                          - mione_chaos：混沌工程专业Agent，提供故障注入能力
                          - dayu-agent：限流管理专业Agent，提供服务限流查询和修改限流规则能力
 
-                         你的clientId=1717
                         """)
                 .goal("你的目标是作为MiOne平台的智能路由，快速识别用户需求并路由到对应的专业Agent，或直接回答简单问题")
                 .constraints("""
