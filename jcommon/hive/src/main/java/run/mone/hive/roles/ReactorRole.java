@@ -19,7 +19,6 @@ import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.ConversationContextManager;
-import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.llm.LLMProvider;
@@ -32,6 +31,7 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.roles.tool.SkillRequestTool;
 import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
@@ -698,6 +698,9 @@ public class ReactorRole extends Role {
     private void callTool(String name, ToolDataInfo it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
 
+        // 如果是 skill_request 工具，先清理掉 memory 中相同 skill 的旧记录，确保一个 skill 只保留最新的一份
+        cleanupSkillMemory(name, it);
+
         // 提前创建Message以获得ID
         Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
 
@@ -759,6 +762,35 @@ public class ReactorRole extends Role {
             this.putMessage(assistantMessage);
         }
 
+    }
+
+    private void cleanupSkillMemory(String name, ToolDataInfo it) {
+        if (SkillRequestTool.name.equals(name)) {
+            String skillName = it.getKeyValuePairs().get("skill_name");
+            if (StringUtils.isNotBlank(skillName)) {
+                removeOldSkillRecordFromMemory(skillName);
+            }
+        }
+    }
+
+    /**
+     * 从 memory 中移除相同 skill 的旧记录，确保一个 skill 在上下文中只保留最新的一份
+     *
+     * @param skillName 要清理的 skill 名称
+     */
+    private void removeOldSkillRecordFromMemory(String skillName) {
+        List<Message> storage = this.rc.getMemory().getStorage();
+        // 查找包含这个 skillName 的旧记录并删除
+        // skill 执行结果中会包含 "skillName":"xxx" 的 JSON 字段
+        String skillNamePattern = "\"skillName\":\"" + skillName + "\"";
+        List<Message> toRemove = storage.stream()
+                .filter(msg -> msg.getContent() != null && msg.getContent().contains(skillNamePattern))
+                .collect(Collectors.toList());
+
+        for (Message msg : toRemove) {
+            this.rc.getMemory().delete(msg);
+            log.info("Removed old skill record from memory for skill: {}", skillName);
+        }
     }
 
     private void sendToSink(String content, Message contextMessage, boolean addId) {

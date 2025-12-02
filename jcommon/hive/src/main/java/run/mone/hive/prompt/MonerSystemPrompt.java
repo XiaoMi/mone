@@ -527,7 +527,16 @@ public class MonerSystemPrompt {
 
             SKILLS
 
-            Skills are reusable definitions that can help you accomplish specific tasks. When you need to use a skill, you can request its definition using the following format:
+            Skills are reusable definitions that can help you accomplish specific tasks.
+
+            IMPORTANT: You should execute skills directly without reading their source code unless one of the following conditions applies:
+            - Code execution fails with errors that require understanding the skill's implementation
+            - The user explicitly asks you to read or examine the skill code
+            - The skill's description does not provide enough information about the interface or parameters needed for execution
+
+            In most cases, the skill description and parameters should be sufficient for direct execution.
+
+            When you need to use a skill, you can request its definition using the following format:
 
             ## skill_request
             Description: Request the definition of a specific skill. This will return the complete XML definition that you can use to understand how to apply the skill.
