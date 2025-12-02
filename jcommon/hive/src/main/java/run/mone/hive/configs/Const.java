@@ -20,6 +20,23 @@ public class Const {
 
     public static final String USER_INTERNAL_NAME = "__user_internal_name__";
 
+    // User info from Bearer Token authentication
+    /**
+     * Complete user information Map from token validation
+     * Contains all user fields extracted from the authentication endpoint
+     */
+    public static final String USER_INFO = "__userInfo";
+
+    /**
+     * User ID extracted from token validation (convenience field)
+     */
+    public static final String TOKEN_USER_ID = "__userId";
+
+    /**
+     * Username extracted from token validation (convenience field)
+     */
+    public static final String TOKEN_USERNAME = "__username";
+
     public static final String AGENT_ID = "__agent_id__";
 
     public static final String SEND_FROM = "__send_from__";
@@ -94,5 +111,7 @@ public class Const {
     public static final String AGENT_SERVER_VERSION = "agent_server_version";
 
     public static final String TASK_PROGRESS = "task_progress";
+
+    public static final String TRUE = "true";
 
 }

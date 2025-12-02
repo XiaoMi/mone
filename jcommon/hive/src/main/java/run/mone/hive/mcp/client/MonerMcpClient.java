@@ -135,6 +135,12 @@ public class MonerMcpClient {
                 //主要用来调用chat
                 hub = McpHubHolder.get(from);
             }
+
+            if(serviceName.startsWith("default_")) {
+                hub = McpHubHolder.get(from);
+                toolArguments.keySet().stream().filter(it -> it.startsWith("__")).collect(Collectors.toSet()).forEach(toolArguments::remove);
+            }
+
             hub.callToolStream(serviceName, toolName, toolArguments)
                     .doOnNext(tr -> {
                                 if (tr.content().get(0) instanceof McpSchema.TextContent tc) {

@@ -13,13 +13,14 @@ import run.mone.hive.roles.tool.*;
 import run.mone.mcp.chaos.function.ChaosFunction;
 import run.mone.mcp.chaos.function.CreateChaosFunction;
 
+
 /**
  * @author zhangxiaowei6
  * @Date 2025/5/7 16:20
  */
-
 @Configuration
 public class AgentConfig {
+
     private String agentName = "mione_chaos";
 
     @Value("${mcp.agent.mode:MCP}")
@@ -41,14 +42,12 @@ public class AgentConfig {
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
-                        new AttemptCompletionTool(),
-                        new SpeechToTextTool(),
-                        new TextToSpeechTool()))
+                        new AttemptCompletionTool()))
                 //mcp工具
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .mcpTools(
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
-                                ? Lists.newArrayList(new ChatFunction(agentName, 20))
+                                ? Lists.newArrayList(new ChatFunction(agentName, 20),chaosFunction,createChaosFunction)
                                 : Lists.newArrayList(chaosFunction,createChaosFunction)
                 )
                 .meta(ImmutableMap.of(Const.HTTP_PORT,"8082",Const.AGENT_SERVER_NAME,"chaos_server", Const.HTTP_ENABLE_AUTH, "true"))
