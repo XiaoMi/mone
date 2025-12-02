@@ -6,16 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.schema.Message;
 
 @Slf4j
-public class LLMProvider {
-    private static LLMProvider instance;
+public class MemLLMProvider {
+    private static MemLLMProvider instance;
     
-    private LLMProvider() {
+    private MemLLMProvider() {
         // Initialize your LLM configuration here
     }
     
-    public static synchronized LLMProvider getInstance() {
+    public static synchronized MemLLMProvider getInstance() {
         if (instance == null) {
-            instance = new LLMProvider();
+            instance = new MemLLMProvider();
         }
         return instance;
     }
