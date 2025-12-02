@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.gateway.service.GatewayService;
@@ -59,6 +60,7 @@ public class ApiFunction implements McpFunction {
             """;
 
     @Override
+    @ReportCallCount(businessName = "gateway-api", description = "Gateway API操作工具调用")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("ApiFunction arguments: {}", arguments);
 
