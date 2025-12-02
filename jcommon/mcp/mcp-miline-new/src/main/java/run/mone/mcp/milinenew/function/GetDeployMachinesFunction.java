@@ -31,9 +31,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class GetDeployMachinesFunction implements McpFunction {
 
-    @Value("${git.email.suffix}")
-    private String gitUserName;
-
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -46,9 +43,9 @@ public class GetDeployMachinesFunction implements McpFunction {
                         "type": "number",
                         "description": "流水线ID（必填）"
                     },
-                    "executionId": {
+                    "pipelineRecordId": {
                         "type": "number",
-                        "description": "流水线ID（选填）"
+                        "description": "流水线运行记录ID（选填）"
                     }
                 },
                 "required": ["projectId", "pipelineId"]
@@ -85,7 +82,7 @@ public class GetDeployMachinesFunction implements McpFunction {
             // 验证必填参数
             Object projectIdObj = arguments.get("projectId");
             Object pipelineIdObj = arguments.get("pipelineId");
-            Object executionId = arguments.get("executionId") == null ? 0 : arguments.get("executionId");
+            Object pipelineRecordId = arguments.get("pipelineRecordId") == null ? 0 : arguments.get("pipelineRecordId");
 
             if (projectIdObj == null || StringUtils.isBlank(projectIdObj.toString())) {
                 return Flux.just(new McpSchema.CallToolResult(
@@ -103,9 +100,9 @@ public class GetDeployMachinesFunction implements McpFunction {
 
             Integer projectId = convertToInteger(projectIdObj);
             Integer pipelineId = convertToInteger(pipelineIdObj);
-            Integer execId = convertToInteger(executionId);
+            Integer pipelineRecordIdInt = convertToInteger(pipelineRecordId);
 
-            List<Object> requestBody = List.of(projectId, pipelineId, execId);
+            List<Object> requestBody = List.of(projectId, pipelineId, pipelineRecordIdInt);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("getDeployMachines request: {}", requestBodyStr);
 

@@ -252,3 +252,8 @@ Hot reload watches config file for changes.
 5. **Multimodal First**: Native support for text + images throughout
 6. **Streaming**: Reactive streams (Project Reactor) for real-time responses
 7. **Resilience**: Retry logic, health checks, auto-reconnect for robustness
+
+
+## 需要注意的点
+1. 如非用户要求,不需要写文档
+2. 如非用户要求,不需要写单元测试
