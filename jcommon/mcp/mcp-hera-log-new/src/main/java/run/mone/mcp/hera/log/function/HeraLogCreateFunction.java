@@ -42,9 +42,9 @@ public class HeraLogCreateFunction implements McpFunction {
                         "type": "long",
                         "description": "miline项目ID，数字类型"
                     },
-                    "envId": {
+                    "pipelineId": {
                         "type": "long",
-                        "description": "环境（流水线）ID，数字类型"
+                        "description": "环境（流水线）ID，有时在链接中也用envId表示，数字类型"
                     },
                     "tailName": {
                         "type": "string",
@@ -70,7 +70,7 @@ public class HeraLogCreateFunction implements McpFunction {
             try {
                 // 获取必填参数
                 Long projectId = getLongParam(args, "projectId", 0L);
-                Long envId = getLongParam(args, "envId", 0L);
+                Long pipelineId = getLongParam(args, "pipelineId", 0L);
                 String tailName = getStringParam(args, "tailName");
                 String logPath = getStringParam(args, "logPath");
 
@@ -81,21 +81,21 @@ public class HeraLogCreateFunction implements McpFunction {
                             List.of(new McpSchema.TextContent("参数错误：projectId不能为空或无效")), true));
                 }
 
-                if (envId == 0) {
-                    log.warn("envId 参数为空或无效");
+                if (pipelineId == 0) {
+                    log.warn("pipelineId 参数为空或无效");
                     return Flux.just(new McpSchema.CallToolResult(
-                            List.of(new McpSchema.TextContent("参数错误：envId不能为空或无效")), true));
+                            List.of(new McpSchema.TextContent("参数错误：pipelineId不能为空或无效")), true));
                 }
 
 
-                log.info("开始创建Hera日志，spaceId: {}, storeId: {}, tailName: {}, logPath: {} ",
-                        projectId, envId, tailName, logPath);
+                log.info("开始创建Hera日志，projectId: {}, pipelineId: {}, tailName: {}, logPath: {} ",
+                        projectId, pipelineId, tailName, logPath);
 
                 // 调用服务查询日志
-                String result = heraLogService.createLogByMiline(projectId, envId, tailName, logPath);
+                String result = heraLogService.createLogByMiline(projectId, pipelineId, tailName, logPath);
 
-                log.info("成功查询Hera日志详情，spaceId: {}, storeId: {}, tailName: {}, logPath: {} ",
-                        projectId, envId, tailName, logPath);
+                log.info("成功查询Hera日志详情，projectId: {}, pipelineId: {}, tailName: {}, logPath: {} ",
+                        projectId, pipelineId, tailName, logPath);
 
                 return createSuccessFlux(result);
             } catch (Exception e) {
