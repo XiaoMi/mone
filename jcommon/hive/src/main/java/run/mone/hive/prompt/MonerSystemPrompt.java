@@ -202,6 +202,29 @@ public class MonerSystemPrompt {
         data.put("enableSkills", !skills.isEmpty());
         data.put("skillsPrompt", skillService.formatSkillsForPrompt(skills));
 
+        prepareToolList(tools, skills, data);
+        //注入mcp工具
+        data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
+        data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
+        data.put("toolConfig", getToolConfig(role));
+
+        //markdown文件会根本上重置这些配置
+        epopulateAgentData(message, data);
+
+        return renderSystemPrompt(data);
+    }
+
+    private static String renderSystemPrompt(Map<String, Object> data) {
+        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
+                Lists.newArrayList(
+                        //反射执行
+                        Pair.of("invoke", new InvokeMethodFunction()),
+                        //可以使用默认值
+                        Pair.of("value", new DefaultValueFunction())
+                ));
+    }
+
+    private static void prepareToolList(List<ITool> tools, List<SkillDocument> skills, Map<String, Object> data) {
         //如果有skills可用，自动添加 SkillRequestTool 到工具列表
         List<ITool> finalTools = new ArrayList<>(tools);
         if (!skills.isEmpty()) {
@@ -213,15 +236,11 @@ public class MonerSystemPrompt {
                 log.debug("Auto-added SkillRequestTool because {} skills are available", skills.size());
             }
         }
-
         //注入工具
         data.put("toolList", finalTools);
-        //注入mcp工具
-        data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
-        data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
-        data.put("toolConfig", getToolConfig(role));
+    }
 
-        //markdown文件会根本上重置这些配置
+    private static void epopulateAgentData(Message message, Map<String, Object> data) {
         if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
             String rd = """
                     \n
@@ -236,14 +255,6 @@ public class MonerSystemPrompt {
             data.put("customInstructions", md.getAgentPrompt());
             data.put("workflow", md.getWorkflow());
         }
-
-        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
-                Lists.newArrayList(
-                        //反射执行
-                        Pair.of("invoke", new InvokeMethodFunction()),
-                        //可以使用默认值
-                        Pair.of("value", new DefaultValueFunction())
-                ));
     }
 
     private static String getToolConfig(ReactorRole role) {
