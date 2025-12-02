@@ -1,4 +1,4 @@
-package run.mone.mcp.hera.log.service;
+package run.mone.mcp.hera.analysis.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

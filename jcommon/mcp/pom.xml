@@ -40,7 +40,6 @@
         <module>mcp-feishu</module>
         <module>mcp-chrome</module>
         <module>mcp-hera-log</module>
-        <module>mcp-hera-log-new</module>
         <module>mcp-chaos</module>
         <module>mcp-nacosservice</module>
         <module>mcp-linux-agent</module>

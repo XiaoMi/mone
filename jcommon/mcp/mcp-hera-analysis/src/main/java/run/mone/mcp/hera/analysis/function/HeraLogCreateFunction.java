@@ -1,4 +1,4 @@
-package run.mone.mcp.hera.log.function;
+package run.mone.mcp.hera.analysis.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -7,7 +7,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.hera.log.service.HeraLogService;
+import run.mone.mcp.hera.analysis.service.HeraLogService;
+
 
 import java.util.List;
 import java.util.Map;

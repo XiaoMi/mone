@@ -1,4 +1,4 @@
-package run.mone.mcp.hera.log.tool;
+package run.mone.mcp.hera.analysis.tool;
 
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
-import run.mone.mcp.hera.log.service.HeraLogService;
+import run.mone.mcp.hera.analysis.service.HeraLogService;
+
 
 @Slf4j
 @Component
