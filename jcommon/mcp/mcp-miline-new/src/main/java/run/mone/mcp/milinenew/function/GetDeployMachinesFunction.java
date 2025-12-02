@@ -105,7 +105,6 @@ public class GetDeployMachinesFunction implements McpFunction {
             Integer pipelineId = convertToInteger(pipelineIdObj);
             Integer execId = convertToInteger(executionId);
 
-            Map<String, Object> userMap = new HashMap<>();
             List<Object> requestBody = List.of(projectId, pipelineId, execId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("getDeployMachines request: {}", requestBodyStr);
@@ -134,22 +133,31 @@ public class GetDeployMachinesFunction implements McpFunction {
                 String responseBody = response.body().string();
                 log.info("getDeployMachines response: {}", responseBody);
 
-                ApiResponse<List<Map<String, Object>>> apiResponse = objectMapper.readValue(
+                ApiResponse<Object> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
-                                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class))
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Object.class)
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                List<Map<String, Object>> data = apiResponse.getData();
+                Object data = apiResponse.getData();
+                String resultText;
 
-                // 格式化机器信息输出
-                String resultText = formatMachineInfo(data);
-                System.out.println("resultText:");
-                System.out.println(resultText);
+                if (data instanceof Map) {
+                    resultText = formatMachineInfo((Map<String, Object>) data);
+                } else if (data instanceof List) {
+                    try {
+                        resultText = formatMachineList((List<Map<String, Object>>) data);
+                    } catch (ClassCastException e) {
+                        log.error("数据格式错误: List 中的元素不是 Map 类型", e);
+                        resultText = "数据格式错误: List 中的元素不是 Map 类型";
+                    }
+                } else {
+                    resultText = "未知的数据格式: " + data;
+                }
+
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent(resultText)),
                         false
@@ -173,18 +181,39 @@ public class GetDeployMachinesFunction implements McpFunction {
     /**
      * 格式化机器信息输出
      */
-    private String formatMachineInfo(List<Map<String, Object>> data) {
+    private String formatMachineInfo(Map<String, Object> data) {
         StringBuilder sb = new StringBuilder("流水线部署机器信息：\n\n");
 
         if (data == null || data.isEmpty()) {
             return "暂无部署机器信息";
         }
 
-        Map<String, Object> machine = data.getFirst();
+        Map<String, Object> machine = data;
         machine.forEach((key, value) -> {
             sb.append(String.format("  %s: %s\n", key, value));
         });
         sb.append("\n");
+
+        return sb.toString().trim();
+    }
+
+    /**
+     * 格式化机器列表信息输出
+     */
+    private String formatMachineList(List<Map<String, Object>> machineList) {
+        StringBuilder sb = new StringBuilder("流水线部署机器信息列表：\n\n");
+
+        if (machineList == null || machineList.isEmpty()) {
+            return "暂无部署机器信息";
+        }
+
+        for (Map<String, Object> machine : machineList) {
+            sb.append("机器信息:\n");
+            machine.forEach((key, value) -> {
+                sb.append(String.format("  %s: %s\n", key, value));
+            });
+            sb.append("\n");
+        }
 
         return sb.toString().trim();
     }
