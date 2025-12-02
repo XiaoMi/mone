@@ -132,7 +132,6 @@ public class RunPipelineTool implements ITool {
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
 
-//            Map<String, String> userMap = Map.of("baseUserName", "liguanchen");
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("baseUserName", gitUserName);
             userMap.put("userType", 0);
@@ -178,7 +177,7 @@ public class RunPipelineTool implements ITool {
                 Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
                 String url = (String) data.get("url");
                 
-                result.addProperty("executionId", pipelineRecordId);
+                result.addProperty("pipelineRecordId", pipelineRecordId);
                 result.addProperty("url", url);
                 result.addProperty("result", String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url));
                 return result;
