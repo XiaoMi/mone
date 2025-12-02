@@ -22,9 +22,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class GetDeployMachinesTool implements ITool {
 
-    @Value("${git.email.suffix}")
-    private String gitUserName;
-
     public static final String name = "get_deploy_machines";
     private static final String BASE_URL = System.getenv("req_base_url");
     private static final String GET_DEPLOY_MACHINES = BASE_URL != null ? BASE_URL + "/qryDeployCurrentMachines" : null;
@@ -72,7 +69,7 @@ public class GetDeployMachinesTool implements ITool {
         return """
                 - projectId: (必填) 项目ID
                 - pipelineId: (必填) 流水线ID
-                - executionId: (可填) 流水线ID
+                - pipelineRecordId: (可填) 流水线运行记录ID
                 """;
     }
 
@@ -90,7 +87,7 @@ public class GetDeployMachinesTool implements ITool {
                 <get_deploy_machines>
                 <projectId>项目ID</projectId>
                 <pipelineId>流水线ID</pipelineId>
-                <executionId>流水线记录ID（可选）</executionId>
+                <pipelineRecordId>流水线记录ID（可选）</pipelineRecordId>
                 %s
                 </get_deploy_machines>
                 """.formatted(taskProgress);
@@ -103,7 +100,7 @@ public class GetDeployMachinesTool implements ITool {
                 <get_deploy_machines>
                 <projectId>12345</projectId>
                 <pipelineId>67890</pipelineId>
-                <executionId>111213</executionId>
+                <pipelineRecordId>111213</pipelineRecordId>
                 </get_deploy_machines>
                 """;
     }
@@ -128,11 +125,11 @@ public class GetDeployMachinesTool implements ITool {
 
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
-            Integer executionId = inputJson.has("executionId") ? Integer.parseInt(inputJson.get("executionId").getAsString()) : 0;
+            Integer pipelineRecordId = inputJson.has("pipelineRecordId") ? Integer.parseInt(inputJson.get("pipelineRecordId").getAsString()) : 0;
 
 //            Map<String, String> userMap = Map.of("baseUserName", "liguanchen");
             Map<String, Object> userMap = new HashMap<>();
-            List<Object> requestBody = List.of(projectId, pipelineId, executionId);
+            List<Object> requestBody = List.of(projectId, pipelineId, pipelineRecordId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("get_deploy_machines request: {}", requestBodyStr);
 
