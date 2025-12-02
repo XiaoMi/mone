@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
@@ -15,6 +16,9 @@ import run.mone.mcp.hera.analysis.service.HeraLogService;
 public class HeraLogCreateTool implements ITool {
 
     public static final String name = "hera_log_create";
+
+    @Value("${hera.analysis.api.username}")
+    private String userName;
 
     @Autowired
     private HeraLogService heraLogService;
@@ -112,7 +116,7 @@ public class HeraLogCreateTool implements ITool {
                 return result;
             }
 
-            // 验证必填参数：envId
+            // 验证必填参数：pipelineId
             if (!inputJson.has("pipelineId")) {
                 log.error("hera_log_create 操作缺少必填参数 pipelineId");
                 result.addProperty("error", "缺少必填参数 'envId'");
@@ -128,8 +132,8 @@ public class HeraLogCreateTool implements ITool {
 
             log.info("开始创建日志，miline项目id: {}, 流水线id: {}, tail名称: {}， 日志路径: {}", projectId, pipelineId, tailName, logPath);
 
-            // 调用服务查询日志详情
-            String logResult = heraLogService.createLogByMiline(projectId, pipelineId, tailName, logPath);
+            // 创建日志
+            String logResult = heraLogService.createLogByMiline(projectId, pipelineId, tailName, logPath, userName, userName);
 
             // 设置成功响应
             result.addProperty("result", logResult);

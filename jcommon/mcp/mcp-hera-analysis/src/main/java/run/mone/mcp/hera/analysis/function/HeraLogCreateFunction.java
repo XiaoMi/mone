@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.hera.analysis.service.HeraLogService;
@@ -74,6 +75,8 @@ public class HeraLogCreateFunction implements McpFunction {
                 Long pipelineId = getLongParam(args, "pipelineId", 0L);
                 String tailName = getStringParam(args, "tailName");
                 String logPath = getStringParam(args, "logPath");
+                String userName = getStringParam(args, Const.TOKEN_USERNAME);
+                String userId = getStringParam(args, Const.TOKEN_USER_ID);
 
                 // 验证必填参数
                 if (projectId == 0L) {
@@ -93,7 +96,7 @@ public class HeraLogCreateFunction implements McpFunction {
                         projectId, pipelineId, tailName, logPath);
 
                 // 调用服务查询日志
-                String result = heraLogService.createLogByMiline(projectId, pipelineId, tailName, logPath);
+                String result = heraLogService.createLogByMiline(projectId, pipelineId, tailName, logPath, userName, userId);
 
                 log.info("成功查询Hera日志详情，projectId: {}, pipelineId: {}, tailName: {}, logPath: {} ",
                         projectId, pipelineId, tailName, logPath);

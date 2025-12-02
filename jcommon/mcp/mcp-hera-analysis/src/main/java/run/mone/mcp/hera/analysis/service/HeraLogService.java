@@ -26,7 +26,7 @@ public class HeraLogService {
 
     private final Gson gson = new Gson();
 
-    public String createLogByMiline(Long projectId, Long envId, String tailName, String logPath) {
+    public String createLogByMiline(Long projectId, Long envId, String tailName, String logPath, String userName, String userId) {
         try {
             // 构建请求体
             JsonArray requestArray = new JsonArray();
@@ -41,6 +41,14 @@ public class HeraLogService {
 
             if (logPath != null && !logPath.isEmpty()) {
                 requestBody.addProperty("logPath", logPath);
+            }
+
+            if (userName != null && !userName.isEmpty()) {
+                requestBody.addProperty("userName", userName);
+            }
+
+            if (userId != null && !userId.isEmpty()) {
+                requestBody.addProperty("userId", userId);
             }
 
             requestArray.add(requestBody);
