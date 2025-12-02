@@ -38,7 +38,6 @@ public class GetDeployMachinesTool implements ITool {
         this.objectMapper = new ObjectMapper();
     }
 
-
     @Override
     public String getName() {
         return name;
@@ -127,7 +126,6 @@ public class GetDeployMachinesTool implements ITool {
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
             Integer pipelineRecordId = inputJson.has("pipelineRecordId") ? Integer.parseInt(inputJson.get("pipelineRecordId").getAsString()) : 0;
 
-//            Map<String, String> userMap = Map.of("baseUserName", "liguanchen");
             Map<String, Object> userMap = new HashMap<>();
             List<Object> requestBody = List.of(projectId, pipelineId, pipelineRecordId);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
@@ -157,21 +155,32 @@ public class GetDeployMachinesTool implements ITool {
                 String responseBody = response.body().string();
                 log.info("get_deploy_machines response: {}", responseBody);
 
-                ApiResponse<List<Map<String, Object>>> apiResponse = objectMapper.readValue(
+                ApiResponse<Object> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
-                                objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class))
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Object.class)
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                List<Map<String, Object>> data = apiResponse.getData();
+                Object data = apiResponse.getData();
+                String resultText;
 
-                // 格式化机器信息输出
-                String machineInfo = formatMachineInfo(data);
-                result.addProperty("result", machineInfo);
+                if (data instanceof Map) {
+                    resultText = formatMachineInfo((Map<String, Object>) data);
+                } else if (data instanceof List) {
+                    try {
+                        resultText = formatMachineList((List<Map<String, Object>>) data);
+                    } catch (ClassCastException e) {
+                        log.error("数据格式错误: List 中的元素不是 Map 类型", e);
+                        resultText = "数据格式错误: List 中的元素不是 Map 类型";
+                    }
+                } else {
+                    resultText = "未知的数据格式: " + data;
+                }
+
+                result.addProperty("result", resultText);
                 return result;
             }
         } catch (NumberFormatException e) {
@@ -188,19 +197,38 @@ public class GetDeployMachinesTool implements ITool {
     /**
      * 格式化机器信息输出
      */
-    private String formatMachineInfo(List<Map<String, Object>> data) {
+    private String formatMachineInfo(Map<String, Object> data) {
         StringBuilder sb = new StringBuilder("流水线部署机器信息：\n\n");
 
         if (data == null || data.isEmpty()) {
             return "暂无部署机器信息";
         }
 
-        // 遍历每台机器的信息
-        Map<String, Object> machine = data.getFirst();
-        machine.forEach((key, value) -> {
+        data.forEach((key, value) -> {
             sb.append(String.format("  %s: %s\n", key, value));
         });
         sb.append("\n");
+
+        return sb.toString().trim();
+    }
+
+    /**
+     * 格式化机器列表信息输出
+     */
+    private String formatMachineList(List<Map<String, Object>> machineList) {
+        StringBuilder sb = new StringBuilder("流水线部署机器信息列表：\n\n");
+
+        if (machineList == null || machineList.isEmpty()) {
+            return "暂无部署机器信息";
+        }
+
+        for (Map<String, Object> machine : machineList) {
+            sb.append("机器信息:\n");
+            machine.forEach((key, value) -> {
+                sb.append(String.format("  %s: %s\n", key, value));
+            });
+            sb.append("\n");
+        }
 
         return sb.toString().trim();
     }
