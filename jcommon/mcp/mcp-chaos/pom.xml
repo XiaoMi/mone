@@ -22,6 +22,18 @@
             <groupId>run.mone</groupId>
             <artifactId>hive</artifactId>
             <version>1.6.2-jdk21-SNAPSHOT</version>
+            <exclusions>
+                <!-- 排除 chromadb 相关的大型依赖，避免打包所有平台的原生库 -->
+                <exclusion>
+                    <groupId>io.github.amikos-tech</groupId>
+                    <artifactId>chromadb-java-client</artifactId>
+                </exclusion>
+                <!-- 排除 kuzu 数据库依赖 (106MB) -->
+                <exclusion>
+                    <groupId>com.kuzudb</groupId>
+                    <artifactId>kuzu</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

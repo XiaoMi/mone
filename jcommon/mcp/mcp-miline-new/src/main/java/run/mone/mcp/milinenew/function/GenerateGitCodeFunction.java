@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -89,10 +90,11 @@ public class GenerateGitCodeFunction implements McpFunction {
             // 解析参数
             Integer projectId = convertToInteger(projectIdObj);
             String env = envObj.toString();
+            String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
 
             // 构建请求体
             Map<String, Object> requestMap = new HashMap<>();
-            requestMap.put("baseUserName", gitUserName);
+            requestMap.put("baseUserName", StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName);
             requestMap.put("userType", 0);
 
             List<Object> requestBody = List.of(requestMap, projectId, env);

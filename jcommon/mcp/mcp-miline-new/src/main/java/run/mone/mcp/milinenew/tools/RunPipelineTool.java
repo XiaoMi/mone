@@ -37,9 +37,9 @@ public class RunPipelineTool implements ITool {
 
     public RunPipelineTool() {
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(100, TimeUnit.SECONDS)
+                .readTimeout(100, TimeUnit.SECONDS)
+                .writeTimeout(100, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
     }
@@ -151,9 +151,9 @@ public class RunPipelineTool implements ITool {
                 .build();
 
             OkHttpClient pipelineClient = client.newBuilder()
-                .connectTimeout(3, TimeUnit.SECONDS)
-                .readTimeout(3, TimeUnit.SECONDS)
-                .writeTimeout(3, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
 
             try (Response response = pipelineClient.newCall(request).execute()) {

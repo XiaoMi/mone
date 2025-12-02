@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.mcp.gateway.function.ApiFunction;
 
@@ -28,6 +29,9 @@ public class GatewayAgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Value("${mcp.http.port}")
+    private String httpPort;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -37,7 +41,11 @@ public class GatewayAgentConfig {
                 // 内部工具列表为空，使用默认工具
                 .tools(Lists.newArrayList())
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
-                .mcpTools(Lists.newArrayList(apiFunction))
+                .mcpTools(
+                        RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
+                                ? Lists.newArrayList(new ChatFunction(agentName, 20))
+                                : Lists.newArrayList(apiFunction)
+                )
                 .workflow("""
                         你是网关Gateway智能化助手，严格按照以下步骤执行：
                             - 理解用户的查询需求
@@ -46,8 +54,9 @@ public class GatewayAgentConfig {
                             - 如有需要，提供进一步的帮助和建议
                         """)
                 .meta(ImmutableMap.of(
-                        Const.HTTP_PORT, "8086",
-                        Const.AGENT_SERVER_NAME, agentName
+                        Const.HTTP_PORT, httpPort,
+                        Const.AGENT_SERVER_NAME, agentName,
+                        "http.enable.auth", "true"
                 ))
                 .build();
     }

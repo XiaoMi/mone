@@ -151,14 +151,13 @@ public class PathResolutionInterceptor {
             if (PATH_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
                 return true;
             }
+            // Heuristic: looks like a file path?
+            if (looksLikeFilePath(value)) {
+                log.debug("Parameter '{}' with value '{}' looks like a file path", paramName, value);
+                return true;
+            }
         }
-
-        // Heuristic: looks like a file path?
-        if (looksLikeFilePath(value)) {
-            log.debug("Parameter '{}' with value '{}' looks like a file path", paramName, value);
-            return true;
-        }
-
+        
         return false;
     }
 

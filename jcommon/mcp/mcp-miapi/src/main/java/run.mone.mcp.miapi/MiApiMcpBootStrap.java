@@ -6,7 +6,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"run.mone.mcp.miapi", "run.mone.hive.mcp.service", "run.mone.mcp.git"})
+@ComponentScan(basePackages = {"run.mone.mcp.miapi", "run.mone.hive.mcp.service"})
 public class MiApiMcpBootStrap {
 
     public static void main(String[] args) {

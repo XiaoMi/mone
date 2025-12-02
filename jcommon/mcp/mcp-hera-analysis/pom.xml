@@ -15,6 +15,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <logback.version>1.5.12</logback.version>
     </properties>
 
     <dependencies>
@@ -27,12 +28,40 @@
             <groupId>run.mone</groupId>
             <artifactId>hive</artifactId>
             <version>1.6.2-jdk21-SNAPSHOT</version>
+            <exclusions>
+                <!-- 排除 chromadb 相关的大型依赖，避免打包所有平台的原生库 -->
+                <exclusion>
+                    <groupId>io.github.amikos-tech</groupId>
+                    <artifactId>chromadb-java-client</artifactId>
+                </exclusion>
+                <!-- 排除 kuzu 数据库依赖 (106MB) -->
+                <exclusion>
+                    <groupId>com.kuzudb</groupId>
+                    <artifactId>kuzu</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>mcp-chat</artifactId>
             <version>1.6.1-jdk21-SNAPSHOT</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ozhera</groupId>
+            <artifactId>trace-etl-domain</artifactId>
+            <version>2.2.6-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
         </dependency>
     </dependencies>
 

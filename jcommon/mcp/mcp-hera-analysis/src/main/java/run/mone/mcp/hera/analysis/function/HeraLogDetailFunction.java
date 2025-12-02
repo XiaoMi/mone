@@ -35,7 +35,7 @@ public class HeraLogDetailFunction implements McpFunction {
     /**
      * Function描述
      */
-    private String desc = "查询Hera日志详情信息";
+    private String desc = "查询Hera日志详情信息，按照space、store、tailName查询";
 
     /**
      * Function参数Schema定义
@@ -100,12 +100,6 @@ public class HeraLogDetailFunction implements McpFunction {
                     log.warn("storeId 参数为空或无效");
                     return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("参数错误：storeId不能为空或无效")), true));
-                }
-
-                if (input.isEmpty()) {
-                    log.warn("input 参数为空");
-                    return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("参数错误：input不能为空")), true));
                 }
 
                 if (tailName.isEmpty()) {

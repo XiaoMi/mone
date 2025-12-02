@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,8 +114,12 @@ public class HttpTokenValidator implements TokenValidator {
                 // Extract TTL from response if available
                 Duration ttl = extractTtl(response);
 
-                logger.debug("Token validation successful: valid={}, ttl={}, response={}", isValid, ttl, responseBody);
-                return new ValidationResult(isValid, ttl);
+                // Extract user info from response if available
+                Map<String, Object> userInfo = extractUserInfo(response);
+
+                logger.debug("Token validation successful: valid={}, ttl={}, userInfo={}, response={}",
+                    isValid, ttl, userInfo, responseBody);
+                return new ValidationResult(isValid, ttl, userInfo);
             } else {
                 logger.warn("Token validation failed with HTTP status: {}", responseCode);
                 return new ValidationResult(false);
@@ -193,5 +199,67 @@ public class HttpTokenValidator implements TokenValidator {
         }
         // Return null to use default TTL
         return null;
+    }
+
+    /**
+     * Extracts user information from the API response.
+     * Override this method to customize user info extraction based on your API response format.
+     *
+     * Default implementation for z-proxy/user endpoint format:
+     * - Extracts common fields: name, userId, avatar, email, etc.
+     * - Also supports nested "data" field
+     *
+     * @param response The JSON response from the validation endpoint
+     * @return Map containing user information, or empty map if none found
+     */
+    protected Map<String, Object> extractUserInfo(JsonNode response) {
+        Map<String, Object> userInfo = new HashMap<>();
+
+        try {
+            // Try to extract from root level first (z-proxy/user format)
+            if (response.has("name") && !response.get("name").isNull()) {
+                userInfo.put("username", response.get("name").asText());
+            }
+            if (response.has("userId") && !response.get("userId").isNull()) {
+                userInfo.put("userId", response.get("userId").asText());
+            }
+            if (response.has("avatar") && !response.get("avatar").isNull()) {
+                userInfo.put("avatar", response.get("avatar").asText());
+            }
+            if (response.has("email") && !response.get("email").isNull()) {
+                userInfo.put("email", response.get("email").asText());
+            }
+
+            // If data field exists, extract from there
+            if (response.has("data") && response.get("data").isObject()) {
+                JsonNode dataNode = response.get("data");
+                dataNode.fields().forEachRemaining(entry -> {
+                    String key = entry.getKey();
+                    JsonNode value = entry.getValue();
+
+                    // Skip null values
+                    if (value.isNull()) {
+                        return;
+                    }
+
+                    // Convert to appropriate Java type
+                    if (value.isTextual()) {
+                        userInfo.put(key, value.asText());
+                    } else if (value.isNumber()) {
+                        userInfo.put(key, value.asLong());
+                    } else if (value.isBoolean()) {
+                        userInfo.put(key, value.asBoolean());
+                    } else if (value.isObject() || value.isArray()) {
+                        userInfo.put(key, value.toString());
+                    }
+                });
+            }
+
+            logger.debug("Extracted user info: {}", userInfo);
+        } catch (Exception e) {
+            logger.warn("Failed to extract user info from response: {}", e.getMessage());
+        }
+
+        return userInfo;
     }
 }
