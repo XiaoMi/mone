@@ -39,11 +39,11 @@ public class ScaleOrderFunction implements McpFunction {
                     },
                     "type": {
                         "type": "number",
-                        "description": "工单类型，1=日常扩容, 2=大促扩容, 3=紧急扩容, 4=缩容（批量操作时必填，单个操作时选填，默认根据数量自动判断）"
+                        "description": "工单类型，1=日常扩容, 2=大促扩容, 3=紧急扩容, 4=缩容。批量操作时必填，如用户未明确指定，AI应根据所有流水线中最大的单次扩容数量自动判断：最大扩容数>50台=大促扩容(2)，>15台且≤50台=紧急扩容(3)，≤15台=日常扩容(1)，全部为负数=缩容(4)。单个操作时选填，不提供则系统自动判断"
                     },
                     "reviewers": {
                         "type": "array",
-                        "description": "审批人列表（条件必填，根据工单类型和目标实例数判断是否需要）",
+                        "description": "审批人列表（条件必填）。审批规则：大促扩容(type=2)需要3个审批人(业务leader+架构组+SRE)，紧急扩容(type=3)需要2个审批人(业务leader+架构组)，日常扩容目标实例数>15台时需要2个审批人(业务leader+架构组)，其他情况无需审批",
                         "items": {
                             "type": "object",
                             "properties": {
