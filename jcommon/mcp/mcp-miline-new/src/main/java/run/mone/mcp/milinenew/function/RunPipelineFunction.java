@@ -50,7 +50,7 @@ public class RunPipelineFunction implements McpFunction {
                     },
                     "runType": {
                         "type": "string",
-                        "description": "运行类型（选填，不填则为commitId模式，值可以为commitId、changes）"
+                        "description": "运行类型，不填则为commitId模式，值可以为commitId=>commitId或者应用变更=>changes"
                     },
                     "changeIds": {
                         "type": "string",

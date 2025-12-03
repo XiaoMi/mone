@@ -13,12 +13,10 @@ import org.springframework.stereotype.Component;
 
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.mcp.milinenew.params.RunPipelineParams;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -27,10 +25,10 @@ public class RunPipelineTool implements ITool {
 
     @Value("${git.email.suffix}")
     private String gitUserName;
-    
+
     public static final String name = "run_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
+    private static final String RUN_PIPELINE_URL = BASE_URL != null ? "http://mione-gw.test.mi.com/mtop/miline" + "/runPipelineWithLatestCommit" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -43,7 +41,6 @@ public class RunPipelineTool implements ITool {
                 .build();
         this.objectMapper = new ObjectMapper();
     }
-
 
 
     @Override
@@ -78,6 +75,9 @@ public class RunPipelineTool implements ITool {
         return """
                 - projectId: (必填) 项目ID
                 - pipelineId: (必填) 流水线ID
+                - commitId: (选填) git的commitId，不填则为最新一次的commitId
+                - runType: (选填) 运行类型，不填则为commitId模式，值可以为commitId=>commitId或者应用变更=>changes
+                - changeIds: (选填) changeIds，为字符串形式，如1,2,3，多个值用逗号分隔，仅runType为changes时有效（不提供也可以）
                 """;
     }
 
@@ -131,29 +131,51 @@ public class RunPipelineTool implements ITool {
 
             Integer projectId = Integer.parseInt(inputJson.get("projectId").getAsString());
             Integer pipelineId = Integer.parseInt(inputJson.get("pipelineId").getAsString());
+            String commitId = inputJson.has("commitId") && StringUtils.isNotBlank(inputJson.get("commitId").getAsString())
+                    ? inputJson.get("commitId").getAsString()
+                    : null;
+            String runType = inputJson.has("runType") && StringUtils.isNotBlank(inputJson.get("runType").getAsString())
+                    ? inputJson.get("runType").getAsString()
+                    : "commitId";
+            String changeIds = inputJson.has("changeIds") && StringUtils.isNotBlank(inputJson.get("changeIds").getAsString()) ?
+                    inputJson.get("commitId").getAsString() : null;
+
 
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("baseUserName", gitUserName);
             userMap.put("userType", 0);
-            List<Object> requestBody = List.of(userMap, projectId, pipelineId);
+
+            RunPipelineParams params = RunPipelineParams.builder()
+                    .projectId(projectId)
+                    .pipelineId(pipelineId)
+                    .commitId(commitId)
+                    .runType(runType)
+                    .changeIds(changeIds != null ? Arrays.stream(changeIds.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .map(Integer::parseInt)
+                            .toList() : Collections.emptyList())
+                    .build();
+
+            List<Object> requestBody = List.of(userMap, params);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("runPipeline request: {}", requestBodyStr);
 
             RequestBody body = RequestBody.create(
-                requestBodyStr,
-                MediaType.parse("application/json; charset=utf-8")
+                    requestBodyStr,
+                    MediaType.parse("application/json; charset=utf-8")
             );
 
             Request request = new Request.Builder()
-                .url(RUN_PIPELINE_URL)
-                .post(body)
-                .build();
+                    .url(RUN_PIPELINE_URL)
+                    .post(body)
+                    .build();
 
             OkHttpClient pipelineClient = client.newBuilder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build();
 
             try (Response response = pipelineClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
@@ -164,9 +186,9 @@ public class RunPipelineTool implements ITool {
                 log.info("runPipeline response: {}", responseBody);
 
                 ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
-                    responseBody,
-                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
-                        objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
+                        responseBody,
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
+                                objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
@@ -176,7 +198,7 @@ public class RunPipelineTool implements ITool {
                 Map<String, Object> data = apiResponse.getData();
                 Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
                 String url = (String) data.get("url");
-                
+
                 result.addProperty("pipelineRecordId", pipelineRecordId);
                 result.addProperty("url", url);
                 result.addProperty("result", String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url));
