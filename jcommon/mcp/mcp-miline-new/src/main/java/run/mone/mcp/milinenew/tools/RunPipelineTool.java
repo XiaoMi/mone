@@ -28,7 +28,7 @@ public class RunPipelineTool implements ITool {
 
     public static final String name = "run_pipeline";
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? "http://mione-gw.test.mi.com/mtop/miline" + "/runPipelineWithLatestCommit" : null;
+    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
