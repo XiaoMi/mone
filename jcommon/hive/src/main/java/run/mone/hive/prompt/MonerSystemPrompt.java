@@ -283,7 +283,7 @@ public class MonerSystemPrompt {
                 server.put("args", "");
                 server.put("connection", value);
                 server.put("agent", ImmutableMap.of("name", value.getServer().getName()));
-                List<io.modelcontextprotocol.spec.McpSchema.Tool> tools = value.getServer().getToolsV2();
+                List<McpSchema.Tool> tools = value.getServer().getTools();
                 String toolsStr = tools.stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
                         .collect(Collectors.joining("\n\n"));
