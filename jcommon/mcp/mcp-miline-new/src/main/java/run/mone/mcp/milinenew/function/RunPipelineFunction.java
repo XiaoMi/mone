@@ -13,11 +13,10 @@ import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.milinenew.params.RunPipelineParams;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,7 +31,7 @@ public class RunPipelineFunction implements McpFunction {
 
     @Value("${git.email.suffix}")
     private String gitUserName;
-    
+
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -44,6 +43,18 @@ public class RunPipelineFunction implements McpFunction {
                     "pipelineId": {
                         "type": "number",
                         "description": "流水线ID（必填）"
+                    },
+                    "commitId": {
+                        "type": "string",
+                        "description": "git的commitId（选填，不填为最新一次的commitId）"
+                    },
+                    "runType": {
+                        "type": "string",
+                        "description": "git的commitId（选填，不填则为commitId模式，值可以为commitId、changes）"
+                    },
+                    "changeIds": {
+                        "type": "string",
+                        "description": "changeIds，为字符串形式，如1,2,3（选填，仅runType为changes时有效）"
                     }
                 },
                 "required": ["projectId", "pipelineId"]
@@ -80,6 +91,9 @@ public class RunPipelineFunction implements McpFunction {
             // 验证必填参数
             Object projectIdObj = arguments.get("projectId");
             Object pipelineIdObj = arguments.get("pipelineId");
+            Object commitId = arguments.get("commitId");
+            Object runType = arguments.get("runType") != null ? arguments.get("runType") : "commitId";
+            Object changeIds = arguments.get("changeIds");
 
             if (projectIdObj == null || StringUtils.isBlank(projectIdObj.toString())) {
                 return Flux.just(new McpSchema.CallToolResult(
@@ -101,7 +115,18 @@ public class RunPipelineFunction implements McpFunction {
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("baseUserName", StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName);
             userMap.put("userType", 0);
-            List<Object> requestBody = List.of(userMap, projectId, pipelineId);
+            RunPipelineParams params = RunPipelineParams.builder()
+                    .projectId(projectId)
+                    .pipelineId(pipelineId)
+                    .commitId(commitId != null ? commitId.toString() : null)
+                    .runType(runType != null ? runType.toString() : "commitId")
+                    .changeIds(changeIds != null ? Arrays.stream(changeIds.toString().split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .map(Integer::parseInt)
+                            .toList() : Collections.emptyList())
+                    .build();
+            List<Object> requestBody = List.of(userMap, params);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
             log.info("runPipeline request: {}", requestBodyStr);
 
@@ -131,8 +156,8 @@ public class RunPipelineFunction implements McpFunction {
 
                 ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, 
-                            objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
+                                objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
                 );
 
                 if (apiResponse.getCode() != 0) {
@@ -142,7 +167,7 @@ public class RunPipelineFunction implements McpFunction {
                 Map<String, Object> data = apiResponse.getData();
                 Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
                 String url = (String) data.get("url");
-                
+
                 String resultText = String.format("成功触发流水线，执行ID: %d，URL: %s", pipelineRecordId, url);
 
                 return Flux.just(new McpSchema.CallToolResult(
@@ -187,7 +212,7 @@ public class RunPipelineFunction implements McpFunction {
     public String getDesc() {
         return """
                 运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行。
-
+                
                 **使用场景：**
                 - 需要在CI/CD中触发某个流水线
                 - 验证最近一次提交是否能通过流水线
