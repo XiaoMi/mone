@@ -69,12 +69,9 @@ public class ScaleOrderTool implements ITool {
 
     private static final int LEADER_REVIEW = 2;
     private static final int MONE_REVIEW = 3;
-    private static final int SCALE_UP = 4;
-    private static final int SCALE_DOWN = 5;
     private static final int MACHINE_DELIVERY = 7;
 
     private static final int REVIEW_WAIT = 1;
-    private static final int SCALE_WAIT = 4;
 
     public ScaleOrderTool() {
         this.client = new OkHttpClient.Builder()
@@ -1170,21 +1167,7 @@ public class ScaleOrderTool implements ITool {
                         });
             }
         }
-
-        if (orderType == UP_SALE || orderType == UP_EMERGE) {
-            Map<String, Object> scaleUpProgress = new HashMap<>();
-            scaleUpProgress.put("type", SCALE_UP);
-            scaleUpProgress.put("status", SCALE_WAIT);
-            progresses.add(scaleUpProgress);
-
-            Map<String, Object> scaleDownProgress = new HashMap<>();
-            scaleDownProgress.put("type", SCALE_DOWN);
-            scaleDownProgress.put("status", SCALE_WAIT);
-            progresses.add(scaleDownProgress);
-        }
-
         orderDto.put("progresses", progresses);
-
         Map<String, Object> content = new HashMap<>();
         content.put("replicateBefore", replicateBefore);
         content.put("replicateAfter", replicateAfter);
