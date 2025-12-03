@@ -1188,7 +1188,7 @@ public class ScaleOrderTool implements ITool {
         Map<String, Object> content = new HashMap<>();
         content.put("replicateBefore", replicateBefore);
         content.put("replicateAfter", replicateAfter);
-        content.put("num", replicateAfter - replicateBefore);
+        content.put("num", Math.abs(replicateAfter - replicateBefore));
         orderDto.put("content", content);
 
         return orderDto;
