@@ -50,11 +50,11 @@ public class RunPipelineFunction implements McpFunction {
                     },
                     "runType": {
                         "type": "string",
-                        "description": "git的commitId（选填，不填则为commitId模式，值可以为commitId、changes）"
+                        "description": "运行类型（选填，不填则为commitId模式，值可以为commitId、changes）"
                     },
                     "changeIds": {
                         "type": "string",
-                        "description": "changeIds，为字符串形式，如1,2,3（选填，仅runType为changes时有效）"
+                        "description": "changeIds，为字符串形式，如1,2,3（选填，多个值用逗号分隔，仅runType为changes时有效）"
                     }
                 },
                 "required": ["projectId", "pipelineId"]
