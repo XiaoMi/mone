@@ -19,8 +19,6 @@ public class McpSettings {
 
     private Map<String, ServerParameters> mcpServers;
 
-    private Map<String, io.modelcontextprotocol.client.transport.ServerParameters> mcpServersV2;
-
     public static McpSettings fromFile(Path path) throws IOException {
         String content = new String(Files.readAllBytes(path));
         ObjectMapper mapper = new ObjectMapper();
