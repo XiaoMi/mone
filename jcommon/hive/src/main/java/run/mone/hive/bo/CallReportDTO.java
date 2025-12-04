@@ -24,7 +24,7 @@ public class CallReportDTO {
 
     private Integer type; // 类型, 1-agent, 2-mcp, 3-其他
 
-    private Integer invokeWay; // 调用方式, 1页面, 2接口, 3系统内部, 4调试，5mcp等等
+    private Integer invokeWay; // 调用方式, 1页面, 2接口, 3系统内部, 4调试等等
     
     /**
      * 业务名称
