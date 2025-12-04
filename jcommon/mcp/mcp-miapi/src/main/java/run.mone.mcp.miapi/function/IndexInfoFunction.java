@@ -1,23 +1,23 @@
 package run.mone.mcp.miapi.function;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.miapi.utils.HttpUtils;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class MiApiFunction implements McpFunction {
+public class IndexInfoFunction implements McpFunction {
 
     @Autowired
     private HttpUtils httpUtils;
@@ -27,10 +27,9 @@ public class MiApiFunction implements McpFunction {
                 "properties": {
                     "projectName": {
                         "type": "string",
-                        "description": "项目(组)名称（必填）"
+                        "description": "项目名称（非必填）"
                     }
-                },
-                "required": ["projectName"]
+                }
             }
             """;
 
@@ -47,24 +46,16 @@ public class MiApiFunction implements McpFunction {
                 ));
             }
 
-            // 验证必填参数
-            Object projectName = arguments.get("projectName");
-
-            if (projectName == null || StringUtils.isBlank(projectName.toString())) {
-                return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("错误：缺少必填参数'projectName'")),
-                        true
-                ));
-            }
-
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("projectName", projectName);
-            String resultText = httpUtils.request("/mtop/miapi/getProjectByName", userMap, Map.class);
-            resultText = String.format("miapi项目信息: %s", resultText);
+            userMap.put("projectName", arguments.get("projectName"));
+            userMap.put("userName", Optional.ofNullable((String) arguments.get(Const.TOKEN_USERNAME)).orElse(""));
+            String resultText = httpUtils.request("/mtop/miapi/getIndexList", userMap, List.class);
+            resultText = String.format("查询到的接口集合列表为: %s", resultText);
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(resultText)),
                     false
             ));
+
         } catch (Exception e) {
             log.error("执行miapi操作时发生异常", e);
             return Flux.just(new McpSchema.CallToolResult(
@@ -76,14 +67,15 @@ public class MiApiFunction implements McpFunction {
 
     @Override
     public String getName() {
-        return "query_project";
+        return "query_index_list";
     }
 
     @Override
     public String getDesc() {
         return """
-                根据项目(组)名称，查询miapi项目信息。
-                如：帮我查询mock-server项目信息。
+                根据项目名或用户查询接口集合列表
+                如：帮我查询我有权限的接口集合。
+                如：帮我查询mi-api的接口集合。
                 """;
     }
 
