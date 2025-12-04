@@ -1,23 +1,27 @@
 package run.mone.mcp.miapi.function;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import run.mone.hive.bo.ApiResponse;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import run.mone.hive.configs.Const;
+import run.mone.mcp.miapi.utils.HttpUtils;
 
 @Slf4j
+@Component
 public class SearchApiFunction implements McpFunction {
+
+    @Autowired
+    private HttpUtils httpUtils;
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -36,18 +40,6 @@ public class SearchApiFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("gateway_host");
-
-    private final OkHttpClient client;
-    private final ObjectMapper objectMapper;
-
-    public SearchApiFunction() {
-        this.client = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-        this.objectMapper = new ObjectMapper();
-    }
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
@@ -78,50 +70,14 @@ public class SearchApiFunction implements McpFunction {
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("keyword", keyword);
             userMap.put("protocol", protocol);
-            userMap.put("userName", "");
-            String params = objectMapper.writeValueAsString(userMap);
-            log.info("keyword request: {}", params);
-            MediaType JSON = MediaType.get("application/json; charset=utf-8");
-            RequestBody body = RequestBody.create(
-                    params.getBytes(StandardCharsets.UTF_8),
-                    JSON
-            );
+            userMap.put("userName", Optional.ofNullable((String) arguments.get(Const.TOKEN_USERNAME)).orElse(""));
+            String resultText = httpUtils.request("/mtop/miapi/getApiList", userMap, Map.class);
+            resultText = String.format("查询到的接口信息为: %s", resultText);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(resultText)),
+                    false
+            ));
 
-            Request request = new Request.Builder()
-                    .url(BASE_URL + "/mtop/miapitest/getApiList")
-                    .post(body)
-                    .build();
-
-            OkHttpClient miapiClient = client.newBuilder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
-                    .build();
-
-            try (Response response = miapiClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Unexpected response code: " + response);
-                }
-
-                String responseBody = response.body().string();
-                log.info("miapi mcp response: {}", responseBody);
-
-                ApiResponse<Map<String,Object>> apiResponse = objectMapper.readValue(
-                        responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Map.class)
-                );
-
-                if (apiResponse.getCode() != 0) {
-                    throw new Exception("API error: " + apiResponse.getMessage());
-                }
-
-                String resultText = String.format("查询到的接口信息为: %s", apiResponse.getData());
-
-                return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent(resultText)),
-                        false
-                ));
-            }
         } catch (Exception e) {
             log.error("执行miapi操作时发生异常", e);
             return Flux.just(new McpSchema.CallToolResult(
