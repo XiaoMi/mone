@@ -1,39 +1,25 @@
 package run.mone.mcp.miapi.function;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.miapi.utils.HttpUtils;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import run.mone.hive.configs.Const;
+import run.mone.mcp.miapi.utils.HttpUtils;
 
 @Slf4j
 @Component
-public class MiApiFunction implements McpFunction {
-
+public class ProjectListFunction implements McpFunction {
     @Autowired
     private HttpUtils httpUtils;
-    public static final String TOOL_SCHEMA = """
-            {
-                "type": "object",
-                "properties": {
-                    "projectName": {
-                        "type": "string",
-                        "description": "项目(组)名称（必填）"
-                    }
-                },
-                "required": ["projectName"]
-            }
-            """;
-
     private static final String BASE_URL = System.getenv("gateway_host");
 
     @Override
@@ -47,24 +33,23 @@ public class MiApiFunction implements McpFunction {
                 ));
             }
 
-            // 验证必填参数
-            Object projectName = arguments.get("projectName");
-
-            if (projectName == null || StringUtils.isBlank(projectName.toString())) {
+            String userName = Optional.ofNullable((String) arguments.get(Const.TOKEN_USERNAME)).orElse("");
+            if (userName == null || userName.isEmpty()) {
                 return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("错误：缺少必填参数'projectName'")),
+                        List.of(new McpSchema.TextContent("错误：用户信息获取失败")),
                         true
                 ));
             }
 
             Map<String, Object> userMap = new HashMap<>();
-            userMap.put("projectName", projectName);
-            String resultText = httpUtils.request("/mtop/miapi/getProjectByName", userMap, Map.class);
-            resultText = String.format("miapi项目信息: %s", resultText);
+            userMap.put("userName", userName);
+            String resultText = httpUtils.request("/mtop/miapi/getMyProjectList", userMap, List.class);
+            resultText = String.format("我参与的miapi项目信息: %s", resultText);
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(resultText)),
                     false
             ));
+
         } catch (Exception e) {
             log.error("执行miapi操作时发生异常", e);
             return Flux.just(new McpSchema.CallToolResult(
@@ -76,19 +61,28 @@ public class MiApiFunction implements McpFunction {
 
     @Override
     public String getName() {
-        return "query_project";
+        return "query_my_project";
     }
 
     @Override
     public String getDesc() {
         return """
-                根据项目(组)名称，查询miapi项目信息。
-                如：帮我查询mock-server项目信息。
+                查询我有权限的miapi项目或查询我的项目列表。
                 """;
     }
 
     @Override
     public String getToolScheme() {
-        return TOOL_SCHEMA;
+        return """
+            {
+                "type": "object",
+                "properties": {
+                    "userName": {
+                        "type": "string",
+                        "description": "用户名(非必填)"
+                    }
+                }
+            }
+            """;
     }
 }
