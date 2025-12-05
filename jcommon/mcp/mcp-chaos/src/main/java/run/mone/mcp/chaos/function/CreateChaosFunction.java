@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -72,6 +73,7 @@ public class CreateChaosFunction implements McpFunction {
             """;
 
     @Override
+    @ReportCallCount(businessName = "chaos_create_tools", description = "创建混沌实验工具调用")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> params) {
         return Flux.defer(() -> {
             try {
