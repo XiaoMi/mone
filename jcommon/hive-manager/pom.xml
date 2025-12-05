@@ -246,6 +246,7 @@
                 <directory>src/main/resources</directory>
                 <excludes>
                     <exclude>static/**</exclude>
+                    <exclude>tui/**</exclude>
                 </excludes>
             </resource>
             <resource>

@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import run.mone.agentx.dto.ReportQueryRequest;
 import run.mone.agentx.dto.common.ApiResponse;
+import run.mone.agentx.dto.common.ListResult;
 import run.mone.agentx.service.InvokeHistoryService;
 import run.mone.hive.bo.CallReportDTO;
 
@@ -116,5 +118,40 @@ public class ReportController {
                     return Mono.just(ApiResponse.error(500, "Failed to get summary: " + e.getMessage()));
                 });
     }
+    
+    /**
+     * 分页查询调用上报记录（支持多维度筛选）
+     * 
+     * 支持的筛选条件：
+     * - appName: 应用名称
+     * - businessName: 业务名称
+     * - className: 类名
+     * - methodName: 方法名
+     * - type: 类型 (1-agent, 2-mcp, 3-其他)
+     * - invokeWay: 调用方式 (1页面, 2接口, 3系统内部, 4调试等)
+     * - success: 是否成功
+     * - host: 主机名/IP
+     * - startTime: 开始时间（时间戳）
+     * - endTime: 结束时间（时间戳）
+     * 
+     * @param request 查询请求
+     * @return 分页结果
+     */
+    @PostMapping("/list")
+    public Mono<ApiResponse<ListResult<CallReportDTO>>> queryReports(@RequestBody ReportQueryRequest request) {
+        log.debug("Query reports with conditions: appName={}, businessName={}, className={}, methodName={}, " +
+                  "type={}, invokeWay={}, success={}, host={}, startTime={}, endTime={}, page={}, pageSize={}",
+                request.getAppName(), request.getBusinessName(), request.getClassName(), request.getMethodName(),
+                request.getType(), request.getInvokeWay(), request.getSuccess(), request.getHost(),
+                request.getStartTime(), request.getEndTime(), request.getPage(), request.getPageSize());
+        
+        return invokeHistoryService.queryReportsWithPage(request)
+                .map(ApiResponse::success)
+                .onErrorResume(e -> {
+                    log.error("Failed to query reports", e);
+                    return Mono.just(ApiResponse.error(500, "Failed to query reports: " + e.getMessage()));
+                });
+    }
+
 }
 

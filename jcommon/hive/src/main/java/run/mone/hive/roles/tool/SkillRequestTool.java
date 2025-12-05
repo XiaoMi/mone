@@ -30,10 +30,8 @@ import java.util.List;
 public class SkillRequestTool implements ITool {
 
     public static final String name = "skill_request";
-    private final SkillService skillService;
 
     public SkillRequestTool() {
-        this.skillService = new SkillService();
     }
 
     @Override
@@ -137,9 +135,10 @@ public class SkillRequestTool implements ITool {
             String skillName = inputJson.get("skill_name").getAsString();
             log.info("Requesting skill: {}", skillName);
 
-            // Load skills from .hive/skills directory
+            // Load skills from .hive/skills directory (supports config-based path: roleConfig > spring config > default)
             String hiveCwd = MonerSystemPrompt.hiveCwd(role);
-            List<SkillDocument> skills = skillService.loadSkills(hiveCwd);
+            SkillService skillService = SkillService.getInstance();
+            List<SkillDocument> skills = skillService.loadSkills(hiveCwd, role.getRoleConfig());
 
             if (skills.isEmpty()) {
                 log.warn("No skills found in directory: {}/skills", hiveCwd);

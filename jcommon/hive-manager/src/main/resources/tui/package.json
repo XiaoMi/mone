@@ -1,0 +1,48 @@
+{
+  "name": "hive-manager-tui",
+  "version": "1.0.0",
+  "description": "Terminal UI for Hive Manager - Agent Management and Chat System",
+  "type": "module",
+  "bin": {
+    "hive-tui": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "npx tsx src/index.tsx",
+    "dev:debug": "DEBUG=true npx tsx src/index.tsx",
+    "build": "npx tsup src/index.tsx --format esm --dts",
+    "start": "node dist/index.js",
+    "type-check": "npx tsc --noEmit",
+    "logs": "./scripts/view-logs.sh",
+    "logs:tail": "tail -f logs/tui-$(date +%Y-%m-%d).log",
+    "logs:clear": "rm -rf logs/*.log",
+    "test:backend": "./scripts/test-backend.sh"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "chalk": "^5.3.0",
+    "date-fns": "^3.0.0",
+    "dotenv": "^16.6.1",
+    "ink": "^4.4.1",
+    "ink-big-text": "^2.0.0",
+    "ink-gradient": "^3.0.0",
+    "ink-select-input": "^5.0.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^5.0.1",
+    "react": "^18.2.0",
+    "uuid": "^10.0.0",
+    "ws": "^8.18.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.2.0",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.12",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
