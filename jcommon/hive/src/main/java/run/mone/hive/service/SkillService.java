@@ -33,6 +33,12 @@ public class SkillService {
     private final MarkdownParserService markdownParser;
 
     /**
+     * Static instance holder for Spring managed bean
+     */
+    @Setter
+    private static volatile SkillService instance;
+
+    /**
      * Spring configuration for skills path
      */
     @Setter
@@ -41,6 +47,20 @@ public class SkillService {
 
     public SkillService() {
         this.markdownParser = new MarkdownParserService();
+    }
+
+    /**
+     * Get SkillService instance
+     * Returns Spring managed instance if available, otherwise creates a new instance
+     *
+     * @return SkillService instance
+     */
+    public static SkillService getInstance() {
+        if (instance != null) {
+            return instance;
+        }
+        // Fallback to new instance if Spring context is not available
+        return new SkillService();
     }
 
     /**
