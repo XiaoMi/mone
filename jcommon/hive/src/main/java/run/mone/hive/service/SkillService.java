@@ -1,28 +1,43 @@
 package run.mone.hive.service;
 
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import run.mone.hive.bo.SkillDocument;
+import run.mone.hive.configs.Const;
 import run.mone.hive.markdown.MarkdownDocument;
 import run.mone.hive.markdown.MarkdownParserService;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service for loading and managing skill definitions
  * Skills are typically stored in the .hive/skills directory
+ *
+ * Supports multiple path sources with priority:
+ * 1. roleConfig dynamic configuration (highest priority)
+ * 2. Spring configuration (hive.skills.path)
+ * 3. Default: hiveCwd + skills directory
  */
 @Slf4j
 public class SkillService {
 
     private static final String SKILLS_DIR = "skills";
     private final MarkdownParserService markdownParser;
+
+    /**
+     * Spring configuration for skills path
+     */
+    @Setter
+    @Value("${hive.skills.path:}")
+    private String springSkillsPath;
 
     public SkillService() {
         this.markdownParser = new MarkdownParserService();
@@ -35,16 +50,31 @@ public class SkillService {
      * @return List of skill documents
      */
     public List<SkillDocument> loadSkills(String hiveCwd) {
+        return loadSkills(hiveCwd, null);
+    }
+
+    /**
+     * Load all skills with support for config-based path
+     *
+     * Priority:
+     * 1. roleConfig dynamic configuration (skillsPath key) - highest priority
+     * 2. Spring configuration (hive.skills.path)
+     * 3. Default: hiveCwd + skills directory
+     *
+     * @param hiveCwd    The .hive directory path (used as fallback)
+     * @param roleConfig The role configuration map containing dynamic settings
+     * @return List of skill documents
+     */
+    public List<SkillDocument> loadSkills(String hiveCwd, Map<String, String> roleConfig) {
         List<SkillDocument> skills = new ArrayList<>();
 
-        if (StringUtils.isBlank(hiveCwd)) {
-            log.debug("Hive directory is empty, no skills to load");
+        // Determine skills path with priority
+        String skillsPath = resolveSkillsPath(hiveCwd, roleConfig);
+
+        if (StringUtils.isBlank(skillsPath)) {
+            log.debug("Skills path is empty, no skills to load");
             return skills;
         }
-
-        String skillsPath = hiveCwd
-                + (hiveCwd.endsWith(File.separator) ? "" : File.separator)
-                + SKILLS_DIR;
 
         File skillsDir = new File(skillsPath);
         if (!skillsDir.exists() || !skillsDir.isDirectory()) {
@@ -220,5 +250,43 @@ public class SkillService {
                 .filter(skill -> name.equals(skill.getName()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Resolve skills path with priority:
+     * 1. roleConfig dynamic configuration (skillsPath key) - highest priority
+     * 2. Spring configuration (hive.skills.path)
+     * 3. Default: hiveCwd + skills directory
+     *
+     * @param hiveCwd    The .hive directory path (used as fallback)
+     * @param roleConfig The role configuration map containing dynamic settings
+     * @return The resolved skills path
+     */
+    private String resolveSkillsPath(String hiveCwd, Map<String, String> roleConfig) {
+        // Priority 1: roleConfig dynamic configuration (highest priority)
+        if (roleConfig != null && roleConfig.containsKey(Const.SKILLS_PATH_KEY)) {
+            String configPath = roleConfig.get(Const.SKILLS_PATH_KEY);
+            if (StringUtils.isNotBlank(configPath)) {
+                log.debug("Using skills path from roleConfig: {}", configPath);
+                return configPath;
+            }
+        }
+
+        // Priority 2: Spring configuration
+        if (StringUtils.isNotBlank(springSkillsPath)) {
+            log.debug("Using skills path from Spring configuration: {}", springSkillsPath);
+            return springSkillsPath;
+        }
+
+        // Priority 3: Default - hiveCwd + skills directory
+        if (StringUtils.isBlank(hiveCwd)) {
+            return null;
+        }
+
+        String defaultPath = hiveCwd
+                + (hiveCwd.endsWith(File.separator) ? "" : File.separator)
+                + SKILLS_DIR;
+        log.debug("Using default skills path: {}", defaultPath);
+        return defaultPath;
     }
 }

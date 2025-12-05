@@ -195,9 +195,9 @@ public class MonerSystemPrompt {
         }
         data.put("workflow", workFlow);
 
-        //注入skill定义
+        //注入skill定义 (supports config-based path: roleConfig > spring config > default)
         SkillService skillService = new SkillService();
-        List<SkillDocument> skills = skillService.loadSkills(MonerSystemPrompt.hiveCwd(role));
+        List<SkillDocument> skills = skillService.loadSkills(MonerSystemPrompt.hiveCwd(role), role.getRoleConfig());
         data.put("skillList", skills);
         data.put("enableSkills", !skills.isEmpty());
         data.put("skillsPrompt", skillService.formatSkillsForPrompt(skills));

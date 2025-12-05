@@ -137,9 +137,9 @@ public class SkillRequestTool implements ITool {
             String skillName = inputJson.get("skill_name").getAsString();
             log.info("Requesting skill: {}", skillName);
 
-            // Load skills from .hive/skills directory
+            // Load skills from .hive/skills directory (supports config-based path: roleConfig > spring config > default)
             String hiveCwd = MonerSystemPrompt.hiveCwd(role);
-            List<SkillDocument> skills = skillService.loadSkills(hiveCwd);
+            List<SkillDocument> skills = skillService.loadSkills(hiveCwd, role.getRoleConfig());
 
             if (skills.isEmpty()) {
                 log.warn("No skills found in directory: {}/skills", hiveCwd);
