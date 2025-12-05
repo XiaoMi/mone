@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.hera.analysis.service.ApplicationMetricsService;
@@ -63,6 +64,7 @@ public class ApplicationMetricsFunction implements McpFunction {
      * @return 包含查询结果的Flux流
      */
     @Override
+    @ReportCallCount(businessName = "hera-application-metrics", description = "查询指定应用、项目近一分钟的指标监控数据，QPS、CPU、heap的平均值，例如帮我查询111_test的监控指标")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         return Flux.defer(() -> {
             try {
