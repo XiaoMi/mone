@@ -47,6 +47,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- AspectJ weaver for AOP support -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.21</version>
+        </dependency>
     </dependencies>
 
 
@@ -122,4 +129,3 @@
     </profiles>
 
 </project>
-
