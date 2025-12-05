@@ -2,12 +2,19 @@ package run.mone.agentx.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.entity.InvokeHistory;
 import run.mone.agentx.repository.InvokeHistoryRepository;
 import run.mone.hive.bo.CallReportDTO;
+
+import run.mone.agentx.dto.ReportQueryRequest;
+import run.mone.agentx.dto.common.ListResult;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class InvokeHistoryService {
     private final InvokeHistoryRepository invokeHistoryRepository;
+    private final R2dbcEntityTemplate r2dbcEntityTemplate;
 
     public Mono<InvokeHistory> createInvokeHistory(InvokeHistory invokeHistory) {
         invokeHistory.setInvokeTime(System.currentTimeMillis());
@@ -155,6 +163,69 @@ public class InvokeHistoryService {
                                 return map;
                             })
                 );
+    }
+    
+    /**
+     * 分页查询上报记录
+     */
+    public Mono<ListResult<CallReportDTO>> queryReportsWithPage(ReportQueryRequest request) {
+        int page = request.getPage() != null && request.getPage() > 0 ? request.getPage() : 1;
+        int pageSize = request.getPageSize() != null && request.getPageSize() > 0 ? request.getPageSize() : 20;
+        long offset = (long) (page - 1) * pageSize;
+        
+        // 构建查询条件
+        Criteria criteria = Criteria.where("state").is(1);
+        if (request.getAppName() != null) {
+            criteria = criteria.and("appName").is(request.getAppName());
+        }
+        if (request.getBusinessName() != null) {
+            criteria = criteria.and("businessName").is(request.getBusinessName());
+        }
+        if (request.getClassName() != null) {
+            criteria = criteria.and("className").is(request.getClassName());
+        }
+        if (request.getMethodName() != null) {
+            criteria = criteria.and("methodName").is(request.getMethodName());
+        }
+        if (request.getType() != null) {
+            criteria = criteria.and("type").is(request.getType());
+        }
+        if (request.getInvokeWay() != null) {
+            criteria = criteria.and("invokeWay").is(request.getInvokeWay());
+        }
+        if (request.getSuccess() != null) {
+            criteria = criteria.and("success").is(request.getSuccess());
+        }
+        if (request.getHost() != null) {
+            criteria = criteria.and("host").is(request.getHost());
+        }
+        if (request.getStartTime() != null) {
+            criteria = criteria.and("ctime").greaterThanOrEquals(request.getStartTime());
+        }
+        if (request.getEndTime() != null) {
+            criteria = criteria.and("ctime").lessThanOrEquals(request.getEndTime());
+        }
+        
+        Query query = Query.query(criteria).sort(Sort.by(Sort.Direction.DESC, "ctime"));
+        
+        Mono<Long> countMono = r2dbcEntityTemplate.count(query, InvokeHistory.class);
+        Mono<List<CallReportDTO>> listMono = r2dbcEntityTemplate.select(query.limit(pageSize).offset(offset), InvokeHistory.class)
+                .map(this::convertToReportDTO)
+                .collectList();
+        
+        return Mono.zip(countMono, listMono)
+                .map(tuple -> {
+                    long total = tuple.getT1();
+                    List<CallReportDTO> list = tuple.getT2();
+                    
+                    ListResult<CallReportDTO> result = new ListResult<>();
+                    result.setList(list);
+                    result.setPage(page);
+                    result.setPageSize(pageSize);
+                    result.setTotal(total);
+                    result.setTotalPage((total + pageSize - 1) / pageSize);
+                    return result;
+                });
     }
     
     /**
