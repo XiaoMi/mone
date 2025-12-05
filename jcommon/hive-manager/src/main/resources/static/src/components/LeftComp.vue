@@ -14,6 +14,8 @@ const showTitle = computed(() => {
     return 'AGENT';
   } else if (route.path === '/tasks') {
     return 'TASK';
+  } else if (route.path === '/reportList') {
+    return 'REPORT';
   }
 });
 </script>
@@ -24,7 +26,7 @@ const showTitle = computed(() => {
   position: relative;
   margin-right: 20px;
   position: relative;
-  width: 140px;
+  width: 160px;
 }
 
 /* .title-container::after {
