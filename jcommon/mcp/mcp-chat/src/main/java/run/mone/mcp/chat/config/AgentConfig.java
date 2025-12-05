@@ -1,7 +1,7 @@
 package run.mone.mcp.chat.config;
 
 import com.google.common.collect.Lists;
-
+import com.google.common.collect.ImmutableMap;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +10,8 @@ import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.Rag;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
+import run.mone.hive.configs.Const;
+import run.mone.mcp.chat.function.AddTwoNumbersFunction;
 
 /**
  * @author goodjava@qq.com
@@ -21,6 +23,9 @@ public class AgentConfig {
     @Value("${mcp.agent.name}")
     private String agentName;
 
+    @Value("${mcp.agent.mode:MCP}")
+    private String agentMode;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -31,6 +36,7 @@ public class AgentConfig {
 //                .webQuery(WebQuery.builder().autoWebQuery(false).modelType("bert").version("finetune-bert-20250605-73a29258").build())
                 //内部工具(意图识别的小模型)
                 .rag(Rag.builder().autoRag(false).modelType("bert").version("finetune-bert-20250605-ed8acbcf").build())
+                .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .tools(Lists.newArrayList(
                         new ChatTool(),
                         new AskTool(),
@@ -41,8 +47,13 @@ public class AgentConfig {
 //                                        .llm(RoleMemoryConfig.LlmConfig.builder().providerName(LLMProvider.QWEN.name()).model("qwen3-max").build())
 //                                        .build()).build()),
                         new AttemptCompletionTool()
-                        ))
-                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 60)))
+                ))
+                .mcpTools(
+                        RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) ?
+                                Lists.newArrayList(
+                                        new ChatFunction(agentName, 60)
+                                ) : Lists.newArrayList(new AddTwoNumbersFunction()))
+                .meta(ImmutableMap.of(Const.HTTP_PORT,"8081",Const.AGENT_SERVER_NAME,"chat_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();
     }
 

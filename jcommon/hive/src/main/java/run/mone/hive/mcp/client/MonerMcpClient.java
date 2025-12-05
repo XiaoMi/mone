@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.client;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,7 @@ import run.mone.hive.roles.ReactorRole;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,9 +87,18 @@ public class MonerMcpClient {
                         return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent("mcpHub is null:" + from)).build();
                     }
 
-                    if (serviceName.equals("alphavantage")) {
+                    if (serviceName.equals("alphavantage") || serviceName.startsWith("default_")) {
                         hub = McpHubHolder.get(from);
                         toolArguments.keySet().stream().filter(it -> it.startsWith("__")).collect(Collectors.toSet()).forEach(toolArguments::remove);
+                    }
+
+                    //直接调用claude
+                    if (serviceName.equals(Constants.CLAUDE_AGENT)) {
+                        log.info("call claude code agent");
+                        ClaudeCodeClient client = new ClaudeCodeClient(ClaudeCodeClient.DEFAULT_CLAUDE_CMD, ClaudeCodeClient.DEFAULT_TIMEOUT_SECONDS, role.getWorkspacePath());
+                        String output = client.execute(toolArguments.get("message").toString(), true, null).getOutput();
+                        monerMcpInterceptor.after(toolName, new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(output)), false));
+                        return McpResult.builder().toolName(toolName).content(new McpSchema.TextContent(output)).error(error.get()).build();
                     }
 
                     try {
@@ -124,6 +135,12 @@ public class MonerMcpClient {
                 //主要用来调用chat
                 hub = McpHubHolder.get(from);
             }
+
+            if(serviceName.startsWith("default_")) {
+                hub = McpHubHolder.get(from);
+                toolArguments.keySet().stream().filter(it -> it.startsWith("__")).collect(Collectors.toSet()).forEach(toolArguments::remove);
+            }
+
             hub.callToolStream(serviceName, toolName, toolArguments)
                     .doOnNext(tr -> {
                                 if (tr.content().get(0) instanceof McpSchema.TextContent tc) {

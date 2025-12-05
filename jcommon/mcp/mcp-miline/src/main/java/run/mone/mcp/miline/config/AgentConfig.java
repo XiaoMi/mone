@@ -1,14 +1,16 @@
 package run.mone.mcp.miline.config;
 
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
-import run.mone.mcp.miline.function.MilineFunction;
+import run.mone.mcp.miline.tools.GetPipelineDetailTool;
 import run.mone.mcp.miline.tools.ModifyMemberTool;
 import run.mone.mcp.miline.tools.RunPipelineTool;
+import run.mone.mcp.miline.tools.GetPipelineMachinesTool;
 
 
 /**
@@ -18,21 +20,26 @@ import run.mone.mcp.miline.tools.RunPipelineTool;
 @Configuration
 public class AgentConfig {
 
+    @Value("${mcp.agent.name}")
+    private String agentName;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
                 .profile("你是一名优秀的miline平台操作助手")
-                .goal("你的目标是更好的帮助用户，比如项目成员管理、流水线运行等操作")
+                .goal("你的目标是更好的帮助用户，比如项目成员管理、流水线运行、流水线详情查询等操作")
                 .constraints("不要探讨与miline平台无关的东西,如果用户问你,你就直接拒绝掉")
                 //内部工具
                 .tools(Lists.newArrayList(
+                        new GetPipelineMachinesTool(),
                         new RunPipelineTool(),
                         new ModifyMemberTool(),
+                        new GetPipelineDetailTool(),
                         new ChatTool(),
                         new AskTool(),
                         new AttemptCompletionTool()))
                 //mcp工具
-                .mcpTools(Lists.newArrayList(new ChatFunction("miline", 20)))
+                .mcpTools(Lists.newArrayList(new ChatFunction(agentName, 20)))
                 .build();
     }
 

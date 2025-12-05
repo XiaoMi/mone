@@ -20,4 +20,6 @@ public class ListResult<T> implements Serializable {
     private long pageSize;
 
     private long totalPage;
+    
+    private long total;
 }

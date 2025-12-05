@@ -8,19 +8,25 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import run.mone.hive.bo.InternalServer;
 import run.mone.hive.bo.AgentMarkdownDocument;
+import run.mone.hive.bo.SkillDocument;
+import run.mone.hive.roles.tool.SkillRequestTool;
+import run.mone.hive.service.SkillService;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Constants;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.Safe;
 import run.mone.hive.common.function.DefaultValueFunction;
 import run.mone.hive.common.function.InvokeMethodFunction;
+import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.hub.McpConnection;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
+import run.mone.hive.mcp.hub.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
-import run.mone.hive.utils.CacheService;
 import run.mone.hive.utils.FileUtils;
 
 import java.io.File;
@@ -189,14 +195,52 @@ public class MonerSystemPrompt {
         }
         data.put("workflow", workFlow);
 
-        //注入工具
-        data.put("toolList", tools);
+        //注入skill定义 (supports config-based path: roleConfig > spring config > default)
+        SkillService skillService = SkillService.getInstance();
+        List<SkillDocument> skills = skillService.loadSkills(MonerSystemPrompt.hiveCwd(role), role.getRoleConfig());
+        data.put("skillList", skills);
+        data.put("enableSkills", !skills.isEmpty());
+        data.put("skillsPrompt", skillService.formatSkillsForPrompt(skills));
+
+        prepareToolList(tools, skills, data);
         //注入mcp工具
         data.put("internalServer", InternalServer.builder().name("internalServer").args("").build());
         data.put("mcpToolList", mcpTools.stream().filter(it -> !it.name().endsWith("_chat")).collect(Collectors.toList()));
         data.put("toolConfig", getToolConfig(role));
 
         //markdown文件会根本上重置这些配置
+        epopulateAgentData(message, data);
+
+        return renderSystemPrompt(data);
+    }
+
+    private static String renderSystemPrompt(Map<String, Object> data) {
+        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
+                Lists.newArrayList(
+                        //反射执行
+                        Pair.of("invoke", new InvokeMethodFunction()),
+                        //可以使用默认值
+                        Pair.of("value", new DefaultValueFunction())
+                ));
+    }
+
+    private static void prepareToolList(List<ITool> tools, List<SkillDocument> skills, Map<String, Object> data) {
+        //如果有skills可用，自动添加 SkillRequestTool 到工具列表
+        List<ITool> finalTools = new ArrayList<>(tools);
+        if (!skills.isEmpty()) {
+            //检查是否已经有 skill_request 工具
+            boolean hasSkillRequestTool = finalTools.stream()
+                    .anyMatch(t -> SkillRequestTool.name.equals(t.getName()));
+            if (!hasSkillRequestTool) {
+                finalTools.add(new SkillRequestTool());
+                log.debug("Auto-added SkillRequestTool because {} skills are available", skills.size());
+            }
+        }
+        //注入工具
+        data.put("toolList", finalTools);
+    }
+
+    private static void epopulateAgentData(Message message, Map<String, Object> data) {
         if (null != message.getData() && message.getData() instanceof AgentMarkdownDocument md) {
             String rd = """
                     \n
@@ -211,14 +255,6 @@ public class MonerSystemPrompt {
             data.put("customInstructions", md.getAgentPrompt());
             data.put("workflow", md.getWorkflow());
         }
-
-        return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data,
-                Lists.newArrayList(
-                        //反射执行
-                        Pair.of("invoke", new InvokeMethodFunction()),
-                        //可以使用默认值
-                        Pair.of("value", new DefaultValueFunction())
-                ));
     }
 
     private static String getToolConfig(ReactorRole role) {
@@ -246,8 +282,8 @@ public class MonerSystemPrompt {
                 server.put("name", key);
                 server.put("args", "");
                 server.put("connection", value);
-                server.put("agent", ImmutableMap.of("name",value.getServer().getName()));
-                List<io.modelcontextprotocol.spec.McpSchema.Tool> tools = value.getServer().getToolsV2();
+                server.put("agent", ImmutableMap.of("name", value.getServer().getName()));
+                List<McpSchema.Tool> tools = value.getServer().getTools();
                 String toolsStr = tools.stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
                         .collect(Collectors.joining("\n\n"));
@@ -262,7 +298,7 @@ public class MonerSystemPrompt {
             server.put("name", key);
             server.put("args", "");
             server.put("connection", value);
-            server.put("agent",value.getServer().getServerInfo().meta());
+            server.put("agent", value.getServer().getServerInfo().meta());
             McpSchema.ListToolsResult tools = value.getClient().getTools();
             String toolsStr = tools
                     .tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
@@ -272,7 +308,36 @@ public class MonerSystemPrompt {
 
             serverList.add(server);
         }));
+
+
+        //启用claude code agent (一个code agent)
+        loadClaudeAgentIfConfigured(role, serverList);
+
         return serverList;
+    }
+
+    private static void loadClaudeAgentIfConfigured(ReactorRole role, List<Map<String, Object>> serverList) {
+        if (role.getRoleConfig().containsKey(Constants.CLAUDE_AGENT)) {
+            //加载claude code agent
+            Map<String, Object> server = new HashMap<>();
+            server.put("name", Constants.CLAUDE_AGENT);
+            server.put("args", "");
+            McpConnection mc = new McpConnection(new McpServer("", ""), (McpSyncClient) null, null);
+            server.put("connection", mc);
+            String profile = role.getRoleConfig().getOrDefault("claude_profile", "一个非常擅长写代码的Agent");
+            String goal = role.getRoleConfig().getOrDefault("claude_goal", "帮助用户完成代码任务");
+            String constraints = role.getRoleConfig().getOrDefault("constraints", "不讨论任何和代码不相关的内容");
+            server.put("agent", ImmutableMap.of("name", Constants.CLAUDE_AGENT, "profile", profile, "goal", goal, "constraints", constraints));
+            String toolDesc = role.getRoleConfig().getOrDefault("claude_desc", "你可以通过和%s沟通来解决你的问题".formatted(Constants.CLAUDE_AGENT));
+            McpSchema.ListToolsResult tools = new McpSchema.ListToolsResult(Lists.newArrayList(
+                    new McpSchema.Tool("chat", toolDesc, ChatFunction.TOOL_SCHEMA)), "");
+            String toolsStr = tools
+                    .tools().stream().map(t -> "name:" + t.toString() + "\n" + "description:" + t.description() + "\n"
+                            + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
+                    .collect(Collectors.joining("\n\n"));
+            server.put("tools", toolsStr);
+            serverList.add(server);
+        }
     }
 
     public static final String TOOL_USE_INFO = """
@@ -378,7 +443,7 @@ public class MonerSystemPrompt {
             Checklist here (optional)
             </task_progress><% } %>
             </execute_command>
-           
+            
             这里有一些内部的tool,这些tool不需要返回server_name
             <% for(tool in toolList){%>
             ## ${invoke(tool, "getName")}
@@ -428,11 +493,11 @@ public class MonerSystemPrompt {
             # Connected MCP Servers
             
             When a server is connected, you can use the server's tools via the `use_mcp_tool` tool, and access the server's resources via the `access_mcp_resource` tool.
-           
+            
             # 调用这些tool会有一些参数,如果发现用户没提供,可以参考这些用户已经配置好的默认参数
             用户的默认参数:
             ${toolConfig}
-             
+            
             <% for(server in serverList){ %>
             ## serverName:${server.name}  ${server.args}
             ## 这个Agent的信息
@@ -448,15 +513,45 @@ public class MonerSystemPrompt {
             <% } %>
             
             
-            如果是mcp工具,请记住这三个参数必须提供:  
+            如果是mcp工具,请记住这三个参数必须提供:
             <server_name>
             <tool_name>
             <arguments>
-            
-            
+
+
             ====
             <% } %>
-            
+
+            <% if(enableSkills) { %>
+            ====
+
+            SKILLS
+
+            Skills are reusable definitions that can help you accomplish specific tasks.
+
+            IMPORTANT: You should execute skills directly without reading their source code unless one of the following conditions applies:
+            - Code execution fails with errors that require understanding the skill's implementation
+            - The user explicitly asks you to read or examine the skill code
+            - The skill's description does not provide enough information about the interface or parameters needed for execution
+
+            In most cases, the skill description and parameters should be sufficient for direct execution.
+
+            When you need to use a skill, you can request its definition using the following format:
+
+            ## skill_request
+            Description: Request the definition of a specific skill. This will return the complete XML definition that you can use to understand how to apply the skill.
+            Parameters:
+            - skill_name: (required) The name of the skill you want to retrieve
+            Usage:
+            <skill_request>
+            <skill_name>skill-name-here</skill_name>
+            </skill_request>
+
+            ${skillsPrompt}
+
+            ====
+            <% } %>
+
             RULES
             
             - NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.

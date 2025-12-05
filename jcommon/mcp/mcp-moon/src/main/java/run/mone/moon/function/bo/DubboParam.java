@@ -1,9 +1,13 @@
 package run.mone.moon.function.bo;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class DubboParam implements Serializable {
     /**

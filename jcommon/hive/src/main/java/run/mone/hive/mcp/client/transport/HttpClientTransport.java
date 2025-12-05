@@ -17,6 +17,7 @@ import java.util.function.Function;
  * 
  * 注意：这个类主要用于兼容性，实际使用时建议直接使用V2的transport
  */
+@Deprecated
 @Slf4j
 public class HttpClientTransport implements ClientMcpTransport {
 

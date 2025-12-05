@@ -71,145 +71,122 @@
   </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
+import { computed } from 'vue'
 import MessageList from './MessageList.vue'
-// 202408261版本之后使用
 import UserInput from './UserInput.vue'
-// 202408261版本之前使用
 import { useIdeaInfoStore } from '@/stores/idea-info'
-import { mapState } from 'pinia'
 import { useEditStore } from '@/stores/edit'
+import { storeToRefs } from 'pinia'
 import util from '@/libs/util'
 import InstanceSelect from './InstanceSelect.vue'
+import { type MessageClickPayload } from "./messages/HelloMessage.vue";
 
-export default {
-  components: {
-    MessageList,
-    UserInput,
-    InstanceSelect,
-  },
-  props: {
-    onUserInputSubmit: {
-      type: Function,
-      required: true,
-    },
-    onMessageClick: {
-      type: Function,
-      required: true,
-    },
-    onMessageCmd: {
-      type: Function,
-      required: true,
-    },
-    initCodePrompt: {
-      type: Function,
-      required: true,
-    },
-    messageList: {
-      type: Array,
-      default: () => [],
-    },
-    isOpen: {
-      type: Boolean,
-      default: () => false,
-    },
-    placeholder: {
-      type: String,
-      required: true,
-    },
-    alwaysScrollToBottom: {
-      type: Boolean,
-      required: true,
-    },
-    changeSendMethod: {
-      type: Function,
-      required: true,
-    },
-    onPlayAudio: {
-      type: Function,
-      required: true,
-    },
-    onClearHistory: {
-      type: Function,
-      required: true,
-    },
-    onOffline: {
-      type: Function,
-      required: true,
-    },
-    onStopMsg: {
-      type: Function,
-      required: true,
-    },
-    onSwitchAgent: {
-      type: Function,
-      required: false,
-    },
-    onSwitchLlm: {
-      type: Function,
-      required: false,
-    },
-    onExecuteMcpCommand: {
-      type: Function,
-      required: false,
-    },
-    onExecuteSystemCommand: {
-      type: Function,
-      required: false,
-    },
-  },
-  data() {
-    return {}
-  },
-  computed: {
-    ...mapState(useIdeaInfoStore, ['isShowFile']),
-    ...mapState(useEditStore, ['showApprove', 'setShowApprove', 'disableEdit', 'enableEdit', 'isFollow', 'showFollow', 'setShowFollow', 'setIsFollow']),
-    messages() {
-      // console.log("messageList", this.messageList);
-      // 将最后一条个属性isLast:true, 否则是false
-      let messages = this.messageList.map((it, index) => {
-        return {
-          ...it,
-          data: {
-            ...it.data,
-            isLast: index == this.messageList.length - 1,
-          },
-        }
-      })
-      return messages
-    },
-  },
-  methods: {
-    approve() {
-      try {
-        util.approve({
-          message: 'approve',
-        })
-      } catch (error) {
-        console.error(error)
-      } finally {
-        this.enableEdit()
-        this.setShowApprove(false)
-      }
-    },
-    cancel() {
-      try {
-        util.approve({
-          message: 'cancel',
-        })
-      } catch (error) {
-        console.error(error)
-      } finally {
-        this.enableEdit()
-        this.setShowApprove(false)
-      }
-    },
-    handlePidAction(data: { pid: string; action: string }) {
-      // 向上传递 pidAction 事件到 Chat.vue
-      this.$emit('pidAction', data)
-    },
-  },
+import type {
+  MessageList as TypeMessageList,
+  Message as TypeMessage,
+} from "@/stores/chat-context"
+
+interface Props {
+  onUserInputSubmit: (data: any) => Promise<void>;
+  onMessageClick: (message: MessageClickPayload ) => Promise<void>;
+  onMessageCmd: (cmd: string, message: TypeMessage) => Promise<void>;
+  initCodePrompt: () => void;
+  messageList?: TypeMessageList;
+  isOpen?: boolean;
+  placeholder: string;
+  alwaysScrollToBottom: boolean;
+  changeSendMethod: (method: string) => void;
+  onPlayAudio: (text: string) => void;
+  onClearHistory: () => void;
+  onOffline: () => void;
+  onStopMsg: () => void;
+  onSwitchAgent?: (agent: any) => void;
+  onSwitchLlm?: (llm: any) => void;
+  onExecuteMcpCommand?: (command: any) => void;
+  onExecuteSystemCommand?: (command: any) => void;
 }
+
+interface Emits {
+  (e: 'scrollToTop'): void;
+  (e: 'pidAction', data: { pid: string; action: string }): void;
+  (e: 'onClick2Conversion', id: { id: string }): void;
+  (e: 'onType', event: any): void;
+  (e: 'edit', event: any): void;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  messageList: () => [],
+  isOpen: false,
+});
+
+const emit = defineEmits<Emits>();
+
+// Store
+const ideaInfoStore = useIdeaInfoStore();
+const editStore = useEditStore();
+
+const { isShowFile } = storeToRefs(ideaInfoStore);
+const { 
+  showApprove, 
+  showFollow, 
+  isFollow 
+} = storeToRefs(editStore);
+
+const {
+  setShowApprove,
+  disableEdit,
+  enableEdit,
+  setShowFollow,
+  setIsFollow
+} = editStore;
+
+// Computed
+const messages = computed(() => {
+  // console.log("messageList", props.messageList);
+  // 将最后一条个属性isLast:true, 否则是false
+  return props.messageList.map((it, index) => {
+    return {
+      ...it,
+      data: {
+        ...it.data,
+        isLast: index === props.messageList.length - 1,
+      },
+    };
+  });
+});
+
+// Methods
+const approve = () => {
+  try {
+    util.approve({
+      message: 'approve',
+    });
+  } catch (error) {
+    console.error(error);
+  } finally {
+    enableEdit();
+    setShowApprove(false);
+  }
+};
+
+const cancel = () => {
+  try {
+    util.approve({
+      message: 'cancel',
+    });
+  } catch (error) {
+    console.error(error);
+  } finally {
+    enableEdit();
+    setShowApprove(false);
+  }
+};
+
+const handlePidAction = (data: { pid: string; action: string }) => {
+  // 向上传递 pidAction 事件到 Chat.vue
+  emit('pidAction', data);
+};
 </script>
 
 <style lang="scss">

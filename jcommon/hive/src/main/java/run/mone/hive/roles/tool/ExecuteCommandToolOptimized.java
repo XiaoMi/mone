@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.RemoteFileUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -50,6 +51,15 @@ public class ExecuteCommandToolOptimized implements ITool {
     private static final long CHUNK_DEBOUNCE_MS = 100;       // 100ms延迟刷新
     private static final long COMPLETION_TIMEOUT_MS = 6000;  // 6秒完成超时
     private static final long BUFFER_STUCK_TIMEOUT_MS = 6000; // 6秒缓冲超时
+
+    private final boolean isRemote;
+
+    public ExecuteCommandToolOptimized() {
+        this(false);
+    }
+    public ExecuteCommandToolOptimized(boolean isRemote) {
+        this.isRemote = isRemote;
+    }
 
     // 线程池用于异步处理
     private static final ExecutorService executorService = Executors.newCachedThreadPool(r -> {
@@ -194,8 +204,14 @@ public class ExecuteCommandToolOptimized implements ITool {
             // 获取工作目录
             String workingDirectory = getWorkingDirectory(role);
 
-            // 执行命令（新的智能缓冲机制）
-            JsonObject commandResult = executeCommandWithBuffering(role, command, timeout, workingDirectory, interactive);
+            // 根据是否远程执行选择不同的执行方式
+            JsonObject commandResult;
+            if (isRemote) {
+                commandResult = executeRemoteCommand(command, workingDirectory, timeout);
+            } else {
+                // 执行命令（新的智能缓冲机制）
+                commandResult = executeCommandWithBuffering(role, command, timeout, workingDirectory, interactive);
+            }
 
             // 添加额外信息到结果中
             commandResult.addProperty("requires_approval", requiresApproval);
@@ -210,6 +226,42 @@ public class ExecuteCommandToolOptimized implements ITool {
         } catch (Exception e) {
             log.error("执行命令时发生异常", e);
             result.addProperty("error", "执行命令失败: " + e.getMessage());
+            return result;
+        }
+    }
+
+    /**
+     * 执行远程命令
+     */
+    private JsonObject executeRemoteCommand(String command, String workingDirectory, int timeout) {
+        JsonObject result = new JsonObject();
+
+        try {
+            log.info("执行远程命令: {}, 工作目录: {}, 超时: {}秒", command, workingDirectory, timeout);
+
+            String response = RemoteFileUtils.executeCommand(command, workingDirectory, timeout);
+
+            result.addProperty("output", response);
+            result.addProperty("command", command);
+            result.addProperty("working_directory", workingDirectory);
+            result.addProperty("completed", true);
+            result.addProperty("success", true);
+            result.addProperty("remote", true);
+
+            log.info("远程命令执行成功: {}", command);
+
+            return result;
+        } catch (IOException e) {
+            log.error("执行远程命令IO异常: {}", command, e);
+            result.addProperty("error", "执行远程命令失败: " + e.getMessage());
+            result.addProperty("success", false);
+            result.addProperty("remote", true);
+            return result;
+        } catch (Exception e) {
+            log.error("执行远程命令时发生异常: {}", command, e);
+            result.addProperty("error", "执行远程命令失败: " + e.getMessage());
+            result.addProperty("success", false);
+            result.addProperty("remote", true);
             return result;
         }
     }

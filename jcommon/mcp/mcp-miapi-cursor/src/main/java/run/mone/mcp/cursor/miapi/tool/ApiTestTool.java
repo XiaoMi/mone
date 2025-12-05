@@ -1,36 +1,38 @@
 package run.mone.mcp.cursor.miapi.tool;
 
 import com.google.gson.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-import run.mone.hive.http.HttpClient;
-import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.mcp.cursor.miapi.http.HttpClient;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 public class ApiTestTool implements ITool {
 
     private static HttpClient httpClient = new HttpClient();
 
     private static final Gson gson = new Gson();
-    @Value("${miapi.host}")
+
+    @Value("${gateway.host}")
     private String host;
 
     @Override
     public String getName() {
-        return "test_api";
+        return "stress_test_api";
     }
 
     @Override
@@ -45,23 +47,21 @@ public class ApiTestTool implements ITool {
     @Override
     public String description() {
         return """
-                1.只进行测试接口功能，不做其他回答。
-                2.首先根据提供的接口查询接口信息并生成curl，进行接口测试。
-                3.等待用户提供完整所需请求参数和host后，生成一段curl代码并返回。
-                4.不要自己臆想所需的必要参数。
+                1.只进行接口压力测试，不做其他回答。
+                2.根据用户的描述提取所需信息，如果缺少信息，则继续询问用户并让用户补全信息。
+                3.不要自己臆想所需的必要参数。
                 5.如果所需参数缺少，则询问用户提供，并等待用户输入，一直到参数齐全为止。
-                6.生成的curl注意引号和反引号的使用，注意书写格式，生成的curl能够在java程序中运行。
                 """;
     }
 
     @Override
     public String parameters() {
         return """
-                - apiType: 要测试的接口类型，http类型接口为1(默认值)，dubbo类型接口为3.
-                - url: 要测试的接口地址或接口path.
-                - params: 要测试接口的请求参数.
-                - host: 要测试接口的请求域名或ip.
-                - curl_code:根据以上条件生成curl代码
+                - url:（必填）要进行压力测试的接口地址.
+                - body:（必填）要测试接口的请求参数.
+                - method:（非必填）要测试接口的请求方式，get或post，默认值为get.
+                - times:（非必填）每秒进行请求的次数，默认值为50次
+                - durationSeconds:（非必填）持续发压时间，默认值为10秒
                 """;
     }
 
@@ -81,8 +81,25 @@ public class ApiTestTool implements ITool {
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {
-            String curl_code = inputJson.has("curl_code") ? inputJson.get("curl_code").getAsString() : null;
-            result.addProperty("result",executeCurl(curl_code));
+            String url = inputJson.has("url") ? inputJson.get("url").getAsString() : null;
+            String body = inputJson.has("body") ? inputJson.get("body").getAsString() : "{}";
+            Integer times = inputJson.has("times") ? inputJson.get("times").getAsInt() : 50;
+            Integer durationSeconds = inputJson.has("durationSeconds") ? inputJson.get("durationSeconds").getAsInt() : 10;
+            String method = inputJson.has("method") ? inputJson.get("method").getAsString() : "get";
+            if (url == null || url.isEmpty()) {
+                result.addProperty("message", "缺少必要参数url");
+                return result;
+            }
+            try {
+                CompletableFuture.runAsync(() -> {
+                    stressTest(url, body, times, result, method, durationSeconds);
+                });
+                result.addProperty("code", 200);
+                result.addProperty("message", "压测发压完成，注意持续关注服务情况");
+            }catch (Exception e) {
+                result.addProperty("code", 400);
+                result.addProperty("message", e.getMessage());
+            }
             return result;
         } catch (Exception e) {
             result.addProperty("error", "获取接口信息失败: " + e.getMessage());
@@ -90,70 +107,78 @@ public class ApiTestTool implements ITool {
         }
     }
 
-    private Flux<McpSchema.CallToolResult> createSuccessFlux(String result) {
-        return Flux.just(
-                new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false),
-                new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("[DONE]")), false)
-        );
-    }
+    private void stressTest(String url, String body, Integer times, JsonObject result, String method, Integer durationSeconds) {
+        List<CompletableFuture<JsonObject>> futures = new ArrayList<>();
 
-    private String getStringParam(Map<String, Object> params, String key) {
-        Object value = params.get(key);
-        return value != null ? value.toString() : "";
-    }
+        Map<String, Object> params = new HashMap<>();
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/json");
+        params.put("method", method);
+        params.put("url", url);
+        params.put("timeout", 20000);
+        params.put("headers", gson.toJson(headers));
+        params.put("body", body);
+        params.put("useX5Filter", false);
+        params.put("preScript", "");
 
-    private String executeCurl(String curlCommand) {
-        if (StringUtils.isEmpty(curlCommand)) {
-            return "请输入curl_code";
-        }
-        StringBuilder result = new StringBuilder();
+        // 创建调度器
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(times);
+
         try {
-            List<String> command = parseCurlCommand(curlCommand);
+            // 每秒发送times次请求，持续10秒
+            for (int second = 0; second < durationSeconds; second++) {
+                final int currentSecond = second;
 
-            // 创建ProcessBuilder对象
-            ProcessBuilder processBuilder = new ProcessBuilder(command);
-            processBuilder.redirectErrorStream(true);
+                // 安排每秒的任务
+                ScheduledFuture<?> scheduledFuture = scheduler.schedule(() -> {
+                    log.info("开始第 {} 秒的压力测试，发送 {} 次请求", currentSecond + 1, times);
 
-            // 启动进程
-            Process process = processBuilder.start();
+                    // 在当前秒内发送times次请求
+                    for (int i = 0; i < times; i++) {
+                        CompletableFuture<JsonObject> future = CompletableFuture.supplyAsync(() ->
+                                testTargetApiDirectly(url, gson.toJson(params))
+                        );
+                        futures.add(future);
+                    }
+                }, second, TimeUnit.SECONDS);
+            }
 
-            // 读取进程的输出
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    result.append(line).append("\n");
+            // 等待所有调度任务完成
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(durationSeconds + 5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
                 }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
             }
 
-            // 等待进程完成
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                result.append("Curl command exited with code ").append(exitCode);
-            }
+            // 收集所有结果
+            List<JsonObject> results = futures.stream()
+                    .map(CompletableFuture::join)
+                    .collect(Collectors.toList());
+
+            log.info("压力测试完成：总共发送 {} 次请求，持续 {} 秒，每秒 {} 次请求",
+                    results.size(), durationSeconds, times);
 
         } catch (Exception e) {
-            result.append("Error executing curl command: ").append(e.getMessage());
+            log.error("压力测试执行异常", e);
+        } finally {
+            scheduler.shutdown();
         }
-
-        return result.toString();
     }
 
-    private List<String> parseCurlCommand(String curlCommand) {
-        List<String> command = new ArrayList<>();
-
-        Pattern pattern = Pattern.compile("(?<=^|\\s)'([^']*)'|\"([^\"]*)\"|([^\\s]+)");
-        Matcher matcher = pattern.matcher(curlCommand);
-
-        while (matcher.find()) {
-            if (matcher.group(1) != null) {
-                command.add(matcher.group(1));
-            } else if (matcher.group(2) != null) {
-                command.add(matcher.group(2));
-            } else {
-                command.add(matcher.group(3));
-            }
+    private JsonObject testTargetApiDirectly(String url, String body) {
+        try {
+            JsonObject response = httpClient.post(host+"/mtop/miapitest/httpTest", body);
+            log.info("testTargetApiDirectly result: {}", response.get("data").getAsJsonObject());
+            return response.get("data").getAsJsonObject();
+        } catch (Exception e) {
+            JsonObject errorResult = new JsonObject();
+            errorResult.addProperty("statusCode", 500);
+            errorResult.addProperty("error", e.getMessage());
+            return errorResult;
         }
-
-        return command;
     }
 }

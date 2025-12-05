@@ -125,4 +125,14 @@ public abstract class RoleBaseCommand {
         }
         return false;
     }
+
+    /**
+     * 命令是否需要异步执行
+     * 如果返回true，则命令会在后台执行，由Agent处理完成后关闭sink
+     * 如果返回false，则命令执行完毕后立即关闭sink
+     * @return true表示异步命令，false表示同步命令
+     */
+    public boolean isAsyncCommand() {
+        return false; // 默认为同步命令
+    }
 }

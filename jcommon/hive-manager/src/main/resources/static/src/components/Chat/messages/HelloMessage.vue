@@ -1,106 +1,120 @@
 <template>
-    <div class="sc-message--text">
-      <div class="sc-message--toolbox">
-        <slot name="text-message-toolbox" :message="message"></slot>
-      </div>
-  
-      <slot :message="message" :messageText="helloText">
-        <div class="sc-message--text-content">
-          <div v-html="helloText" />
-          <template v-for="item of links">
-            <div>
-              {{ item.prefix }}
-              <template v-if="item.src">
-                <el-link
-                  target="_blank"
-                  rel="noopener noreferrer" 
-                  type="primary"
-                  :href="item.src"
-                >{{item.label}}</el-link>
-              </template>
-              <template v-else-if="item.label">
-                <el-link
-                  type="primary"
-                  @click="handleClick(item)"
-                >{{item.label}}</el-link>
-              </template>
-              {{ item.suffix }}
-            </div>
-          </template>
-        </div>
-      </slot>
+  <div class="sc-message--text">
+    <div class="sc-message--toolbox">
+      <slot name="text-message-toolbox" :message="message"></slot>
     </div>
-  </template>
+
+    <slot :message="message" :messageText="helloText">
+      <div class="sc-message--text-content">
+        <div v-html="helloText" />
+        <template v-for="(item, index) of links" :key="index">
+          <div>
+            {{ item.prefix }}
+            <template v-if="item.src">
+              <el-link
+                target="_blank"
+                rel="noopener noreferrer" 
+                type="primary"
+                :href="item.src"
+              >{{ item.label }}</el-link>
+            </template>
+            <template v-else-if="item.label">
+              <el-link
+                type="primary"
+                @click="handleClick(item)"
+              >{{ item.label }}</el-link>
+            </template>
+            {{ item.suffix }}
+          </div>
+        </template>
+      </div>
+    </slot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { htmlEscape } from 'escape-goat'
+import Autolinker from 'autolinker'
+// @ts-ignore
+import fmt from 'msgdown'
+import type {
+  MessageList as TypeMessageList,
+  Message as TypeMessage,
+} from "@/stores/chat-context"
+
+interface LinkItem {
+  type: string
+  label: string
+  params: any
+  prefix?: string
+  suffix?: string
+  src?: string
+}
+
+interface MessageData {
+  hello: string
+  links?: LinkItem[]
+}
+
+export interface MessageClickPayload {
+  type: string
+  text: string
+  params: any
+}
+
+interface Props {
+  message: TypeMessage
+  onMessageClick: (payload: MessageClickPayload) => void
+}
+
+const props = defineProps<Props>()
+
+const helloText = computed(() => {
+  const map: Record<string, string> = {}
+  let escaped = htmlEscape(props.message.data.hello!)
+  const reg = /\$\{(.+?)\}/g
+  const result = escaped.match(reg)
   
-  <script lang="ts">
-  import { htmlEscape } from 'escape-goat'
-  import Autolinker from 'autolinker'
-  
-  import fmt from 'msgdown'
-  
-  export default {
-    props: {
-      message: {
-        type: Object,
-        required: true
-      },
-      onMessageClick: {
-        type: Function,
-        required: true
-      }
-    },
-    computed: {
-      helloText () {
-        const map:Record<string, string> = {}
-        let escaped = htmlEscape(this.message.data.hello)
-        const reg = /\$\{(.+?)\}/g
-        const result = escaped.match(reg)
-        if (result) {
-          for (let i = 0; i < result.length; i++) {
-            const item = result[i].trim()
-            const first:number = item.indexOf('url:')
-            const middle:number = item.indexOf(',')
-            const last:number = item.indexOf('title:')
-            if (first != -1 && last != -1) {
-              const herf = item.substring(first + 4, middle).trim()
-              const title = item.substring(last + 6, item.length - 1).trim()
-              map[herf] = title
-              escaped = escaped.replace(item, herf)
-            }
-          }
-        }
-        return Autolinker.link(fmt(escaped), {
-          className: 'chat-link',
-          truncate: {length: 30, location: 'smart'},
-          replaceFn: function (match) {
-            if (match.type === 'url'
-              && map[match.getAnchorHref()]) {
-              const tag = match.buildTag()
-              tag.setInnerHTML(map[match.getAnchorHref()])
-              return tag
-            }
-          }
-        })
-      },
-      links () {
-        return this.message.data.links
-      }
-    },
-    methods: {
-      handleClick (item: {
-        type: string,
-        label: string,
-        params: any
-      }) {
-        this.onMessageClick({
-          type: item.type,
-          text: item.label,
-          params: item.params
-        })
+  if (result) {
+    for (let i = 0; i < result.length; i++) {
+      const item = result[i].trim()
+      const first: number = item.indexOf('url:')
+      const middle: number = item.indexOf(',')
+      const last: number = item.indexOf('title:')
+      
+      if (first !== -1 && last !== -1) {
+        const herf = item.substring(first + 4, middle).trim()
+        const title = item.substring(last + 6, item.length - 1).trim()
+        map[herf] = title
+        escaped = escaped.replace(item, herf)
       }
     }
   }
-  </script>
+  
+  return Autolinker.link(fmt(escaped), {
+    className: 'chat-link',
+    truncate: { length: 30, location: 'smart' },
+    replaceFn: function (match) {
+      if (match.type === 'url' && map[match.getAnchorHref()]) {
+        const tag = match.buildTag()
+        tag.setInnerHTML(map[match.getAnchorHref()])
+        return tag
+      }
+    }
+  })
+})
+
+const links = computed(() => props.message.data.links)
+
+const handleClick = (item: LinkItem) => {
+  props.onMessageClick({
+    type: item.type,
+    text: item.label,
+    params: item.params
+  })
+}
+</script>
   
   <style scoped lang="scss">
   .sc-message--text {

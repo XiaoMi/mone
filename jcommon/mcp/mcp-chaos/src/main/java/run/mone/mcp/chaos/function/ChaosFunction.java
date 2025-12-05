@@ -4,7 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -18,6 +20,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
+@Component
 public class ChaosFunction implements McpFunction {
 
     private String name = "stream_chaos_executor";
@@ -52,10 +55,6 @@ public class ChaosFunction implements McpFunction {
                     "taskId": {
                         "type": "string",
                         "description": "要获取混沌故障注入详情的任务ID"
-                    },
-                    "userName":{
-                        "type": "string",
-                        "description": "操作者用户名"
                     }
                   },
                 "required": ["type"]
@@ -67,6 +66,7 @@ public class ChaosFunction implements McpFunction {
     }
 
     @Override
+    @ReportCallCount(businessName = "chaos_tools", description = "混沌操作工具调用")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         return Flux.defer(() -> {
             try {

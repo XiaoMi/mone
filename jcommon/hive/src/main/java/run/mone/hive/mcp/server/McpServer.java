@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.server.transport.streamable.HttpServletStreamableServerTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.ResourceTemplate;
@@ -605,6 +606,9 @@ public interface McpServer {
             if (transport instanceof GrpcServerTransport gst) {
                 gst.setMcpServer(server);
                 gst.setServerInfo(serverInfo);
+            }
+            if (transport instanceof HttpServletStreamableServerTransport hsst) {
+                hsst.setMcpServer(server);
             }
             return server;
         }

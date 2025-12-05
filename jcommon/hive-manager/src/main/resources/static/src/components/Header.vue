@@ -12,6 +12,7 @@
     >
       <el-menu-item index="agents">AGENT 列表</el-menu-item>
       <el-menu-item index="tasks">TASK 列表</el-menu-item>
+      <el-menu-item index="reportList">调用列表</el-menu-item>
     </el-menu>
     <div class="header-right">
       <el-dropdown @command="handleCommand">

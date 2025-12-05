@@ -70,7 +70,14 @@ public class PingCommand extends RoleBaseCommand {
             response.put("data", data);
 
             Safe.run(() -> {
-                Object obj = roleService.getTransport().sendMessage(ImmutableMap.of(Const.CMD, "ping"), role.getClientId()).block();
+                Map<String, Object> _req = new HashMap<>(ImmutableMap.of(Const.CMD, "ping"));
+                ImmutableMap<String, Object> m = ImmutableMap.of(
+                        Const.CLIENT_ID, role.getClientId(),
+                        Const.BLOCK, ""
+                );
+                _req.putAll(m);
+                McpSchema.JSONRPCNotification notification = new McpSchema.JSONRPCNotification("", "", _req);
+                Object obj = roleService.getTransport().sendMessage(notification).block();
                 if (obj instanceof StreamRequest req) {
                     response.put("ping_manager", req.getJsonData());
                 }

@@ -13,8 +13,6 @@ public class MoonUitl {
         referenceConfig.setProtocol("dubbo");
         referenceConfig.setVersion("1.0");
         referenceConfig.setParameters(new HashMap<>());
-        referenceConfig.getParameters().put("dubbo", "2.0.2");
-        referenceConfig.getParameters().put("migration.step", "FORCE_INTERFACE");
     }
 
     public static String getString(Object value) {

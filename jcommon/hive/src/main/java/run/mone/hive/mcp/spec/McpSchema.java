@@ -5,14 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import run.mone.hive.mcp.client.transport.ProtocolVersions;
 
 /**
  * ORIGINAL CODE IS FROM SPRING AI!!!
@@ -27,7 +24,7 @@ public final class McpSchema {
     private McpSchema() {
     }
 
-    public static final String LATEST_PROTOCOL_VERSION = "2024-11-05";
+    public static final String CURRENT_PROTOCOL_VERSION = ProtocolVersions.MCP_2024_11_05;
 
     public static final String JSONRPC_VERSION = "2.0";
 
@@ -928,6 +925,19 @@ public final class McpSchema {
 	} // @formatter:on
 
     // ---------------------------
+    // Logging Request
+    // ---------------------------
+
+	/**
+	 * Request to set the minimum logging level for server-sent logging messages.
+	 * Messages below this level will not be sent to the client.
+	 *
+	 * @param level The minimum logging level to set
+	 */
+	public record SetLevelRequest(@JsonProperty("level") LoggingLevel level) {
+	}
+
+    // ---------------------------
     // Autocomplete
     // ---------------------------
     public record CompleteRequest(PromptOrResourceReference ref, CompleteArgument argument) implements Request {
@@ -978,17 +988,13 @@ public final class McpSchema {
     public record TextContent( // @formatter:off
 		@JsonProperty("audience") List<Role> audience,
 		@JsonProperty("priority") Double priority,
-		@JsonProperty("type") String type,
+		@JsonIgnore String type,
 		@JsonProperty("text") String text,
 		@JsonProperty("data") String data
 	) implements Content { // @formatter:on
 
         public TextContent {
             type = "text";
-        }
-
-        public String type() {
-            return type;
         }
 
         public TextContent(String content) {

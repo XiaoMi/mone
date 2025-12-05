@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.util;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 
@@ -45,6 +46,19 @@ public final class Utils {
 	 */
 	public static boolean isEmpty(Map<?, ?> map) {
 		return (map == null || map.isEmpty());
+	}
+
+	/**
+	 * Resolves a URI by combining a base URI with an endpoint path.
+	 * @param baseUri the base URI
+	 * @param endpoint the endpoint path
+	 * @return the resolved URI
+	 */
+	public static URI resolveUri(URI baseUri, String endpoint) {
+		if (endpoint == null || endpoint.isEmpty()) {
+			return baseUri;
+		}
+		return baseUri.resolve(endpoint);
 	}
 
 }

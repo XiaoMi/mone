@@ -31,7 +31,6 @@ public class Safe {
             runnable.run();
             consumer.accept(null);
         } catch (Throwable ex) {
-            log.error(ex.getMessage(), ex);
             consumer.accept(ex);
         }
     }

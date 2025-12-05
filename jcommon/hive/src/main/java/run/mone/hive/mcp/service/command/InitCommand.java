@@ -6,6 +6,8 @@ import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.schema.Message;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Init命令处理类
  * 处理 /init 命令，用于分析代码库并创建MCODE.md文件
@@ -52,6 +54,7 @@ public class InitCommand extends RoleBaseCommand {
                     .sentFrom(message.getSentFrom())
                     .content(initPrompt)
                     .data(message.getData())
+                    .sink(sink)  // 将sink传递给message，使Agent能够持续向前端发送进度消息
                     .build();
 
             sendMessages(sink,
@@ -69,12 +72,14 @@ public class InitCommand extends RoleBaseCommand {
             }
 
             log.info("成功执行init命令, from: {}", from);
-
+            // 不在此处调用sink.complete()，让Agent在后台处理完成后自然关闭sink
+            // 这样Agent才能持续向前端发送处理进度和结果
+            //TimeUnit.SECONDS.sleep(100);
         } catch (Exception e) {
             log.error("处理init命令失败: {}", e.getMessage(), e);
             sendErrorAndComplete(sink, "执行init命令失败: " + e.getMessage());
         } finally {
-            sink.complete();
+            //
         }
     }
 
@@ -135,5 +140,10 @@ public class InitCommand extends RoleBaseCommand {
     @Override
     public String getCommandDescription() {
         return "分析代码库并创建MCODE.md文件，帮助未来的Mone Code实例在此仓库中操作";
+    }
+
+    @Override
+    public boolean isAsyncCommand() {
+        return true; // init命令需要异步执行，由Agent在后台处理并发送进度消息
     }
 }

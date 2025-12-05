@@ -1,132 +1,96 @@
 package run.mone.mcp.miapi.function;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import jakarta.annotation.PostConstruct;
-import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.miapi.bo.ReqParamsBo;
-import run.mone.mcp.miapi.enums.ApiTypeEnum;
-import run.mone.mcp.miapi.http.HttpClient;
+import run.mone.mcp.miapi.utils.HttpUtils;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.concurrent.TimeUnit;
 
-@Data
+@Slf4j
 @Component
-public class MiApiFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-    private String name = "apiInformation";
-    private String desc = "Query the interface information of the MiAPI interface platform";
+public class MiApiFunction implements McpFunction {
 
-    private static final Gson gson = new Gson();
-
-    private static HttpClient httpClient = new HttpClient();
-
-    private String toolScheme = """
+    @Autowired
+    private HttpUtils httpUtils;
+    public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
                 "properties": {
-                    "command": {
+                    "projectName": {
                         "type": "string",
-                        "enum": ["listApiInfo", "detailByUrl"],
-                        "description": "The api operation to perform"
-                    },
-                    "type": {
-                        "type": "string",
-                        "enum": ["http", "dubbo"],
-                        "description": "api type"
-                    },
-                    "keyword": {
-                        "type": "string",
-                        "description": "fuzzy search keyword"
-                    },
-                    "url": {
-                        "type": "string",
-                        "description": "api url"
+                        "description": "项目(组)名称（必填）"
                     }
                 },
-                "required": ["command", "type"]
+                "required": ["projectName"]
             }
             """;
 
+    private static final String BASE_URL = System.getenv("gateway_host");
+
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    @ReportCallCount(businessName = "miapi-api-query_project", description = "查询项目")
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
+        log.info("miapi mcp arguments: {}", arguments);
         try {
-            String command = (String) args.get("command");
-            switch (command) {
-                case "listApiInfo":
-                    return getApiList((String) args.get("type"), (String) args.get("keyword"));
-                case "detailByUrl":
-                    return getApiDetail((String) args.get("type"), (String) args.get("url"));
-                default:
-                    return new McpSchema.CallToolResult(
-                            List.of(new McpSchema.TextContent("Unknown command: " + command)),
-                            true
-                    );
+            if (BASE_URL == null) {
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("错误：配置错误: gateway_host 环境变量未设置")),
+                        true
+                ));
             }
+
+            // 验证必填参数
+            Object projectName = arguments.get("projectName");
+
+            if (projectName == null || StringUtils.isBlank(projectName.toString())) {
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("错误：缺少必填参数'projectName'")),
+                        true
+                ));
+            }
+
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("projectName", projectName);
+            String resultText = httpUtils.request("/mtop/miapi/getProjectByName", userMap, Map.class);
+            resultText = String.format("miapi项目信息: %s", resultText);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(resultText)),
+                    false
+            ));
         } catch (Exception e) {
-            return new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
+            log.error("执行miapi操作时发生异常", e);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("错误：执行操作失败: " + e.getMessage())),
                     true
-            );
+            ));
         }
     }
 
-    private String getHost () {
-        return System.getenv().getOrDefault("API_HOST", "http://127.0.0.1:8999");
+    @Override
+    public String getName() {
+        return "query_project";
     }
 
-    public McpSchema.CallToolResult getApiList(String type, String keyword) {
-        if (StringUtils.isEmpty(type) || StringUtils.isEmpty(keyword) || !ApiTypeEnum.getNames().contains(type.toLowerCase())) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("error: Parameters cannot be empty")), true);
-        }
-        ReqParamsBo reqParamsBo = new ReqParamsBo();
-        reqParamsBo.setKeyword(keyword);
-        reqParamsBo.setProtocol(ApiTypeEnum.getCode(type.toLowerCase()));
-        String result = getApiListMiApi(reqParamsBo);
-        return new McpSchema.CallToolResult(
-                List.of(new McpSchema.TextContent(result)),
-                false
-        );
+    @Override
+    public String getDesc() {
+        return """
+                根据项目(组)名称，查询miapi项目信息。
+                如：帮我查询mock-server项目信息。
+                """;
     }
 
-    public McpSchema.CallToolResult getApiDetail(String type, String url) {
-        if (StringUtils.isEmpty(type) || StringUtils.isEmpty(url) || !ApiTypeEnum.getNames().contains(type.toLowerCase())) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("error: Parameters cannot be empty")), true);
-        }
-        ReqParamsBo reqParamsBo = new ReqParamsBo();
-        reqParamsBo.setPath(url);
-        reqParamsBo.setProtocol(ApiTypeEnum.getCode(type.toLowerCase()));
-        String apiDetail = getApiDetailMiApi(reqParamsBo);
-        return new McpSchema.CallToolResult(
-                List.of(new McpSchema.TextContent(apiDetail)),
-                false
-        );
-    }
-
-    public String getApiListMiApi(ReqParamsBo reqParamsBo) {
-        String result = "";
-        try {
-            JsonObject list = httpClient.post(getHost() + "/OpenApi/mcp/searchApi", gson.toJson(reqParamsBo));
-            result = gson.toJson(list);
-        } catch (IOException e) {
-            result = "error: " + e.getMessage();
-        }
-        return result;
-    }
-
-    public String getApiDetailMiApi(ReqParamsBo reqParamsBo) {
-        String result = "";
-        try {
-            JsonObject detail = httpClient.post(getHost() + "/OpenApi/mcp/detail", gson.toJson(reqParamsBo));
-            result = gson.toJson(detail);
-        } catch (IOException e) {
-            result = "error: " + e.getMessage();
-        }
-        return result;
+    @Override
+    public String getToolScheme() {
+        return TOOL_SCHEMA;
     }
 }

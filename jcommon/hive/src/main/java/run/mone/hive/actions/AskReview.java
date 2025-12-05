@@ -3,7 +3,7 @@ package run.mone.hive.actions;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.Plan;
-import run.mone.hive.utils.LLMProvider;
+import run.mone.hive.utils.MemLLMProvider;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -87,7 +87,7 @@ public class AskReview extends Action {
                 }
 
                 Message userMessage = new Message(prompt, "user");
-                String response = LLMProvider.getInstance().chat(List.of(
+                String response = MemLLMProvider.getInstance().chat(List.of(
                         new Message(SYSTEM_PROMPT, "system"),
                         userMessage
                 ));

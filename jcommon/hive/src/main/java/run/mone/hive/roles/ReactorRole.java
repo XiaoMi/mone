@@ -27,9 +27,11 @@ import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.service.IntentClassificationService;
+import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.roles.tool.SkillRequestTool;
 import run.mone.hive.roles.tool.TavilySearchTool;
 import run.mone.hive.roles.tool.interceptor.PathResolutionInterceptor;
 import run.mone.hive.roles.tool.interceptor.ToolInterceptor;
@@ -230,15 +232,7 @@ public class ReactorRole extends Role {
         reg(RegInfo.builder().name(this.name).group(this.group).version(this.version).profile(profile).goal(goal).constraints(constraints).ip(ip).port(grpcPort).toolMap(this.toolMap).mcpToolMap(this.mcpToolMap).build());
 
         // Schedule task to run every 20 seconds
-        this.scheduler.scheduleAtFixedRate(() -> {
-            Safe.run(() -> {
-                if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
-                    scheduledTaskHandler.accept(this);
-                }
-                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
-                log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
-            });
-        }, 0, 10, TimeUnit.SECONDS);
+        startHealthCheckScheduler(ip);
 
         this.taskState = new TaskState();
         FocusChainSettings focusChainSettings = new FocusChainSettings();
@@ -261,6 +255,26 @@ public class ReactorRole extends Role {
         } catch (Exception e) {
             log.error("Failed to initialize FileCheckpointManager", e);
         }
+    }
+
+    private void startHealthCheckScheduler(String ip) {
+        this.scheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                // 检查 roleMeta 是否已初始化
+                if (roleMeta == null) {
+                    log.debug("roleMeta is not initialized yet, skipping scheduled task");
+                    return;
+                }
+                if (!roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
+                    return;
+                }
+                if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
+                    scheduledTaskHandler.accept(this);
+                }
+                health(HealthInfo.builder().name(this.name).group(this.group).version(this.version).ip(ip).port(grpcPort).build());
+                log.debug("Scheduled executed at: {} roleName:{} state:{}  lastReceiveMsgTime:{}", System.currentTimeMillis(), this.getName(), state.get(), lastReceiveMsgTime);
+            });
+        }, 0, 10, TimeUnit.SECONDS);
     }
 
     public ReactorRole(String name, String group, String version, String profile, String goal, String constraints, Integer port, LLM llm, List<ITool> tools, List<McpSchema.Tool> mcpTools) {
@@ -684,6 +698,9 @@ public class ReactorRole extends Role {
     private void callTool(String name, ToolDataInfo it, String res, FluxSink sink, Map<String, String> extraParam) {
         ITool tool = this.toolMap.get(name);
 
+        // 如果是 skill_request 工具，先清理掉 memory 中相同 skill 的旧记录，确保一个 skill 只保留最新的一份
+        cleanupSkillMemory(name, it);
+
         // 提前创建Message以获得ID
         Message assistantMessage = Message.builder().role(RoleType.assistant.name()).sink(sink).build();
 
@@ -745,6 +762,35 @@ public class ReactorRole extends Role {
             this.putMessage(assistantMessage);
         }
 
+    }
+
+    private void cleanupSkillMemory(String name, ToolDataInfo it) {
+        if (SkillRequestTool.name.equals(name)) {
+            String skillName = it.getKeyValuePairs().get("skill_name");
+            if (StringUtils.isNotBlank(skillName)) {
+                removeOldSkillRecordFromMemory(skillName);
+            }
+        }
+    }
+
+    /**
+     * 从 memory 中移除相同 skill 的旧记录，确保一个 skill 在上下文中只保留最新的一份
+     *
+     * @param skillName 要清理的 skill 名称
+     */
+    private void removeOldSkillRecordFromMemory(String skillName) {
+        List<Message> storage = this.rc.getMemory().getStorage();
+        // 查找包含这个 skillName 的旧记录并删除
+        // skill 执行结果中会包含 "skillName":"xxx" 的 JSON 字段
+        String skillNamePattern = "\"skillName\":\"" + skillName + "\"";
+        List<Message> toRemove = storage.stream()
+                .filter(msg -> msg.getContent() != null && msg.getContent().contains(skillNamePattern))
+                .collect(Collectors.toList());
+
+        for (Message msg : toRemove) {
+            this.rc.getMemory().delete(msg);
+            log.info("Removed old skill record from memory for skill: {}", skillName);
+        }
     }
 
     private void sendToSink(String content, Message contextMessage, boolean addId) {
@@ -818,7 +864,9 @@ public class ReactorRole extends Role {
     private LLM getLlm(String llmProvider) {
         LLM curLLM = null;
         if (StringUtils.isNotEmpty(llmProvider)) {
-            curLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT))).build());
+            LLMProvider provider = LLMProvider.valueOf(llmProvider.toUpperCase(Locale.ROOT));
+            LLMConfig config = LLMConfig.builder().llmProvider(provider).build().custom();
+            curLLM = new LLM(config);
         } else {
             curLLM = llm;
         }
@@ -835,8 +883,9 @@ public class ReactorRole extends Role {
                     goal: %s
                     constraints: %s
                     output format: %s
+                    clientId: %s
                     \n
-                    """.formatted(this.profile, this.goal, this.constraints, this.outputFormat);
+                    """.formatted(this.profile, this.goal, this.constraints, this.outputFormat, message.getClientId());
         }
         String prompt = MonerSystemPrompt.mcpPrompt(message, this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
         log.debug("system prompt:{}", prompt);

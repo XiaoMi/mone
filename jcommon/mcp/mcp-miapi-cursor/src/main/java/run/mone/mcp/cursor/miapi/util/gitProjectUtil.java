@@ -12,7 +12,7 @@ public class gitProjectUtil {
         if (gitUrl.isEmpty() || !gitUrl.endsWith(".git")) {
             return "";
         }
-        String cloneDirectoryPath = "/tmp/" + projectName;
+        String cloneDirectoryPath = "/home/work/" + projectName;
         if (!FileScanner.createDirectory(cloneDirectoryPath)) {
             return "";
         }

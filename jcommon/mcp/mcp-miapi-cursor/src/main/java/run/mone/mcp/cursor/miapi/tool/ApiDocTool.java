@@ -94,10 +94,6 @@ public class ApiDocTool implements ITool {
         }
 
         try {
-            if (!FileScanner.isDirectoryExists(directoryPath)) {
-                result.addProperty("error", "代码路径或地址不正确");
-                return result;
-            }
             boolean isGit = directoryPath.endsWith(".git");
             String projectName;
             String actualDirectoryPath = directoryPath;
@@ -111,6 +107,10 @@ public class ApiDocTool implements ITool {
                     return result;
                 }
             } else {
+                if (!FileScanner.isDirectoryExists(directoryPath)) {
+                    result.addProperty("error", "代码路径或地址不正确");
+                    return result;
+                }
                 // 普通目录处理
                 projectName = StringUtils.substringAfterLast(directoryPath, "/");
                 if (StringUtils.isBlank(projectName)) {

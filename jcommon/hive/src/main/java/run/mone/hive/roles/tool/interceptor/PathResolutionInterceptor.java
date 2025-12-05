@@ -8,7 +8,6 @@ import run.mone.hive.utils.PathUtils;
 import run.mone.hive.workspace.WorkspaceResolver;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -152,14 +151,13 @@ public class PathResolutionInterceptor {
             if (PATH_PARAMETER_NAMES.contains(paramName.toLowerCase())) {
                 return true;
             }
+            // Heuristic: looks like a file path?
+            if (looksLikeFilePath(value)) {
+                log.debug("Parameter '{}' with value '{}' looks like a file path", paramName, value);
+                return true;
+            }
         }
-
-        // Heuristic: looks like a file path?
-        if (looksLikeFilePath(value)) {
-            log.debug("Parameter '{}' with value '{}' looks like a file path", paramName, value);
-            return true;
-        }
-
+        
         return false;
     }
 
@@ -228,6 +226,12 @@ public class PathResolutionInterceptor {
     private static String resolvePathParameter(String originalPath, String workspacePath,
                                                String toolName, String paramName) {
         try {
+            // If already an absolute path, return as-is (normalized)
+            if (new File(originalPath).isAbsolute()) {
+                log.debug("Path '{}' is already absolute, returning as-is", originalPath);
+                return PathUtils.normalizePathSeparators(originalPath);
+            }
+
             // If already absolute and safe, return as-is
             if (!".".equals(originalPath) && !"./".equals(originalPath) &&
                     PathUtils.isLocatedInWorkspace(workspacePath, originalPath)) {

@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import run.mone.agentx.dto.ConfigRequest;
 import run.mone.agentx.dto.common.ApiResponse;
-import run.mone.agentx.entity.Agent;
 import run.mone.agentx.entity.AgentConfig;
 import run.mone.agentx.entity.User;
 import run.mone.agentx.service.AgentConfigService;
@@ -30,7 +29,7 @@ public class AgentConfigController {
     @GetMapping
     public Mono<ApiResponse<List<AgentConfig>>> getAllConfigs(
             @AuthenticationPrincipal User user,
-            @PathVariable Long agentId) {
+            @PathVariable("agentId") Long agentId) {
         return checkAgentAccess(agentId, user)
                 .flatMap(hasAccess -> {
                     if (hasAccess) {
@@ -45,7 +44,7 @@ public class AgentConfigController {
     @GetMapping("/all")
     public Mono<ApiResponse<List<AgentConfig>>> getAllAgentConfigs(
             @AuthenticationPrincipal User user,
-            @PathVariable Long agentId) {
+            @PathVariable("agentId") Long agentId) {
         return checkAgentAccess(agentId, user)
                 .flatMap(hasAccess -> {
                     if (hasAccess) {
@@ -60,8 +59,8 @@ public class AgentConfigController {
     @GetMapping("/{key}")
     public Mono<ApiResponse<AgentConfig>> getConfig(
             @AuthenticationPrincipal User user,
-            @PathVariable Long agentId,
-            @PathVariable String key) {
+            @PathVariable("agentId") Long agentId,
+            @PathVariable("key") String key) {
         return checkAgentAccess(agentId, user)
                 .flatMap(hasAccess -> {
                     if (hasAccess) {
@@ -76,8 +75,8 @@ public class AgentConfigController {
     @PostMapping("/{key}")
     public Mono<ApiResponse<AgentConfig>> setConfig(
             @AuthenticationPrincipal User user,
-            @PathVariable Long agentId,
-            @PathVariable String key,
+            @PathVariable("agentId") Long agentId,
+            @PathVariable("key") String key,
             @RequestBody ConfigRequest request) {
         return checkAgentAccess(agentId, user)
                 .flatMap(hasAccess -> {
@@ -92,7 +91,7 @@ public class AgentConfigController {
     @PostMapping("/batch")
     public Mono<ApiResponse<Void>> setBatchConfig(
             @AuthenticationPrincipal User user,
-            @PathVariable Long agentId,
+            @PathVariable("agentId") Long agentId,
             @RequestBody ConfigRequest request) {
         return checkAgentAccess(agentId, user)
                 .flatMap(hasAccess -> {
@@ -107,8 +106,8 @@ public class AgentConfigController {
     @DeleteMapping("/{key}")
     public Mono<ApiResponse<Void>> deleteConfig(
             @AuthenticationPrincipal User user,
-            @PathVariable Long agentId,
-            @PathVariable String key) {
+            @PathVariable("agentId") Long agentId,
+            @PathVariable("key") String key) {
         return checkAgentAccess(agentId, user)
                 .flatMap(hasAccess -> {
                     if (hasAccess) {

@@ -3,13 +3,15 @@ package run.mone.moon.function;
 import cn.hutool.core.bean.BeanUtil;
 import com.google.gson.reflect.TypeToken;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.moon.constants.Constants;
 import run.mone.moon.function.bo.MoonMoneTpcContext;
 import run.mone.moon.function.bo.ReadTaskReq;
 import run.mone.moon.function.bo.Result;
@@ -19,15 +21,13 @@ import run.mone.moon.utils.MoonUitl;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Moon系统创建任务执行器
  */
 @Data
 @Slf4j
-public class MoonQueryFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-
+public class MoonQueryFunction implements McpFunction {
 
     private String name = "query_task_executor";
 
@@ -107,7 +107,7 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             }
             """;
 
-    ReferenceConfig<GenericService> queryReference = null;
+    ReferenceConfig<GenericService> queryReference;
 
     public MoonQueryFunction(ApplicationConfig applicationConfig, RegistryConfig registryConfig, String group) {
         queryReference = new ReferenceConfig<>();
@@ -120,9 +120,8 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
         MoonUitl.commonParam(queryReference);
     }
 
-    @SneakyThrows
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         log.info("query moon apply function args: {}", GsonUtil.toJson(args));
         try {
             // 1. 参数验证和转换
@@ -131,32 +130,26 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             }
 
             // 必填参数校验
-            if (args.get("tenant") == null) {
+            if (args.get(Constants.PARAM_TENANT) == null) {
                 throw new IllegalArgumentException("tenant is required");
             }
 
             MoonMoneTpcContext context = new MoonMoneTpcContext();
-            Number tenant = MoonUitl.getNumber(args.get("tenant"));
+            Number tenant = MoonUitl.getNumber(args.get(Constants.PARAM_TENANT));
             Integer tenantInt = tenant == null ? null : tenant.intValue();
             context.setTenant(MoonUitl.getString(tenantInt));
+            
             // 构建查询参数对象
             ReadTaskReq queryParams = new ReadTaskReq();
-            // 处理String类型参数
-            queryParams.setTaskName(MoonUitl.getString(args.get("taskName")));
-            queryParams.setTaskType(MoonUitl.getString(args.get("taskType")));
-            queryParams.setCreator(MoonUitl.getString(args.get("creator")));
-            queryParams.setServicePath(MoonUitl.getString(args.get("servicePath")));
-
-            // 处理Long类型参数
-            queryParams.setStatus(MoonUitl.getLong(args.get("status")));
-            queryParams.setMischeduleID(MoonUitl.getLong(args.get("mischeduleID")));
-            queryParams.setProjectID(MoonUitl.getLong(args.get("projectID")));
-
-            // 处理必填的Number类型参数
-            Number page = MoonUitl.getNumber(args.get("page"));
-            queryParams.setPage(page == null ? 1 : page.intValue());
-            Number pageSize = MoonUitl.getNumber(args.get("pageSize"));
-            queryParams.setPageSize(pageSize == null ? 10 : pageSize.intValue());
+            
+            // 使用 Hutool 的 BeanUtil 将 Map 转换为 Bean
+            BeanUtil.fillBeanWithMap(args, queryParams, true);
+            
+            // 处理必填的Number类型参数 (Hutool 无法处理的默认值)
+            Number page = MoonUitl.getNumber(args.get(Constants.PARAM_PAGE));
+            queryParams.setPage(page == null ? Constants.DEFAULT_PAGE : page.intValue());
+            Number pageSize = MoonUitl.getNumber(args.get(Constants.PARAM_PAGE_SIZE));
+            queryParams.setPageSize(pageSize == null ? Constants.DEFAULT_PAGE_SIZE : pageSize.intValue());
 
             // 3. 调用服务创建任务
             log.info("查询moon任务列表参数 context: {}, queryParams: {}", GsonUtil.toJsonTree(context), GsonUtil.toJson(queryParams));
@@ -169,18 +162,34 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             }.getType());
             // 4. 处理返回结果
             if (result.getCode() == 0) {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("Task query result: " + GsonUtil.toJson(result.getData()))),
                         false
-                );
+                ));
             } else {
-                throw new RuntimeException("Failed to query task: " + result.getMessage());
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("查询任务失败, code: " + result.getCode() + ", message: " + result.getMessage())), false));
             }
 
         } catch (Exception ex) {
-            log.error("Failed to query task", ex);
-            throw new RuntimeException("Failed to query task: " + ex.getMessage());
+            log.error("Failed to query task:", ex);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("查询任务失败：" + ex.getMessage())), true));
         }
     }
 
+    @Override
+    public String getToolScheme() {
+        return taskQuerySchema;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getDesc() {
+        return desc;
+    }
 }

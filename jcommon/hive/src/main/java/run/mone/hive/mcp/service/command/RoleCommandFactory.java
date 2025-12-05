@@ -170,7 +170,11 @@ public class RoleCommandFactory {
                 sink.next("❌ 命令执行失败: " + e.getMessage() + "\n");
                 return true; // 即使执行失败，也表示找到了命令
             } finally {
-                sink.complete();
+                // 只有非异步命令才立即关闭sink
+                // 异步命令需要由Agent在后台处理完成后关闭sink
+                if (!command.isAsyncCommand()) {
+                    sink.complete();
+                }
             }
         }
         return false;
@@ -197,8 +201,13 @@ public class RoleCommandFactory {
             } catch (Exception e) {
                 log.error("执行Role命令失败: {}, 错误: {}", command.getCommandName(), e.getMessage(), e);
                 sink.next("❌ 命令执行失败: " + e.getMessage() + "\n");
-                sink.complete();
                 return true; // 即使执行失败，也表示找到了命令
+            } finally {
+                // 只有非异步命令才立即关闭sink
+                // 异步命令需要由Agent在后台处理完成后关闭sink
+                if (!command.isAsyncCommand()) {
+                    sink.complete();
+                }
             }
         }
         return false;
