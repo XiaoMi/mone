@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -67,6 +68,7 @@ public class HeraLogCreateFunction implements McpFunction {
     }
 
     @Override
+    @ReportCallCount(businessName = "hera-log-create", description = "对指定的miline的项目和流水线创建Hera日志")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         return Flux.defer(() -> {
             try {

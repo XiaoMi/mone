@@ -1,0 +1,16 @@
+# Work Summary Skill Dependencies
+# Python 3.8+ required
+
+# Git repository analysis
+# Note: GitPython is optional - the script uses subprocess to call git directly
+# Uncomment the line below if you want to use GitPython instead:
+# GitPython>=3.1.40
+
+# No external dependencies required for basic functionality
+# The script uses only Python standard library modules:
+# - subprocess (for git commands)
+# - argparse (for CLI)
+# - json (for output)
+# - datetime (for date handling)
+# - collections (for data structures)
+# - re (for regex)
