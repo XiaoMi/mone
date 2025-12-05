@@ -1,13 +1,13 @@
 package run.mone.mcp.miapi.function;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import run.mone.hive.bo.ApiResponse;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.miapi.utils.HttpUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -16,7 +16,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@Component
 public class MiApiFunction implements McpFunction {
+
+    @Autowired
+    private HttpUtils httpUtils;
     public static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -31,18 +35,6 @@ public class MiApiFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("gateway_host");
-
-    private final OkHttpClient client;
-    private final ObjectMapper objectMapper;
-
-    public MiApiFunction() {
-        this.client = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-        this.objectMapper = new ObjectMapper();
-    }
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
@@ -67,48 +59,12 @@ public class MiApiFunction implements McpFunction {
 
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("projectName", projectName);
-            String params = objectMapper.writeValueAsString(userMap);
-            log.info("projectName request: {}", params);
-            RequestBody body = RequestBody.create(
-                    params,
-                    MediaType.parse("application/json; charset=utf-8")
-            );
-
-            Request request = new Request.Builder()
-                    .url(BASE_URL + "/mtop/miapitest/getProjectByName")
-                    .post(body)
-                    .build();
-
-            OkHttpClient miapiClient = client.newBuilder()
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(30, TimeUnit.SECONDS)
-                    .writeTimeout(30, TimeUnit.SECONDS)
-                    .build();
-
-            try (Response response = miapiClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Unexpected response code: " + response);
-                }
-
-                String responseBody = response.body().string();
-                log.info("miapi mcp response: {}", responseBody);
-
-                ApiResponse<Map<String,Object>> apiResponse = objectMapper.readValue(
-                        responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Map.class)
-                );
-
-                if (apiResponse.getCode() != 0) {
-                    throw new Exception("API error: " + apiResponse.getMessage());
-                }
-
-                String resultText = String.format("miapi项目信息: %s", apiResponse.getData());
-
-                return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent(resultText)),
-                        false
-                ));
-            }
+            String resultText = httpUtils.request("/mtop/miapi/getProjectByName", userMap, Map.class);
+            resultText = String.format("miapi项目信息: %s", resultText);
+            return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(resultText)),
+                    false
+            ));
         } catch (Exception e) {
             log.error("执行miapi操作时发生异常", e);
             return Flux.just(new McpSchema.CallToolResult(

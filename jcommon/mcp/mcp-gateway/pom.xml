@@ -36,6 +36,13 @@
             <artifactId>hive-spring-starter</artifactId>
             <version>1.6.0-jdk21-SNAPSHOT</version>
         </dependency>
+
+        <!-- Spring AOP support -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+            <version>3.2.3</version>
+        </dependency>
     </dependencies>
 
 
@@ -60,7 +67,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.14</version>
+                <version>3.2.3</version>
                 <configuration>
                     <mainClass>run.mone.mcp.gateway.GatewayMcpBootstrap</mainClass>
                     <finalName>app</finalName>

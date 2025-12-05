@@ -53,9 +53,9 @@ public class LogQueryFunction implements McpFunction {
                         "type": "integer",
                         "description": "项目ID，数字类型"
                     },
-                    "envId": {
+                    "pipelineId": {
                         "type": "integer",
-                        "description": "环境ID，数字类型"
+                        "description": "流水线ID，数字类型"
                     },
                     "startTime": {
                         "type": "number",
@@ -70,7 +70,7 @@ public class LogQueryFunction implements McpFunction {
                         "description": "链路追踪ID，32位由0-9a-f组成的字符串，用于追踪特定请求的完整调用链路"
                     }
                 },
-                "required": ["projectId", "envId"]
+                "required": ["projectId", "pipelineId"]
             }
             """;
 
@@ -86,7 +86,7 @@ public class LogQueryFunction implements McpFunction {
             try {
                 // 获取必填参数
                 int projectId = getIntParam(args, "projectId", 0);
-                int envId = getIntParam(args, "envId", 0);
+                int pipelineId = getIntParam(args, "pipelineId", 0);
 
                 // 验证必填参数
                 if (projectId == 0) {
@@ -95,10 +95,10 @@ public class LogQueryFunction implements McpFunction {
                         List.of(new McpSchema.TextContent("参数错误：projectId不能为空或无效")), true));
                 }
 
-                if (envId == 0) {
-                    log.warn("envId 参数为空或无效");
+                if (pipelineId == 0) {
+                    log.warn("pipelineId 参数为空或无效");
                     return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("参数错误：envId不能为空或无效")), true));
+                        List.of(new McpSchema.TextContent("参数错误：pipelineId不能为空或无效")), true));
                 }
 
                 // 获取可选参数：level
@@ -126,13 +126,13 @@ public class LogQueryFunction implements McpFunction {
                 long endTime = getLongParam(args, "endTime", System.currentTimeMillis());
                 long startTime = getLongParam(args, "startTime", endTime - 3600000); // 默认1小时（毫秒）
 
-                log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}",
-                        level, projectId, envId, startTime, endTime, traceId);
+                log.info("开始查询日志，level: {}, projectId: {}, pipelineId: {}, startTime: {}, endTime: {}, traceId: {}",
+                        level, projectId, pipelineId, startTime, endTime, traceId);
 
                 // 调用服务查询日志
-                String result = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId);
+                String result = logQueryService.queryLogs(level, projectId, pipelineId, startTime, endTime, traceId);
 
-                log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}", level, projectId, envId, traceId);
+                log.info("成功查询日志，level: {}, projectId: {}, pipelineId: {}, traceId: {}", level, projectId, pipelineId, traceId);
 
                 return createSuccessFlux(result);
             } catch (Exception e) {

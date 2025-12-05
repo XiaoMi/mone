@@ -97,6 +97,9 @@
             <properties>
                 <profiles.active>agent</profiles.active>
             </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <filters>
                     <filter>src/main/resources/config/agent.properties</filter>

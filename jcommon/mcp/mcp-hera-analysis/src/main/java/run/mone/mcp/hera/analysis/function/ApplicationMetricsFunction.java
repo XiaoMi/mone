@@ -30,6 +30,7 @@ public class ApplicationMetricsFunction implements McpFunction {
      */
     private String name = "stream_application_metrics";
 
+
     /**
      * Function描述
      */
@@ -42,12 +43,16 @@ public class ApplicationMetricsFunction implements McpFunction {
             {
                 "type": "object",
                 "properties": {
-                    "application": {
+                    "projectId": {
+                        "type": "integer",
+                        "description": "项目ID，数字类型"
+                    },
+                    "projectName": {
                         "type": "string",
-                        "description": "需要查询的项目ID和项目名称的组合，例如：111_test"
+                        "description": "应用名称，例如 'gis'"
                     }
                   },
-                "required": ["application"]
+                "required": ["projectId", "projectName"]
             }
             """;
 
@@ -62,7 +67,7 @@ public class ApplicationMetricsFunction implements McpFunction {
         return Flux.defer(() -> {
             try {
                 // 获取application参数
-                String application = getStringParam(args, "application");
+                String application = getStringParam(args);
 
                 if (application.isEmpty()) {
                     log.warn("application 参数为空");
@@ -99,12 +104,20 @@ public class ApplicationMetricsFunction implements McpFunction {
      * 安全地从参数映射中获取字符串参数
      *
      * @param params 参数映射
-     * @param key 参数键
      * @return 字符串参数值，如果不存在则返回空字符串
      */
-    private String getStringParam(Map<String, Object> params, String key) {
-        Object value = params.get(key);
-        return value != null ? value.toString().replace("-", "_") : "";
+    private String getStringParam(Map<String, Object> params) {
+        Object projectId = params.get("projectId");
+        if(projectId == null) {
+            log.error("projectId param is null");
+            return null;
+        }
+        Object projectName = params.get("projectName");
+        if(projectName == null) {
+            log.error("projectName param is null");
+            return null;
+        }
+        return projectId + "_" + projectName;
     }
 
     /**
