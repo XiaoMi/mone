@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.hera.analysis.service.HeraLogDetailService;
@@ -80,6 +81,7 @@ public class HeraLogDetailFunction implements McpFunction {
      * @return 包含查询结果的Flux流
      */
     @Override
+    @ReportCallCount(businessName = "hera-log-detail-query", description = "查询Hera日志详情信息，按照space、store、tailName查询")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         return Flux.defer(() -> {
             try {
