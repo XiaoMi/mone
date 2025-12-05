@@ -45,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/agent-manager") ||
                 path.startsWith("/assets/") ||
                 path.startsWith("/scripts/") ||
+                path.startsWith("/api/v1/report/call") ||
                 path.equals("/api/v1/users/register") ||
                 path.equals("/api/manager/v1/users/register") ||
                 path.equals("/api/v1/users/login") ||

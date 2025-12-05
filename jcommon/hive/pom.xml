@@ -137,12 +137,12 @@
             <optional>true</optional>
         </dependency>
 
-	    <dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-			<version>6.2.1</version>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>6.2.1</version>
             <optional>true</optional>
-		</dependency>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
@@ -158,26 +158,26 @@
             <optional>true</optional>
         </dependency>
 
-		<dependency>
-			<groupId>io.projectreactor.netty</groupId>
-			<artifactId>reactor-netty-http</artifactId>
-			<version>1.2.0</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>6.2.1</version>
-            <optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+            <version>1.2.0</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
-			<groupId>jakarta.servlet</groupId>
-			<artifactId>jakarta.servlet-api</artifactId>
-			<version>6.1.0</version>
-			<scope>provided</scope>
-		</dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>6.2.1</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.1.0</version>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>run.mone</groupId>
@@ -253,6 +253,14 @@
             <groupId>org.benf</groupId>
             <artifactId>cfr</artifactId>
             <version>0.152</version>
+        </dependency>
+
+        <!-- AspectJ for call count reporting aspect -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.20</version>
+            <optional>true</optional>
         </dependency>
 
     </dependencies>

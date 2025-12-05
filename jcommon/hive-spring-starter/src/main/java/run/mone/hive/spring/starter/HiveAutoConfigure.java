@@ -23,6 +23,7 @@ import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.roles.tool.ITool;
+import run.mone.hive.service.SkillService;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,21 @@ public class HiveAutoConfigure {
 
     @Value("${enable.auth:false}")
     private String enableAuth;
+
+    @Value("${hive.skills.path:}")
+    private String skillsPath;
+
+    //Skill服务
+    @Bean
+    @ConditionalOnMissingBean
+    public SkillService skillService() {
+        SkillService skillService = new SkillService();
+        skillService.setSpringSkillsPath(skillsPath);
+        // 设置静态实例，供静态方法调用
+        SkillService.setInstance(skillService);
+        log.info("SkillService initialized with skillsPath: {}", skillsPath);
+        return skillService;
+    }
 
     //传输协议
     @Bean

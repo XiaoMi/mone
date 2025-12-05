@@ -53,6 +53,7 @@ public class AgentConfig {
                                 new DiffTool(),
                                 new ChatTool(),
                                 new AskTool(),
+                                new SkillRequestTool(),
                                 new AttemptCompletionTool()
                         )
                 )
