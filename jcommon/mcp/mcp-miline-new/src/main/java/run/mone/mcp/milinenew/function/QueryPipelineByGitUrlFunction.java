@@ -49,7 +49,7 @@ public class QueryPipelineByGitUrlFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String QUERY_PIPELINE_URL = BASE_URL != null ? "http://mione-gw.test.mi.com/mtop/miline" + "/queryPipeLineByGitUrl" : null;
+    private static final String QUERY_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/queryPipeLineByGitUrl" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
