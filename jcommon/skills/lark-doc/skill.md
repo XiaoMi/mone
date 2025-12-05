@@ -93,7 +93,7 @@ Creating document: 会议纪要
 ============================================================
 
 📄 Creating document: 会议纪要
-✅ Document created: NxBBdaXTkoxWqkxCs6TcF2lanpc
+✅ Document created: NxBBdxxxxxxxxxxxxxxxxxxxxxxxxx
 
 🔒 Setting document permissions...
 ✅ Permissions set: link_share=tenant_editable, external_access=closed
@@ -107,7 +107,7 @@ Creating document: 会议纪要
 ============================================================
 🎉 Document created successfully!
 
-📎 Document URL: https://mi.feishu.cn/docx/NxBBdaXTkoxWqkxCs6TcF2lanpc
+📎 Document URL: https://mi.feishu.cn/docx/xxxxx
 ============================================================
 ```
 
@@ -137,7 +137,7 @@ Creating document: 测试文档
 ============================================================
 
 📄 Creating document: 测试文档
-✅ Document created: NxBBdaXTkoxWqkxCs6TcF2lanpc
+✅ Document created: NxBBdxxxxxxxxxxxxxxxxxxxxxxxxx
 
 🔒 Setting document permissions...
 ✅ Permissions set: link_share=tenant_editable, external_access=closed
@@ -151,7 +151,7 @@ Creating document: 测试文档
 ============================================================
 ⚠️ Document created but content insertion had issues
 
-📎 Document URL: https://mi.feishu.cn/docx/NxBBdaXTkoxWqkxCs6TcF2lanpc
+📎 Document URL: https://mi.feishu.cn/docx/xxxx
 ============================================================
 ```
 
