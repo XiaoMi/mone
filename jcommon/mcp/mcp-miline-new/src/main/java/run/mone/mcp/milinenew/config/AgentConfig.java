@@ -58,6 +58,9 @@ public class AgentConfig {
     private GetDeployMachinesFunction getDeployMachinesFunction;
 
     @Autowired
+    private ScaleOrderFunction scaleOrderFunction;
+
+    @Autowired
     private CreatePipelineTool createPipelineTool;
 
     @Autowired
@@ -71,6 +74,9 @@ public class AgentConfig {
 
     @Autowired
     GetDeployMachinesTool getDeployMachinesTool;
+
+    @Autowired
+    private ScaleOrderTool scaleOrderTool;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -94,6 +100,7 @@ public class AgentConfig {
                                 generateGitCodeTool,
                                 createPipelineTool,
                                 runPipelineTool,
+                                scaleOrderTool,
                                 getDeployMachinesTool,
                                 gitCloneTool,
                                 gitCommitTool,
@@ -104,7 +111,7 @@ public class AgentConfig {
                 .mcpTools(
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
-                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction)
+                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction,scaleOrderFunction)
                 )
                 .workflow("""
                     你是智能化系统，严格按照以下步骤执行：
