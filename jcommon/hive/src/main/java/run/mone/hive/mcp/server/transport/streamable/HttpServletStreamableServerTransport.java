@@ -602,8 +602,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 return;
             }
 
-            BufferedReader reader = request.getReader();
             StringBuilder body = new StringBuilder();
+            BufferedReader reader = request.getReader();
             String line;
             while ((line = reader.readLine()) != null) {
                 body.append(line);
