@@ -412,10 +412,29 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
     }
 
+    /**
+     * Sends a message to a session through its listening stream.
+     * This ensures notifications are sent through the proper SSE connection
+     * established by the client's GET request.
+     *
+     * @param session The session to send the message to
+     * @param jsonText The JSON message text
+     */
     private void sendMessageToSession(McpSession session, String jsonText) {
         try {
+            // Ensure the session has an active listening stream before sending
+            // Notifications must be sent through the listeningStreamRef created in GET request
+            if (!session.hasActiveListeningStream()) {
+                logger.warn("Session {} does not have an active listening stream, skipping message send",
+                        session.getId());
+                return;
+            }
+
             logger.debug("Sending message to session: {}, message:{}", session.getId(), jsonText);
-            session.sendMessage(jsonText);
+
+            // Send through the listening stream reference
+            session.getListeningStreamRef().sendNotification(jsonText);
+
         } catch (IOException e) {
             // 连接已断开，清理会话
             logger.warn("Client connection lost for session {}: {}", session.getId(), e.getMessage());
@@ -503,17 +522,23 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             // Send initial endpoint event
             session.sendEvent(ENDPOINT_EVENT_TYPE, mcpEndpoint, sessionId);
 
+            // Establish new listening stream - notification 必须通过这个 listeningStreamRef 发送
+            // 这个引用是在客户端发起 GET 请求时创建的长期 SSE 连接机制
+            McpSession.ListeningStreamRef listeningStreamRef = session.createListeningStream();
+
             final String finalSessionId = sessionId;
             asyncContext.addListener(new jakarta.servlet.AsyncListener() {
                 @Override
                 public void onComplete(jakarta.servlet.AsyncEvent event) throws IOException {
                     logger.debug("SSE connection completed for session: {}", finalSessionId);
+                    listeningStreamRef.close();
                     sessions.remove(finalSessionId);
                 }
 
                 @Override
                 public void onTimeout(jakarta.servlet.AsyncEvent event) throws IOException {
                     logger.debug("SSE connection timed out for session: {}", finalSessionId);
+                    listeningStreamRef.close();
                     sessions.remove(finalSessionId);
                 }
 
@@ -523,9 +548,10 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     if (throwable instanceof java.io.EOFException) {
                         logger.debug("Client disconnected (EOFException) for session: {}", finalSessionId);
                     } else {
-                        logger.warn("SSE connection error for session: {}, error: {}", 
+                        logger.warn("SSE connection error for session: {}, error: {}",
                                 finalSessionId, throwable != null ? throwable.getMessage() : "Unknown error");
                     }
+                    listeningStreamRef.close();
                     sessions.remove(finalSessionId);
                 }
 
@@ -1209,12 +1235,58 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         private volatile boolean closed = false;
         private volatile long updateTime = System.currentTimeMillis();
         private final ReentrantLock lock = new ReentrantLock();
-        
+
+        /**
+         * Reference to the listening stream created when client establishes GET SSE connection.
+         * This ensures notifications are sent through the proper long-lived SSE channel.
+         */
+        private volatile ListeningStreamRef listeningStreamRef;
+
         /**
          * 检查会话是否已关闭
          */
         public boolean isClosed() {
             return this.closed;
+        }
+
+        /**
+         * Creates a listening stream for this session. This stream is used to send
+         * server-initiated notifications to the client through the SSE connection
+         * established via GET request.
+         *
+         * @return A reference to the listening stream
+         */
+        public ListeningStreamRef createListeningStream() {
+            lock.lock();
+            try {
+                if (this.listeningStreamRef != null) {
+                    logger.warn("Listening stream already exists for session: {}, closing old stream", this.id);
+                    this.listeningStreamRef.close();
+                }
+                this.listeningStreamRef = new ListeningStreamRef(this);
+                logger.debug("Created listening stream for session: {}", this.id);
+                return this.listeningStreamRef;
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        /**
+         * Checks if this session has an active listening stream.
+         *
+         * @return true if there's an active listening stream, false otherwise
+         */
+        public boolean hasActiveListeningStream() {
+            return this.listeningStreamRef != null && !this.listeningStreamRef.isClosed();
+        }
+
+        /**
+         * Gets the listening stream reference for this session.
+         *
+         * @return The listening stream reference, or null if not created
+         */
+        public ListeningStreamRef getListeningStreamRef() {
+            return this.listeningStreamRef;
         }
 
         /**
@@ -1312,7 +1384,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 }
 
                 this.closed = true;
-                
+
+                // Close listening stream if exists
+                if (this.listeningStreamRef != null) {
+                    this.listeningStreamRef.close();
+                }
+
                 // 安全地关闭 AsyncContext
                 if (this.asyncContext != null) {
                     try {
@@ -1327,6 +1404,58 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 logger.warn("Failed to complete async context for session {}: {}", this.id, e.getMessage());
             } finally {
                 lock.unlock();
+            }
+        }
+
+        /**
+         * Reference to a listening stream that handles server-initiated notifications
+         * through the SSE connection established by GET requests.
+         *
+         * <p>This class ensures that notifications are sent through the proper
+         * long-lived SSE connection channel created when the client issues a GET request.
+         */
+        static class ListeningStreamRef {
+            private final McpSession session;
+            private volatile boolean closed = false;
+
+            ListeningStreamRef(McpSession session) {
+                this.session = session;
+                logger.debug("ListeningStreamRef created for session: {}", session.getId());
+            }
+
+            /**
+             * Sends a notification through this listening stream.
+             *
+             * @param message The message to send
+             * @throws IOException if an error occurs while sending
+             */
+            public void sendNotification(String message) throws IOException {
+                if (closed) {
+                    logger.warn("Attempted to send notification through closed listening stream for session: {}",
+                            session.getId());
+                    throw new IOException("Listening stream is closed");
+                }
+
+                session.sendMessage(message);
+            }
+
+            /**
+             * Checks if this listening stream is closed.
+             *
+             * @return true if closed, false otherwise
+             */
+            public boolean isClosed() {
+                return closed;
+            }
+
+            /**
+             * Closes this listening stream.
+             */
+            public void close() {
+                if (!closed) {
+                    closed = true;
+                    logger.debug("ListeningStreamRef closed for session: {}", session.getId());
+                }
             }
         }
     }
