@@ -137,6 +137,7 @@ function cleanTextContent() {
 function setTextContent(text: string) {
   if (userInputRef.value) {
     userInputRef.value.textContent = text;
+    updateModelValue(text);
     // 将光标移到末尾
     nextTick(() => {
       const range = document.createRange();
