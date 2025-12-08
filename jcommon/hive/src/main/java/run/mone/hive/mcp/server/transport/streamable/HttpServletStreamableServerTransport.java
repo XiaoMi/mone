@@ -11,7 +11,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -611,7 +610,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             }
             
             // 检查请求体是否为空
-            if (body.length() == 0) {
+            if (body.isEmpty()) {
                 logger.warn("Received POST request with empty body");
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Empty request body");
                 return;
@@ -621,56 +620,20 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             logger.debug("Request URI with POST method, uri: {}, body: {}", requestURI, body.toString());
 
             // Handle ping requests
-            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals("ping")) {
-                if (clientId != null) {
-                    logger.debug("Ping from client: {}", clientId);
-                    sessions.computeIfPresent(clientId, (k, v) -> {
-                        v.setUpdateTime(System.currentTimeMillis());
-                        return v;
-                    });
-                }
-
-                McpSchema.JSONRPCResponse pingResponse = new McpSchema.JSONRPCResponse(
-                    McpSchema.JSONRPC_VERSION,
-                    req.id(),
-                    Map.of(),
-                    null
-                );
-                responseJsonRpc(response, pingResponse);
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_PING)) {
+                handlePing(response, req, clientId);
                 return;
             }
 
             // Handle resources/list request - return empty list quickly
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_RESOURCES_LIST)) {
-                logger.debug("Handling resources/list request: {}", req);
-                McpSchema.ListResourcesResult result = new McpSchema.ListResourcesResult(
-                    List.of(),  // empty resources list
-                    null        // no next cursor
-                );
-                McpSchema.JSONRPCResponse resourcesListResponse = new McpSchema.JSONRPCResponse(
-                    McpSchema.JSONRPC_VERSION,
-                    req.id(),
-                    result,
-                    null
-                );
-                responseJsonRpc(response, resourcesListResponse);
+                handleResourcesList(response, req);
                 return;
             }
 
             // Handle resources/templates/list request - return empty list quickly
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_RESOURCES_TEMPLATES_LIST)) {
-                logger.debug("Handling resources/templates/list request: {}", req);
-                McpSchema.ListResourceTemplatesResult result = new McpSchema.ListResourceTemplatesResult(
-                    List.of(),  // empty resource templates list
-                    null        // no next cursor
-                );
-                McpSchema.JSONRPCResponse resourceTemplatesListResponse = new McpSchema.JSONRPCResponse(
-                    McpSchema.JSONRPC_VERSION,
-                    req.id(),
-                    result,
-                    null
-                );
-                responseJsonRpc(response, resourceTemplatesListResponse);
+                handleResourcesTemplateList(response, req);
                 return;
             }
 
@@ -678,180 +641,18 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
                     && jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
 
-                // setup session for initialization
-                logger.info("handle initialization request:{}", body.toString());
-                String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
-                if (sessionId == null || sessionId.isBlank()) {
-                    sessionId = request.getHeader(Const.MC_CLIENT_ID);
-                }
-                if (sessionId == null || sessionId.isBlank()) {
-                    sessionId = java.util.UUID.randomUUID().toString();
-                }
-
-                // Process initialization - response should be returned directly in HTTP body
-                // 对于 Streamable HTTP，初始化响应必须在 HTTP response body 中返回，
-                // 而不是通过 SSE 发送
-                if (connectHandler != null) {
-                    String finalSessionId = sessionId;
-
-                    try {
-                        // 设置响应头
-                        response.setContentType(APPLICATION_JSON);
-                        response.setCharacterEncoding(UTF_8);
-                        response.setHeader(HttpHeaders.MCP_SESSION_ID, finalSessionId);
-                        response.setStatus(HttpServletResponse.SC_OK);
-
-                        // 创建一个临时的 session 来捕获响应
-                        // 由于 connectHandler 会通过 sendMessage 发送响应，我们需要
-                        // 捕获这个响应并写入 HTTP body
-                        PrintWriter writer = response.getWriter();
-                        java.util.concurrent.CompletableFuture<String> responseFuture = new java.util.concurrent.CompletableFuture<>();
-
-                        // 创建临时 session，其 sendMessage 会将响应保存到 future
-                        McpSession tempSession = new McpSession(finalSessionId, null, writer) {
-                            @Override
-                            public void sendJsonMessage(String msg) throws IOException {
-                                responseFuture.complete(msg);
-                            }
-                        };
-
-                        // 临时添加到 sessions map，让 sendMessage 能找到它
-                        sessions.put(finalSessionId, tempSession);
-
-                        // 处理初始化请求
-                        connectHandler.apply(Mono.just(message)).block();
-
-                        // 等待响应（最多 5 秒）
-                        String jsonResponse = responseFuture.get(5, java.util.concurrent.TimeUnit.SECONDS);
-
-                        // 写入响应体
-                        writer.write(jsonResponse);
-                        writer.flush();
-
-                        // 移除临时 session
-                        sessions.remove(finalSessionId);
-
-                        logger.info("handled initialization for session: {}", finalSessionId);
-                    } catch (java.util.concurrent.TimeoutException e) {
-                        sessions.remove(finalSessionId);
-                        logger.error("Initialization timeout for session: {}", finalSessionId, e);
-                        response.sendError(HttpServletResponse.SC_REQUEST_TIMEOUT,
-                            "Initialization timeout");
-                    } catch (Exception e) {
-                        sessions.remove(finalSessionId);
-                        logger.error("Error handling initialization for session: {}", finalSessionId, e);
-                        try {
-                            response.setContentType(APPLICATION_JSON);
-                            response.setCharacterEncoding(UTF_8);
-                            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
-                            McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
-                                McpSchema.JSONRPC_VERSION,
-                                jsonrpcRequest.id(),
-                                null,
-                                new McpSchema.JSONRPCResponse.JSONRPCError(
-                                    McpSchema.ErrorCodes.INTERNAL_ERROR,
-                                    e.getMessage(),
-                                    null
-                                )
-                            );
-                            String errorJson = objectMapper.writeValueAsString(errorResponse);
-                            response.getWriter().write(errorJson);
-                            response.getWriter().flush();
-                        } catch (IOException ioEx) {
-                            logger.error("Error writing error response: {}", ioEx.getMessage());
-                            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                                "Initialization failed: " + e.getMessage());
-                        }
-                    }
-
-                    return;
-                }
+                if (handleMethodInitialize(request, response, jsonrpcRequest, body, message)) return;
             }
 
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_TOOLS_CALL)) {
-                logger.info("call tool: {}", req);
-
-                if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
-                    try {
-                        // Inject user info into tool call arguments
-                        Object enrichedParams = injectUserInfoToToolCall(req.params(), userInfo);
-
-                        Object handlerResult = mcpServer.toolsCallRequestHandler().handle(enrichedParams).block();
-                        McpSchema.CallToolResult result;
-
-                        // Handle both direct result and Flux wrapped result
-                        if (handlerResult instanceof Flux) {
-                            result = (McpSchema.CallToolResult) ((Flux<?>) handlerResult).blockFirst();
-                        } else {
-                            result = (McpSchema.CallToolResult) handlerResult;
-                        }
-
-                        McpSchema.JSONRPCResponse toolsCallResponse = new McpSchema.JSONRPCResponse(
-                                McpSchema.JSONRPC_VERSION,
-                                req.id(),
-                                result,
-                                null
-                        );
-                        logger.info("Sending tools/call response: {}", objectMapper.writeValueAsString(toolsCallResponse));
-                        responseJsonRpc(response, toolsCallResponse);
-                    } catch (Exception e) {
-                        logger.error("Error handling tools call request: {}", e.getMessage(), e);
-                        McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
-                            McpSchema.JSONRPC_VERSION,
-                            req.id(),
-                            null,
-                            new McpSchema.JSONRPCResponse.JSONRPCError(
-                                McpSchema.ErrorCodes.INTERNAL_ERROR,
-                                "Failed to call tool: " + e.getMessage(),
-                                null
-                            )
-                        );
-                        responseJsonRpc(response, errorResponse);
-                    }
-                } else {
-                    logger.warn("MCP server or tools call handler is not available");
-                    this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            new McpError("Tools call handler not available"));
-                }
+                handleToolsCall(response, req, userInfo);
                 return;
             }
 
 
             //获取工具列表
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_TOOLS_LIST)) {
-                logger.debug("Handling tools list request: {}", req);
-
-                if (mcpServer != null && mcpServer.toolsListRequestHandler() != null) {
-                    try {
-                        McpSchema.ListToolsResult result = (McpSchema.ListToolsResult) mcpServer.toolsListRequestHandler().handle(null).block();
-
-                        McpSchema.JSONRPCResponse toolsListResponse = new McpSchema.JSONRPCResponse(
-                            McpSchema.JSONRPC_VERSION,
-                            req.id(),
-                            result,
-                            null
-                        );
-                        responseJsonRpc(response, toolsListResponse);
-                    } catch (Exception e) {
-                        logger.error("Error handling tools list request: {}", e.getMessage(), e);
-                        McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
-                            McpSchema.JSONRPC_VERSION,
-                            req.id(),
-                            null,
-                            new McpSchema.JSONRPCResponse.JSONRPCError(
-                                McpSchema.ErrorCodes.INTERNAL_ERROR,
-                                "Failed to get tools list: " + e.getMessage(),
-                                null
-                            )
-                        );
-                        responseJsonRpc(response, errorResponse);
-                    }
-                } else {
-                    logger.warn("MCP server or tools list handler is not available");
-                    this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            new McpError("Tools list handler not available"));
-                }
+                handleToolsList(response, req);
                 return;
             }
 
@@ -950,6 +751,227 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 logger.debug("Failed to send error response, client may have disconnected: {}", ex.getMessage());
             }
         }
+    }
+
+    private void handleToolsList(HttpServletResponse response, McpSchema.JSONRPCRequest req) throws IOException {
+        logger.info("Handling tools list request: {}", req);
+        if (mcpServer != null && mcpServer.toolsListRequestHandler() != null) {
+            try {
+                McpSchema.ListToolsResult result = (McpSchema.ListToolsResult) mcpServer.toolsListRequestHandler().handle(null).block();
+
+                McpSchema.JSONRPCResponse toolsListResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    result,
+                    null
+                );
+                responseJsonRpc(response, toolsListResponse);
+            } catch (Exception e) {
+                logger.error("Error handling tools list request: {}", e.getMessage(), e);
+                McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    null,
+                    new McpSchema.JSONRPCResponse.JSONRPCError(
+                        McpSchema.ErrorCodes.INTERNAL_ERROR,
+                        "Failed to get tools list: " + e.getMessage(),
+                        null
+                    )
+                );
+                responseJsonRpc(response, errorResponse);
+            }
+        } else {
+            logger.warn("MCP server or tools list handler is not available");
+            this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    new McpError("Tools list handler not available"));
+        }
+    }
+
+    private void handleToolsCall(HttpServletResponse response, McpSchema.JSONRPCRequest req, Map<String, Object> userInfo) throws IOException {
+        logger.info("call tool: {}", req);
+        if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
+            try {
+                // Inject user info into tool call arguments
+                Object enrichedParams = injectUserInfoToToolCall(req.params(), userInfo);
+
+                Object handlerResult = mcpServer.toolsCallRequestHandler().handle(enrichedParams).block();
+                McpSchema.CallToolResult result;
+
+                // Handle both direct result and Flux wrapped result
+                if (handlerResult instanceof Flux) {
+                    result = (McpSchema.CallToolResult) ((Flux<?>) handlerResult).blockFirst();
+                } else {
+                    result = (McpSchema.CallToolResult) handlerResult;
+                }
+
+                McpSchema.JSONRPCResponse toolsCallResponse = new McpSchema.JSONRPCResponse(
+                        McpSchema.JSONRPC_VERSION,
+                        req.id(),
+                        result,
+                        null
+                );
+                logger.info("Sending tools/call response: {}", objectMapper.writeValueAsString(toolsCallResponse));
+                responseJsonRpc(response, toolsCallResponse);
+            } catch (Exception e) {
+                logger.error("Error handling tools call request: {}", e.getMessage(), e);
+                McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    null,
+                    new McpSchema.JSONRPCResponse.JSONRPCError(
+                        McpSchema.ErrorCodes.INTERNAL_ERROR,
+                        "Failed to call tool: " + e.getMessage(),
+                        null
+                    )
+                );
+                responseJsonRpc(response, errorResponse);
+            }
+        } else {
+            logger.warn("MCP server or tools call handler is not available");
+            this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    new McpError("Tools call handler not available"));
+        }
+    }
+
+    private boolean handleMethodInitialize(HttpServletRequest request, HttpServletResponse response, McpSchema.JSONRPCRequest jsonrpcRequest, StringBuilder body, McpSchema.JSONRPCMessage message) throws IOException {
+        // setup session for initialization
+        logger.info("handle initialization request:{}", body.toString());
+        String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
+        if (sessionId == null || sessionId.isBlank()) {
+            sessionId = request.getHeader(Const.MC_CLIENT_ID);
+        }
+        if (sessionId == null || sessionId.isBlank()) {
+            sessionId = java.util.UUID.randomUUID().toString();
+        }
+
+        // Process initialization - response should be returned directly in HTTP body
+        // 对于 Streamable HTTP，初始化响应必须在 HTTP response body 中返回，
+        // 而不是通过 SSE 发送
+        if (connectHandler != null) {
+            String finalSessionId = sessionId;
+
+            try {
+                // 设置响应头
+                response.setContentType(APPLICATION_JSON);
+                response.setCharacterEncoding(UTF_8);
+                response.setHeader(HttpHeaders.MCP_SESSION_ID, finalSessionId);
+                response.setStatus(HttpServletResponse.SC_OK);
+
+                // 创建一个临时的 session 来捕获响应
+                // 由于 connectHandler 会通过 sendMessage 发送响应，我们需要
+                // 捕获这个响应并写入 HTTP body
+                PrintWriter writer = response.getWriter();
+                java.util.concurrent.CompletableFuture<String> responseFuture = new java.util.concurrent.CompletableFuture<>();
+
+                // 创建临时 session，其 sendMessage 会将响应保存到 future
+                McpSession tempSession = new McpSession(finalSessionId, null, writer) {
+                    @Override
+                    public void sendJsonMessage(String msg) throws IOException {
+                        responseFuture.complete(msg);
+                    }
+                };
+
+                // 临时添加到 sessions map，让 sendMessage 能找到它
+                sessions.put(finalSessionId, tempSession);
+
+                // 处理初始化请求
+                connectHandler.apply(Mono.just(message)).block();
+
+                // 等待响应（最多 5 秒）
+                String jsonResponse = responseFuture.get(5, TimeUnit.SECONDS);
+
+                // 写入响应体
+                writer.write(jsonResponse);
+                writer.flush();
+
+                // 移除临时 session
+                sessions.remove(finalSessionId);
+
+                logger.info("handled initialization for session: {}", finalSessionId);
+            } catch (java.util.concurrent.TimeoutException e) {
+                sessions.remove(finalSessionId);
+                logger.error("Initialization timeout for session: {}", finalSessionId, e);
+                response.sendError(HttpServletResponse.SC_REQUEST_TIMEOUT,
+                    "Initialization timeout");
+            } catch (Exception e) {
+                sessions.remove(finalSessionId);
+                logger.error("Error handling initialization for session: {}", finalSessionId, e);
+                try {
+                    response.setContentType(APPLICATION_JSON);
+                    response.setCharacterEncoding(UTF_8);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+                    McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                        McpSchema.JSONRPC_VERSION,
+                        jsonrpcRequest.id(),
+                        null,
+                        new McpSchema.JSONRPCResponse.JSONRPCError(
+                            McpSchema.ErrorCodes.INTERNAL_ERROR,
+                            e.getMessage(),
+                            null
+                        )
+                    );
+                    String errorJson = objectMapper.writeValueAsString(errorResponse);
+                    response.getWriter().write(errorJson);
+                    response.getWriter().flush();
+                } catch (IOException ioEx) {
+                    logger.error("Error writing error response: {}", ioEx.getMessage());
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Initialization failed: " + e.getMessage());
+                }
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    private void handleResourcesTemplateList(HttpServletResponse response, McpSchema.JSONRPCRequest req) throws IOException {
+        logger.debug("Handling resources/templates/list request: {}", req);
+        McpSchema.ListResourceTemplatesResult result = new McpSchema.ListResourceTemplatesResult(
+            List.of(),  // empty resource templates list
+            null        // no next cursor
+        );
+        McpSchema.JSONRPCResponse resourceTemplatesListResponse = new McpSchema.JSONRPCResponse(
+            McpSchema.JSONRPC_VERSION,
+            req.id(),
+            result,
+            null
+        );
+        responseJsonRpc(response, resourceTemplatesListResponse);
+    }
+
+    private void handleResourcesList(HttpServletResponse response, McpSchema.JSONRPCRequest req) throws IOException {
+        logger.debug("Handling resources/list request: {}", req);
+        McpSchema.ListResourcesResult result = new McpSchema.ListResourcesResult(
+            List.of(),  // empty resources list
+            null        // no next cursor
+        );
+        McpSchema.JSONRPCResponse resourcesListResponse = new McpSchema.JSONRPCResponse(
+            McpSchema.JSONRPC_VERSION,
+            req.id(),
+            result,
+            null
+        );
+        responseJsonRpc(response, resourcesListResponse);
+    }
+
+    private void handlePing(HttpServletResponse response, McpSchema.JSONRPCRequest req, String clientId) throws IOException {
+        if (clientId != null) {
+            logger.debug("Ping from client: {}", clientId);
+            sessions.computeIfPresent(clientId, (k, v) -> {
+                v.setUpdateTime(System.currentTimeMillis());
+                return v;
+            });
+        }
+
+        McpSchema.JSONRPCResponse pingResponse = new McpSchema.JSONRPCResponse(
+            McpSchema.JSONRPC_VERSION,
+            req.id(),
+            Map.of(),
+            null
+        );
+        responseJsonRpc(response, pingResponse);
     }
 
     /**
