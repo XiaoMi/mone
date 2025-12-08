@@ -143,6 +143,19 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private TokenAuthCache tokenAuthCache;
 
     /**
+     * 是否使用 progress 通知类型发送定时消息，默认为 true
+     * true: 使用 notifications/progress
+     * false: 使用 notifications/message
+     */
+    @Setter
+    private boolean useProgressNotification = false;
+
+    /**
+     * Progress 通知的方法名
+     */
+    private static final String METHOD_NOTIFICATION_PROGRESS = "notifications/progress";
+
+    /**
      * Constructs a new HttpServletStreamableServerTransport instance.
      * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization of
      * messages.
@@ -209,20 +222,36 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
                 String timeData = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-                // 构建 LoggingMessageNotification 参数
-                Map<String, Object> params = new java.util.HashMap<>();
-                params.put("level", "info");
-                params.put("logger", "system");
-                params.put("data", timeData);
+                McpSchema.JSONRPCNotification notification;
+                if (useProgressNotification) {
+                    // 使用 notifications/progress 类型（默认）
+                    Map<String, Object> params = new java.util.HashMap<>();
+                    params.put("progressToken", "system-time");
+                    params.put("progress", System.currentTimeMillis() % 100);  // 0-99 循环进度
+                    params.put("total", 100.0);
+                    params.put("message", timeData);  // 额外携带时间信息
 
-                // 构建 JSONRPCNotification
-                McpSchema.JSONRPCNotification notification = new McpSchema.JSONRPCNotification(
-                    McpSchema.JSONRPC_VERSION,
-                    McpSchema.METHOD_NOTIFICATION_MESSAGE,
-                    params
-                );
+                    notification = new McpSchema.JSONRPCNotification(
+                        McpSchema.JSONRPC_VERSION,
+                        METHOD_NOTIFICATION_PROGRESS,
+                        params
+                    );
+                } else {
+                    // 使用 notifications/message 类型
+                    Map<String, Object> params = new java.util.HashMap<>();
+                    params.put("level", "info");
+                    params.put("logger", "system");
+                    params.put("data", timeData);
 
-                logger.debug("Broadcasting system time notification to {} sessions: {}", sessions.size(), timeData);
+                    notification = new McpSchema.JSONRPCNotification(
+                        McpSchema.JSONRPC_VERSION,
+                        McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                        params
+                    );
+                }
+
+                logger.info("Broadcasting system time notification ({}) to {} sessions: {}",
+                    useProgressNotification ? "progress" : "message", sessions.size(), timeData);
                 sendMessage(notification).subscribe();
             });
         }, 10, 10, TimeUnit.SECONDS);
