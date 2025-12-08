@@ -151,6 +151,14 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private boolean useProgressNotification = false;
 
     /**
+     * 是否启用 session 超时清理，默认为 false（不清理）
+     * true: 根据 keepAliveInterval 清理超时的 session
+     * false: 不清理超时的 session
+     */
+    @Setter
+    private boolean enableSessionTimeout = false;
+
+    /**
      * Progress 通知的方法名
      */
     private static final String METHOD_NOTIFICATION_PROGRESS = "notifications/progress";
@@ -196,8 +204,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     closedSessions.forEach(sessions::remove);
                 }
 
-                // 如果设置了 keepAliveInterval，也检查超时会话
-                if (keepAliveInterval != null) {
+                // 如果启用了 session 超时清理，且设置了 keepAliveInterval，检查超时会话
+                if (enableSessionTimeout && keepAliveInterval != null) {
                     long now = System.currentTimeMillis();
                     sessions.entrySet().removeIf(entry -> {
                         if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
@@ -573,7 +581,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
             AsyncContext asyncContext = request.startAsync();
             // 设置合理的超时时间，避免连接无限期挂起
-            asyncContext.setTimeout(300000); // 5分钟超时
+            asyncContext.setTimeout(0);
 
             McpSession session = new McpSession(sessionId, asyncContext, response.getWriter());
             this.sessions.put(sessionId, session);
@@ -706,7 +714,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
             // Handle ping requests
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_PING)) {
-                handlePing(response, req, clientId);
+                // 兼容新旧两种 session header
+                String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
+                if (sessionId == null || sessionId.isBlank()) {
+                    sessionId = clientId;
+                }
+                handlePing(response, req, sessionId);
                 return;
             }
 
