@@ -177,12 +177,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     .filter(entry -> entry.getValue().isClosed())
                     .map(Map.Entry::getKey)
                     .collect(java.util.stream.Collectors.toList());
-                    
+
                 if (!closedSessions.isEmpty()) {
                     logger.debug("Cleaning up {} closed sessions", closedSessions.size());
                     closedSessions.forEach(sessions::remove);
                 }
-                
+
                 // 如果设置了 keepAliveInterval，也检查超时会话
                 if (keepAliveInterval != null) {
                     long now = System.currentTimeMillis();
@@ -197,6 +197,35 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 }
             });
         }, 30, 30, TimeUnit.SECONDS);
+
+        // 每10秒向所有客户端广播系统时间通知
+        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                if (sessions.isEmpty()) {
+                    return;
+                }
+
+                // 构建当前系统时间
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                String timeData = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+                // 构建 LoggingMessageNotification 参数
+                Map<String, Object> params = new java.util.HashMap<>();
+                params.put("level", "info");
+                params.put("logger", "system");
+                params.put("data", timeData);
+
+                // 构建 JSONRPCNotification
+                McpSchema.JSONRPCNotification notification = new McpSchema.JSONRPCNotification(
+                    McpSchema.JSONRPC_VERSION,
+                    McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                    params
+                );
+
+                logger.debug("Broadcasting system time notification to {} sessions: {}", sessions.size(), timeData);
+                sendMessage(notification).subscribe();
+            });
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -1330,16 +1359,18 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 logger.debug("Attempted to send message to closed session: {}", this.id);
                 throw new IOException("Session is closed");
             }
-            
+
             lock.lock();
             try {
                 if (this.closed) {
                     throw new IOException("Session was closed during message send");
                 }
-                
-                writer.write(message);
+
+                // SSE 格式: event: message\ndata: <json>\n\n
+                writer.write("event: " + MESSAGE_EVENT_TYPE + "\n");
+                writer.write("data: " + message + "\n\n");
                 writer.flush();
-                
+
                 // 检查连接状态
                 if (writer.checkError()) {
                     this.closed = true;
@@ -1449,7 +1480,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                             session.getId());
                     throw new IOException("Listening stream is closed");
                 }
-
+                logger.info("notification:{}", message);
                 session.sendMessage(message);
             }
 
