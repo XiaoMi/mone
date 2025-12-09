@@ -1,14 +1,16 @@
 package run.mone.mcp.mione.config;
 
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
-import run.mone.hive.roles.tool.AskTool;
-import run.mone.hive.roles.tool.AttemptCompletionTool;
-import run.mone.hive.roles.tool.ChatTool;
+import run.mone.hive.roles.tool.*;
+import run.mone.mcp.git.tool.GitCloneTool;
+import run.mone.mcp.git.tool.GitCommitTool;
+import run.mone.mcp.git.tool.GitPushTool;
 
 /**
  * @author shanwb
@@ -16,6 +18,15 @@ import run.mone.hive.roles.tool.ChatTool;
  */
 @Configuration
 public class AgentConfig {
+
+    @Autowired
+    private GitCloneTool gitCloneTool;
+
+    @Autowired
+    private GitCommitTool gitCommitTool;
+
+    @Autowired
+    private GitPushTool gitPushTool;
 
     @Value("${mcp.agent.name}")
     private String agentName;
@@ -47,9 +58,19 @@ public class AgentConfig {
                     """)
                 //内部工具
                 .tools(Lists.newArrayList(
-                                new ChatTool(),
-                                new AskTool(),
-                                new AttemptCompletionTool()
+                        new ChatTool(),
+                        new AskTool(),
+                        new AttemptCompletionTool(),
+                        new ListFilesTool(false),
+                        new ExecuteCommandToolOptimized(),
+                        new ReadFileTool(false),
+                        new SearchFilesTool(false),
+                        new ReplaceInFileTool(false),
+                        new ListCodeDefinitionNamesTool(),
+                        new WriteToFileTool(false),
+                        gitCloneTool,
+                        gitCommitTool,
+                        gitPushTool
                         )
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
