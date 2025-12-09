@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RunPipelineTool implements ITool {
 
-    @Value("${git.email.suffix}")
+    @Value("${git.default.username}")
     private String gitUserName;
 
     public static final String name = "run_pipeline";

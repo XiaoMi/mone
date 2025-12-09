@@ -2,6 +2,7 @@ package run.mone.mcp.milinenew.config;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,12 +20,16 @@ import run.mone.mcp.milinenew.tools.RunPipelineTool;
 
 import org.springframework.beans.factory.annotation.Value;
 
+import static run.mone.hive.common.Constants.*;
+
 /**
  * @author wangmin
  * @author goodjava@qq.com
+ * @author shanwb
  * @date 2025/1/1
  */
 @Configuration
+@Slf4j
 public class AgentConfig {
     @Autowired
     private GitCloneTool gitCloneTool;
@@ -77,22 +82,39 @@ public class AgentConfig {
 
     @Bean
     public RoleMeta roleMeta() {
+        boolean agentModel = RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT);
+        log.warn("{} is agent model:{}", agentName, agentModel);
+
+        String profile = """
+                你是一名优秀的MiLine智能体.
+                MiLine是一套CI/CD平台，提供项目脚手架及部署相关能力.
+                """;
+
+        String goal = "你的目标是更好的帮助用户";
+        String constraints = "专注于处理MiLine相关问题";
+        String workflow = """
+                你是功能完成的MiLine智能体，涉及MiLine相关的需求内部自闭环.
+                接到需求后请先完成意图识别，再按对应的意图流程按步骤处理：
+                   1. 项目初始化
+                     - 根据projectName生成项目
+                     - 根据提供的projectId、env生成代码
+                     - 根据projectId、pipelineName、gitUrl、gitName创建流水线
+                     - 根据projectId、pipelineId触发流水线进行发布
+                   2. 其它单步诉求
+                     - 调用内部tool完成
+                   3. 非MiLine诉求
+                     - 友好回复不在支持范围
+                """;
+
         return RoleMeta.builder()
-                .profile("你是一名优秀的miline助手")
-                .goal("你的目标是更好的帮助用户")
-                .constraints("专注于提供帮助")
+                .profile(profile)
+                .goal(goal)
+                .constraints(constraints)
                 //内部工具
                 .tools(Lists.newArrayList(
                                 new ChatTool(),
                                 new AskTool(),
                                 new AttemptCompletionTool(),
-                                new ListFilesTool(false),
-                                new ExecuteCommandToolOptimized(),
-                                new ReadFileTool(false),
-                                new SearchFilesTool(false),
-                                new ReplaceInFileTool(false),
-                                new ListCodeDefinitionNamesTool(),
-                                new WriteToFileTool(false),
                                 createProjectTool,
                                 generateGitCodeTool,
                                 createPipelineTool,
@@ -105,23 +127,22 @@ public class AgentConfig {
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .mcpTools(
-                        RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
+                        agentModel
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
                                 : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction)
                 )
-                .workflow("""
-                            你是智能化系统，严格按照以下步骤执行：
-                                - 根据projectName生成项目
-                                        - 根据提供的projectId、env生成代码,
-                                        - 拉取代码到本地
-                                        - 根据需求及已有代码进行开发；注意：前端样式要按照pc端展示进行开发(如果提供了要实现的需求则进行代码实现，否则跳过代码实现并检查下没有语法bug后，再进行后续提交操作)
-                                        - 先进入xxx-server/src/main/resources/static目录，执行npm i && npm run build
-                                        - 添加完代码后，一定要将本地代码使用git_commit工具进行git commit，commit信息是如果是修复代码提交信息为：自动代码修复否则根据commit提交范式进行补充, 使用git_push进行git push
-                                        - 根据projectId、pipelineName、gitUrl、gitName创建流水线
-                                        - 根据projectId、pipelineId触发流水线进行发布
-                                        - (询问的话)获取流水线部署机器信息
-                        """)
-                .meta(ImmutableMap.of(Const.HTTP_PORT, httpPort, Const.AGENT_SERVER_NAME, "miline_server", Const.HTTP_ENABLE_AUTH, "true"))
+                .workflow(workflow)
+                .meta(
+                        agentModel
+                        ? ImmutableMap.of(Const.HTTP_PORT, httpPort,
+                            Const.AGENT_SERVER_NAME, "miline_server",
+                            Const.HTTP_ENABLE_AUTH, "true")
+                        : ImmutableMap.of(Const.HTTP_PORT, httpPort,
+                            Const.AGENT_SERVER_NAME, "miline_server",
+                            Const.HTTP_ENABLE_AUTH, "true",
+                            META_KEY_PROFILE, profile,
+                            META_KEY_WORKFLOW, workflow)
+                )
                 .build();
     }
 
