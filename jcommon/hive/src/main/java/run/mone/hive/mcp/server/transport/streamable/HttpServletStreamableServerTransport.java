@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -173,6 +174,22 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private static final String METHOD_NOTIFICATION_PROGRESS = "notifications/progress";
 
     /**
+     * 消息队列，用于存储待发送给特定客户端的消息
+     */
+    private final ConcurrentLinkedQueue<QueuedMessage> messageQueue = new ConcurrentLinkedQueue<>();
+
+    /**
+     * 队列消息数据类，包含 sessionId 和消息内容
+     */
+    @lombok.AllArgsConstructor
+    @lombok.Getter
+    public static class QueuedMessage {
+        private final String sessionId;
+        private final String content;
+        private final int messageType; // 0: JSONRPCResponse, 1: progress, 2: message
+    }
+
+    /**
      * Constructs a new HttpServletStreamableServerTransport instance.
      * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization of
      * messages.
@@ -297,6 +314,74 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 sendMessage(message).subscribe();
             });
         }, 10, 10, TimeUnit.SECONDS);
+
+        // 每100毫秒处理消息队列中的消息
+        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                QueuedMessage queuedMessage;
+                while ((queuedMessage = messageQueue.poll()) != null) {
+                    String sessionId = queuedMessage.getSessionId();
+                    String content = queuedMessage.getContent();
+                    int msgType = queuedMessage.getMessageType();
+
+                    McpSession session = sessions.get(sessionId);
+                    if (session == null || session.isClosed()) {
+                        logger.warn("Session {} not found or closed, skipping queued message", sessionId);
+                        continue;
+                    }
+
+                    try {
+                        McpSchema.JSONRPCMessage message;
+                        switch (msgType) {
+                            case 1:
+                                // notifications/progress
+                                Map<String, Object> progressParams = new java.util.HashMap<>();
+                                progressParams.put("progressToken", "queued-message");
+                                progressParams.put("progress", 100);
+                                progressParams.put("total", 100.0);
+                                progressParams.put("message", content);
+                                message = new McpSchema.JSONRPCNotification(
+                                    McpSchema.JSONRPC_VERSION,
+                                    METHOD_NOTIFICATION_PROGRESS,
+                                    progressParams
+                                );
+                                break;
+                            case 2:
+                                // notifications/message
+                                Map<String, Object> logParams = new java.util.HashMap<>();
+                                logParams.put("level", "info");
+                                logParams.put("logger", "queue");
+                                logParams.put("data", content);
+                                message = new McpSchema.JSONRPCNotification(
+                                    McpSchema.JSONRPC_VERSION,
+                                    McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                                    logParams
+                                );
+                                break;
+                            default:
+                                // JSONRPCResponse (tools/call format)
+                                McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
+                                    List.of(new McpSchema.TextContent(content)),
+                                    false
+                                );
+                                message = new McpSchema.JSONRPCResponse(
+                                    McpSchema.JSONRPC_VERSION,
+                                    "queued-" + System.currentTimeMillis(),
+                                    toolResult,
+                                    null
+                                );
+                                break;
+                        }
+
+                        String jsonText = objectMapper.writeValueAsString(message);
+                        sendMessageToSession(session, jsonText);
+                        logger.debug("Sent queued message to session {}: {}", sessionId, content);
+                    } catch (Exception e) {
+                        logger.error("Failed to send queued message to session {}: {}", sessionId, e.getMessage());
+                    }
+                }
+            });
+        }, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -1287,6 +1372,42 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         return (int) sessions.values().stream()
             .filter(session -> !session.isClosed())
             .count();
+    }
+
+    /**
+     * 将消息加入队列，稍后发送给指定的客户端
+     * @param sessionId 目标客户端的 session ID
+     * @param content 消息内容
+     */
+    public void enqueueMessage(String sessionId, String content) {
+        enqueueMessage(sessionId, content, 0);
+    }
+
+    /**
+     * 将消息加入队列，稍后发送给指定的客户端
+     * @param sessionId 目标客户端的 session ID
+     * @param content 消息内容
+     * @param messageType 消息类型: 0=JSONRPCResponse, 1=progress, 2=message
+     */
+    public void enqueueMessage(String sessionId, String content, int messageType) {
+        if (sessionId == null || sessionId.isEmpty()) {
+            logger.warn("Cannot enqueue message with null or empty sessionId");
+            return;
+        }
+        if (content == null) {
+            logger.warn("Cannot enqueue message with null content for session {}", sessionId);
+            return;
+        }
+        messageQueue.offer(new QueuedMessage(sessionId, content, messageType));
+        logger.debug("Enqueued message for session {}: {}", sessionId, content);
+    }
+
+    /**
+     * 获取当前消息队列中待发送的消息数量
+     * @return 队列中的消息数量
+     */
+    public int getQueuedMessageCount() {
+        return messageQueue.size();
     }
 
     @Override

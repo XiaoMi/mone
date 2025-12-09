@@ -3,33 +3,38 @@ package run.mone.hive.mcp.demo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.client.transport.streamable.StreamableHttpClientTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import reactor.core.publisher.Mono;
+
 import java.util.Map;
 import java.util.HashMap;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Example usage of StreamableHttpClientTransport.
- *
+ * <p>
  * This example demonstrates how to create and use the Streamable HTTP transport
  * implementation for the custom MCP framework.
  */
+@Slf4j
 public class StreamableHttpClientTransportExample {
 
+    @SneakyThrows
     public static void main(String[] args) {
-        // demo1(args);
-       
         ObjectMapper customMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         StreamableHttpClientTransport customTransport = StreamableHttpClientTransport
-                .builder("http://localhost:3088")
+                .builder("http://localhost:8080")
                 .objectMapper(customMapper)
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
@@ -37,6 +42,12 @@ public class StreamableHttpClientTransportExample {
         McpSyncClient client = McpClient.using(customTransport)
                 .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msg -> System.out.println("Handling message: " + msg))
+                .loggingConsumer(new Consumer<McpSchema.LoggingMessageNotification>() {
+                    @Override
+                    public void accept(McpSchema.LoggingMessageNotification loggingMessageNotification) {
+                        log.info("msg:{}", loggingMessageNotification);
+                    }
+                })
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
@@ -52,6 +63,8 @@ public class StreamableHttpClientTransportExample {
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         System.out.println("======== Call Tool ========" + "Request: " + request + "\n\n Tool result: " + client.callTool(request));
         System.out.println("======== END ========");
+
+        TimeUnit.SECONDS.sleep(100);
     }
 
     public static void demo1(String[] args) {
@@ -65,7 +78,7 @@ public class StreamableHttpClientTransportExample {
         // Configure your ObjectMapper as needed
         // customMapper.configure(...);
         ObjectMapper customMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         StreamableHttpClientTransport customTransport = StreamableHttpClientTransport
                 .builder("http://localhost:3088")
