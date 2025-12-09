@@ -159,6 +159,15 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private boolean enableSessionTimeout = false;
 
     /**
+     * 定时广播消息格式类型
+     * 0: 使用 JSONRPCResponse (tools/call 返回结果格式，默认)
+     * 1: 使用 notifications/progress
+     * 2: 使用 notifications/message
+     */
+    @Setter
+    private int broadcastMessageType = 0;
+
+    /**
      * Progress 通知的方法名
      */
     private static final String METHOD_NOTIFICATION_PROGRESS = "notifications/progress";
@@ -230,37 +239,62 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
                 String timeData = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-                McpSchema.JSONRPCNotification notification;
-                if (useProgressNotification) {
-                    // 使用 notifications/progress 类型（默认）
-                    Map<String, Object> params = new java.util.HashMap<>();
-                    params.put("progressToken", "system-time");
-                    params.put("progress", System.currentTimeMillis() % 100);  // 0-99 循环进度
-                    params.put("total", 100.0);
-                    params.put("message", timeData);  // 额外携带时间信息
+                McpSchema.JSONRPCMessage message;
+                String messageTypeName;
 
-                    notification = new McpSchema.JSONRPCNotification(
-                        McpSchema.JSONRPC_VERSION,
-                        METHOD_NOTIFICATION_PROGRESS,
-                        params
-                    );
-                } else {
-                    // 使用 notifications/message 类型
-                    Map<String, Object> params = new java.util.HashMap<>();
-                    params.put("level", "info");
-                    params.put("logger", "system");
-                    params.put("data", timeData);
+                switch (broadcastMessageType) {
+                    case 1:
+                        // 使用 notifications/progress 类型
+                        Map<String, Object> progressParams = new java.util.HashMap<>();
+                        progressParams.put("progressToken", "system-time");
+                        progressParams.put("progress", System.currentTimeMillis() % 100);  // 0-99 循环进度
+                        progressParams.put("total", 100.0);
+                        progressParams.put("message", timeData);
 
-                    notification = new McpSchema.JSONRPCNotification(
-                        McpSchema.JSONRPC_VERSION,
-                        McpSchema.METHOD_NOTIFICATION_MESSAGE,
-                        params
-                    );
+                        message = new McpSchema.JSONRPCNotification(
+                            McpSchema.JSONRPC_VERSION,
+                            METHOD_NOTIFICATION_PROGRESS,
+                            progressParams
+                        );
+                        messageTypeName = "progress";
+                        break;
+
+                    case 2:
+                        // 使用 notifications/message 类型
+                        Map<String, Object> logParams = new java.util.HashMap<>();
+                        logParams.put("level", "info");
+                        logParams.put("logger", "system");
+                        logParams.put("data", timeData);
+
+                        message = new McpSchema.JSONRPCNotification(
+                            McpSchema.JSONRPC_VERSION,
+                            McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                            logParams
+                        );
+                        messageTypeName = "message";
+                        break;
+
+                    default:
+                        // 默认 (0): 使用 JSONRPCResponse (tools/call 返回结果格式)
+                        McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent(timeData)),
+                            false
+                        );
+
+                        message = new McpSchema.JSONRPCResponse(
+                            McpSchema.JSONRPC_VERSION,
+//                            "system-time-" + System.currentTimeMillis(),
+                                2,
+                            toolResult,
+                            null
+                        );
+                        messageTypeName = "response";
+                        break;
                 }
 
-                logger.info("Broadcasting system time notification ({}) to {} sessions: {}",
-                    useProgressNotification ? "progress" : "message", sessions.size(), timeData);
-                sendMessage(notification).subscribe();
+                logger.info("Broadcasting system time ({}) to {} sessions: {}",
+                    messageTypeName, sessions.size(), timeData);
+                sendMessage(message).subscribe();
             });
         }, 10, 10, TimeUnit.SECONDS);
     }
