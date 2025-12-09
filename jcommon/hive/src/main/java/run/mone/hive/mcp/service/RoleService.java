@@ -128,17 +128,7 @@ public class RoleService {
     @SneakyThrows
     public void init() {
 
-        loggingConsumer = loggingMessageNotification -> {
-            log.info("notification msg:{}", loggingMessageNotification);
-            Safe.run(() -> {
-                roleMap.forEach((key, role) -> {
-                    if (null != transport && transport instanceof GrpcServerTransport gst) {
-                        new McpGrpcTransportSink(gst, role).sendNotification("<notification>"+loggingMessageNotification.data()+"</notification>");
-                    }
-                });
-            });
-        };
-
+        initLoggingConsumer();
 
         //初始化Role命令工厂
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
@@ -152,6 +142,19 @@ public class RoleService {
             //优雅关机
             shutdownHook();
         }
+    }
+
+    private void initLoggingConsumer() {
+        loggingConsumer = loggingMessageNotification -> {
+            log.info("notification msg:{}", loggingMessageNotification);
+            Safe.run(() -> {
+                roleMap.forEach((key, role) -> {
+                    if (null != transport && transport instanceof GrpcServerTransport gst) {
+                        new McpGrpcTransportSink(gst, role).sendNotification("<notification>"+loggingMessageNotification.data()+"</notification>");
+                    }
+                });
+            });
+        };
     }
 
     private McpHub updateMcpConnections(List<String> agentNames, String clientId, ReactorRole role) {
