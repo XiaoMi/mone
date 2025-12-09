@@ -55,7 +55,7 @@ public class McpMessageHandler {
                 String cmd = m.getOrDefault("cmd","").toString();
 
                 //通知过来信息,需要发送到用户的界面
-                if (null != id && cmd.equals("notify_hive_manager")) {
+                if (null != id && cmd.equals(Const.NOTIFY_HIVE_MANAGER)) {
                     if (WebSocketHolder.getSession(id.toString()) != null) {
                         //发到前端页面(必须用websocket连接过来的)
                         WebSocketHolder.sendMessageSafely(

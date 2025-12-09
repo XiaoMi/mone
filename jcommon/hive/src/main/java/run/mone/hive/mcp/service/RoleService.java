@@ -24,6 +24,7 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.service.command.RoleBaseCommand;
@@ -35,6 +36,7 @@ import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
 import run.mone.hive.service.MarkdownService;
+import run.mone.hive.sink.McpGrpcTransportSink;
 import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
@@ -119,13 +121,25 @@ public class RoleService {
 
     private final ApplicationContext applicationContext;
 
-    private Consumer<McpSchema.LoggingMessageNotification> loggingConsumer = loggingMessageNotification -> {
-        log.info("notification msg:{}", loggingMessageNotification);
-    };
+    //发送给hive manager
+    private Consumer<McpSchema.LoggingMessageNotification> loggingConsumer = null;
 
     @PostConstruct
     @SneakyThrows
     public void init() {
+
+        loggingConsumer = loggingMessageNotification -> {
+            log.info("notification msg:{}", loggingMessageNotification);
+            Safe.run(() -> {
+                roleMap.forEach((key, role) -> {
+                    if (null != transport && transport instanceof GrpcServerTransport gst) {
+                        new McpGrpcTransportSink(gst, role).sendNotification(loggingMessageNotification.toString());
+                    }
+                });
+            });
+        };
+
+
         //初始化Role命令工厂
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
         //启用mcp (这个Agent也可以使用mcp),全局的mcp,不是绑定在role上的
