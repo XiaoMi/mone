@@ -253,22 +253,95 @@ public class HttpServletMcpServerExample {
     }
     
     /**
-     * 简单的表达式计算器（仅支持基本运算）
+     * 简单的表达式计算器（支持 +, -, *, /, 括号）
+     * 使用递归下降解析器实现，兼容 Java 21
      */
     private static double evaluateExpression(String expression) {
-        // 移除空格
         expression = expression.replaceAll("\\s+", "");
-        
-        // 简单的计算器实现
-        // 注意：这是一个非常简单的实现，实际应用中应该使用更robust的表达式解析器
-        try {
-            // 使用 JavaScript 引擎进行计算（仅作为示例）
-            javax.script.ScriptEngineManager manager = new javax.script.ScriptEngineManager();
-            javax.script.ScriptEngine engine = manager.getEngineByName("JavaScript");
-            Object result = engine.eval(expression);
-            return ((Number) result).doubleValue();
-        } catch (Exception e) {
-            throw new RuntimeException("无效的数学表达式: " + expression);
+        return new ExpressionParser(expression).parse();
+    }
+
+    private static class ExpressionParser {
+        private final String expression;
+        private int pos = 0;
+
+        ExpressionParser(String expression) {
+            this.expression = expression;
+        }
+
+        double parse() {
+            double result = parseAddSub();
+            if (pos < expression.length()) {
+                throw new RuntimeException("无效的数学表达式: " + expression);
+            }
+            return result;
+        }
+
+        private double parseAddSub() {
+            double left = parseMulDiv();
+            while (pos < expression.length()) {
+                char op = expression.charAt(pos);
+                if (op == '+') {
+                    pos++;
+                    left += parseMulDiv();
+                } else if (op == '-') {
+                    pos++;
+                    left -= parseMulDiv();
+                } else {
+                    break;
+                }
+            }
+            return left;
+        }
+
+        private double parseMulDiv() {
+            double left = parseUnary();
+            while (pos < expression.length()) {
+                char op = expression.charAt(pos);
+                if (op == '*') {
+                    pos++;
+                    left *= parseUnary();
+                } else if (op == '/') {
+                    pos++;
+                    left /= parseUnary();
+                } else {
+                    break;
+                }
+            }
+            return left;
+        }
+
+        private double parseUnary() {
+            if (pos < expression.length() && expression.charAt(pos) == '-') {
+                pos++;
+                return -parsePrimary();
+            }
+            return parsePrimary();
+        }
+
+        private double parsePrimary() {
+            if (pos < expression.length() && expression.charAt(pos) == '(') {
+                pos++;
+                double result = parseAddSub();
+                if (pos >= expression.length() || expression.charAt(pos) != ')') {
+                    throw new RuntimeException("缺少右括号");
+                }
+                pos++;
+                return result;
+            }
+            return parseNumber();
+        }
+
+        private double parseNumber() {
+            int start = pos;
+            while (pos < expression.length() &&
+                   (Character.isDigit(expression.charAt(pos)) || expression.charAt(pos) == '.')) {
+                pos++;
+            }
+            if (start == pos) {
+                throw new RuntimeException("无效的数学表达式: " + expression);
+            }
+            return Double.parseDouble(expression.substring(start, pos));
         }
     }
 }
