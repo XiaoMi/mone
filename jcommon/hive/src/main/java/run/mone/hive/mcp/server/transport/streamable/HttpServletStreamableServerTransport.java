@@ -218,6 +218,82 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         });
 
         // 每10秒向所有客户端广播系统时间通知
+//        scheduleTimeBroadcast();
+
+        // 每100毫秒处理消息队列中的消息
+        processMessageQueue(objectMapper);
+    }
+
+    private void processMessageQueue(ObjectMapper objectMapper) {
+        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                QueuedMessage queuedMessage;
+                while ((queuedMessage = messageQueue.poll()) != null) {
+                    String sessionId = queuedMessage.getSessionId();
+                    String content = queuedMessage.getContent();
+                    int msgType = queuedMessage.getMessageType();
+
+                    McpSession session = sessions.get(sessionId);
+                    if (session == null || session.isClosed()) {
+                        logger.warn("Session {} not found or closed, skipping queued message", sessionId);
+                        continue;
+                    }
+
+                    try {
+                        McpSchema.JSONRPCMessage message;
+                        switch (msgType) {
+                            case 1:
+                                // notifications/progress
+                                Map<String, Object> progressParams = new java.util.HashMap<>();
+                                progressParams.put("progressToken", "queued-message");
+                                progressParams.put("progress", 100);
+                                progressParams.put("total", 100.0);
+                                progressParams.put("message", content);
+                                message = new McpSchema.JSONRPCNotification(
+                                    McpSchema.JSONRPC_VERSION,
+                                    METHOD_NOTIFICATION_PROGRESS,
+                                    progressParams
+                                );
+                                break;
+                            case 2:
+                                // notifications/message
+                                Map<String, Object> logParams = new java.util.HashMap<>();
+                                logParams.put("level", "info");
+                                logParams.put("logger", "queue");
+                                logParams.put("data", content);
+                                message = new McpSchema.JSONRPCNotification(
+                                    McpSchema.JSONRPC_VERSION,
+                                    McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                                    logParams
+                                );
+                                break;
+                            default:
+                                // JSONRPCResponse (tools/call format)
+                                McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
+                                    List.of(new McpSchema.TextContent(content)),
+                                    false
+                                );
+                                message = new McpSchema.JSONRPCResponse(
+                                    McpSchema.JSONRPC_VERSION,
+                                    "queued-" + System.currentTimeMillis(),
+                                    toolResult,
+                                    null
+                                );
+                                break;
+                        }
+
+                        String jsonText = objectMapper.writeValueAsString(message);
+                        sendMessageToSession(session, jsonText);
+                        logger.debug("Sent queued message to session {}: {}", sessionId, content);
+                    } catch (Exception e) {
+                        logger.error("Failed to send queued message to session {}: {}", sessionId, e.getMessage());
+                    }
+                }
+            });
+        }, 100, 100, TimeUnit.MILLISECONDS);
+    }
+
+    private void scheduleTimeBroadcast() {
         this.keepAliveScheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
                 if (sessions.isEmpty()) {
@@ -286,74 +362,6 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 sendMessage(message).subscribe();
             });
         }, 10, 10, TimeUnit.SECONDS);
-
-        // 每100毫秒处理消息队列中的消息
-        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
-            Safe.run(() -> {
-                QueuedMessage queuedMessage;
-                while ((queuedMessage = messageQueue.poll()) != null) {
-                    String sessionId = queuedMessage.getSessionId();
-                    String content = queuedMessage.getContent();
-                    int msgType = queuedMessage.getMessageType();
-
-                    McpSession session = sessions.get(sessionId);
-                    if (session == null || session.isClosed()) {
-                        logger.warn("Session {} not found or closed, skipping queued message", sessionId);
-                        continue;
-                    }
-
-                    try {
-                        McpSchema.JSONRPCMessage message;
-                        switch (msgType) {
-                            case 1:
-                                // notifications/progress
-                                Map<String, Object> progressParams = new java.util.HashMap<>();
-                                progressParams.put("progressToken", "queued-message");
-                                progressParams.put("progress", 100);
-                                progressParams.put("total", 100.0);
-                                progressParams.put("message", content);
-                                message = new McpSchema.JSONRPCNotification(
-                                    McpSchema.JSONRPC_VERSION,
-                                    METHOD_NOTIFICATION_PROGRESS,
-                                    progressParams
-                                );
-                                break;
-                            case 2:
-                                // notifications/message
-                                Map<String, Object> logParams = new java.util.HashMap<>();
-                                logParams.put("level", "info");
-                                logParams.put("logger", "queue");
-                                logParams.put("data", content);
-                                message = new McpSchema.JSONRPCNotification(
-                                    McpSchema.JSONRPC_VERSION,
-                                    McpSchema.METHOD_NOTIFICATION_MESSAGE,
-                                    logParams
-                                );
-                                break;
-                            default:
-                                // JSONRPCResponse (tools/call format)
-                                McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
-                                    List.of(new McpSchema.TextContent(content)),
-                                    false
-                                );
-                                message = new McpSchema.JSONRPCResponse(
-                                    McpSchema.JSONRPC_VERSION,
-                                    "queued-" + System.currentTimeMillis(),
-                                    toolResult,
-                                    null
-                                );
-                                break;
-                        }
-
-                        String jsonText = objectMapper.writeValueAsString(message);
-                        sendMessageToSession(session, jsonText);
-                        logger.debug("Sent queued message to session {}: {}", sessionId, content);
-                    } catch (Exception e) {
-                        logger.error("Failed to send queued message to session {}: {}", sessionId, e.getMessage());
-                    }
-                }
-            });
-        }, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     @Override
