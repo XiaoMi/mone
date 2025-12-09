@@ -888,7 +888,7 @@ public class ReactorRole extends Role {
                     """.formatted(this.profile, this.goal, this.constraints, this.outputFormat, message.getClientId());
         }
         String prompt = MonerSystemPrompt.mcpPrompt(message, this, roleDescription, "default", this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
-        log.debug("system prompt:{}", prompt);
+        log.info("system prompt:{}", prompt);
         return prompt;
     }
 
