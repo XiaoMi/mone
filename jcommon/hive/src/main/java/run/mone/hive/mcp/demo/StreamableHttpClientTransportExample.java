@@ -42,12 +42,7 @@ public class StreamableHttpClientTransportExample {
         McpSyncClient client = McpClient.using(customTransport)
                 .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msg -> System.out.println("Handling message: " + msg))
-                .loggingConsumer(new Consumer<McpSchema.LoggingMessageNotification>() {
-                    @Override
-                    public void accept(McpSchema.LoggingMessageNotification loggingMessageNotification) {
-                        log.info("msg:{}", loggingMessageNotification);
-                    }
-                })
+                .loggingConsumer(loggingMessageNotification -> log.info("msg:{}", loggingMessageNotification))
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
@@ -56,10 +51,10 @@ public class StreamableHttpClientTransportExample {
         client.initialize();
 
         System.out.println("======== Tools ======== : " + client.getTools());
-        String toolName = "run-code";
+        String toolName = "echo";
         Map<String, Object> toolArguments = new HashMap<>();
-        toolArguments.put("code", "print(2 + 3)");
-        toolArguments.put("languageId", "python");
+        toolArguments.put("message", "Hello, MCP!");
+        toolArguments.put("repeat", 3);
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         System.out.println("======== Call Tool ========" + "Request: " + request + "\n\n Tool result: " + client.callTool(request));
         System.out.println("======== END ========");
