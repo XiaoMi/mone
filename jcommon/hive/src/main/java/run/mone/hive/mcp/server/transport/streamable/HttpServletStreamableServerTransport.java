@@ -166,7 +166,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * 2: 使用 notifications/message
      */
     @Setter
-    private int broadcastMessageType = 0;
+    private int broadcastMessageType = 2;
 
     /**
      * Progress 通知的方法名
