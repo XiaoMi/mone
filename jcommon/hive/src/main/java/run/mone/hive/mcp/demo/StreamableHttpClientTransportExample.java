@@ -42,12 +42,7 @@ public class StreamableHttpClientTransportExample {
         McpSyncClient client = McpClient.using(customTransport)
                 .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msg -> System.out.println("Handling message: " + msg))
-                .loggingConsumer(new Consumer<McpSchema.LoggingMessageNotification>() {
-                    @Override
-                    public void accept(McpSchema.LoggingMessageNotification loggingMessageNotification) {
-                        log.info("msg:{}", loggingMessageNotification);
-                    }
-                })
+                .loggingConsumer(loggingMessageNotification -> log.info("msg:{}", loggingMessageNotification))
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())

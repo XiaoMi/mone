@@ -48,6 +48,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -118,14 +119,18 @@ public class RoleService {
 
     private final ApplicationContext applicationContext;
 
+    private Consumer<McpSchema.LoggingMessageNotification> loggingConsumer = loggingMessageNotification -> {
+        log.info("notification msg:{}", loggingMessageNotification);
+    };
+
     @PostConstruct
     @SneakyThrows
     public void init() {
         //初始化Role命令工厂
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
-        //启用mcp (这个Agent也可以使用mcp)
+        //启用mcp (这个Agent也可以使用mcp),全局的mcp,不是绑定在role上的
         if (StringUtils.isNotEmpty(mcpPath)) {
-            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath), "default_"));
+            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath), "default_", loggingConsumer));
         }
         if (roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
             //创建一个默认Agent
