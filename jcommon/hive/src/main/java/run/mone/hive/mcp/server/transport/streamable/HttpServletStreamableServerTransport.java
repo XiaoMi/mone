@@ -217,34 +217,6 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return t;
         });
 
-        // 每30秒清理一次已关闭的会话
-        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
-            Safe.run(() -> {
-                List<String> closedSessions = sessions.entrySet().stream()
-                    .filter(entry -> entry.getValue().isClosed())
-                    .map(Map.Entry::getKey)
-                    .collect(java.util.stream.Collectors.toList());
-
-                if (!closedSessions.isEmpty()) {
-                    logger.debug("Cleaning up {} closed sessions", closedSessions.size());
-                    closedSessions.forEach(sessions::remove);
-                }
-
-                // 如果启用了 session 超时清理，且设置了 keepAliveInterval，检查超时会话
-                if (enableSessionTimeout && keepAliveInterval != null) {
-                    long now = System.currentTimeMillis();
-                    sessions.entrySet().removeIf(entry -> {
-                        if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
-                            logger.info("Session timeout, removing: {}", entry.getKey());
-                            entry.getValue().close();
-                            return true;
-                        }
-                        return false;
-                    });
-                }
-            });
-        }, 30, 30, TimeUnit.SECONDS);
-
         // 每10秒向所有客户端广播系统时间通知
         this.keepAliveScheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {

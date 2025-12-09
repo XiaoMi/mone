@@ -133,7 +133,7 @@ public class RoleService {
             Safe.run(() -> {
                 roleMap.forEach((key, role) -> {
                     if (null != transport && transport instanceof GrpcServerTransport gst) {
-                        new McpGrpcTransportSink(gst, role).sendNotification(loggingMessageNotification.toString());
+                        new McpGrpcTransportSink(gst, role).sendNotification("<notification>"+loggingMessageNotification.data()+"</notification>");
                     }
                 });
             });
