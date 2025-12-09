@@ -40,7 +40,7 @@ public class HttpServletMcpServerExample {
         
         // 创建服务器加载器
         HttpServletServerLoader loader = HttpServletServerLoader.builder()
-                .port(8080)                                    // 服务器端口
+                .port(8880)                                    // 服务器端口
                 .mcpEndpoint("/mcp")                          // MCP 端点路径
                 .keepAliveInterval(Duration.ofSeconds(30))    // 心跳间隔
                 .disallowDelete(false)                        // 允许 DELETE 请求
