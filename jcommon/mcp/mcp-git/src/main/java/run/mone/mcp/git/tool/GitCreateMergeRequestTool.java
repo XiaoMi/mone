@@ -172,16 +172,8 @@ public class GitCreateMergeRequestTool implements ITool {
                     ? inputJson.get("description").getAsString().trim()
                     : null;
 
-            String username = inputJson.has("username") && !StringUtils.isBlank(inputJson.get("username").getAsString())
-                    ? inputJson.get("username").getAsString().trim()
-                    : null;
-
-            String token = inputJson.has("token") && !StringUtils.isBlank(inputJson.get("token").getAsString())
-                    ? inputJson.get("token").getAsString().trim()
-                    : null;
-
-            log.info("开始创建Merge Request，gitUrl: {}, sourceBranch: {}, targetBranch: {}",
-                    gitUrl, sourceBranch, targetBranch);
+            log.info("开始创建Merge Request，gitUrl: {}, sourceBranch: {}, targetBranch: {}, title: {}, description: {}",
+                    gitUrl, sourceBranch, targetBranch, title, description);
 
             // 执行创建MR操作
             GitResponse response = gitService.createMergeRequest(

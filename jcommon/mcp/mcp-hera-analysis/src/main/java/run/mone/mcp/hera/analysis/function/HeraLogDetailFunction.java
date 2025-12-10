@@ -68,6 +68,14 @@ public class HeraLogDetailFunction implements McpFunction {
                     "endTime": {
                         "type": "string",
                         "description": "查询结束时间，毫秒时间戳字符串，不提供则使用当前时间"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "分页页码，从1开始，默认为1"
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "每页大小，默认为20"
                     }
                 },
                 "required": ["spaceId", "storeId", "tailName"]
@@ -123,11 +131,15 @@ public class HeraLogDetailFunction implements McpFunction {
                     startTime = String.valueOf(currentTime - 3600000);
                 }
 
-                log.info("开始查询Hera日志详情，spaceId: {}, storeId: {}, input: {}, tailName: {}, startTime: {}, endTime: {}",
-                        spaceId, storeId, input, tailName, startTime, endTime);
+                // 获取分页参数，默认值：page=1, pageSize=20
+                int page = getIntParam(args, "page", 1);
+                int pageSize = getIntParam(args, "pageSize", 20);
+
+                log.info("开始查询Hera日志详情，spaceId: {}, storeId: {}, input: {}, tailName: {}, startTime: {}, endTime: {}, page: {}, pageSize: {}",
+                        spaceId, storeId, input, tailName, startTime, endTime, page, pageSize);
 
                 // 调用服务查询日志
-                String result = heraLogDetailService.queryLogDetail(spaceId, storeId, input, tailName, startTime, endTime);
+                String result = heraLogDetailService.queryLogDetail(spaceId, storeId, input, tailName, startTime, endTime, page, pageSize);
 
                 log.info("成功查询Hera日志详情，spaceId: {}, storeId: {}", spaceId, storeId);
 
