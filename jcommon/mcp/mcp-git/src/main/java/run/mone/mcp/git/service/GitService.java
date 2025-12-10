@@ -49,15 +49,14 @@ public class GitService {
      *
      * @param repositoryUrl Git仓库URL
      * @param branchName 分支名称，默认为main
-     * @param localPath 本地路径，可选
      * @param username 用户名，可选
      * @param token 认证Token，可选
      * @param workspacePath 工作区路径，从ReactorRole获取
      * @return GitResponse
      */
-    public GitResponse gitClone(String repositoryUrl, String branchName, String localPath, String username, String token, String workspacePath) {
-        log.info("Git clone operation - repositoryUrl: {}, branchName: {}, localPath: {}, workspacePath: {}",
-                repositoryUrl, branchName, localPath, workspacePath);
+    public GitResponse gitClone(String repositoryUrl, String branchName, String username, String token, String workspacePath) {
+        log.info("Git clone operation - repositoryUrl: {}, branchName: {}, workspacePath: {}",
+                repositoryUrl, branchName, workspacePath);
 
         if (StringUtils.isBlank(repositoryUrl)) {
             return GitResponse.error("Repository URL is required");
@@ -69,12 +68,10 @@ public class GitService {
         }
 
         // 设置本地路径
-        if (StringUtils.isBlank(localPath)) {
-            String projectName = extractProjectName(repositoryUrl);
-            // 使用传入的workspacePath，如果为空则使用当前目录
-            String workspace = StringUtils.isNotBlank(workspacePath) ? workspacePath : System.getProperty("user.dir");
-            localPath = workspace + File.separator + projectName;
-        }
+        String projectName = extractProjectName(repositoryUrl);
+        // 使用传入的workspacePath，如果为空则使用当前目录
+        String workspace = StringUtils.isNotBlank(workspacePath) ? workspacePath : System.getProperty("user.dir");
+        String localPath = workspace + File.separator + projectName;
 
         File localDir = new File(localPath);
         if (localDir.exists()) {
