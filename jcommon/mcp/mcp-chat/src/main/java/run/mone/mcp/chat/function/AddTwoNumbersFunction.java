@@ -53,7 +53,7 @@ public class AddTwoNumbersFunction implements McpFunction {
         Map<String, Object> userInfo = (Map<String, Object>) arguments.get(Const.USER_INFO);
         if (userInfo != null && !userInfo.isEmpty()) {
             log.info("从 Bearer Token 获取到用户信息: {}", userInfo);
-            String tokenUsername = (String) userInfo.get("username");
+            String tokenUsername = (String) userInfo.get(Const.TOKEN_USERNAME);
             String clientId = (String) userInfo.get(Const.CLIENT_ID);
             log.info("Token验证用户 - username: {}, clientId: {}", tokenUsername, clientId);
         }
