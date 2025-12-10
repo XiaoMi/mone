@@ -1,10 +1,20 @@
 <template>
   <div class="file-manager">
     <div class="header">
-      <h2>文件管理器</h2>
+      <div class="header-title">
+        <h2>文件管理器</h2>
+        <el-tag 
+          v-if="mode === 'websocket'" 
+          :type="isWebSocketConnected ? 'success' : 'danger'"
+          size="small"
+          class="connection-status"
+        >
+          {{ isWebSocketConnected ? '已连接' : '未连接' }}
+        </el-tag>
+      </div>
       <div class="path-input">
         <el-button 
-          v-if="mode === 'local'" 
+          v-if="mode === 'local' || mode === 'websocket'" 
           type="primary" 
           @click="handleSelectDirectory" 
           :loading="loading"
@@ -13,7 +23,7 @@
           选择目录
         </el-button>
         <el-input
-          v-else
+          v-else-if="mode === 'remote'"
           v-model="inputPath"
           placeholder="请输入目录路径"
           @keyup.enter="handleLoadDirectory"
@@ -160,7 +170,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   FolderOpened,
@@ -190,13 +200,15 @@ import 'codemirror/mode/yaml/yaml.js'
 import 'codemirror/mode/go/go.js'
 import 'codemirror/mode/clike/clike.js'
 
-import type { FileInfo, IFileSystemAdapter, DirectoryStackItem } from './types'
+import type { FileInfo, IFileSystemAdapter, DirectoryStackItem, WSMessageType } from './types'
+import { WSMessageType as MsgType } from './types'
 import { useTheme } from '@/styles/theme/useTheme'
+import { WebSocketFileSystemAdapter } from './adapters/WebSocketFileSystemAdapter'
 
 // Props
 interface Props {
   adapter: IFileSystemAdapter
-  mode?: 'local' | 'remote'
+  mode?: 'local' | 'remote' | 'websocket'
   initialPath?: string
 }
 
@@ -263,6 +275,28 @@ watch(
   },
   { immediate: true }
 )
+
+// WebSocket相关
+const isWebSocketMode = computed(() => props.adapter instanceof WebSocketFileSystemAdapter)
+const isWebSocketConnected = computed(() => {
+  if (!isWebSocketMode.value) return false
+  const wsAdapter = props.adapter as WebSocketFileSystemAdapter
+  return wsAdapter.isWebSocketConnected()
+})
+
+// 组件挂载时初始化
+onMounted(() => {
+  // 如果是WebSocket模式且有初始路径，加载目录
+  if (isWebSocketMode.value && props.initialPath) {
+    currentPath.value = props.initialPath
+    loadDirectory()
+  }
+})
+
+// 组件卸载时清理
+onBeforeUnmount(() => {
+  // 清理工作
+})
 
 // 文本文件扩展名
 const textFileExtensions = [
@@ -408,9 +442,7 @@ async function navigateToPath(index: number) {
     directoryStack.value = directoryStack.value.slice(0, index + 1)
     const targetDir = directoryStack.value[index]
     currentDirHandle.value = targetDir.handle
-    currentPath.value = props.mode === 'local' 
-      ? directoryStack.value.map(d => d.name).join('/')
-      : targetDir.path || ''
+    currentPath.value = directoryStack.value.map(d => d.name).join('/')
     await loadDirectory()
     emit('directoryChanged', currentPath.value)
   }
@@ -425,20 +457,14 @@ function handleFileClick(file: FileInfo) {
 // 处理文件双击
 async function handleFileDblClick(file: FileInfo) {
   if (file.isDirectory) {
-    if (props.mode === 'local') {
-      currentDirHandle.value = file.handle
-    }
-    const newPath = props.mode === 'local' 
-      ? file.name 
-      : currentPath.value + '/' + file.name
+    currentDirHandle.value = file.handle
+    const newPath = file.name
     directoryStack.value.push({ 
       name: file.name, 
       handle: file.handle,
       path: newPath
     })
-    currentPath.value = props.mode === 'local'
-      ? directoryStack.value.map(d => d.name).join('/')
-      : newPath
+    currentPath.value = directoryStack.value.map(d => d.name).join('/')
     await loadDirectory()
     emit('directoryChanged', currentPath.value)
   } else {
@@ -647,6 +673,20 @@ async function createFileOrDir() {
   }
 }
 
+// 组件挂载时初始化
+onMounted(() => {
+  // 如果是WebSocket模式且有初始路径，加载目录
+  if (isWebSocketMode.value && props.initialPath) {
+    currentPath.value = props.initialPath
+    loadDirectory()
+  }
+})
+
+// 组件卸载时清理
+onBeforeUnmount(() => {
+  // 清理工作
+})
+
 // 暴露方法给父组件
 defineExpose({
   loadDirectory,
@@ -694,6 +734,23 @@ defineExpose({
     padding: 20px;
     background: var(--el-bg-color);
     border-bottom: 1px solid var(--el-border-color);
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+
+      h2 {
+        margin: 0;
+        font-size: 24px;
+        color: var(--el-text-color-primary);
+      }
+
+      .connection-status {
+        font-size: 12px;
+      }
+    }
 
     h2 {
       margin: 0 0 16px 0;
@@ -762,12 +819,23 @@ defineExpose({
           position: relative;
 
           &:hover {
-            background: var(--el-fill-color-light);
+            background: var(--el-fill-color);
           }
 
           &.active {
             background: var(--el-color-primary-light-9);
             border-left: 3px solid var(--el-color-primary);
+            padding-left: 9px;
+            box-shadow: 0 0 8px rgba(64, 158, 255, 0.2);
+
+            .file-name {
+              color: var(--el-color-primary);
+              font-weight: 500;
+            }
+
+            .file-icon {
+              color: var(--el-color-primary);
+            }
           }
 
           &.directory {
@@ -778,6 +846,12 @@ defineExpose({
 
             .file-icon {
               color: var(--el-color-primary);
+            }
+
+            &.active {
+              .file-name {
+                color: var(--el-color-primary);
+              }
             }
           }
 
@@ -940,6 +1014,43 @@ defineExpose({
       .el-icon {
         color: var(--el-text-color-secondary);
       }
+    }
+  }
+}
+
+// Dark主题特殊优化
+html.dark,
+html[data-theme="dark"],
+.dark {
+  .file-manager {
+    .file-list {
+      .file-item {
+        &.active {
+          background: rgba(64, 158, 255, 0.15);
+          border-left-color: var(--el-color-primary);
+          box-shadow: 0 0 12px rgba(64, 158, 255, 0.3);
+
+          .file-name {
+            color: var(--el-color-primary-light-3);
+          }
+
+          .file-icon {
+            color: var(--el-color-primary-light-3);
+          }
+
+          .file-size {
+            color: var(--el-text-color-secondary);
+          }
+        }
+
+        &:hover:not(.active) {
+          background: rgba(255, 255, 255, 0.05);
+        }
+      }
+    }
+
+    .breadcrumb {
+      background: rgba(255, 255, 255, 0.03);
     }
   }
 }

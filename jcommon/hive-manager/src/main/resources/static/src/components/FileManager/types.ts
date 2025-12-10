@@ -58,3 +58,63 @@ export interface DirectoryStackItem {
   handle?: any
   path?: string
 }
+
+/**
+ * WebSocket消息类型
+ */
+export enum WSMessageType {
+  // 请求类型
+  LIST_DIRECTORY = 'list_directory',
+  READ_FILE = 'read_file',
+  WRITE_FILE = 'write_file',
+  DELETE_FILE = 'delete_file',
+  CREATE_DIRECTORY = 'create_directory',
+  CREATE_FILE = 'create_file',
+  
+  // 响应类型
+  DIRECTORY_LIST = 'directory_list',
+  FILE_CONTENT = 'file_content',
+  OPERATION_SUCCESS = 'operation_success',
+  OPERATION_ERROR = 'operation_error',
+  
+  // 通知类型
+  FILE_CHANGED = 'file_changed',
+  FILE_CREATED = 'file_created',
+  FILE_DELETED = 'file_deleted'
+}
+
+/**
+ * WebSocket消息接口
+ */
+export interface WSMessage {
+  type: WSMessageType
+  requestId?: string
+  data?: any
+  error?: string
+}
+
+/**
+ * WebSocket请求接口
+ */
+export interface WSRequest {
+  type: WSMessageType
+  requestId: string
+  data: {
+    path?: string
+    name?: string
+    content?: string
+    isDirectory?: boolean
+    [key: string]: any
+  }
+}
+
+/**
+ * WebSocket响应接口
+ */
+export interface WSResponse {
+  type: WSMessageType
+  requestId: string
+  success: boolean
+  data?: any
+  error?: string
+}

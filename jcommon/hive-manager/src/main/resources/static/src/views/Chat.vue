@@ -14,7 +14,7 @@
       <!-- 文件管理器 -->
       <transition name="slide-fade">
         <div v-if="showFileManager" class="file-manager-wrapper">
-          <FileManagerCore :adapter="fileAdapter" :mode="'local'" />
+          <FileManagerCore :adapter="fileAdapter" :mode="fileManagerMode" />
         </div>
       </transition>
 
@@ -48,7 +48,7 @@
 </template>
 <script setup lang="ts">
 import ChatWindow from '@/components/Chat/ChatWindow.vue'
-import { FileManagerCore, LocalFileSystemAdapter } from '@/components/FileManager'
+import { FileManagerCore, LocalFileSystemAdapter, WebSocketFileSystemAdapter } from '@/components/FileManager'
 import { Close, Folder } from '@element-plus/icons-vue'
 import { type MessageClickPayload } from "@/components/Chat/messages/HelloMessage.vue";
 import { useUserStore } from '@/stores/user'
@@ -91,10 +91,59 @@ const list = computed(() => {
 
 // 文件管理器相关
 const showFileManager = ref(false)
-const fileAdapter = new LocalFileSystemAdapter()
+const fileManagerMode = ref<'local' | 'websocket'>('local')
+const fileAdapter = ref<LocalFileSystemAdapter | WebSocketFileSystemAdapter>(new LocalFileSystemAdapter())
 
 const toggleFileManager = () => {
   showFileManager.value = !showFileManager.value
+  
+  // 首次打开文件管理器时，根据agent连接信息决定使用哪种模式
+  if (showFileManager.value && fileManagerMode.value === 'local') {
+    initFileManager()
+  }
+}
+
+// 初始化文件管理器
+const initFileManager = () => {
+  const agent = getAgent()
+  const instance = getSelectedInstance()
+  
+  // 如果有agent和实例信息，使用WebSocket模式
+  if (agent?.name && instance?.ip && instance?.port) {
+    fileManagerMode.value = 'websocket'
+    
+    // 构建WebSocket URL (使用与chat相同的连接信息)
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `ws://127.0.0.1:8080/ws/echo`
+    
+    const wsAdapter = new WebSocketFileSystemAdapter(
+      wsUrl,
+      () => {
+        console.log('[FileManager] WebSocket connected')
+        // 连接成功后，可以加载默认目录
+      },
+      () => {
+        console.log('[FileManager] WebSocket disconnected')
+      },
+      (error) => {
+        console.error('[FileManager] WebSocket error:', error)
+      }
+    )
+    
+    // 连接WebSocket
+    wsAdapter.connect().then(() => {
+      fileAdapter.value = wsAdapter
+    }).catch((error) => {
+      console.error('[FileManager] Failed to connect:', error)
+      // 如果连接失败，回退到本地模式
+      fileManagerMode.value = 'local'
+      fileAdapter.value = new LocalFileSystemAdapter()
+    })
+  } else {
+    // 没有agent信息，使用本地模式
+    fileManagerMode.value = 'local'
+    fileAdapter.value = new LocalFileSystemAdapter()
+  }
 }
 
 // 用于存储每个 uuid 对应的未处理数据
@@ -830,6 +879,11 @@ onBeforeUnmount(() => {
   initCodePrompt()
   resetTokenUsage()
   clearAgentConfig()
+  
+  // 清理文件管理器WebSocket连接
+  if (fileManagerMode.value === 'websocket' && fileAdapter.value instanceof WebSocketFileSystemAdapter) {
+    fileAdapter.value.disconnect()
+  }
 })
 
 // 获取主题
