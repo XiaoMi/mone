@@ -13,13 +13,35 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 3000
+  private ignorePatterns: string[] = []
 
   constructor(
     private wsUrl: string,
     private onConnected?: () => void,
     private onDisconnected?: () => void,
-    private onError?: (error: Event) => void
-  ) {}
+    private onError?: (error: Event) => void,
+    ignorePatterns?: string[]
+  ) {
+    // 默认忽略常见的目录和文件
+    this.ignorePatterns = ignorePatterns || [
+      'node_modules',
+      '.git',
+      '.github',
+      '.DS_Store',
+      'dist',
+      'build',
+      'target',
+      '.idea',
+      '.vscode',
+      '*.log',
+      'coverage',
+      '.next',
+      '.nuxt',
+      'out',
+      'tmp',
+      'temp'
+    ]
+  }
 
   /**
    * 连接到WebSocket服务器
@@ -93,6 +115,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
    * 处理接收到的WebSocket消息（服务器发来的指令）
    */
   private async handleMessage(data: string): Promise<void> {
+    debugger;
     try {
       const message: WSRequest = JSON.parse(data)
       console.log('[WebSocket] Received command:', message)
@@ -145,7 +168,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
       }
 
       // 发送响应回服务器
-      // this.sendResponse(response)
+      this.sendResponse(response)
     } catch (error) {
       console.error('[WebSocket] Failed to parse message:', error)
     }
@@ -171,7 +194,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
   }
 
   /**
-   * 执行列出目录操作
+   * 执行列出目录操作 - 递归获取完整目录结构
    */
   private async executeListDirectory(path: string): Promise<{ files: FileInfo[] }> {
     if (!this.rootDirHandle) {
@@ -184,9 +207,36 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     }
 
     const files: FileInfo[] = []
+    await this.recursiveListDirectory(targetHandle as FileSystemDirectoryHandle, path, files)
+
+    // 排序：目录优先，然后按名称
+    files.sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1
+      if (!a.isDirectory && b.isDirectory) return 1
+      return a.path.localeCompare(b.path)
+    })
+
+    return { files }
+  }
+
+  /**
+   * 递归列出目录中的所有文件和子目录
+   */
+  private async recursiveListDirectory(
+    dirHandle: FileSystemDirectoryHandle,
+    currentPath: string,
+    files: FileInfo[]
+  ): Promise<void> {
     // @ts-ignore - FileSystemDirectoryHandle values() method
-    for await (const entry of (targetHandle as FileSystemDirectoryHandle).values()) {
+    for await (const entry of dirHandle.values()) {
       try {
+        // 检查是否应该忽略此文件/目录
+        if (this.shouldIgnore(entry.name)) {
+          console.log(`[Ignore] Skipping: ${entry.name}`)
+          continue
+        }
+
+        const entryPath = currentPath ? `${currentPath}/${entry.name}` : entry.name
         let size = 0
         let lastModified = 0
         
@@ -195,29 +245,78 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
           const file_obj = await fileHandle.getFile()
           size = file_obj.size
           lastModified = file_obj.lastModified
-        }
 
-        files.push({
-          name: entry.name,
-          path: entry.name,
-          isDirectory: entry.kind === 'directory',
-          size,
-          lastModified,
-          handle: entry,
-        })
+          files.push({
+            name: entry.name,
+            path: entryPath,
+            isDirectory: false,
+            size,
+            lastModified,
+            handle: entry,
+          })
+        } else if (entry.kind === 'directory') {
+          // 添加目录本身
+          files.push({
+            name: entry.name,
+            path: entryPath,
+            isDirectory: true,
+            size: 0,
+            lastModified: 0,
+            handle: entry,
+          })
+
+          // 递归处理子目录
+          await this.recursiveListDirectory(entry as FileSystemDirectoryHandle, entryPath, files)
+        }
       } catch (e) {
         console.error('Error reading entry:', entry.name, e)
       }
     }
+  }
 
-    // 排序：目录优先，然后按名称
-    files.sort((a, b) => {
-      if (a.isDirectory && !b.isDirectory) return -1
-      if (!a.isDirectory && b.isDirectory) return 1
-      return a.name.localeCompare(b.name)
+  /**
+   * 检查文件/目录名是否应该被忽略
+   */
+  private shouldIgnore(name: string): boolean {
+    return this.ignorePatterns.some(pattern => {
+      // 支持通配符模式
+      if (pattern.includes('*')) {
+        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$')
+        return regex.test(name)
+      }
+      // 精确匹配
+      return name === pattern
     })
+  }
 
-    return { files }
+  /**
+   * 设置忽略模式
+   */
+  setIgnorePatterns(patterns: string[]): void {
+    this.ignorePatterns = patterns
+  }
+
+  /**
+   * 添加忽略模式
+   */
+  addIgnorePattern(pattern: string): void {
+    if (!this.ignorePatterns.includes(pattern)) {
+      this.ignorePatterns.push(pattern)
+    }
+  }
+
+  /**
+   * 移除忽略模式
+   */
+  removeIgnorePattern(pattern: string): void {
+    this.ignorePatterns = this.ignorePatterns.filter(p => p !== pattern)
+  }
+
+  /**
+   * 获取当前忽略模式
+   */
+  getIgnorePatterns(): string[] {
+    return [...this.ignorePatterns]
   }
 
   /**
@@ -366,11 +465,18 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
       // 使用空字符串作为根路径，以便正确处理相对路径
       this.currentPath = ''
       
-      // 通知服务器目录已选择
-      this.sendNotification(MsgType.DIRECTORY_LIST, {
-        path: this.currentPath,
-        rootName: dirHandle.name,
-      })
+      // // 通知服务器目录已选择
+      // this.sendNotification(MsgType.DIRECTORY_LIST, {
+      //   path: this.currentPath,
+      //   rootName: dirHandle.name,
+      // })
+
+      setTimeout(() => {
+        this.sendNotification(MsgType.LIST_DIRECTORY, {
+          path: this.currentPath,
+          rootName: dirHandle.name,
+        })
+      }, 1000);
 
       return { path: dirHandle.name, handle: dirHandle }
     } catch (error: any) {
@@ -385,8 +491,15 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     // 如果提供了handle，直接使用它（与LocalFileSystemAdapter一致）
     if (handle) {
       const files: FileInfo[] = []
+      // @ts-ignore - FileSystemDirectoryHandle values() method
       for await (const entry of handle.values()) {
         try {
+          // 检查是否应该忽略此文件/目录
+          if (this.shouldIgnore(entry.name)) {
+            console.log(`[Ignore] Skipping: ${entry.name}`)
+            continue
+          }
+
           let size = 0
           let lastModified = 0
           

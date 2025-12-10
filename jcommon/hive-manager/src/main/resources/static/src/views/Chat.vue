@@ -92,7 +92,17 @@ const list = computed(() => {
 // 文件管理器相关
 const showFileManager = ref(false)
 const fileManagerMode = ref<'local' | 'websocket'>('local')
-const fileAdapter = ref<LocalFileSystemAdapter | WebSocketFileSystemAdapter>(new LocalFileSystemAdapter())
+
+// 获取忽略模式配置
+const getIgnorePatterns = (): string[] | undefined => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const ignoreParam = urlParams.get('ignore')
+  return ignoreParam ? ignoreParam.split(',') : undefined
+}
+
+const fileAdapter = ref<LocalFileSystemAdapter | WebSocketFileSystemAdapter>(
+  new LocalFileSystemAdapter(getIgnorePatterns())
+)
 
 const toggleFileManager = () => {
   showFileManager.value = !showFileManager.value
@@ -113,8 +123,13 @@ const initFileManager = () => {
     fileManagerMode.value = 'websocket'
     
     // 构建WebSocket URL (使用与chat相同的连接信息)
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `ws://127.0.0.1:8080/ws/echo`
+    // 支持通过URL参数指定wsUrl
+    const urlParams = new URLSearchParams(window.location.search)
+    const wsUrl = urlParams.get('wsUrl') || `ws://127.0.0.1:8080/ws/echo`
+    
+    // 支持通过URL参数指定忽略模式
+    const ignoreParam = urlParams.get('ignore')
+    const customIgnorePatterns = ignoreParam ? ignoreParam.split(',') : undefined
     
     const wsAdapter = new WebSocketFileSystemAdapter(
       wsUrl,
@@ -127,7 +142,8 @@ const initFileManager = () => {
       },
       (error) => {
         console.error('[FileManager] WebSocket error:', error)
-      }
+      },
+      customIgnorePatterns
     )
     
     // 连接WebSocket
@@ -137,12 +153,12 @@ const initFileManager = () => {
       console.error('[FileManager] Failed to connect:', error)
       // 如果连接失败，回退到本地模式
       fileManagerMode.value = 'local'
-      fileAdapter.value = new LocalFileSystemAdapter()
+      fileAdapter.value = new LocalFileSystemAdapter(getIgnorePatterns())
     })
   } else {
     // 没有agent信息，使用本地模式
     fileManagerMode.value = 'local'
-    fileAdapter.value = new LocalFileSystemAdapter()
+    fileAdapter.value = new LocalFileSystemAdapter(getIgnorePatterns())
   }
 }
 

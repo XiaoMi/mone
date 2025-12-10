@@ -5,6 +5,43 @@ import type { IFileSystemAdapter, FileInfo, DirectoryStackItem } from '../types'
  * 本地文件系统适配器（使用 File System Access API）
  */
 export class LocalFileSystemAdapter implements IFileSystemAdapter {
+  private ignorePatterns: string[] = []
+
+  constructor(ignorePatterns?: string[]) {
+    // 默认忽略常见的目录和文件
+    this.ignorePatterns = ignorePatterns || [
+      'node_modules',
+      '.git',
+      '.DS_Store',
+      'dist',
+      'build',
+      'target',
+      '.idea',
+      '.vscode',
+      '*.log',
+      'coverage',
+      '.next',
+      '.nuxt',
+      'out',
+      'tmp',
+      'temp'
+    ]
+  }
+
+  /**
+   * 检查文件/目录名是否应该被忽略
+   */
+  private shouldIgnore(name: string): boolean {
+    return this.ignorePatterns.some(pattern => {
+      // 支持通配符模式
+      if (pattern.includes('*')) {
+        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$')
+        return regex.test(name)
+      }
+      // 精确匹配
+      return name === pattern
+    })
+  }
   
   async selectDirectory(): Promise<{ path: string; handle: FileSystemDirectoryHandle }> {
     try {
@@ -31,8 +68,15 @@ export class LocalFileSystemAdapter implements IFileSystemAdapter {
     
     const fileList: FileInfo[] = []
     
+    // @ts-ignore - FileSystemDirectoryHandle values() method
     for await (const entry of handle.values()) {
       try {
+        // 检查是否应该忽略此文件/目录
+        if (this.shouldIgnore(entry.name)) {
+          console.log(`[Ignore] Skipping: ${entry.name}`)
+          continue
+        }
+
         let size = 0
         let lastModified = 0
         
@@ -106,5 +150,35 @@ export class LocalFileSystemAdapter implements IFileSystemAdapter {
     const writable = await fileHandle.createWritable()
     await writable.write('')
     await writable.close()
+  }
+
+  /**
+   * 设置忽略模式
+   */
+  setIgnorePatterns(patterns: string[]): void {
+    this.ignorePatterns = patterns
+  }
+
+  /**
+   * 添加忽略模式
+   */
+  addIgnorePattern(pattern: string): void {
+    if (!this.ignorePatterns.includes(pattern)) {
+      this.ignorePatterns.push(pattern)
+    }
+  }
+
+  /**
+   * 移除忽略模式
+   */
+  removeIgnorePattern(pattern: string): void {
+    this.ignorePatterns = this.ignorePatterns.filter(p => p !== pattern)
+  }
+
+  /**
+   * 获取当前忽略模式
+   */
+  getIgnorePatterns(): string[] {
+    return [...this.ignorePatterns]
   }
 }
