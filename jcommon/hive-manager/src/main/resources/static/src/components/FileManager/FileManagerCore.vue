@@ -125,7 +125,9 @@
 
       <div class="empty-editor" v-else>
         <el-empty description="请选择文件进行编辑">
-          <el-icon :size="80" color="#ccc"><DocumentCopy /></el-icon>
+          <template #image>
+            <el-icon :size="80" class="empty-icon"><DocumentCopy /></el-icon>
+          </template>
         </el-empty>
       </div>
     </div>
@@ -158,7 +160,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   FolderOpened,
@@ -176,6 +178,7 @@ import {
 import Codemirror from 'codemirror-editor-vue3'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/material.css'
+import 'codemirror/theme/elegant.css'
 import 'codemirror/mode/javascript/javascript.js'
 import 'codemirror/mode/css/css.js'
 import 'codemirror/mode/xml/xml.js'
@@ -188,6 +191,7 @@ import 'codemirror/mode/go/go.js'
 import 'codemirror/mode/clike/clike.js'
 
 import type { FileInfo, IFileSystemAdapter, DirectoryStackItem } from './types'
+import { useTheme } from '@/styles/theme/useTheme'
 
 // Props
 interface Props {
@@ -209,6 +213,9 @@ const emit = defineEmits<{
   fileDeleted: [file: FileInfo]
   directoryChanged: [path: string]
 }>()
+
+// 获取主题
+const { currentTheme } = useTheme()
 
 // 状态管理
 const inputPath = ref(props.initialPath)
@@ -243,6 +250,19 @@ const cmOptions = ref({
   tabSize: 2,
   readOnly: false
 })
+
+// 监听主题变化，动态切换编辑器主题
+watch(
+  () => currentTheme.value.name,
+  (themeName) => {
+    if (themeName.toLowerCase().includes('dark') || themeName.toLowerCase().includes('cyberpunk')) {
+      cmOptions.value.theme = 'material'
+    } else {
+      cmOptions.value.theme = 'elegant'
+    }
+  },
+  { immediate: true }
+)
 
 // 文本文件扩展名
 const textFileExtensions = [
@@ -640,17 +660,45 @@ defineExpose({
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: var(--el-bg-color-page);
+
+  // 确保所有图标使用主题颜色
+  :deep(.el-icon) {
+    color: inherit;
+  }
+
+  // 按钮主题适配
+  :deep(.el-button) {
+    transition: all 0.3s;
+
+    &:not(.el-button--primary) {
+      background-color: var(--el-fill-color-light);
+      border-color: var(--el-border-color);
+      color: var(--el-text-color-regular);
+
+      &:hover:not(:disabled) {
+        background-color: var(--el-fill-color);
+        border-color: var(--el-color-primary-light-7);
+        color: var(--el-color-primary);
+      }
+
+      &:disabled {
+        background-color: var(--el-fill-color-light);
+        border-color: var(--el-border-color-lighter);
+        color: var(--el-text-color-placeholder);
+      }
+    }
+  }
 
   .header {
     padding: 20px;
-    background: white;
-    border-bottom: 1px solid #e4e7ed;
+    background: var(--el-bg-color);
+    border-bottom: 1px solid var(--el-border-color);
 
     h2 {
       margin: 0 0 16px 0;
       font-size: 24px;
-      color: #303133;
+      color: var(--el-text-color-primary);
     }
 
     .path-input {
@@ -659,7 +707,7 @@ defineExpose({
       gap: 16px;
 
       .current-path {
-        color: #606266;
+        color: var(--el-text-color-regular);
         font-size: 14px;
       }
     }
@@ -672,27 +720,29 @@ defineExpose({
 
     .file-list {
       width: 400px;
-      background: white;
-      border-right: 1px solid #e4e7ed;
+      background: var(--el-bg-color);
+      border-right: 1px solid var(--el-border-color);
       display: flex;
       flex-direction: column;
 
       .toolbar {
         padding: 12px;
-        border-bottom: 1px solid #e4e7ed;
+        border-bottom: 1px solid var(--el-border-color);
         display: flex;
         gap: 8px;
       }
 
       .breadcrumb {
         padding: 12px;
-        border-bottom: 1px solid #e4e7ed;
-        background: #fafafa;
+        border-bottom: 1px solid var(--el-border-color);
+        background: var(--el-fill-color-light);
 
         .breadcrumb-item {
           cursor: pointer;
+          color: var(--el-text-color-regular);
+          
           &:hover {
-            color: #409eff;
+            color: var(--el-color-primary);
           }
         }
       }
@@ -712,25 +762,30 @@ defineExpose({
           position: relative;
 
           &:hover {
-            background: #f5f7fa;
+            background: var(--el-fill-color-light);
           }
 
           &.active {
-            background: #ecf5ff;
-            border-left: 3px solid #409eff;
+            background: var(--el-color-primary-light-9);
+            border-left: 3px solid var(--el-color-primary);
           }
 
           &.directory {
             .file-name {
               font-weight: 500;
-              color: #409eff;
+              color: var(--el-color-primary);
+            }
+
+            .file-icon {
+              color: var(--el-color-primary);
             }
           }
 
           .file-icon {
             font-size: 20px;
             margin-right: 10px;
-            color: #909399;
+            color: var(--el-text-color-secondary);
+            transition: color 0.2s;
           }
 
           .file-name {
@@ -738,12 +793,12 @@ defineExpose({
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            color: #606266;
+            color: var(--el-text-color-regular);
           }
 
           .file-size {
             font-size: 12px;
-            color: #909399;
+            color: var(--el-text-color-secondary);
             margin-right: 8px;
           }
 
@@ -751,9 +806,10 @@ defineExpose({
             opacity: 0;
             transition: opacity 0.2s;
             cursor: pointer;
+            color: var(--el-text-color-secondary);
 
             &:hover {
-              color: #409eff;
+              color: var(--el-color-primary);
             }
           }
 
@@ -768,11 +824,11 @@ defineExpose({
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: white;
+      background: var(--el-bg-color);
 
       .editor-header {
         padding: 12px 20px;
-        border-bottom: 1px solid #e4e7ed;
+        border-bottom: 1px solid var(--el-border-color);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -784,7 +840,7 @@ defineExpose({
 
           .editing-file-name {
             font-weight: 500;
-            color: #303133;
+            color: var(--el-text-color-primary);
           }
         }
 
@@ -798,15 +854,31 @@ defineExpose({
         flex: 1;
         overflow: hidden;
         position: relative;
+        background: var(--el-bg-color);
 
         :deep(.CodeMirror) {
           height: 100% !important;
           font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
           font-size: 14px;
+          background: var(--el-bg-color);
+          color: var(--el-text-color-primary);
         }
 
         :deep(.CodeMirror-scroll) {
           height: 100%;
+        }
+
+        :deep(.CodeMirror-gutters) {
+          background: var(--el-bg-color);
+          border-right: 1px solid var(--el-border-color);
+        }
+
+        :deep(.CodeMirror-linenumber) {
+          color: var(--el-text-color-secondary);
+        }
+
+        :deep(.CodeMirror-cursor) {
+          border-left-color: var(--el-text-color-primary);
         }
       }
     }
@@ -816,7 +888,58 @@ defineExpose({
       display: flex;
       align-items: center;
       justify-content: center;
-      background: white;
+      background: var(--el-bg-color);
+
+      .empty-icon {
+        color: var(--el-text-color-placeholder);
+      }
+
+      :deep(.el-empty) {
+        padding: 40px 0;
+      }
+
+      :deep(.el-empty__description) {
+        color: var(--el-text-color-secondary);
+        margin-top: 16px;
+      }
+
+      :deep(.el-empty__image) {
+        svg {
+          fill: var(--el-fill-color-dark);
+        }
+      }
+    }
+  }
+
+  // 全局el-empty主题适配
+  :deep(.el-empty) {
+    .el-empty__description {
+      color: var(--el-text-color-secondary);
+    }
+
+    .el-empty__image {
+      svg {
+        fill: var(--el-fill-color-dark);
+      }
+    }
+  }
+
+  // 下拉菜单主题适配
+  :deep(.el-dropdown-menu) {
+    background-color: var(--el-bg-color-overlay);
+    border: 1px solid var(--el-border-color-light);
+
+    .el-dropdown-menu__item {
+      color: var(--el-text-color-regular);
+
+      &:hover {
+        background-color: var(--el-fill-color-light);
+        color: var(--el-color-primary);
+      }
+
+      .el-icon {
+        color: var(--el-text-color-secondary);
+      }
     }
   }
 }

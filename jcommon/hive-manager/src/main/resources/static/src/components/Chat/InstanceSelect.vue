@@ -529,7 +529,7 @@ const sendReloadCommand = async () => {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  padding: 0 16px;
+  padding: 16px 16px 0 16px;
   box-sizing: border-box;
 }
 
