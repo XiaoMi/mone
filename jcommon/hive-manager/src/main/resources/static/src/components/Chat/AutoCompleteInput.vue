@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, defineEmits, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 
 const props = defineProps({
   modelValue: {
@@ -47,23 +47,23 @@ const emit = defineEmits(['update:modelValue']);
 
 const userInputRef = ref<HTMLDivElement | null>(null);
 
-// 监听 modelValue 变化，同步到输入框
-watch(() => props.modelValue, (newValue) => {
-  if (userInputRef.value && userInputRef.value.textContent !== newValue) {
-    userInputRef.value.textContent = newValue;
-    // 将光标移到末尾
-    nextTick(() => {
-      const range = document.createRange();
-      const selection = window.getSelection();
-      if (userInputRef.value && userInputRef.value.childNodes.length > 0) {
-        range.selectNodeContents(userInputRef.value);
-        range.collapse(false);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-      }
-    });
-  }
-});
+// // 监听 modelValue 变化，同步到输入框
+// watch(() => props.modelValue, (newValue) => {
+//   if (userInputRef.value && userInputRef.value.textContent !== newValue) {
+//     userInputRef.value.textContent = newValue;
+//     // 将光标移到末尾
+//     nextTick(() => {
+//       const range = document.createRange();
+//       const selection = window.getSelection();
+//       if (userInputRef.value && userInputRef.value.childNodes.length > 0) {
+//         range.selectNodeContents(userInputRef.value);
+//         range.collapse(false);
+//         selection?.removeAllRanges();
+//         selection?.addRange(range);
+//       }
+//     });
+//   }
+// });
 
 onMounted(() => {
   init();
@@ -134,6 +134,24 @@ function cleanTextContent() {
   }
 }
 
+function setTextContent(text: string) {
+  if (userInputRef.value) {
+    userInputRef.value.textContent = text;
+    updateModelValue(text);
+    // 将光标移到末尾
+    nextTick(() => {
+      const range = document.createRange();
+      const selection = window.getSelection();
+      if (userInputRef.value && userInputRef.value.childNodes.length > 0) {
+        range.selectNodeContents(userInputRef.value);
+        range.collapse(false);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    });
+  }
+}
+
 function handlePaste(event: ClipboardEvent) {
   // 阻止默认粘贴行为
   event.preventDefault();
@@ -147,7 +165,8 @@ function handlePaste(event: ClipboardEvent) {
 
 defineExpose({
   cleanTextContent,
-  focus: focusUserInput
+  focus: focusUserInput,
+  setTextContent,
 })
 </script>
 

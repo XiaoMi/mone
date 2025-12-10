@@ -792,6 +792,7 @@ const onMessageCmd = async (type: string, item: Message) => {
       break
   }
 }
+
 onBeforeUnmount(() => {
   setAgent(null)
   setInstance(null)
@@ -825,13 +826,30 @@ onMounted(async () => {
           text: `你好，我是 ${agent!.name}，有什么可以帮你的吗？`,
         },
       })
-      // 初始化WebSocket连接
-      toggleSendMethod('ws')
 
-      // 自动发送/create命令
-      setTimeout(async () => {
-        await sendCreateCommand()
-      }, 1000);
+      nextTick(() => {
+        // 初始化WebSocket连接
+        toggleSendMethod('ws');
+
+        // 自动发送/create命令
+        setTimeout(async () => {
+          await sendCreateCommand()
+          route.query.userInput && sendMessage({
+            type: 'md',
+            author: {
+              cname: user?.cname || '',
+              username: user?.username || '',
+              avatar: user?.avatar || '',
+            },
+            meta: {
+              role: 'USER',
+            },
+            data: {
+              text: `${route.query.userInput}`,
+            },
+          })
+        }, 1000);
+      })
     }
   } catch (error) {
     console.error('获取Agent详情失败:', error)
