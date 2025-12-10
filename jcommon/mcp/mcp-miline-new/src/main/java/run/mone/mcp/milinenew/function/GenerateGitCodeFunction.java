@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class GenerateGitCodeFunction implements McpFunction {
-    @Value("${git.email.suffix}")
+    @Value("${git.default.username}")
     private String gitUserName;
     public static final String TOOL_SCHEMA = """
             {

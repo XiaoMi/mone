@@ -4,7 +4,8 @@ import { SimpleHtmlParser } from "./simple-html-parser";
 
 // 全局存储已存在的 PID 组件内容（只存储内容，不直接渲染）
 // export const existingPidComponents = new Map<string, string[]>();
-import { usePidLogStore } from '@/stores/pid-log'
+import { usePidLogStore } from '@/stores/pid-log';
+import { useMcpNotificationStore } from '@/stores/mcp-notification';
 
 
 export function markdownItMcp(md: MarkdownIt) {
@@ -51,7 +52,8 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<list_code_definition_names>") ||
         mcpContent.includes("<tool_result>") ||
         mcpContent.includes("<pid>") ||
-        mcpContent.includes("<terminal_append>")
+        mcpContent.includes("<terminal_append>") ||
+        mcpContent.includes("<notification>")
       )
     ) {
       return false;
@@ -68,6 +70,7 @@ export function markdownItMcp(md: MarkdownIt) {
     // 用于 terminal_append 功能的变量
     let currentPid = "";
     let currentContent = "";
+    let currentNotication = "";
 
     // 辅助函数：获取当前标签栈顶的标签
     const getCurrentTag = () => tagStack[tagStack.length - 1];
@@ -296,7 +299,10 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `<span class="pid-buttons-container process-running" data-pid="" title="进程控制面板">`;
         } else if (name === 'hive-msg-id') {
           html += `<div class="hive-checkpoint-container">`;
-        }else if (name === "terminal_append") {
+        } else if (name === "notification") {
+          // html += `<div class="notification-block"><span class="notification-label">通知：</span><span class="notification-content">`;
+          currentNotication = "";
+        } else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
           // html += `<!-- terminal_append_start -->`;
         } else if (name === "process_pid") {
@@ -380,6 +386,9 @@ export function markdownItMcp(md: MarkdownIt) {
         }  else if (tagName === "usage") {
           // 处理任务进度内容，转换为列表
           // html += '';
+          return;
+        } else if (tagName === "notification") {
+          currentNotication += text;
           return;
         }
         if (isDownloadFile) {
@@ -470,6 +479,9 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div></div>`;
         } else if (tagname === 'hive-msg-id') {
           html += `</div>`;
+        } else if (tagname === "notification") {
+          // html += `</span></div>`;
+          useMcpNotificationStore().addNotification('info', '来自MCP的通知', currentNotication.trim());
         } else if (tagname === "file_operation") {
           html += `</div></div>`;
         } else if (tagname === "execute") {

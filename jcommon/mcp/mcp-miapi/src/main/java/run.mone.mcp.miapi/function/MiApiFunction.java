@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.miapi.utils.HttpUtils;
@@ -37,6 +38,7 @@ public class MiApiFunction implements McpFunction {
     private static final String BASE_URL = System.getenv("gateway_host");
 
     @Override
+    @ReportCallCount(businessName = "miapi-api-query_project", description = "查询项目")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("miapi mcp arguments: {}", arguments);
         try {

@@ -11,8 +11,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -144,6 +144,52 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     private TokenAuthCache tokenAuthCache;
 
     /**
+     * 是否使用 progress 通知类型发送定时消息，默认为 true
+     * true: 使用 notifications/progress
+     * false: 使用 notifications/message
+     */
+    @Setter
+    private boolean useProgressNotification = false;
+
+    /**
+     * 是否启用 session 超时清理，默认为 false（不清理）
+     * true: 根据 keepAliveInterval 清理超时的 session
+     * false: 不清理超时的 session
+     */
+    @Setter
+    private boolean enableSessionTimeout = false;
+
+    /**
+     * 定时广播消息格式类型
+     * 0: 使用 JSONRPCResponse (tools/call 返回结果格式，默认)
+     * 1: 使用 notifications/progress
+     * 2: 使用 notifications/message
+     */
+    @Setter
+    private int broadcastMessageType = 2;
+
+    /**
+     * Progress 通知的方法名
+     */
+    private static final String METHOD_NOTIFICATION_PROGRESS = "notifications/progress";
+
+    /**
+     * 消息队列，用于存储待发送给特定客户端的消息
+     */
+    private final ConcurrentLinkedQueue<QueuedMessage> messageQueue = new ConcurrentLinkedQueue<>();
+
+    /**
+     * 队列消息数据类，包含 sessionId 和消息内容
+     */
+    @lombok.AllArgsConstructor
+    @lombok.Getter
+    public static class QueuedMessage {
+        private final String sessionId;
+        private final String content;
+        private final int messageType; // 0: JSONRPCResponse, 1: progress, 2: message
+    }
+
+    /**
      * Constructs a new HttpServletStreamableServerTransport instance.
      * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization of
      * messages.
@@ -171,33 +217,151 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             return t;
         });
 
-        // 每30秒清理一次已关闭的会话
+        // 每10秒向所有客户端广播系统时间通知
+//        scheduleTimeBroadcast();
+
+        // 每100毫秒处理消息队列中的消息
+        processMessageQueue(objectMapper);
+    }
+
+    private void processMessageQueue(ObjectMapper objectMapper) {
         this.keepAliveScheduler.scheduleAtFixedRate(() -> {
             Safe.run(() -> {
-                List<String> closedSessions = sessions.entrySet().stream()
-                    .filter(entry -> entry.getValue().isClosed())
-                    .map(Map.Entry::getKey)
-                    .collect(java.util.stream.Collectors.toList());
-                    
-                if (!closedSessions.isEmpty()) {
-                    logger.debug("Cleaning up {} closed sessions", closedSessions.size());
-                    closedSessions.forEach(sessions::remove);
-                }
-                
-                // 如果设置了 keepAliveInterval，也检查超时会话
-                if (keepAliveInterval != null) {
-                    long now = System.currentTimeMillis();
-                    sessions.entrySet().removeIf(entry -> {
-                        if (now - entry.getValue().getUpdateTime() > keepAliveInterval.toMillis()) {
-                            logger.info("Session timeout, removing: {}", entry.getKey());
-                            entry.getValue().close();
-                            return true;
+                QueuedMessage queuedMessage;
+                while ((queuedMessage = messageQueue.poll()) != null) {
+                    String sessionId = queuedMessage.getSessionId();
+                    String content = queuedMessage.getContent();
+                    int msgType = queuedMessage.getMessageType();
+
+                    McpSession session = sessions.get(sessionId);
+                    if (session == null || session.isClosed()) {
+                        logger.warn("Session {} not found or closed, skipping queued message", sessionId);
+                        continue;
+                    }
+
+                    try {
+                        McpSchema.JSONRPCMessage message;
+                        switch (msgType) {
+                            case 1:
+                                // notifications/progress
+                                Map<String, Object> progressParams = new java.util.HashMap<>();
+                                progressParams.put("progressToken", "queued-message");
+                                progressParams.put("progress", 100);
+                                progressParams.put("total", 100.0);
+                                progressParams.put("message", content);
+                                message = new McpSchema.JSONRPCNotification(
+                                    McpSchema.JSONRPC_VERSION,
+                                    METHOD_NOTIFICATION_PROGRESS,
+                                    progressParams
+                                );
+                                break;
+                            case 2:
+                                // notifications/message
+                                Map<String, Object> logParams = new java.util.HashMap<>();
+                                logParams.put("level", "info");
+                                logParams.put("logger", "queue");
+                                logParams.put("data", content);
+                                message = new McpSchema.JSONRPCNotification(
+                                    McpSchema.JSONRPC_VERSION,
+                                    McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                                    logParams
+                                );
+                                break;
+                            default:
+                                // JSONRPCResponse (tools/call format)
+                                McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
+                                    List.of(new McpSchema.TextContent(content)),
+                                    false
+                                );
+                                message = new McpSchema.JSONRPCResponse(
+                                    McpSchema.JSONRPC_VERSION,
+                                    "queued-" + System.currentTimeMillis(),
+                                    toolResult,
+                                    null
+                                );
+                                break;
                         }
-                        return false;
-                    });
+
+                        String jsonText = objectMapper.writeValueAsString(message);
+                        sendMessageToSession(session, jsonText);
+                        logger.debug("Sent queued message to session {}: {}", sessionId, content);
+                    } catch (Exception e) {
+                        logger.error("Failed to send queued message to session {}: {}", sessionId, e.getMessage());
+                    }
                 }
             });
-        }, 30, 30, TimeUnit.SECONDS);
+        }, 100, 100, TimeUnit.MILLISECONDS);
+    }
+
+    private void scheduleTimeBroadcast() {
+        this.keepAliveScheduler.scheduleAtFixedRate(() -> {
+            Safe.run(() -> {
+                if (sessions.isEmpty()) {
+                    return;
+                }
+
+                // 构建当前系统时间
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                String timeData = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+                McpSchema.JSONRPCMessage message;
+                String messageTypeName;
+
+                switch (broadcastMessageType) {
+                    case 1:
+                        // 使用 notifications/progress 类型
+                        Map<String, Object> progressParams = new java.util.HashMap<>();
+                        progressParams.put("progressToken", "system-time");
+                        progressParams.put("progress", System.currentTimeMillis() % 100);  // 0-99 循环进度
+                        progressParams.put("total", 100.0);
+                        progressParams.put("message", timeData);
+
+                        message = new McpSchema.JSONRPCNotification(
+                            McpSchema.JSONRPC_VERSION,
+                            METHOD_NOTIFICATION_PROGRESS,
+                            progressParams
+                        );
+                        messageTypeName = "progress";
+                        break;
+
+                    case 2:
+                        // 使用 notifications/message 类型
+                        Map<String, Object> logParams = new java.util.HashMap<>();
+                        logParams.put("level", "info");
+                        logParams.put("logger", "system");
+                        logParams.put("data", timeData);
+
+                        message = new McpSchema.JSONRPCNotification(
+                            McpSchema.JSONRPC_VERSION,
+                            McpSchema.METHOD_NOTIFICATION_MESSAGE,
+                            logParams
+                        );
+                        messageTypeName = "message";
+                        break;
+
+                    default:
+                        // 默认 (0): 使用 JSONRPCResponse (tools/call 返回结果格式)
+                        McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent(timeData)),
+                            false
+                        );
+
+                        message = new McpSchema.JSONRPCResponse(
+                            McpSchema.JSONRPC_VERSION,
+//                            "system-time-" + System.currentTimeMillis(),
+                                2,
+                            toolResult,
+                            null
+                        );
+                        messageTypeName = "response";
+                        break;
+                }
+
+                logger.info("Broadcasting system time ({}) to {} sessions: {}",
+                    messageTypeName, sessions.size(), timeData);
+                sendMessage(message).subscribe();
+            });
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -310,6 +474,19 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     }
 
     /**
+     * Extracts clientId from URL parameter.
+     * @param request The HTTP servlet request
+     * @return The clientId, or null if not found
+     */
+    private String extractClientIdFromRequest(HttpServletRequest request) {
+        String clientIdParam = request.getParameter("clientId");
+        if (clientIdParam != null && !clientIdParam.trim().isEmpty()) {
+            return clientIdParam.trim();
+        }
+        return null;
+    }
+
+    /**
      * Injects user information into tool call parameters.
      * This adds user info to the arguments of CallToolRequest.
      * @param params The original request params
@@ -340,9 +517,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 if (userInfo.containsKey("username")) {
                     enrichedArguments.putIfAbsent(Const.TOKEN_USERNAME, userInfo.get("username"));
                 }
+                if (userInfo.containsKey("clientId")) {
+                    enrichedArguments.putIfAbsent("clientId", userInfo.get("clientId"));
+                }
 
-                logger.debug("Injected user info into tool call arguments: userId={}, username={}",
-                    userInfo.get("userId"), userInfo.get("username"));
+                logger.debug("Injected user info into tool call arguments: userId={}, username={}, clientId={}",
+                    userInfo.get("userId"), userInfo.get("username"), userInfo.get("clientId"));
 
                 // Create new CallToolRequest with enriched arguments
                 return new McpSchema.CallToolRequest(
@@ -413,10 +593,29 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
     }
 
+    /**
+     * Sends a message to a session through its listening stream.
+     * This ensures notifications are sent through the proper SSE connection
+     * established by the client's GET request.
+     *
+     * @param session The session to send the message to
+     * @param jsonText The JSON message text
+     */
     private void sendMessageToSession(McpSession session, String jsonText) {
         try {
+            // Ensure the session has an active listening stream before sending
+            // Notifications must be sent through the listeningStreamRef created in GET request
+            if (!session.hasActiveListeningStream()) {
+                logger.warn("Session {} does not have an active listening stream, skipping message send",
+                        session.getId());
+                return;
+            }
+
             logger.debug("Sending message to session: {}, message:{}", session.getId(), jsonText);
-            session.sendMessage(jsonText);
+
+            // Send through the listening stream reference
+            session.getListeningStreamRef().sendNotification(jsonText);
+
         } catch (IOException e) {
             // 连接已断开，清理会话
             logger.warn("Client connection lost for session {}: {}", session.getId(), e.getMessage());
@@ -468,7 +667,8 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             }
         }
 
-        String sessionId = request.getHeader(Const.MC_CLIENT_ID);
+        // String sessionId = request.getHeader(Const.MC_CLIENT_ID);
+        String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
         if (sessionId == null || sessionId.isBlank()) {
             sessionId = java.util.UUID.randomUUID().toString();
         }
@@ -496,7 +696,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
             AsyncContext asyncContext = request.startAsync();
             // 设置合理的超时时间，避免连接无限期挂起
-            asyncContext.setTimeout(300000); // 5分钟超时
+            asyncContext.setTimeout(0);
 
             McpSession session = new McpSession(sessionId, asyncContext, response.getWriter());
             this.sessions.put(sessionId, session);
@@ -504,17 +704,23 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             // Send initial endpoint event
             session.sendEvent(ENDPOINT_EVENT_TYPE, mcpEndpoint, sessionId);
 
+            // Establish new listening stream - notification 必须通过这个 listeningStreamRef 发送
+            // 这个引用是在客户端发起 GET 请求时创建的长期 SSE 连接机制
+            McpSession.ListeningStreamRef listeningStreamRef = session.createListeningStream();
+
             final String finalSessionId = sessionId;
             asyncContext.addListener(new jakarta.servlet.AsyncListener() {
                 @Override
                 public void onComplete(jakarta.servlet.AsyncEvent event) throws IOException {
                     logger.debug("SSE connection completed for session: {}", finalSessionId);
+                    listeningStreamRef.close();
                     sessions.remove(finalSessionId);
                 }
 
                 @Override
                 public void onTimeout(jakarta.servlet.AsyncEvent event) throws IOException {
                     logger.debug("SSE connection timed out for session: {}", finalSessionId);
+                    listeningStreamRef.close();
                     sessions.remove(finalSessionId);
                 }
 
@@ -524,9 +730,10 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                     if (throwable instanceof java.io.EOFException) {
                         logger.debug("Client disconnected (EOFException) for session: {}", finalSessionId);
                     } else {
-                        logger.warn("SSE connection error for session: {}, error: {}", 
+                        logger.warn("SSE connection error for session: {}, error: {}",
                                 finalSessionId, throwable != null ? throwable.getMessage() : "Unknown error");
                     }
+                    listeningStreamRef.close();
                     sessions.remove(finalSessionId);
                 }
 
@@ -592,6 +799,13 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         // Extract user info for later injection
         final Map<String, Object> userInfo = (validationResult != null) ? validationResult.getUserInfo() : new java.util.HashMap<>();
 
+        // Extract clientId from URL parameter and add to userInfo
+        String clientIdParam = extractClientIdFromRequest(request);
+        if (clientIdParam != null) {
+            userInfo.put("clientId", clientIdParam);
+            logger.debug("Extracted clientId from URL parameter: {}", clientIdParam);
+        }
+
         try {
             // 设置请求字符编码为UTF-8，避免中文乱码
             request.setCharacterEncoding(UTF_8);
@@ -603,15 +817,15 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 return;
             }
 
-            BufferedReader reader = request.getReader();
             StringBuilder body = new StringBuilder();
+            BufferedReader reader = request.getReader();
             String line;
             while ((line = reader.readLine()) != null) {
                 body.append(line);
             }
             
             // 检查请求体是否为空
-            if (body.length() == 0) {
+            if (body.isEmpty()) {
                 logger.warn("Received POST request with empty body");
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Empty request body");
                 return;
@@ -621,56 +835,25 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             logger.debug("Request URI with POST method, uri: {}, body: {}", requestURI, body.toString());
 
             // Handle ping requests
-            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals("ping")) {
-                if (clientId != null) {
-                    logger.debug("Ping from client: {}", clientId);
-                    sessions.computeIfPresent(clientId, (k, v) -> {
-                        v.setUpdateTime(System.currentTimeMillis());
-                        return v;
-                    });
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_PING)) {
+                // 兼容新旧两种 session header
+                String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
+                if (sessionId == null || sessionId.isBlank()) {
+                    sessionId = clientId;
                 }
-
-                McpSchema.JSONRPCResponse pingResponse = new McpSchema.JSONRPCResponse(
-                    McpSchema.JSONRPC_VERSION,
-                    req.id(),
-                    Map.of(),
-                    null
-                );
-                responseJsonRpc(response, pingResponse);
+                handlePing(response, req, sessionId);
                 return;
             }
 
             // Handle resources/list request - return empty list quickly
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_RESOURCES_LIST)) {
-                logger.debug("Handling resources/list request: {}", req);
-                McpSchema.ListResourcesResult result = new McpSchema.ListResourcesResult(
-                    List.of(),  // empty resources list
-                    null        // no next cursor
-                );
-                McpSchema.JSONRPCResponse resourcesListResponse = new McpSchema.JSONRPCResponse(
-                    McpSchema.JSONRPC_VERSION,
-                    req.id(),
-                    result,
-                    null
-                );
-                responseJsonRpc(response, resourcesListResponse);
+                handleResourcesList(response, req);
                 return;
             }
 
             // Handle resources/templates/list request - return empty list quickly
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_RESOURCES_TEMPLATES_LIST)) {
-                logger.debug("Handling resources/templates/list request: {}", req);
-                McpSchema.ListResourceTemplatesResult result = new McpSchema.ListResourceTemplatesResult(
-                    List.of(),  // empty resource templates list
-                    null        // no next cursor
-                );
-                McpSchema.JSONRPCResponse resourceTemplatesListResponse = new McpSchema.JSONRPCResponse(
-                    McpSchema.JSONRPC_VERSION,
-                    req.id(),
-                    result,
-                    null
-                );
-                responseJsonRpc(response, resourceTemplatesListResponse);
+                handleResourcesTemplateList(response, req);
                 return;
             }
 
@@ -678,180 +861,18 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
                     && jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
 
-                // setup session for initialization
-                logger.info("handle initialization request:{}", body.toString());
-                String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
-                if (sessionId == null || sessionId.isBlank()) {
-                    sessionId = request.getHeader(Const.MC_CLIENT_ID);
-                }
-                if (sessionId == null || sessionId.isBlank()) {
-                    sessionId = java.util.UUID.randomUUID().toString();
-                }
-
-                // Process initialization - response should be returned directly in HTTP body
-                // 对于 Streamable HTTP，初始化响应必须在 HTTP response body 中返回，
-                // 而不是通过 SSE 发送
-                if (connectHandler != null) {
-                    String finalSessionId = sessionId;
-
-                    try {
-                        // 设置响应头
-                        response.setContentType(APPLICATION_JSON);
-                        response.setCharacterEncoding(UTF_8);
-                        response.setHeader(HttpHeaders.MCP_SESSION_ID, finalSessionId);
-                        response.setStatus(HttpServletResponse.SC_OK);
-
-                        // 创建一个临时的 session 来捕获响应
-                        // 由于 connectHandler 会通过 sendMessage 发送响应，我们需要
-                        // 捕获这个响应并写入 HTTP body
-                        PrintWriter writer = response.getWriter();
-                        java.util.concurrent.CompletableFuture<String> responseFuture = new java.util.concurrent.CompletableFuture<>();
-
-                        // 创建临时 session，其 sendMessage 会将响应保存到 future
-                        McpSession tempSession = new McpSession(finalSessionId, null, writer) {
-                            @Override
-                            public void sendJsonMessage(String msg) throws IOException {
-                                responseFuture.complete(msg);
-                            }
-                        };
-
-                        // 临时添加到 sessions map，让 sendMessage 能找到它
-                        sessions.put(finalSessionId, tempSession);
-
-                        // 处理初始化请求
-                        connectHandler.apply(Mono.just(message)).block();
-
-                        // 等待响应（最多 5 秒）
-                        String jsonResponse = responseFuture.get(5, java.util.concurrent.TimeUnit.SECONDS);
-
-                        // 写入响应体
-                        writer.write(jsonResponse);
-                        writer.flush();
-
-                        // 移除临时 session
-                        sessions.remove(finalSessionId);
-
-                        logger.info("handled initialization for session: {}", finalSessionId);
-                    } catch (java.util.concurrent.TimeoutException e) {
-                        sessions.remove(finalSessionId);
-                        logger.error("Initialization timeout for session: {}", finalSessionId, e);
-                        response.sendError(HttpServletResponse.SC_REQUEST_TIMEOUT,
-                            "Initialization timeout");
-                    } catch (Exception e) {
-                        sessions.remove(finalSessionId);
-                        logger.error("Error handling initialization for session: {}", finalSessionId, e);
-                        try {
-                            response.setContentType(APPLICATION_JSON);
-                            response.setCharacterEncoding(UTF_8);
-                            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
-                            McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
-                                McpSchema.JSONRPC_VERSION,
-                                jsonrpcRequest.id(),
-                                null,
-                                new McpSchema.JSONRPCResponse.JSONRPCError(
-                                    McpSchema.ErrorCodes.INTERNAL_ERROR,
-                                    e.getMessage(),
-                                    null
-                                )
-                            );
-                            String errorJson = objectMapper.writeValueAsString(errorResponse);
-                            response.getWriter().write(errorJson);
-                            response.getWriter().flush();
-                        } catch (IOException ioEx) {
-                            logger.error("Error writing error response: {}", ioEx.getMessage());
-                            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                                "Initialization failed: " + e.getMessage());
-                        }
-                    }
-
-                    return;
-                }
+                if (handleMethodInitialize(request, response, jsonrpcRequest, body, message)) return;
             }
 
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_TOOLS_CALL)) {
-                logger.info("call tool: {}", req);
-
-                if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
-                    try {
-                        // Inject user info into tool call arguments
-                        Object enrichedParams = injectUserInfoToToolCall(req.params(), userInfo);
-
-                        Object handlerResult = mcpServer.toolsCallRequestHandler().handle(enrichedParams).block();
-                        McpSchema.CallToolResult result;
-
-                        // Handle both direct result and Flux wrapped result
-                        if (handlerResult instanceof Flux) {
-                            result = (McpSchema.CallToolResult) ((Flux<?>) handlerResult).blockFirst();
-                        } else {
-                            result = (McpSchema.CallToolResult) handlerResult;
-                        }
-
-                        McpSchema.JSONRPCResponse toolsCallResponse = new McpSchema.JSONRPCResponse(
-                                McpSchema.JSONRPC_VERSION,
-                                req.id(),
-                                result,
-                                null
-                        );
-                        logger.info("Sending tools/call response: {}", objectMapper.writeValueAsString(toolsCallResponse));
-                        responseJsonRpc(response, toolsCallResponse);
-                    } catch (Exception e) {
-                        logger.error("Error handling tools call request: {}", e.getMessage(), e);
-                        McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
-                            McpSchema.JSONRPC_VERSION,
-                            req.id(),
-                            null,
-                            new McpSchema.JSONRPCResponse.JSONRPCError(
-                                McpSchema.ErrorCodes.INTERNAL_ERROR,
-                                "Failed to call tool: " + e.getMessage(),
-                                null
-                            )
-                        );
-                        responseJsonRpc(response, errorResponse);
-                    }
-                } else {
-                    logger.warn("MCP server or tools call handler is not available");
-                    this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            new McpError("Tools call handler not available"));
-                }
+                handleToolsCall(response, req, userInfo);
                 return;
             }
 
 
             //获取工具列表
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals(McpSchema.METHOD_TOOLS_LIST)) {
-                logger.debug("Handling tools list request: {}", req);
-
-                if (mcpServer != null && mcpServer.toolsListRequestHandler() != null) {
-                    try {
-                        McpSchema.ListToolsResult result = (McpSchema.ListToolsResult) mcpServer.toolsListRequestHandler().handle(null).block();
-
-                        McpSchema.JSONRPCResponse toolsListResponse = new McpSchema.JSONRPCResponse(
-                            McpSchema.JSONRPC_VERSION,
-                            req.id(),
-                            result,
-                            null
-                        );
-                        responseJsonRpc(response, toolsListResponse);
-                    } catch (Exception e) {
-                        logger.error("Error handling tools list request: {}", e.getMessage(), e);
-                        McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
-                            McpSchema.JSONRPC_VERSION,
-                            req.id(),
-                            null,
-                            new McpSchema.JSONRPCResponse.JSONRPCError(
-                                McpSchema.ErrorCodes.INTERNAL_ERROR,
-                                "Failed to get tools list: " + e.getMessage(),
-                                null
-                            )
-                        );
-                        responseJsonRpc(response, errorResponse);
-                    }
-                } else {
-                    logger.warn("MCP server or tools list handler is not available");
-                    this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            new McpError("Tools list handler not available"));
-                }
+                handleToolsList(response, req);
                 return;
             }
 
@@ -950,6 +971,240 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 logger.debug("Failed to send error response, client may have disconnected: {}", ex.getMessage());
             }
         }
+    }
+
+    private void handleToolsList(HttpServletResponse response, McpSchema.JSONRPCRequest req) throws IOException {
+        logger.info("Handling tools list request: {}", req);
+        if (mcpServer != null && mcpServer.toolsListRequestHandler() != null) {
+            try {
+                McpSchema.ListToolsResult result = (McpSchema.ListToolsResult) mcpServer.toolsListRequestHandler().handle(null).block();
+
+                McpSchema.JSONRPCResponse toolsListResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    result,
+                    null
+                );
+                responseJsonRpc(response, toolsListResponse);
+            } catch (Exception e) {
+                logger.error("Error handling tools list request: {}", e.getMessage(), e);
+                McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    null,
+                    new McpSchema.JSONRPCResponse.JSONRPCError(
+                        McpSchema.ErrorCodes.INTERNAL_ERROR,
+                        "Failed to get tools list: " + e.getMessage(),
+                        null
+                    )
+                );
+                responseJsonRpc(response, errorResponse);
+            }
+        } else {
+            logger.warn("MCP server or tools list handler is not available");
+            this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    new McpError("Tools list handler not available"));
+        }
+    }
+
+    private void handleToolsCall(HttpServletResponse response, McpSchema.JSONRPCRequest req, Map<String, Object> userInfo) throws IOException {
+        logger.info("call tool: {}", req);
+        if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
+            try {
+                // Inject user info into tool call arguments
+                Object enrichedParams = injectUserInfoToToolCall(req.params(), userInfo);
+
+                Object handlerResult = mcpServer.toolsCallRequestHandler().handle(enrichedParams).block();
+                McpSchema.CallToolResult result;
+
+                // Handle both direct result and Flux wrapped result
+                if (handlerResult instanceof Flux) {
+                    result = (McpSchema.CallToolResult) ((Flux<?>) handlerResult).blockFirst();
+                } else {
+                    result = (McpSchema.CallToolResult) handlerResult;
+                }
+
+                McpSchema.JSONRPCResponse toolsCallResponse = new McpSchema.JSONRPCResponse(
+                        McpSchema.JSONRPC_VERSION,
+                        req.id(),
+                        result,
+                        null
+                );
+                logger.info("Sending tools/call response: {}", objectMapper.writeValueAsString(toolsCallResponse));
+                responseJsonRpc(response, toolsCallResponse);
+            } catch (Exception e) {
+                logger.error("Error handling tools call request: {}", e.getMessage(), e);
+                McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                    McpSchema.JSONRPC_VERSION,
+                    req.id(),
+                    null,
+                    new McpSchema.JSONRPCResponse.JSONRPCError(
+                        McpSchema.ErrorCodes.INTERNAL_ERROR,
+                        "Failed to call tool: " + e.getMessage(),
+                        null
+                    )
+                );
+                responseJsonRpc(response, errorResponse);
+            }
+        } else {
+            logger.warn("MCP server or tools call handler is not available");
+            this.responseError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    new McpError("Tools call handler not available"));
+        }
+    }
+
+    private boolean handleMethodInitialize(HttpServletRequest request, HttpServletResponse response, McpSchema.JSONRPCRequest jsonrpcRequest, StringBuilder body, McpSchema.JSONRPCMessage message) throws IOException {
+        // setup session for initialization
+        logger.info("handle initialization request:{}", body.toString());
+        String sessionId = request.getHeader(HttpHeaders.MCP_SESSION_ID);
+        if (sessionId == null || sessionId.isBlank()) {
+            sessionId = request.getHeader(Const.MC_CLIENT_ID);
+        }
+        if (sessionId == null || sessionId.isBlank()) {
+            sessionId = java.util.UUID.randomUUID().toString();
+        }
+
+        // Process initialization - response should be returned directly in HTTP body
+        // 对于 Streamable HTTP，初始化响应必须在 HTTP response body 中返回，
+        // 而不是通过 SSE 发送
+        if (connectHandler != null) {
+            String finalSessionId = sessionId;
+
+            try {
+                // 设置响应头
+                response.setContentType(APPLICATION_JSON);
+                response.setCharacterEncoding(UTF_8);
+                response.setHeader(HttpHeaders.MCP_SESSION_ID, finalSessionId);
+                response.setStatus(HttpServletResponse.SC_OK);
+
+                // 创建一个临时的 session 来捕获响应
+                // 由于 connectHandler 会通过 sendMessage 发送响应，我们需要
+                // 捕获这个响应并写入 HTTP body
+                PrintWriter writer = response.getWriter();
+                java.util.concurrent.CompletableFuture<String> responseFuture = new java.util.concurrent.CompletableFuture<>();
+
+                // 创建临时 session，其 sendMessage 会将响应保存到 future
+                McpSession tempSession = new McpSession(finalSessionId, null, writer) {
+                    @Override
+                    public void sendJsonMessage(String msg) throws IOException {
+                        responseFuture.complete(msg);
+                    }
+
+                    // Override to always return true for initialization session
+                    // This ensures the message is sent even without a GET SSE connection
+                    @Override
+                    public boolean hasActiveListeningStream() {
+                        return true;
+                    }
+
+                    @Override
+                    public ListeningStreamRef getListeningStreamRef() {
+                        // Return a fake listening stream ref that delegates to sendJsonMessage
+                        return new ListeningStreamRef(this);
+                    }
+                };
+
+                // 临时添加到 sessions map，让 sendMessage 能找到它
+                sessions.put(finalSessionId, tempSession);
+
+                // 处理初始化请求
+                connectHandler.apply(Mono.just(message)).block();
+
+                // 等待响应（最多 5 秒）
+                String jsonResponse = responseFuture.get(5, TimeUnit.SECONDS);
+
+                // 写入响应体
+                writer.write(jsonResponse);
+                writer.flush();
+
+                // 移除临时 session
+                sessions.remove(finalSessionId);
+
+                logger.info("handled initialization for session: {}", finalSessionId);
+            } catch (java.util.concurrent.TimeoutException e) {
+                sessions.remove(finalSessionId);
+                logger.error("Initialization timeout for session: {}", finalSessionId, e);
+                response.sendError(HttpServletResponse.SC_REQUEST_TIMEOUT,
+                    "Initialization timeout");
+            } catch (Exception e) {
+                sessions.remove(finalSessionId);
+                logger.error("Error handling initialization for session: {}", finalSessionId, e);
+                try {
+                    response.setContentType(APPLICATION_JSON);
+                    response.setCharacterEncoding(UTF_8);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+                    McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
+                        McpSchema.JSONRPC_VERSION,
+                        jsonrpcRequest.id(),
+                        null,
+                        new McpSchema.JSONRPCResponse.JSONRPCError(
+                            McpSchema.ErrorCodes.INTERNAL_ERROR,
+                            e.getMessage(),
+                            null
+                        )
+                    );
+                    String errorJson = objectMapper.writeValueAsString(errorResponse);
+                    response.getWriter().write(errorJson);
+                    response.getWriter().flush();
+                } catch (IOException ioEx) {
+                    logger.error("Error writing error response: {}", ioEx.getMessage());
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Initialization failed: " + e.getMessage());
+                }
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    private void handleResourcesTemplateList(HttpServletResponse response, McpSchema.JSONRPCRequest req) throws IOException {
+        logger.debug("Handling resources/templates/list request: {}", req);
+        McpSchema.ListResourceTemplatesResult result = new McpSchema.ListResourceTemplatesResult(
+            List.of(),  // empty resource templates list
+            null        // no next cursor
+        );
+        McpSchema.JSONRPCResponse resourceTemplatesListResponse = new McpSchema.JSONRPCResponse(
+            McpSchema.JSONRPC_VERSION,
+            req.id(),
+            result,
+            null
+        );
+        responseJsonRpc(response, resourceTemplatesListResponse);
+    }
+
+    private void handleResourcesList(HttpServletResponse response, McpSchema.JSONRPCRequest req) throws IOException {
+        logger.debug("Handling resources/list request: {}", req);
+        McpSchema.ListResourcesResult result = new McpSchema.ListResourcesResult(
+            List.of(),  // empty resources list
+            null        // no next cursor
+        );
+        McpSchema.JSONRPCResponse resourcesListResponse = new McpSchema.JSONRPCResponse(
+            McpSchema.JSONRPC_VERSION,
+            req.id(),
+            result,
+            null
+        );
+        responseJsonRpc(response, resourcesListResponse);
+    }
+
+    private void handlePing(HttpServletResponse response, McpSchema.JSONRPCRequest req, String clientId) throws IOException {
+        if (clientId != null) {
+            logger.debug("Ping from client: {}", clientId);
+            sessions.computeIfPresent(clientId, (k, v) -> {
+                v.setUpdateTime(System.currentTimeMillis());
+                return v;
+            });
+        }
+
+        McpSchema.JSONRPCResponse pingResponse = new McpSchema.JSONRPCResponse(
+            McpSchema.JSONRPC_VERSION,
+            req.id(),
+            Map.of(),
+            null
+        );
+        responseJsonRpc(response, pingResponse);
     }
 
     /**
@@ -1122,6 +1377,42 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
             .count();
     }
 
+    /**
+     * 将消息加入队列，稍后发送给指定的客户端
+     * @param sessionId 目标客户端的 session ID
+     * @param content 消息内容
+     */
+    public void enqueueMessage(String sessionId, String content) {
+        enqueueMessage(sessionId, content, 0);
+    }
+
+    /**
+     * 将消息加入队列，稍后发送给指定的客户端
+     * @param sessionId 目标客户端的 session ID
+     * @param content 消息内容
+     * @param messageType 消息类型: 0=JSONRPCResponse, 1=progress, 2=message
+     */
+    public void enqueueMessage(String sessionId, String content, int messageType) {
+        if (sessionId == null || sessionId.isEmpty()) {
+            logger.warn("Cannot enqueue message with null or empty sessionId");
+            return;
+        }
+        if (content == null) {
+            logger.warn("Cannot enqueue message with null content for session {}", sessionId);
+            return;
+        }
+        messageQueue.offer(new QueuedMessage(sessionId, content, messageType));
+        logger.debug("Enqueued message for session {}: {}", sessionId, content);
+    }
+
+    /**
+     * 获取当前消息队列中待发送的消息数量
+     * @return 队列中的消息数量
+     */
+    public int getQueuedMessageCount() {
+        return messageQueue.size();
+    }
+
     @Override
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
@@ -1187,12 +1478,58 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         private volatile boolean closed = false;
         private volatile long updateTime = System.currentTimeMillis();
         private final ReentrantLock lock = new ReentrantLock();
-        
+
+        /**
+         * Reference to the listening stream created when client establishes GET SSE connection.
+         * This ensures notifications are sent through the proper long-lived SSE channel.
+         */
+        private volatile ListeningStreamRef listeningStreamRef;
+
         /**
          * 检查会话是否已关闭
          */
         public boolean isClosed() {
             return this.closed;
+        }
+
+        /**
+         * Creates a listening stream for this session. This stream is used to send
+         * server-initiated notifications to the client through the SSE connection
+         * established via GET request.
+         *
+         * @return A reference to the listening stream
+         */
+        public ListeningStreamRef createListeningStream() {
+            lock.lock();
+            try {
+                if (this.listeningStreamRef != null) {
+                    logger.warn("Listening stream already exists for session: {}, closing old stream", this.id);
+                    this.listeningStreamRef.close();
+                }
+                this.listeningStreamRef = new ListeningStreamRef(this);
+                logger.debug("Created listening stream for session: {}", this.id);
+                return this.listeningStreamRef;
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        /**
+         * Checks if this session has an active listening stream.
+         *
+         * @return true if there's an active listening stream, false otherwise
+         */
+        public boolean hasActiveListeningStream() {
+            return this.listeningStreamRef != null && !this.listeningStreamRef.isClosed();
+        }
+
+        /**
+         * Gets the listening stream reference for this session.
+         *
+         * @return The listening stream reference, or null if not created
+         */
+        public ListeningStreamRef getListeningStreamRef() {
+            return this.listeningStreamRef;
         }
 
         /**
@@ -1222,16 +1559,18 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 logger.debug("Attempted to send message to closed session: {}", this.id);
                 throw new IOException("Session is closed");
             }
-            
+
             lock.lock();
             try {
                 if (this.closed) {
                     throw new IOException("Session was closed during message send");
                 }
-                
-                writer.write(message);
+
+                // SSE 格式: event: message\ndata: <json>\n\n
+                writer.write("event: " + MESSAGE_EVENT_TYPE + "\n");
+                writer.write("data: " + message + "\n\n");
                 writer.flush();
-                
+
                 // 检查连接状态
                 if (writer.checkError()) {
                     this.closed = true;
@@ -1290,7 +1629,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 }
 
                 this.closed = true;
-                
+
+                // Close listening stream if exists
+                if (this.listeningStreamRef != null) {
+                    this.listeningStreamRef.close();
+                }
+
                 // 安全地关闭 AsyncContext
                 if (this.asyncContext != null) {
                     try {
@@ -1305,6 +1649,58 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 logger.warn("Failed to complete async context for session {}: {}", this.id, e.getMessage());
             } finally {
                 lock.unlock();
+            }
+        }
+
+        /**
+         * Reference to a listening stream that handles server-initiated notifications
+         * through the SSE connection established by GET requests.
+         *
+         * <p>This class ensures that notifications are sent through the proper
+         * long-lived SSE connection channel created when the client issues a GET request.
+         */
+        static class ListeningStreamRef {
+            private final McpSession session;
+            private volatile boolean closed = false;
+
+            ListeningStreamRef(McpSession session) {
+                this.session = session;
+                logger.debug("ListeningStreamRef created for session: {}", session.getId());
+            }
+
+            /**
+             * Sends a notification through this listening stream.
+             *
+             * @param message The message to send
+             * @throws IOException if an error occurs while sending
+             */
+            public void sendNotification(String message) throws IOException {
+                if (closed) {
+                    logger.warn("Attempted to send notification through closed listening stream for session: {}",
+                            session.getId());
+                    throw new IOException("Listening stream is closed");
+                }
+                logger.info("notification:{}", message);
+                session.sendMessage(message);
+            }
+
+            /**
+             * Checks if this listening stream is closed.
+             *
+             * @return true if closed, false otherwise
+             */
+            public boolean isClosed() {
+                return closed;
+            }
+
+            /**
+             * Closes this listening stream.
+             */
+            public void close() {
+                if (!closed) {
+                    closed = true;
+                    logger.debug("ListeningStreamRef closed for session: {}", session.getId());
+                }
             }
         }
     }

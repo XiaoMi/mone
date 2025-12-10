@@ -1,0 +1,123 @@
+package run.mone.mcp.hera.analysis.config;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.function.ChatFunction;
+import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.service.RoleMeta;
+import run.mone.hive.roles.tool.*;
+import run.mone.mcp.git.function.*;
+import run.mone.mcp.hera.analysis.function.*;
+import run.mone.mcp.miline.function.GetPipelineDetailFunction;
+import run.mone.mcp.miline.function.RunPipelineFunction;
+
+import java.util.ArrayList;
+
+/**
+ * @author zhangxiaowei6
+ * @Date 2025/5/7 16:20
+ */
+
+@Configuration
+@ConditionalOnProperty(value="mcp.agent.mode", havingValue = "MCP")
+@Slf4j
+public class MCPConfig {
+
+    @Value("${mcp.agent.name}")
+    private String agentName;
+
+    @Value("${mcp.agent.mode:MCP}")
+    private String agentMode;
+
+    @Value("${mcp.port}")
+    private String mcpPort;
+
+    @Value("${mcp.enable.auth}")
+    private String authEnable;
+
+    @Autowired
+    private ApplicationMetricsFunction applicationMetricsFunction;
+
+    @Autowired
+    private HeraAnalysisFunction heraAnalysisFunction;
+
+    @Autowired
+    private DubboInterfaceQpsFunction dubboInterfaceQpsFunction;
+
+    @Autowired
+    private LogQueryFunction logQueryFunction;
+
+    @Autowired
+    private HeraLogDetailFunction heraLogDetailFunction;
+
+    @Autowired
+    private RootExceptionSpanFunction rootExceptionSpanFunction;
+
+    @Autowired
+    private TraceQueryFunction traceQueryFunction;
+
+    @Autowired
+    private HeraLogCreateFunction heraLogCreateFunction;
+
+    @Autowired
+    private GitCommitFunction gitCommitFunction;
+
+    @Autowired
+    private GitPushFunction gitPushFunction;
+
+    @Autowired
+    private GitCloneFunction gitCloneFunction;
+
+    @Autowired
+    private GitCheckoutNewBranchFunction gitCheckoutNewBranchFunction;
+
+    @Autowired
+    private GitCreateMergeRequestFunction gitCreateMergeRequestFunction;
+
+    @Autowired
+    private RunPipelineFunction runPipelineFunction;
+
+    @Autowired
+    private GetPipelineDetailFunction getPipelineDetailFunction;
+
+    @Bean
+    public RoleMeta roleMeta() {
+        log.info("MCP config roleMeta init");
+        ArrayList<McpFunction> functionList = Lists.newArrayList(
+                logQueryFunction,
+                heraLogDetailFunction,
+                rootExceptionSpanFunction,
+                traceQueryFunction,
+                applicationMetricsFunction,
+                dubboInterfaceQpsFunction);
+
+        ChatFunction chat = new ChatFunction(agentName, 20);
+        chat.setDesc("和%s聊天，问问%s关于Hera可观测性的服务监控和链路追踪相关的数据或者创建日志。支持各种形式如：'%s'、'请%s告诉我监控数据'、'让%s帮我看看服务状态'、'%s你知道服务有什么问题'等。支持上下文连续对话。");
+
+        return RoleMeta.builder()
+                .name("Hera可观测系统专家")
+                .profile("你是Hera可观测系统专家，精通分布式系统的监控和链路追踪，能够帮助用户诊断和解决复杂的系统问题")
+                .goal("你的目标是根据用户提供的信息创建日志或者根据用户输入返回Hera中专业的监控数据和链路追踪数据，帮助用户快速定位和解决系统中的异常和性能问题")
+                .constraints("不要探讨一些负面的东西,如果用户问你,你可以直接拒绝掉")
+                .mode(RoleMeta.RoleMode.valueOf(agentMode))
+                .tools(Lists.newArrayList(
+                        new ChatTool(),
+                        new AskTool(),
+                        new AttemptCompletionTool()
+                        ))
+                .mcpTools(
+                    RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
+                        ? Lists.newArrayList(chat)
+                        : functionList
+                )
+                .meta(ImmutableMap.of(Const.HTTP_PORT, mcpPort,Const.AGENT_SERVER_NAME, agentName, Const.HTTP_ENABLE_AUTH, authEnable))
+                .build();
+    }
+}

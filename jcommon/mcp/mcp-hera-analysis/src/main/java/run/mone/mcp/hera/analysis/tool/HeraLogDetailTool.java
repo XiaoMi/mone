@@ -198,11 +198,15 @@ public class HeraLogDetailTool implements ITool {
                     ? inputJson.get("startTime").getAsString().trim()
                     : String.valueOf(currentTime - 3600000); // 默认查询最近1小时（毫秒）
 
-            log.info("开始查询Hera日志详情，spaceId: {}, storeId: {}, input: {}, tailName: {}, startTime: {}, endTime: {}",
-                    spaceId, storeId, input, tailName, startTime, endTime);
+            // 获取分页参数，默认值：page=1, pageSize=20
+            int page = inputJson.has("page") ? inputJson.get("page").getAsInt() : 1;
+            int pageSize = inputJson.has("pageSize") ? inputJson.get("pageSize").getAsInt() : 20;
+
+            log.info("开始查询Hera日志详情，spaceId: {}, storeId: {}, input: {}, tailName: {}, startTime: {}, endTime: {}, page: {}, pageSize: {}",
+                    spaceId, storeId, input, tailName, startTime, endTime, page, pageSize);
 
             // 调用服务查询日志详情
-            String logResult = heraLogDetailService.queryLogDetail(spaceId, storeId, input, tailName, startTime, endTime);
+            String logResult = heraLogDetailService.queryLogDetail(spaceId, storeId, input, tailName, startTime, endTime, page, pageSize);
 
             // 设置成功响应
             result.addProperty("result", logResult);
@@ -212,9 +216,11 @@ public class HeraLogDetailTool implements ITool {
             result.addProperty("tailName", tailName);
             result.addProperty("startTime", startTime);
             result.addProperty("endTime", endTime);
+            result.addProperty("page", page);
+            result.addProperty("pageSize", pageSize);
             result.addProperty("success", true);
 
-            log.info("成功查询Hera日志详情，spaceId: {}, storeId: {}", spaceId, storeId);
+            log.info("成功查询Hera日志详情，spaceId: {}, storeId: {}, page: {}, pageSize: {}", spaceId, storeId, page, pageSize);
 
             return result;
 

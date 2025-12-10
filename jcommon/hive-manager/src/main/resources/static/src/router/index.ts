@@ -35,6 +35,12 @@ const router = createRouter({
           name: "TaskList",
           component: () => import("@/views/TaskList.vue"),
           meta: { requiresAuth: true }
+        },
+        {
+          path: "reportList",
+          name: "ReportList",
+          component: () => import("@/views/ReportList.vue"),
+          meta: { requiresAuth: true }
         }
       ]
     },

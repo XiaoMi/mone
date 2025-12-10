@@ -186,10 +186,9 @@ public class RunPipelineTool implements ITool {
                         if (apiResponse.getCode() == 1 &&
                             "有运行中pipeline, 需先关闭".equals(apiResponse.getMessage())) {
                             log.info("第 {} 次调用成功：检测到有运行中的流水线", attempt);
-                            result.addProperty("result", "调用成功：" + apiResponse.getMessage());
+                            result.addProperty("result", "发布成功");
                             result.addProperty("code", apiResponse.getCode());
-                            result.addProperty("message", "调用成功");
-                            result.addProperty("attempts", attempt);
+                            result.addProperty("message", "发布成功");
                             return result;
                         }
 

@@ -215,11 +215,15 @@ public class LogQueryTool implements ITool {
                     ? inputJson.get("startTime").getAsLong()
                     : endTime - 3600000; // 默认查询最近1小时（毫秒）
 
-            log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}",
-                    level, projectId, envId, startTime, endTime, traceId);
+            // 获取分页参数，默认值：page=1, pageSize=20
+            int page = inputJson.has("page") ? inputJson.get("page").getAsInt() : 1;
+            int pageSize = inputJson.has("pageSize") ? inputJson.get("pageSize").getAsInt() : 20;
+
+            log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}, page: {}, pageSize: {}",
+                    level, projectId, envId, startTime, endTime, traceId, page, pageSize);
 
             // 调用服务查询日志
-            String logResult = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId);
+            String logResult = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId, page, pageSize);
 
             // 设置成功响应
             result.addProperty("result", logResult);
@@ -233,9 +237,12 @@ public class LogQueryTool implements ITool {
             result.addProperty("envId", envId);
             result.addProperty("startTime", startTime);
             result.addProperty("endTime", endTime);
+            result.addProperty("page", page);
+            result.addProperty("pageSize", pageSize);
             result.addProperty("success", true);
 
-            log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}", level, projectId, envId, traceId);
+            log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}, page: {}, pageSize: {}",
+                    level, projectId, envId, traceId, page, pageSize);
 
             return result;
 

@@ -48,38 +48,48 @@ public class McpHub {
     private Consumer<Object> msgConsumer = msg -> {
     };
 
+    private Consumer<McpSchema.LoggingMessageNotification> loggingConsumer = loggingMessageNotification -> {
+    };
+
     public McpHub(Path settingsPath) throws IOException {
         this(settingsPath, msg -> {
-        }, false, "");
+        }, false, "", null);
     }
 
     public McpHub(Path settingsPath, String prefix) throws IOException {
         this(settingsPath, msg -> {
-        }, false, prefix);
+        }, false, prefix, null);
+    }
+
+    public McpHub(Path settingsPath, String prefix, Consumer<McpSchema.LoggingMessageNotification> loggingConsumer) throws IOException {
+        this(settingsPath, msg -> {
+        }, false, prefix, loggingConsumer);
     }
 
 
     public McpHub() {
         this(null, msg -> {
-        }, true, "");
+        }, true, "", null);
     }
 
 
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer) {
-        this(settingsPath, msgConsumer, false, "");
+        this(settingsPath, msgConsumer, false, "", null);
     }
 
     public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile) {
-        this(settingsPath, msgConsumer, skipFile, "");
+        this(settingsPath, msgConsumer, skipFile, "", null);
     }
 
     @SneakyThrows
-    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile, String prefix) {
+    public McpHub(Path settingsPath, Consumer<Object> msgConsumer, boolean skipFile, String prefix, Consumer<McpSchema.LoggingMessageNotification> loggingConsumer) {
         this.settingsPath = settingsPath;
         this.msgConsumer = msgConsumer;
         this.skipFile = skipFile;
         this.prefix = prefix != null ? prefix : "";
-
+        if (null != loggingConsumer) {
+            this.loggingConsumer = loggingConsumer;
+        }
         if (!skipFile) {
             this.watchService = FileSystems.getDefault().newWatchService();
             initializeWatcher();
@@ -127,8 +137,7 @@ public class McpHub {
             if (v.getTransport() != null) {
                 try {
                     v.getTransport().close();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                     log.warn("Failed to close connection, nested exception: ", e);
                 }
             } else {
@@ -321,6 +330,8 @@ public class McpHub {
         McpSyncClient client = McpClient.using(transport)
                 .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msgConsumer)
+                //处理notification message
+                .loggingConsumer(loggingConsumer)
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
@@ -431,7 +442,7 @@ public class McpHub {
         }
         if (connection.getClient() == null) {
             throw new IllegalArgumentException("No client found for server: " + serverName);
-        }   
+        }
 
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callTool(request);
