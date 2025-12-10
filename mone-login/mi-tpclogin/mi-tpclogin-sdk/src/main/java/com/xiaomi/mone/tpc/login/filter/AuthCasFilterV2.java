@@ -9,12 +9,11 @@ import com.xiaomi.mone.tpc.login.util.SignUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.login.vo.UserInfoVO;
 import jakarta.servlet.*;
+import jakarta.servlet.http.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;

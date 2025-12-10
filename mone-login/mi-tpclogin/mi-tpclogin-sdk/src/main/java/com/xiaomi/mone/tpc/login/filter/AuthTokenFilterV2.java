@@ -9,9 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -46,7 +44,7 @@ class AuthTokenFilterV2 implements Filter {
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
         String uri = request.getRequestURI();
-        AuthTokenVo authToken = TokenUtil.parseAuthToken(request);
+        AuthTokenVo authToken = TokenUtilV2.parseAuthToken(request);
         logger.info("authToken={}", authToken);
         if (authToken == null) {
             if (CommonUtil.isIgnoreUrl(ignoreUrls, uri)) {
