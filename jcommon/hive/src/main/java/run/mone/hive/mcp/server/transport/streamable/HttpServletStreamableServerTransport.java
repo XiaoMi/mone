@@ -474,6 +474,19 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
     }
 
     /**
+     * Extracts clientId from URL parameter.
+     * @param request The HTTP servlet request
+     * @return The clientId, or null if not found
+     */
+    private String extractClientIdFromRequest(HttpServletRequest request) {
+        String clientIdParam = request.getParameter("clientId");
+        if (clientIdParam != null && !clientIdParam.trim().isEmpty()) {
+            return clientIdParam.trim();
+        }
+        return null;
+    }
+
+    /**
      * Injects user information into tool call parameters.
      * This adds user info to the arguments of CallToolRequest.
      * @param params The original request params
@@ -504,9 +517,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 if (userInfo.containsKey("username")) {
                     enrichedArguments.putIfAbsent(Const.TOKEN_USERNAME, userInfo.get("username"));
                 }
+                if (userInfo.containsKey("clientId")) {
+                    enrichedArguments.putIfAbsent("clientId", userInfo.get("clientId"));
+                }
 
-                logger.debug("Injected user info into tool call arguments: userId={}, username={}",
-                    userInfo.get("userId"), userInfo.get("username"));
+                logger.debug("Injected user info into tool call arguments: userId={}, username={}, clientId={}",
+                    userInfo.get("userId"), userInfo.get("username"), userInfo.get("clientId"));
 
                 // Create new CallToolRequest with enriched arguments
                 return new McpSchema.CallToolRequest(
@@ -782,6 +798,13 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
 
         // Extract user info for later injection
         final Map<String, Object> userInfo = (validationResult != null) ? validationResult.getUserInfo() : new java.util.HashMap<>();
+
+        // Extract clientId from URL parameter and add to userInfo
+        String clientIdParam = extractClientIdFromRequest(request);
+        if (clientIdParam != null) {
+            userInfo.put("clientId", clientIdParam);
+            logger.debug("Extracted clientId from URL parameter: {}", clientIdParam);
+        }
 
         try {
             // 设置请求字符编码为UTF-8，避免中文乱码
