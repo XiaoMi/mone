@@ -2,6 +2,7 @@ package run.mone.hive.mcp.function;
 
 import com.google.gson.JsonObject;
 import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.mcp.spec.McpSchema;
 
@@ -15,6 +16,10 @@ import java.util.function.Function;
 public interface McpFunction extends Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     default void setRoleService(RoleService roleService) {
+
+    }
+
+    default void setMcpAsyncServer(McpAsyncServer mcpAsyncServer) {
 
     }
 
