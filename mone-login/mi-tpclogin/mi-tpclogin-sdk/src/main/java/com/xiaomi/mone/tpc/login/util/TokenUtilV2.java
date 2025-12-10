@@ -1,25 +1,20 @@
 package com.xiaomi.mone.tpc.login.util;
 
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
-import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
-public class TokenUtil {
+public class TokenUtilV2 {
 
-    private static final Logger logger = LoggerFactory.getLogger(TokenUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(TokenUtilV2.class);
 
     /**
      * 给退出url设置token

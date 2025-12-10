@@ -4,25 +4,25 @@ import com.xiaomi.mone.tpc.login.util.*;
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.login.vo.ResultVo;
+import jakarta.servlet.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
 
-class AuthTokenFilter implements Filter {
+class AuthTokenFilterV2 implements Filter {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
+    private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilterV2.class);
 
     private String[] ignoreUrls = null;
     private String loginUrl = null;
 
-    public AuthTokenFilter() {
+    public AuthTokenFilterV2() {
         HttpClientUtil.init();
     }
 
@@ -92,6 +92,7 @@ class AuthTokenFilter implements Filter {
         response.setHeader(ConstUtil.AUTH_TOKEN, "1");
         response.setHeader(ConstUtil.loginUrl, loginUrl);
     }
+
 
     public static void setCookie(HttpServletRequest request, AuthUserVo userVo, ServletResponse servletResponse) throws IOException {
         HttpServletResponse response = (HttpServletResponse)servletResponse;
