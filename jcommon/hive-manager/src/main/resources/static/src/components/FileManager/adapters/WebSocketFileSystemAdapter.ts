@@ -14,6 +14,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
   private maxReconnectAttempts = 5
   private reconnectDelay = 3000
   private ignorePatterns: string[] = []
+  private onOperationComplete?: () => void
 
   constructor(
     private wsUrl: string,
@@ -115,7 +116,6 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
    * 处理接收到的WebSocket消息（服务器发来的指令）
    */
   private async handleMessage(data: string): Promise<void> {
-    debugger;
     try {
       const message: WSRequest = JSON.parse(data)
       console.log('[WebSocket] Received command:', message)
@@ -125,6 +125,8 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
         requestId: message.requestId,
         success: false,
       }
+
+      let needsRefresh = false
 
       try {
         // 根据消息类型执行相应的本地文件操作
@@ -142,21 +144,25 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
           case MsgType.WRITE_FILE:
             await this.executeWriteFile(message.data.path || '', message.data.content || '')
             response.success = true
+            needsRefresh = true
             break
 
           case MsgType.DELETE_FILE:
             await this.executeDeleteFile(message.data.path || '', message.data.isDirectory || false)
             response.success = true
+            needsRefresh = true
             break
 
           case MsgType.CREATE_DIRECTORY:
             await this.executeCreateDirectory(message.data.parentPath || '', message.data.name || '')
             response.success = true
+            needsRefresh = true
             break
 
           case MsgType.CREATE_FILE:
             await this.executeCreateFile(message.data.parentPath || '', message.data.name || '')
             response.success = true
+            needsRefresh = true
             break
 
           default:
@@ -169,6 +175,12 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
 
       // 发送响应回服务器
       this.sendResponse(response)
+
+      // 如果操作成功且需要刷新，通知UI更新
+      if (response.success && needsRefresh && this.onOperationComplete) {
+        console.log('[WebSocket] Triggering UI refresh after operation')
+        this.onOperationComplete()
+      }
     } catch (error) {
       console.error('[WebSocket] Failed to parse message:', error)
     }
@@ -465,18 +477,11 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
       // 使用空字符串作为根路径，以便正确处理相对路径
       this.currentPath = ''
       
-      // // 通知服务器目录已选择
-      // this.sendNotification(MsgType.DIRECTORY_LIST, {
-      //   path: this.currentPath,
-      //   rootName: dirHandle.name,
-      // })
-
-      setTimeout(() => {
-        this.sendNotification(MsgType.LIST_DIRECTORY, {
-          path: this.currentPath,
-          rootName: dirHandle.name,
-        })
-      }, 1000);
+      // 通知服务器目录已选择
+      this.sendNotification(MsgType.DIRECTORY_LIST, {
+        path: this.currentPath,
+        rootName: dirHandle.name,
+      })
 
       return { path: dirHandle.name, handle: dirHandle }
     } catch (error: any) {
@@ -564,6 +569,13 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
    */
   isWebSocketConnected(): boolean {
     return this.isConnected
+  }
+
+  /**
+   * 设置操作完成回调
+   */
+  setOperationCompleteCallback(callback: () => void): void {
+    this.onOperationComplete = callback
   }
 
   /**

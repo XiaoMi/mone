@@ -3,7 +3,7 @@
     <div id="particles-js"></div>
     
     <!-- 文件管理器切换按钮 -->
-    <div class="file-manager-toggle" @click="toggleFileManager">
+    <div v-if="showFileManagerButton" class="file-manager-toggle" @click="toggleFileManager">
       <el-icon :size="20">
         <component :is="showFileManager ? 'Close' : 'Folder'" />
       </el-icon>
@@ -92,6 +92,7 @@ const list = computed(() => {
 // 文件管理器相关
 const showFileManager = ref(false)
 const fileManagerMode = ref<'local' | 'websocket'>('local')
+const showFileManagerButton = ref(false)
 
 // 获取忽略模式配置
 const getIgnorePatterns = (): string[] | undefined => {
@@ -125,7 +126,9 @@ const initFileManager = () => {
     // 构建WebSocket URL (使用与chat相同的连接信息)
     // 支持通过URL参数指定wsUrl
     const urlParams = new URLSearchParams(window.location.search)
-    const wsUrl = urlParams.get('wsUrl') || `ws://127.0.0.1:8080/ws/echo`
+    const clientId = `${agent.name}:${agent.group}:${agent.version}:${instance.ip}:${instance.port}`
+    const baseWsUrl = urlParams.get('wsUrl') || `ws://127.0.0.1:8080/ws/echo`
+    const wsUrl = `${baseWsUrl}?clientId=${encodeURIComponent(clientId)}`
     
     // 支持通过URL参数指定忽略模式
     const ignoreParam = urlParams.get('ignore')
@@ -906,6 +909,10 @@ onBeforeUnmount(() => {
 const { currentTheme } = useTheme()
 
 onMounted(async () => {
+  // 检查URL参数中是否有dir=true
+  const urlParams = new URLSearchParams(window.location.search)
+  showFileManagerButton.value = urlParams.get('dir') === 'true'
+  
   try {
     // 获取Agent详情
     const { data } = await getAgentDetail(Number(route.query.serverAgentId))
@@ -1139,8 +1146,8 @@ onMounted(async () => {
 
 /* 文件管理器容器 */
 .file-manager-wrapper {
-  flex-shrink: 0;
-  width: 450px;
+  flex: 1;
+  min-width: 0;
   background: var(--el-bg-color);
   backdrop-filter: blur(10px);
   border-radius: 15px;

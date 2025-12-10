@@ -48,8 +48,17 @@
           <el-button size="small" @click="handleRefresh" :disabled="loading">
             <el-icon><Refresh /></el-icon> 刷新
           </el-button>
-          <el-button size="small" @click="showCreateDialog = true" :disabled="!currentPath">
+          <!-- <el-button size="small" @click="showCreateDialog = true" :disabled="!currentPath">
             <el-icon><Plus /></el-icon> 新建
+          </el-button> -->
+          <el-button 
+            v-if="mode === 'websocket'" 
+            size="small" 
+            @click="handleSyncToLocal" 
+            :disabled="!currentPath || syncing"
+            :loading="syncing"
+          >
+            <el-icon><Download /></el-icon> 同步到本地
           </el-button>
         </div>
 
@@ -183,7 +192,8 @@ import {
   Delete,
   MoreFilled,
   Check,
-  Close
+  Close,
+  Download
 } from '@element-plus/icons-vue'
 import Codemirror from 'codemirror-editor-vue3'
 import 'codemirror/lib/codemirror.css'
@@ -243,6 +253,7 @@ const isModified = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const creating = ref(false)
+const syncing = ref(false)
 
 // 新建对话框
 const showCreateDialog = ref(false)
@@ -286,6 +297,15 @@ const isWebSocketConnected = computed(() => {
 
 // 组件挂载时初始化
 onMounted(() => {
+  // 如果是WebSocket模式，设置操作完成回调
+  if (isWebSocketMode.value) {
+    const wsAdapter = props.adapter as WebSocketFileSystemAdapter
+    wsAdapter.setOperationCompleteCallback(() => {
+      console.log('[FileManager] Auto-refreshing after WebSocket operation')
+      loadDirectory()
+    })
+  }
+  
   // 如果是WebSocket模式且有初始路径，加载目录
   if (isWebSocketMode.value && props.initialPath) {
     currentPath.value = props.initialPath
@@ -673,19 +693,89 @@ async function createFileOrDir() {
   }
 }
 
-// 组件挂载时初始化
-onMounted(() => {
-  // 如果是WebSocket模式且有初始路径，加载目录
-  if (isWebSocketMode.value && props.initialPath) {
-    currentPath.value = props.initialPath
-    loadDirectory()
+// 同步到本地
+async function handleSyncToLocal() {
+  if (!isWebSocketMode.value) {
+    ElMessage.warning('仅WebSocket模式支持同步到本地')
+    return
   }
-})
 
-// 组件卸载时清理
-onBeforeUnmount(() => {
-  // 清理工作
-})
+  if (!currentPath.value) {
+    ElMessage.warning('请先选择目录')
+    return
+  }
+
+  try {
+    // 请求用户选择本地保存目录
+    const localDirHandle = await (window as any).showDirectoryPicker({
+      mode: 'readwrite'
+    })
+
+    syncing.value = true
+    
+    // 获取远程文件列表
+    const wsAdapter = props.adapter as WebSocketFileSystemAdapter
+    const rootHandle = wsAdapter.getRootDirHandle()
+    
+    if (!rootHandle) {
+      ElMessage.error('未选择远程目录')
+      return
+    }
+
+    let syncedCount = 0
+    let errorCount = 0
+
+    // 递归同步文件
+    const syncDirectory = async (
+      sourceHandle: FileSystemDirectoryHandle,
+      targetHandle: FileSystemDirectoryHandle,
+      relativePath: string = ''
+    ) => {
+      try {
+        // @ts-ignore
+        for await (const entry of sourceHandle.values()) {
+          try {
+            const entryPath = relativePath ? `${relativePath}/${entry.name}` : entry.name
+            
+            if (entry.kind === 'directory') {
+              // 创建目录
+              const newDirHandle = await targetHandle.getDirectoryHandle(entry.name, { create: true })
+              await syncDirectory(entry as FileSystemDirectoryHandle, newDirHandle, entryPath)
+            } else {
+              // 复制文件
+              const sourceFile = await (entry as FileSystemFileHandle).getFile()
+              const targetFileHandle = await targetHandle.getFileHandle(entry.name, { create: true })
+              const writable = await targetFileHandle.createWritable()
+              await writable.write(await sourceFile.arrayBuffer())
+              await writable.close()
+              syncedCount++
+              console.log(`已同步: ${entryPath}`)
+            }
+          } catch (error: any) {
+            console.error(`同步失败: ${entry.name}`, error)
+            errorCount++
+          }
+        }
+      } catch (error: any) {
+        console.error('同步目录失败:', error)
+        throw error
+      }
+    }
+
+    await syncDirectory(rootHandle, localDirHandle)
+    
+    ElMessage.success(`同步完成！成功: ${syncedCount} 个文件${errorCount > 0 ? `，失败: ${errorCount}` : ''}`)
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      // 用户取消
+      return
+    }
+    console.error('同步失败:', error)
+    ElMessage.error(error.message || '同步失败')
+  } finally {
+    syncing.value = false
+  }
+}
 
 // 暴露方法给父组件
 defineExpose({
