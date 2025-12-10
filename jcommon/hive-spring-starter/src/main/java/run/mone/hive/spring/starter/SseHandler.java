@@ -337,7 +337,7 @@ public class SseHandler {
      */
     @GetMapping("/test/call/{clientId}")
     public Map<String, Object> testCall(
-            @PathVariable String clientId,
+            @PathVariable("clientId") String clientId,
             @RequestParam(value = "action", defaultValue = "list_directory") String action,
             @RequestParam(value = "path", defaultValue = "") String path,
             @RequestParam(value = "timeout", defaultValue = "30") int timeout) {
