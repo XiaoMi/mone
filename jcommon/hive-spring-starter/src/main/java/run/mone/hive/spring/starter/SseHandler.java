@@ -312,6 +312,20 @@ public class SseHandler {
     }
 
     /**
+     * 简单的 ping 测试接口，返回 pong
+     *
+     * @return pong 响应
+     */
+    @GetMapping("/ping")
+    public Map<String, Object> ping() {
+        return Map.of(
+                "message", "pong",
+                "timestamp", System.currentTimeMillis(),
+                "success", true
+        );
+    }
+
+    /**
      * 测试接口：通过 WebSocketCaller 调用客户端
      * 用于测试阻塞调用功能
      *
