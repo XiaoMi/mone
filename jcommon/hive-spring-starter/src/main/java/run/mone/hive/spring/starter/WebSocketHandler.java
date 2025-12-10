@@ -124,6 +124,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 case "broadcast":
                     handleBroadcast(clientId, messageMap);
                     break;
+                case "call_response":
+                    handleCallResponse(messageMap);
+                    break;
+                case "call_error":
+                    handleCallError(messageMap);
+                    break;
                 default:
                     log.warn("Unknown message type: {}", type);
                     sendError(clientId, "Unknown message type: " + type);
@@ -279,6 +285,40 @@ public class WebSocketHandler extends TextWebSocketHandler {
             );
             sendMessage(clientId, errorMessage);
         }
+    }
+
+    /**
+     * 处理客户端调用响应
+     * 客户端处理完 call 请求后，返回此消息解除调用者阻塞
+     */
+    @SuppressWarnings("unchecked")
+    private void handleCallResponse(Map<String, Object> messageMap) {
+        String resId = (String) messageMap.get("resId");
+        if (resId == null) {
+            log.warn("Call response missing resId");
+            return;
+        }
+
+        Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+        log.info("Received call response for resId: {}", resId);
+
+        WebSocketCaller.getInstance().handleResponse(resId, data != null ? data : Map.of());
+    }
+
+    /**
+     * 处理客户端调用错误响应
+     */
+    private void handleCallError(Map<String, Object> messageMap) {
+        String resId = (String) messageMap.get("resId");
+        if (resId == null) {
+            log.warn("Call error missing resId");
+            return;
+        }
+
+        String errorMessage = (String) messageMap.get("error");
+        log.error("Received call error for resId: {}, error: {}", resId, errorMessage);
+
+        WebSocketCaller.getInstance().handleError(resId, errorMessage != null ? errorMessage : "Unknown error");
     }
 
     /**
