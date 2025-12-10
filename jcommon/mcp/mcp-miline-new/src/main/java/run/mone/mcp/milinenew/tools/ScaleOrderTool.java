@@ -418,6 +418,18 @@ public class ScaleOrderTool implements ITool {
                 return result;
             }
 
+            // 检查是否为缩容操作
+            if (scaleCount < 0) {
+                result.addProperty("error", "暂不支持缩容操作，考虑到缩容风险，请通过Miline页面手动操作");
+                return result;
+            }
+
+            // 检查工单类型是否为缩容
+            if (inputJson.has("type") && inputJson.get("type").getAsInt() == DOWN) {
+                result.addProperty("error", "暂不支持缩容操作（type=4），考虑到缩容风险，请通过Miline页面手动操作");
+                return result;
+            }
+
             PipelineDeployDto deployDto = queryDeployCurrent(projectId, pipelineId);
             if (deployDto == null) {
                 result.addProperty("error", String.format("查询流水线部署信息失败: projectId=%s, pipelineId=%s", projectId, pipelineId));
@@ -476,6 +488,12 @@ public class ScaleOrderTool implements ITool {
                 return result;
             }
 
+            // 检查是否为缩容类型
+            if (batchOrderType == DOWN) {
+                result.addProperty("error", "暂不支持缩容操作（type=4），考虑到缩容风险，请通过Miline页面手动操作");
+                return result;
+            }
+
             List<ReviewerInfo> sharedReviewers = inputJson.has("reviewers") ? parseReviewers(inputJson) : null;
             if ((batchOrderType == UP_SALE || batchOrderType == UP_EMERGE) 
                     && (sharedReviewers == null || sharedReviewers.isEmpty())) {
@@ -497,7 +515,13 @@ public class ScaleOrderTool implements ITool {
                 }
                 int scaleCount = pipelineJson.get("scaleCount").getAsInt();
                 String pipelineId = getStringValue(pipelineJson, "pipelineId", "未知");
-                
+
+                // 检查是否有缩容操作
+                if (scaleCount < 0) {
+                    result.addProperty("error", String.format("流水线 %s 的 scaleCount 为负数，暂不支持缩容操作，考虑到缩容风险，请通过Miline页面手动操作", pipelineId));
+                    return result;
+                }
+
                 if (batchOrderType == DOWN && scaleCount > 0) {
                     result.addProperty("error", String.format("工单类型为缩容（type=4），但流水线 %s 的 scaleCount 为正数", pipelineId));
                     return result;
