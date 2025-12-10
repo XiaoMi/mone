@@ -69,6 +69,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: "/filemanager",
+      name: "FileManager",
+      component: () => import("@/views/FileManager.vue"),
+      meta: { requiresAuth: true }
+    },
+    {
       path: "/:pathMatch(.*)*",
       name: "NotFound",
       component: () => import("@/views/Login.vue")
