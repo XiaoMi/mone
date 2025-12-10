@@ -114,6 +114,7 @@ public class ReactorRole extends Role {
     // 中断标志 - 用于强制停止Role的执行
     private AtomicBoolean interrupted = new AtomicBoolean(false);
 
+    //绑定在用户身上的mcpHub
     private McpHub mcpHub;
 
     private FocusChainManager focusChainManager;

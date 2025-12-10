@@ -321,8 +321,9 @@ public class RoleService {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
                         role.getMcpNames().addAll(list);
                         log.info("mcp list:{}", list);
-                        //更新mcp agent
+                        //更新mcp agent(agent mcp)
                         McpHub hub = updateMcpConnections(list, clientId, role);
+                        //TODO$ 这里需要连接到配置的mcp
                         role.setMcpHub(hub);
                     } else {
                         role.setMcpHub(new McpHub());
