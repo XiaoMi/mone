@@ -2,6 +2,7 @@ package run.mone.mcp.miapi.config;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,8 +12,7 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
-import run.mone.mcp.miapi.function.MiApiFunction;
-import run.mone.mcp.miapi.function.SearchApiFunction;
+import run.mone.mcp.miapi.function.*;
 
 @Configuration
 public class AgentConfig {
@@ -22,6 +22,20 @@ public class AgentConfig {
 
     @Value("${mcp.agent.mode:MCP}")
     private String agentMode;
+
+    @Autowired
+    private IndexDetailFunction indexDetailFunction;
+    @Autowired
+    private IndexInfoFunction indexInfoFunction;
+    @Autowired
+    private MiApiFunction miApiFunction;
+    @Autowired
+    private ProjectListFunction projectListFunction;
+    @Autowired
+    private SearchApiFunction searchApiFunction;
+
+    @Autowired
+    private DubboTestFunction dubboTestFunction;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -40,7 +54,7 @@ public class AgentConfig {
                 .mcpTools(
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
                                 ? Lists.newArrayList(new ChatFunction("new-miapi", 20))
-                                : Lists.newArrayList(new MiApiFunction(), new SearchApiFunction())
+                                : Lists.newArrayList(projectListFunction,miApiFunction, searchApiFunction, indexInfoFunction, indexDetailFunction, dubboTestFunction)
                 )
                 .workflow("""
                     你是智能化系统，可以根据用户输入的项目名称查询项目信息

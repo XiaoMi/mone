@@ -22,23 +22,14 @@
         </encoder>
     </appender>
 
-    <!-- 开发环境 -->
-    <springProfile name="dev">
-        <root level="INFO">
-            <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE"/>
-        </root>
-    </springProfile>
-
-    <!-- 生产环境 -->
-    <springProfile name="prod">
-        <root level="INFO">
-            <appender-ref ref="FILE"/>
-        </root>
-    </springProfile>
-
     <!-- 设置特定包的日志级别 -->
     <logger name="run.mone" level="INFO"/>
     <logger name="org.springframework" level="INFO"/>
     <logger name="org.hibernate" level="INFO"/>
-</configuration> 
+
+    <!-- 根日志配置 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.hera.analysis.service.LogQueryService;
@@ -68,6 +69,14 @@ public class LogQueryFunction implements McpFunction {
                     "traceId": {
                         "type": "string",
                         "description": "链路追踪ID，32位由0-9a-f组成的字符串，用于追踪特定请求的完整调用链路"
+                    },
+                    "page": {
+                        "type": "integer",
+                        "description": "分页页码，从1开始，默认为1"
+                    },
+                    "pageSize": {
+                        "type": "integer",
+                        "description": "每页大小，默认为20"
                     }
                 },
                 "required": ["projectId", "pipelineId"]
@@ -81,6 +90,7 @@ public class LogQueryFunction implements McpFunction {
      * @return 包含查询结果的Flux流
      */
     @Override
+    @ReportCallCount(businessName = "hera-log-query", description = "查询指定项目和环境(流水线)下的日志信息")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         return Flux.defer(() -> {
             try {
@@ -126,11 +136,15 @@ public class LogQueryFunction implements McpFunction {
                 long endTime = getLongParam(args, "endTime", System.currentTimeMillis());
                 long startTime = getLongParam(args, "startTime", endTime - 3600000); // 默认1小时（毫秒）
 
-                log.info("开始查询日志，level: {}, projectId: {}, pipelineId: {}, startTime: {}, endTime: {}, traceId: {}",
-                        level, projectId, pipelineId, startTime, endTime, traceId);
+                // 获取分页参数，默认值：page=1, pageSize=20
+                int page = getIntParam(args, "page", 1);
+                int pageSize = getIntParam(args, "pageSize", 20);
+
+                log.info("开始查询日志，level: {}, projectId: {}, pipelineId: {}, startTime: {}, endTime: {}, traceId: {}, page: {}, pageSize: {}",
+                        level, projectId, pipelineId, startTime, endTime, traceId, page, pageSize);
 
                 // 调用服务查询日志
-                String result = logQueryService.queryLogs(level, projectId, pipelineId, startTime, endTime, traceId);
+                String result = logQueryService.queryLogs(level, projectId, pipelineId, startTime, endTime, traceId, page, pageSize);
 
                 log.info("成功查询日志，level: {}, projectId: {}, pipelineId: {}, traceId: {}", level, projectId, pipelineId, traceId);
 

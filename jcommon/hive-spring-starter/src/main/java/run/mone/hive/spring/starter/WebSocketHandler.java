@@ -13,9 +13,8 @@ import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
 import javax.annotation.PreDestroy;
-import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +36,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final RoleService roleService;
     private final WebSocketProperties webSocketProperties;
 
-    // 存储所有活跃的WebSocket连接
-    private final Map<String, WebSocketSession> sessionMap = new ConcurrentHashMap<>();
+    // 使用单例管理会话
+    private final WebSocketSessionManager sessionManager = WebSocketSessionManager.getInstance();
 
     // JSON序列化工具
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -46,13 +45,28 @@ public class WebSocketHandler extends TextWebSocketHandler {
     // 心跳检测线程池
     private final ScheduledExecutorService heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
 
+    // 用于在 session attributes 中存储 clientId 的 key
+    private static final String CLIENT_ID_ATTRIBUTE = "clientId";
+
     /**
      * 连接建立成功时调用
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String sessionId = session.getId();
-        log.info("WebSocket connection established: {}", sessionId);
+        log.info("WebSocket connection established, sessionId: {}", sessionId);
+
+
+        // 获取对话ID，从URL参数中获取
+        String clientId = extractClientId(session.getUri());
+        if (clientId == null) {
+            log.error("No client ID provided");
+            session.close(CloseStatus.POLICY_VIOLATION);
+            return;
+        }
+
+        // 将 clientId 存储在 session attributes 中，方便后续获取
+        session.getAttributes().put(CLIENT_ID_ATTRIBUTE, clientId);
 
         // 放宽会话级文本消息大小限制（需与容器缓冲区匹配）
         Integer limit = webSocketProperties.getMaxTextMessageSize();
@@ -63,21 +77,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // 某些容器实现可能不支持设置该值，忽略即可
             }
         }
-        
-        sessionMap.put(sessionId, session);
-        
+
+        sessionManager.addSession(clientId, session);
+
         // 发送欢迎消息
         Map<String, Object> welcomeMessage = Map.of(
                 "type", "connected",
                 "message", "WebSocket connection established successfully",
-                "sessionId", sessionId,
+                "clientId", clientId,
                 "timestamp", System.currentTimeMillis()
         );
-        
-        sendMessage(sessionId, welcomeMessage);
-        
+
+        sendMessage(clientId, welcomeMessage);
+
         // 启动心跳检测
-        if (sessionMap.size() == 1) {
+        if (sessionManager.getActiveConnectionCount() == 1) {
             startHeartbeat();
         }
     }
@@ -87,36 +101,42 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String sessionId = session.getId();
+        String clientId = (String) session.getAttributes().get(CLIENT_ID_ATTRIBUTE);
         String payload = message.getPayload();
-        log.info("Received message from {}: {}", sessionId, payload);
-        
+        log.info("Received message from client {}: {}", clientId, payload);
+
         try {
             // 解析消息
             Map<String, Object> messageMap = objectMapper.readValue(payload, Map.class);
             String type = (String) messageMap.get("type");
-            
+
             // 根据消息类型处理
             switch (type) {
                 case "ping":
-                    handlePing(sessionId);
+                    handlePing(clientId);
                     break;
                 case "message":
-                    handleMessage(sessionId, messageMap);
+                    handleMessage(clientId, messageMap);
                     break;
                 case "agent":
-                    handleAgentMessage(sessionId, messageMap);
+                    handleAgentMessage(clientId, messageMap);
                     break;
                 case "broadcast":
-                    handleBroadcast(sessionId, messageMap);
+                    handleBroadcast(clientId, messageMap);
+                    break;
+                case "call_response":
+                    handleCallResponse(messageMap);
+                    break;
+                case "call_error":
+                    handleCallError(messageMap);
                     break;
                 default:
                     log.warn("Unknown message type: {}", type);
-                    sendError(sessionId, "Unknown message type: " + type);
+                    sendError(clientId, "Unknown message type: " + type);
             }
         } catch (Exception e) {
-            log.error("Error handling message from {}", sessionId, e);
-            sendError(sessionId, "Error processing message: " + e.getMessage());
+            log.error("Error handling message from client {}", clientId, e);
+            sendError(clientId, "Error processing message: " + e.getMessage());
         }
     }
 
@@ -125,9 +145,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String sessionId = session.getId();
-        log.info("WebSocket connection closed: {}, status: {}", sessionId, status);
-        sessionMap.remove(sessionId);
+        String clientId = (String) session.getAttributes().get(CLIENT_ID_ATTRIBUTE);
+        log.info("WebSocket connection closed for client: {}, status: {}", clientId, status);
+        sessionManager.removeSession(clientId);
     }
 
     /**
@@ -135,10 +155,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        String sessionId = session.getId();
-        log.error("WebSocket transport error for {}", sessionId, exception);
-        sessionMap.remove(sessionId);
-        
+        String clientId = (String) session.getAttributes().get(CLIENT_ID_ATTRIBUTE);
+        log.error("WebSocket transport error for client {}", clientId, exception);
+        sessionManager.removeSession(clientId);
+
         if (session.isOpen()) {
             session.close(CloseStatus.SERVER_ERROR);
         }
@@ -147,22 +167,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理ping消息
      */
-    private void handlePing(String sessionId) {
+    private void handlePing(String clientId) {
         Map<String, Object> response = Map.of(
                 "type", "pong",
                 "timestamp", System.currentTimeMillis()
         );
-        sendMessage(sessionId, response);
+        sendMessage(clientId, response);
     }
 
     /**
      * 处理普通消息
      */
-    private void handleMessage(String sessionId, Map<String, Object> messageMap) {
+    private void handleMessage(String clientId, Map<String, Object> messageMap) {
         // 这里可以调用 roleService 处理业务逻辑
         Object data = messageMap.get("data");
-        log.info("Processing message from {}: {}", sessionId, data);
-        
+        log.info("Processing message from client {}: {}", clientId, data);
+
         // 发送响应
         Map<String, Object> response = Map.of(
                 "type", "message_response",
@@ -170,148 +190,161 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 "originalMessage", data,
                 "timestamp", System.currentTimeMillis()
         );
-        sendMessage(sessionId, response);
+        sendMessage(clientId, response);
     }
 
     /**
      * 处理广播请求
      */
-    private void handleBroadcast(String sessionId, Map<String, Object> messageMap) {
+    private void handleBroadcast(String clientId, Map<String, Object> messageMap) {
         Object data = messageMap.get("data");
-        log.info("Broadcasting message from {}: {}", sessionId, data);
-        
+        log.info("Broadcasting message from client {}: {}", clientId, data);
+
         Map<String, Object> broadcastMessage = Map.of(
                 "type", "broadcast",
-                "from", sessionId,
+                "from", clientId,
                 "data", data,
                 "timestamp", System.currentTimeMillis()
         );
-        
+
         broadcast(broadcastMessage);
     }
 
     /**
      * 处理 Agent 消息请求
      */
-    private void handleAgentMessage(String sessionId, Map<String, Object> messageMap) {
+    private void handleAgentMessage(String clientId, Map<String, Object> messageMap) {
         try {
             Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
-            
+
             // 从 data 中获取参数
-            String content = data.containsKey("content") ? 
+            String content = data.containsKey("content") ?
                     (String) data.get("content") : "";
-            
-            String userId = data.containsKey("userId") ? 
+
+            String userId = data.containsKey("userId") ?
                     (String) data.get("userId") : "";
-            
-            String agentId = data.containsKey("agentId") ? 
+
+            String agentId = data.containsKey("agentId") ?
                     (String) data.get("agentId") : "";
-            
-            log.info("Processing agent message for session {}: content={}, userId={}, agentId={}", 
-                    sessionId, content, userId, agentId);
-            
+
+            log.info("Processing agent message for client {}: content={}, userId={}, agentId={}",
+                    clientId, content, userId, agentId);
+
             // 构建 Message 对象
             Message message = Message.builder()
                     .content(content)
                     .role("user")
-                    .sentFrom("ws_" + sessionId)
-                    .clientId(sessionId)
+                    .sentFrom("ws_" + clientId)
+                    .clientId(clientId)
                     .userId(userId)
                     .agentId(agentId)
                     .createTime(System.currentTimeMillis())
                     .build();
-            
+
             // 调用 RoleService.receiveMsg 并订阅响应
             roleService.receiveMsg(message)
                     .subscribe(
                             response -> {
                                 // Agent 返回的每个消息片段
-                                log.debug("Agent response for session {}: {}", sessionId, response);
+                                log.debug("Agent response for client {}: {}", clientId, response);
                                 Map<String, Object> responseMessage = Map.of(
                                         "type", "agent_response",
                                         "data", response,
                                         "timestamp", System.currentTimeMillis()
                                 );
-                                sendMessage(sessionId, responseMessage);
+                                sendMessage(clientId, responseMessage);
                             },
                             error -> {
                                 // 错误处理
-                                log.error("Agent error for session: {}", sessionId, error);
+                                log.error("Agent error for client: {}", clientId, error);
                                 Map<String, Object> errorMessage = Map.of(
                                         "type", "agent_error",
                                         "error", error.getMessage(),
                                         "timestamp", System.currentTimeMillis()
                                 );
-                                sendMessage(sessionId, errorMessage);
+                                sendMessage(clientId, errorMessage);
                             },
                             () -> {
                                 // 完成处理
-                                log.info("Agent processing completed for session: {}", sessionId);
+                                log.info("Agent processing completed for client: {}", clientId);
                                 Map<String, Object> completeMessage = Map.of(
                                         "type", "agent_complete",
                                         "message", "Agent processing completed",
                                         "timestamp", System.currentTimeMillis()
                                 );
-                                sendMessage(sessionId, completeMessage);
+                                sendMessage(clientId, completeMessage);
                             }
                     );
-            
+
         } catch (Exception e) {
-            log.error("Failed to process agent message for session: {}", sessionId, e);
+            log.error("Failed to process agent message for client: {}", clientId, e);
             Map<String, Object> errorMessage = Map.of(
                     "type", "error",
                     "message", "Failed to process agent message: " + e.getMessage(),
                     "timestamp", System.currentTimeMillis()
             );
-            sendMessage(sessionId, errorMessage);
+            sendMessage(clientId, errorMessage);
         }
     }
 
     /**
-     * 发送消息到指定会话
+     * 处理客户端调用响应
+     * 客户端处理完 call 请求后，返回此消息解除调用者阻塞
      */
-    public void sendMessage(String sessionId, Map<String, Object> message) {
-        WebSocketSession session = sessionMap.get(sessionId);
-        if (session == null || !session.isOpen()) {
-            log.warn("Session {} not found or closed", sessionId);
+    @SuppressWarnings("unchecked")
+    private void handleCallResponse(Map<String, Object> messageMap) {
+        String resId = (String) messageMap.get("resId");
+        if (resId == null) {
+            log.warn("Call response missing resId");
             return;
         }
-        
-        try {
-            String json = objectMapper.writeValueAsString(message);
-            session.sendMessage(new TextMessage(json));
-        } catch (IOException e) {
-            log.error("Failed to send message to session {}", sessionId, e);
-            sessionMap.remove(sessionId);
-            try {
-                session.close(CloseStatus.SERVER_ERROR);
-            } catch (IOException ex) {
-                log.error("Failed to close session {}", sessionId, ex);
-            }
+
+        Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+        log.info("Received call response for resId: {}", resId);
+
+        WebSocketCaller.getInstance().handleResponse(resId, data != null ? data : Map.of());
+    }
+
+    /**
+     * 处理客户端调用错误响应
+     */
+    private void handleCallError(Map<String, Object> messageMap) {
+        String resId = (String) messageMap.get("resId");
+        if (resId == null) {
+            log.warn("Call error missing resId");
+            return;
         }
+
+        String errorMessage = (String) messageMap.get("error");
+        log.error("Received call error for resId: {}, error: {}", resId, errorMessage);
+
+        WebSocketCaller.getInstance().handleError(resId, errorMessage != null ? errorMessage : "Unknown error");
+    }
+
+    /**
+     * 发送消息到指定客户端
+     */
+    public void sendMessage(String clientId, Map<String, Object> message) {
+        sessionManager.sendMessage(clientId, message);
     }
 
     /**
      * 广播消息到所有客户端
      */
     public void broadcast(Map<String, Object> message) {
-        log.info("Broadcasting message to {} sessions", sessionMap.size());
-        
-        for (Map.Entry<String, WebSocketSession> entry : sessionMap.entrySet()) {
-            sendMessage(entry.getKey(), message);
-        }
+        sessionManager.broadcast(message);
     }
 
     /**
      * 发送错误消息
      */
-    private void sendError(String sessionId, String errorMessage) {
+    private void sendError(String clientId, String errorMessage) {
         Map<String, Object> error = Map.of(
                 "type", "error",
                 "message", errorMessage,
                 "timestamp", System.currentTimeMillis()
         );
-        sendMessage(sessionId, error);
+        sendMessage(clientId, error);
     }
 
     /**
@@ -319,18 +352,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     private void startHeartbeat() {
         heartbeatExecutor.scheduleAtFixedRate(() -> {
-            log.debug("Sending heartbeat to {} sessions", sessionMap.size());
-            
+            log.debug("Sending heartbeat to {} clients", sessionManager.getActiveConnectionCount());
+
             Map<String, Object> heartbeat = Map.of(
                     "type", "heartbeat",
                     "timestamp", System.currentTimeMillis()
             );
-            
-            for (Map.Entry<String, WebSocketSession> entry : sessionMap.entrySet()) {
-                if (entry.getValue().isOpen()) {
-                    sendMessage(entry.getKey(), heartbeat);
+
+            for (String clientId : sessionManager.getActiveClientIds()) {
+                if (sessionManager.isSessionActive(clientId)) {
+                    sendMessage(clientId, heartbeat);
                 } else {
-                    sessionMap.remove(entry.getKey());
+                    sessionManager.removeSession(clientId);
                 }
             }
         }, 30, 30, TimeUnit.SECONDS);
@@ -340,28 +373,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * 获取当前连接数
      */
     public int getActiveConnectionCount() {
-        return sessionMap.size();
+        return sessionManager.getActiveConnectionCount();
     }
 
     /**
-     * 获取所有活跃会话ID
+     * 获取所有活跃的客户端ID
      */
-    public java.util.Set<String> getActiveSessionIds() {
-        return sessionMap.keySet();
+    public java.util.Set<String> getActiveClientIds() {
+        return sessionManager.getActiveClientIds();
     }
 
     /**
-     * 关闭指定会话
+     * 关闭指定客户端的会话
      */
-    public void closeSession(String sessionId) {
-        WebSocketSession session = sessionMap.remove(sessionId);
-        if (session != null && session.isOpen()) {
-            try {
-                session.close(CloseStatus.NORMAL);
-            } catch (IOException e) {
-                log.error("Failed to close session {}", sessionId, e);
-            }
-        }
+    public void closeSession(String clientId) {
+        sessionManager.closeSession(clientId);
     }
 
     /**
@@ -369,8 +395,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @PreDestroy
     public void cleanup() {
-        log.info("Cleaning up WebSocket handler, closing {} sessions", sessionMap.size());
-        
+        log.info("Cleaning up WebSocket handler, closing {} sessions", sessionManager.getActiveConnectionCount());
+
         // 关闭心跳线程池
         heartbeatExecutor.shutdown();
         try {
@@ -381,17 +407,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
             heartbeatExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        
+
         // 关闭所有会话
-        for (Map.Entry<String, WebSocketSession> entry : sessionMap.entrySet()) {
-            try {
-                if (entry.getValue().isOpen()) {
-                    entry.getValue().close(CloseStatus.GOING_AWAY);
+        sessionManager.closeAllSessions();
+    }
+
+    private String extractClientId(URI uri) {
+        String query = uri.getQuery();
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                if (param.startsWith("clientId=")) {
+                    return param.substring("clientId=".length());
                 }
-            } catch (Exception e) {
-                log.error("Error closing session {}", entry.getKey(), e);
             }
         }
-        sessionMap.clear();
+        return null;
     }
 }

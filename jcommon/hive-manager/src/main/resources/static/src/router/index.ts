@@ -35,6 +35,12 @@ const router = createRouter({
           name: "TaskList",
           component: () => import("@/views/TaskList.vue"),
           meta: { requiresAuth: true }
+        },
+        {
+          path: "reportList",
+          name: "ReportList",
+          component: () => import("@/views/ReportList.vue"),
+          meta: { requiresAuth: true }
         }
       ]
     },
@@ -63,6 +69,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: "/filemanager",
+      name: "FileManager",
+      component: () => import("@/views/FileManager.vue"),
+      meta: { requiresAuth: true }
+    },
+    {
       path: "/:pathMatch(.*)*",
       name: "NotFound",
       component: () => import("@/views/Login.vue")
@@ -75,7 +87,8 @@ router.beforeEach((to, from, next) => {
   const isExpired = isTokenExpired();
   if (isExpired && to.path !== "/login") {
     userStore.clearUser();
-    next("/login");
+    // 添加redirect参数，记录用户原本想访问的页面
+    next({ path: "/login", query: { redirect: to.fullPath } });
     return
   }
   if (!userStore.initUser()) {
@@ -85,11 +98,13 @@ router.beforeEach((to, from, next) => {
     } else if (to.path === "/bindInner") {
       next();
     } else {
-      next("/login");
+      // 添加redirect参数
+      next({ path: "/login", query: { redirect: to.fullPath } });
     }
   } else {
     if (to.meta.requiresAuth && !userStore.token) {
-      next("/login");
+      // 添加redirect参数
+      next({ path: "/login", query: { redirect: to.fullPath } });
     } else if (to.path === "/login") {
       next("/agents");
     } else {

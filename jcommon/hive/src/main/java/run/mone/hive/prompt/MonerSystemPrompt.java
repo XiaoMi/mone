@@ -195,9 +195,9 @@ public class MonerSystemPrompt {
         }
         data.put("workflow", workFlow);
 
-        //注入skill定义
-        SkillService skillService = new SkillService();
-        List<SkillDocument> skills = skillService.loadSkills(MonerSystemPrompt.hiveCwd(role));
+        //注入skill定义 (supports config-based path: roleConfig > spring config > default)
+        SkillService skillService = SkillService.getInstance();
+        List<SkillDocument> skills = skillService.loadSkills(MonerSystemPrompt.hiveCwd(role), role.getRoleConfig());
         data.put("skillList", skills);
         data.put("enableSkills", !skills.isEmpty());
         data.put("skillsPrompt", skillService.formatSkillsForPrompt(skills));
@@ -283,7 +283,7 @@ public class MonerSystemPrompt {
                 server.put("args", "");
                 server.put("connection", value);
                 server.put("agent", ImmutableMap.of("name", value.getServer().getName()));
-                List<io.modelcontextprotocol.spec.McpSchema.Tool> tools = value.getServer().getToolsV2();
+                List<McpSchema.Tool> tools = value.getServer().getTools();
                 String toolsStr = tools.stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n"
                                 + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema()))
                         .collect(Collectors.joining("\n\n"));

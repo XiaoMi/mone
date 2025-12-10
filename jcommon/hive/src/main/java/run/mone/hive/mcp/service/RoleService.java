@@ -24,6 +24,7 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.function.McpFunction;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.service.command.RoleBaseCommand;
@@ -35,6 +36,7 @@ import run.mone.hive.roles.RoleState;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.Message;
 import run.mone.hive.service.MarkdownService;
+import run.mone.hive.sink.McpGrpcTransportSink;
 import run.mone.hive.utils.NetUtils;
 
 import javax.annotation.PostConstruct;
@@ -48,6 +50,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -118,14 +121,20 @@ public class RoleService {
 
     private final ApplicationContext applicationContext;
 
+    //发送给hive manager
+    private Consumer<McpSchema.LoggingMessageNotification> loggingConsumer = null;
+
     @PostConstruct
     @SneakyThrows
     public void init() {
+
+        initLoggingConsumer();
+
         //初始化Role命令工厂
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
-        //启用mcp (这个Agent也可以使用mcp)
+        //启用mcp (这个Agent也可以使用mcp),全局的mcp,不是绑定在role上的
         if (StringUtils.isNotEmpty(mcpPath)) {
-            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath), "default_"));
+            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath), "default_", loggingConsumer));
         }
         if (roleMeta.getMode().equals(RoleMeta.RoleMode.AGENT)) {
             //创建一个默认Agent
@@ -133,6 +142,46 @@ public class RoleService {
             //优雅关机
             shutdownHook();
         }
+    }
+
+    private void initLoggingConsumer() {
+        loggingConsumer = loggingMessageNotification -> {
+            log.info("notification msg:{}", loggingMessageNotification);
+            Safe.run(() -> {
+                Object data = loggingMessageNotification.data();
+                // 检查 data 是否是 JsonObject，提取 clientId
+                String clientId = null;
+                if (data instanceof String dataStr) {
+                    try {
+                        com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(dataStr).getAsJsonObject();
+                        if (jsonObject.has("clientId")) {
+                            clientId = jsonObject.get("clientId").getAsString();
+                        }
+                    } catch (Exception e) {
+                        // 不是有效的 JSON，忽略
+                    }
+                }
+
+                // 如果有 clientId，则只发送给对应的 role；否则发送给所有 role
+                if (clientId != null) {
+                    ReactorRole role = roleMap.get(clientId);
+                    if (role != null) {
+                        if (null != transport && transport instanceof GrpcServerTransport gst) {
+                            new McpGrpcTransportSink(gst, role).sendNotification("<notification>" + loggingMessageNotification.data() + "</notification>");
+                        }
+                    } else {
+                        log.debug("Client {} not found in roleMap, skipping notification", clientId);
+                    }
+                } else {
+                    // 没有 clientId，发送给所有 role
+//                    roleMap.forEach((key, role) -> {
+//                        if (null != transport && transport instanceof GrpcServerTransport gst) {
+//                            new McpGrpcTransportSink(gst, role).sendNotification("<notification>" + loggingMessageNotification.data() + "</notification>");
+//                        }
+//                    });
+                }
+            });
+        };
     }
 
     private McpHub updateMcpConnections(List<String> agentNames, String clientId, ReactorRole role) {
@@ -272,8 +321,9 @@ public class RoleService {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
                         role.getMcpNames().addAll(list);
                         log.info("mcp list:{}", list);
-                        //更新mcp agent
+                        //更新mcp agent(agent mcp)
                         McpHub hub = updateMcpConnections(list, clientId, role);
+                        //TODO$ 这里需要连接到配置的mcp
                         role.setMcpHub(hub);
                     } else {
                         role.setMcpHub(new McpHub());

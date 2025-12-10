@@ -54,6 +54,8 @@ public class Const {
 
     public static final String NOTIFY_MSG = "msg";
 
+    public static final String NOTIFY_HIVE_MANAGER = "notify_hive_manager";
+
     //退出agent
     public static final String ROLE_EXIT = "___exit___";
 
@@ -72,6 +74,8 @@ public class Const {
     public static final String SWITCH_AGENT = "__switch_agent__";
 
     public static final String WORKSPACE_PATH_KEY = "workspacePath";
+
+    public static final String SKILLS_PATH_KEY = "skillsPath";
 
     public static final String MCP = "mcp";
 
