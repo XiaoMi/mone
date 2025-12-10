@@ -529,7 +529,7 @@ const sendReloadCommand = async () => {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  padding: 0 16px;
+  padding: 16px 16px 0 16px;
   box-sizing: border-box;
 }
 
@@ -688,7 +688,7 @@ const sendReloadCommand = async () => {
 
 @media (max-width: 1200px) {
   .container {
-    padding: 0 12px;
+    padding: 12px 12px 0 12px; 
   }
 
   .instance-select {
@@ -731,7 +731,7 @@ const sendReloadCommand = async () => {
 
 @media (max-width: 768px) {
   .container {
-    padding: 0 10px;
+    padding: 10px 10px 0 10px;
   }
 
   .instance-select {
@@ -762,7 +762,7 @@ const sendReloadCommand = async () => {
 
 @media (max-width: 480px) {
   .container {
-    padding: 0 6px;
+    padding: 6px 6px 0 6px;
     gap: 10px;
   }
 
