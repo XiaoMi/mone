@@ -40,9 +40,11 @@ public class LogQueryService {
      * @param startTime 开始时间（毫秒时间戳）
      * @param endTime 结束时间（毫秒时间戳）
      * @param traceId 链路追踪ID（32位0-9a-f组成的字符串），可选参数
+     * @param page 分页页码，从1开始
+     * @param pageSize 每页大小
      * @return 格式化的日志查询结果
      */
-    public String queryLogs(String level, int projectId, int envId, long startTime, long endTime, String traceId) {
+    public String queryLogs(String level, int projectId, int envId, long startTime, long endTime, String traceId, int page, int pageSize) {
         try {
             // 构建请求体
             JsonArray requestArray = new JsonArray();
@@ -62,6 +64,10 @@ public class LogQueryService {
             if (traceId != null && !traceId.isEmpty()) {
                 requestBody.addProperty("traceId", traceId);
             }
+
+            // 添加分页参数
+            requestBody.addProperty("page", page);
+            requestBody.addProperty("pageSize", pageSize);
 
             requestArray.add(requestBody);
 
