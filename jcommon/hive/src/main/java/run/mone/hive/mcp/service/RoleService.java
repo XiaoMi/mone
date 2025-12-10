@@ -128,17 +128,7 @@ public class RoleService {
     @SneakyThrows
     public void init() {
 
-        loggingConsumer = loggingMessageNotification -> {
-            log.info("notification msg:{}", loggingMessageNotification);
-            Safe.run(() -> {
-                roleMap.forEach((key, role) -> {
-                    if (null != transport && transport instanceof GrpcServerTransport gst) {
-                        new McpGrpcTransportSink(gst, role).sendNotification("<notification>"+loggingMessageNotification.data()+"</notification>");
-                    }
-                });
-            });
-        };
-
+        initLoggingConsumer();
 
         //初始化Role命令工厂
         this.roleCommandFactory = new RoleCommandFactory(this, applicationContext);
@@ -152,6 +142,46 @@ public class RoleService {
             //优雅关机
             shutdownHook();
         }
+    }
+
+    private void initLoggingConsumer() {
+        loggingConsumer = loggingMessageNotification -> {
+            log.info("notification msg:{}", loggingMessageNotification);
+            Safe.run(() -> {
+                Object data = loggingMessageNotification.data();
+                // 检查 data 是否是 JsonObject，提取 clientId
+                String clientId = null;
+                if (data instanceof String dataStr) {
+                    try {
+                        com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(dataStr).getAsJsonObject();
+                        if (jsonObject.has("clientId")) {
+                            clientId = jsonObject.get("clientId").getAsString();
+                        }
+                    } catch (Exception e) {
+                        // 不是有效的 JSON，忽略
+                    }
+                }
+
+                // 如果有 clientId，则只发送给对应的 role；否则发送给所有 role
+                if (clientId != null) {
+                    ReactorRole role = roleMap.get(clientId);
+                    if (role != null) {
+                        if (null != transport && transport instanceof GrpcServerTransport gst) {
+                            new McpGrpcTransportSink(gst, role).sendNotification("<notification>" + loggingMessageNotification.data() + "</notification>");
+                        }
+                    } else {
+                        log.debug("Client {} not found in roleMap, skipping notification", clientId);
+                    }
+                } else {
+                    // 没有 clientId，发送给所有 role
+//                    roleMap.forEach((key, role) -> {
+//                        if (null != transport && transport instanceof GrpcServerTransport gst) {
+//                            new McpGrpcTransportSink(gst, role).sendNotification("<notification>" + loggingMessageNotification.data() + "</notification>");
+//                        }
+//                    });
+                }
+            });
+        };
     }
 
     private McpHub updateMcpConnections(List<String> agentNames, String clientId, ReactorRole role) {
@@ -291,8 +321,9 @@ public class RoleService {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
                         role.getMcpNames().addAll(list);
                         log.info("mcp list:{}", list);
-                        //更新mcp agent
+                        //更新mcp agent(agent mcp)
                         McpHub hub = updateMcpConnections(list, clientId, role);
+                        //TODO$ 这里需要连接到配置的mcp
                         role.setMcpHub(hub);
                     } else {
                         role.setMcpHub(new McpHub());

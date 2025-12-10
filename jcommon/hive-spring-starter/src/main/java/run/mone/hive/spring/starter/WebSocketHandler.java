@@ -13,9 +13,7 @@ import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
 import javax.annotation.PreDestroy;
-import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +35,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final RoleService roleService;
     private final WebSocketProperties webSocketProperties;
 
-    // 存储所有活跃的WebSocket连接
-    private final Map<String, WebSocketSession> sessionMap = new ConcurrentHashMap<>();
+    // 使用单例管理会话
+    private final WebSocketSessionManager sessionManager = WebSocketSessionManager.getInstance();
 
     // JSON序列化工具
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -64,8 +62,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
         }
         
-        sessionMap.put(sessionId, session);
-        
+        sessionManager.addSession(sessionId, session);
+
         // 发送欢迎消息
         Map<String, Object> welcomeMessage = Map.of(
                 "type", "connected",
@@ -73,11 +71,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 "sessionId", sessionId,
                 "timestamp", System.currentTimeMillis()
         );
-        
+
         sendMessage(sessionId, welcomeMessage);
-        
+
         // 启动心跳检测
-        if (sessionMap.size() == 1) {
+        if (sessionManager.getActiveConnectionCount() == 1) {
             startHeartbeat();
         }
     }
@@ -127,7 +125,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String sessionId = session.getId();
         log.info("WebSocket connection closed: {}, status: {}", sessionId, status);
-        sessionMap.remove(sessionId);
+        sessionManager.removeSession(sessionId);
     }
 
     /**
@@ -137,7 +135,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         String sessionId = session.getId();
         log.error("WebSocket transport error for {}", sessionId, exception);
-        sessionMap.remove(sessionId);
+        sessionManager.removeSession(sessionId);
         
         if (session.isOpen()) {
             session.close(CloseStatus.SERVER_ERROR);
@@ -271,35 +269,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * 发送消息到指定会话
      */
     public void sendMessage(String sessionId, Map<String, Object> message) {
-        WebSocketSession session = sessionMap.get(sessionId);
-        if (session == null || !session.isOpen()) {
-            log.warn("Session {} not found or closed", sessionId);
-            return;
-        }
-        
-        try {
-            String json = objectMapper.writeValueAsString(message);
-            session.sendMessage(new TextMessage(json));
-        } catch (IOException e) {
-            log.error("Failed to send message to session {}", sessionId, e);
-            sessionMap.remove(sessionId);
-            try {
-                session.close(CloseStatus.SERVER_ERROR);
-            } catch (IOException ex) {
-                log.error("Failed to close session {}", sessionId, ex);
-            }
-        }
+        sessionManager.sendMessage(sessionId, message);
     }
 
     /**
      * 广播消息到所有客户端
      */
     public void broadcast(Map<String, Object> message) {
-        log.info("Broadcasting message to {} sessions", sessionMap.size());
-        
-        for (Map.Entry<String, WebSocketSession> entry : sessionMap.entrySet()) {
-            sendMessage(entry.getKey(), message);
-        }
+        sessionManager.broadcast(message);
     }
 
     /**
@@ -319,18 +296,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     private void startHeartbeat() {
         heartbeatExecutor.scheduleAtFixedRate(() -> {
-            log.debug("Sending heartbeat to {} sessions", sessionMap.size());
-            
+            log.debug("Sending heartbeat to {} sessions", sessionManager.getActiveConnectionCount());
+
             Map<String, Object> heartbeat = Map.of(
                     "type", "heartbeat",
                     "timestamp", System.currentTimeMillis()
             );
-            
-            for (Map.Entry<String, WebSocketSession> entry : sessionMap.entrySet()) {
-                if (entry.getValue().isOpen()) {
-                    sendMessage(entry.getKey(), heartbeat);
+
+            for (String sessionId : sessionManager.getActiveSessionIds()) {
+                if (sessionManager.isSessionActive(sessionId)) {
+                    sendMessage(sessionId, heartbeat);
                 } else {
-                    sessionMap.remove(entry.getKey());
+                    sessionManager.removeSession(sessionId);
                 }
             }
         }, 30, 30, TimeUnit.SECONDS);
@@ -340,28 +317,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * 获取当前连接数
      */
     public int getActiveConnectionCount() {
-        return sessionMap.size();
+        return sessionManager.getActiveConnectionCount();
     }
 
     /**
      * 获取所有活跃会话ID
      */
     public java.util.Set<String> getActiveSessionIds() {
-        return sessionMap.keySet();
+        return sessionManager.getActiveSessionIds();
     }
 
     /**
      * 关闭指定会话
      */
     public void closeSession(String sessionId) {
-        WebSocketSession session = sessionMap.remove(sessionId);
-        if (session != null && session.isOpen()) {
-            try {
-                session.close(CloseStatus.NORMAL);
-            } catch (IOException e) {
-                log.error("Failed to close session {}", sessionId, e);
-            }
-        }
+        sessionManager.closeSession(sessionId);
     }
 
     /**
@@ -369,8 +339,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @PreDestroy
     public void cleanup() {
-        log.info("Cleaning up WebSocket handler, closing {} sessions", sessionMap.size());
-        
+        log.info("Cleaning up WebSocket handler, closing {} sessions", sessionManager.getActiveConnectionCount());
+
         // 关闭心跳线程池
         heartbeatExecutor.shutdown();
         try {
@@ -381,17 +351,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             heartbeatExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        
+
         // 关闭所有会话
-        for (Map.Entry<String, WebSocketSession> entry : sessionMap.entrySet()) {
-            try {
-                if (entry.getValue().isOpen()) {
-                    entry.getValue().close(CloseStatus.GOING_AWAY);
-                }
-            } catch (Exception e) {
-                log.error("Error closing session {}", entry.getKey(), e);
-            }
-        }
-        sessionMap.clear();
+        sessionManager.closeAllSessions();
     }
 }

@@ -2,14 +2,22 @@ package run.mone.hive.mcp.server.transport.streamable;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.LogManager;
 
 /**
@@ -28,7 +36,10 @@ import java.util.logging.LogManager;
  */
 @Slf4j
 public class HttpServletMcpServerExample {
-    
+
+    // 保存 server 实例，用于在 tool handler 中发送 notification
+    private static McpAsyncServer mcpServer;
+
     public static void main(String[] args) throws InterruptedException {
         // 配置JUL到SLF4J的桥接，让Tomcat日志通过logback输出
         LogManager.getLogManager().reset();
@@ -50,7 +61,7 @@ public class HttpServletMcpServerExample {
         
         try {
             // 创建并配置异步 MCP 服务器
-            McpAsyncServer server = loader.createServerBuilder()
+            mcpServer = loader.createServerBuilder()
                     .serverInfo("hive-mcp-server", "1.0.0", new java.util.HashMap<>())
                     .capabilities(McpSchema.ServerCapabilities.builder()
                             .tools(true)
@@ -80,14 +91,25 @@ public class HttpServletMcpServerExample {
             log.info("  - GET  {}/mcp (建立 SSE 连接)", "http://localhost:8080");
             log.info("  - POST {}/mcp (调用工具)", "http://localhost:8080");
             log.info("按 Ctrl+C 停止服务器");
-            
+
+            // 启动定时任务，定期发送 notifications 给客户端
+            ScheduledExecutorService scheduler = startNotificationScheduler(mcpServer);
+
             // 添加关闭钩子
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 log.info("正在关闭服务器...");
+                scheduler.shutdown();
+                try {
+                    if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        scheduler.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    scheduler.shutdownNow();
+                }
                 loader.stop();
                 log.info("服务器已关闭");
             }));
-            
+
             // 保持服务器运行
             CountDownLatch latch = new CountDownLatch(1);
             latch.await();
@@ -116,28 +138,37 @@ public class HttpServletMcpServerExample {
                 {
                     "type": "object",
                     "properties": {
+                        "clientId": {
+                            "type": "string",
+                            "description": "客户端唯一标识"
+                        },
                         "expression": {
                             "type": "string",
                             "description": "要计算的数学表达式，例如：2+3*4"
                         }
                     },
-                    "required": ["expression"]
+                    "required": ["clientId", "expression"]
                 }
                 """;
         return new McpSchema.Tool("calculator", "执行基本的数学计算", schemaJson);
     }
-    
+
     /**
      * 处理计算器工具调用
      */
     private static reactor.core.publisher.Flux<McpSchema.CallToolResult> handleCalculator(Map<String, Object> args) {
+        String clientId = (String) args.get("clientId");
+        String expression = (String) args.get("expression");
+
+        // 调用工具前先发送 notification 给客户端
+        sendToolStartNotification("calculator", clientId);
+
         try {
-            String expression = (String) args.get("expression");
-            log.info("计算表达式: {}", expression);
-            
+            log.info("计算表达式: clientId={}, expression={}", clientId, expression);
+
             // 简单的计算器实现（仅支持基本运算）
             double result = evaluateExpression(expression);
-            
+
             McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
                     java.util.List.of(new McpSchema.TextContent(
                             String.format("计算结果: %s = %.2f", expression, result)
@@ -146,7 +177,7 @@ public class HttpServletMcpServerExample {
             );
             return reactor.core.publisher.Flux.just(toolResult);
         } catch (Exception e) {
-            log.error("计算失败", e);
+            log.error("计算失败: clientId={}", clientId, e);
             McpSchema.CallToolResult errorResult = new McpSchema.CallToolResult(
                     java.util.List.of(new McpSchema.TextContent(
                             "计算失败: " + e.getMessage()
@@ -165,6 +196,10 @@ public class HttpServletMcpServerExample {
                 {
                     "type": "object",
                     "properties": {
+                        "clientId": {
+                            "type": "string",
+                            "description": "客户端唯一标识"
+                        },
                         "name": {
                             "type": "string",
                             "description": "要问候的人的姓名"
@@ -175,28 +210,32 @@ public class HttpServletMcpServerExample {
                             "default": "zh"
                         }
                     },
-                    "required": ["name"]
+                    "required": ["clientId", "name"]
                 }
                 """;
         return new McpSchema.Tool("greeting", "生成个性化的问候消息", schemaJson);
     }
-    
+
     /**
      * 处理问候工具调用
      */
     private static reactor.core.publisher.Flux<McpSchema.CallToolResult> handleGreeting(Map<String, Object> args) {
+        String clientId = (String) args.get("clientId");
         String name = (String) args.get("name");
         String language = (String) args.getOrDefault("language", "zh");
-        
-        log.info("生成问候消息: name={}, language={}", name, language);
-        
+
+        // 调用工具前先发送 notification 给客户端
+        sendToolStartNotification("greeting", clientId);
+
+        log.info("生成问候消息: clientId={}, name={}, language={}", clientId, name, language);
+
         String greeting;
         if ("en".equals(language)) {
             greeting = String.format("Hello, %s! Welcome to the MCP server!", name);
         } else {
             greeting = String.format("你好，%s！欢迎使用 MCP 服务器！", name);
         }
-        
+
         McpSchema.CallToolResult result = new McpSchema.CallToolResult(
                 java.util.List.of(new McpSchema.TextContent(greeting)),
                 false
@@ -212,6 +251,10 @@ public class HttpServletMcpServerExample {
                 {
                     "type": "object",
                     "properties": {
+                        "clientId": {
+                            "type": "string",
+                            "description": "客户端唯一标识"
+                        },
                         "message": {
                             "type": "string",
                             "description": "要回显的消息"
@@ -224,34 +267,107 @@ public class HttpServletMcpServerExample {
                             "maximum": 10
                         }
                     },
-                    "required": ["message"]
+                    "required": ["clientId", "message"]
                 }
                 """;
         return new McpSchema.Tool("echo", "回显输入的消息", schemaJson);
     }
-    
+
     /**
      * 处理回显工具调用
      */
     private static reactor.core.publisher.Flux<McpSchema.CallToolResult> handleEcho(Map<String, Object> args) {
+        String clientId = (String) args.get("clientId");
         String message = (String) args.get("message");
         int repeat = ((Number) args.getOrDefault("repeat", 1)).intValue();
-        
-        log.info("回显消息: message={}, repeat={}", message, repeat);
-        
+
+        // 调用工具前先发送 notification 给客户端
+        sendToolStartNotification("echo", clientId);
+
+        log.info("回显消息: clientId={}, message={}, repeat={}", clientId, message, repeat);
+
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < repeat; i++) {
             if (i > 0) result.append("\n");
             result.append(String.format("[%d] %s", i + 1, message));
         }
-        
+
         McpSchema.CallToolResult toolResult = new McpSchema.CallToolResult(
                 java.util.List.of(new McpSchema.TextContent(result.toString())),
                 false
         );
         return reactor.core.publisher.Flux.just(toolResult);
     }
+
+    /**
+     * 在调用工具前发送 notification 给客户端
+     * 通知客户端工具即将开始执行
+     */
+    private static void sendToolStartNotification(String toolName, String clientId) {
+        if (mcpServer == null) {
+            log.warn("mcpServer is null, cannot send notification");
+            return;
+        }
+
+        // 构建包含 data 和 clientId 的 JsonObject
+        JsonObject jsonData = new JsonObject();
+        jsonData.addProperty("data", String.format("Tool '%s' is starting execution", toolName));
+        jsonData.addProperty("clientId", clientId);
+        String data = new Gson().toJson(jsonData);
+
+        McpSchema.LoggingMessageNotification notification = McpSchema.LoggingMessageNotification.builder()
+                .level(McpSchema.LoggingLevel.INFO)
+                .logger("tool-execution")
+                .data(data)
+                .build();
+
+        mcpServer.loggingNotification(notification)
+                .doOnSuccess(v -> log.debug("Tool start notification sent: toolName={}, clientId={}", toolName, clientId))
+                .doOnError(e -> log.warn("Failed to send tool start notification: {}", e.getMessage()))
+                .subscribe();
+    }
     
+    /**
+     * 启动定时任务调度器，定期发送 notifications 给客户端
+     * 使用 MCP 的 LoggingMessageNotification 机制
+     */
+    private static ScheduledExecutorService startNotificationScheduler(McpAsyncServer server) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "mcp-notification-scheduler");
+            t.setDaemon(true);
+            return t;
+        });
+
+        AtomicLong messageCounter = new AtomicLong(0);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 每 10 秒发送一次 notification
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                long count = messageCounter.incrementAndGet();
+                String timestamp = LocalDateTime.now().format(formatter);
+                String data = String.format("Server heartbeat #%d at %s - Server is running normally", count, timestamp);
+
+                McpSchema.LoggingMessageNotification notification = McpSchema.LoggingMessageNotification.builder()
+                        .level(McpSchema.LoggingLevel.INFO)
+                        .logger("hive-mcp-server")
+                        .data(data)
+                        .build();
+
+                server.loggingNotification(notification)
+                        .doOnSuccess(v -> log.debug("Notification sent: {}", data))
+                        .doOnError(e -> log.warn("Failed to send notification: {}", e.getMessage()))
+                        .subscribe();
+
+            } catch (Exception e) {
+                log.error("Error sending notification", e);
+            }
+        }, 5, 10, TimeUnit.SECONDS);
+
+        log.info("Notification scheduler started - sending notifications every 10 seconds");
+        return scheduler;
+    }
+
     /**
      * 简单的表达式计算器（支持 +, -, *, /, 括号）
      * 使用递归下降解析器实现，兼容 Java 21
