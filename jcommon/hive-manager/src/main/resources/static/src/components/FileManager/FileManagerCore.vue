@@ -297,11 +297,10 @@ const isWebSocketConnected = computed(() => {
 
 // 组件挂载时初始化
 onMounted(() => {
-  // 如果是WebSocket模式，设置操作完成回调
-  if (isWebSocketMode.value) {
-    const wsAdapter = props.adapter as WebSocketFileSystemAdapter
-    wsAdapter.setOperationCompleteCallback(() => {
-      console.log('[FileManager] Auto-refreshing after WebSocket operation')
+  // 为adapter设置操作完成回调（无论是WebSocket还是本地模式）
+  if (props.adapter.setOperationCompleteCallback) {
+    props.adapter.setOperationCompleteCallback(() => {
+      console.log('[FileManager] Auto-refreshing after operation')
       loadDirectory()
     })
   }
@@ -581,8 +580,7 @@ async function saveFile() {
     originalContent.value = fileContent.value
     isModified.value = false
     
-    // 刷新文件列表
-    await loadDirectory()
+    // 刷新操作会由adapter的回调自动触发
     emit('fileSaved', editingFile.value)
   } catch (error: any) {
     ElMessage.error(error.message || '保存失败')
@@ -646,7 +644,10 @@ async function performDelete(file: FileInfo) {
   try {
     if (props.mode === 'local' && currentDirHandle.value) {
       await currentDirHandle.value.removeEntry(file.name, { recursive: file.isDirectory })
+      // 本地模式删除后手动刷新
+      await loadDirectory()
     } else {
+      // 使用adapter删除（会自动触发刷新回调）
       await props.adapter.deleteFile(file)
     }
     
@@ -654,7 +655,6 @@ async function performDelete(file: FileInfo) {
     if (editingFile.value?.path === file.path) {
       closeEditor()
     }
-    await loadDirectory()
     emit('fileDeleted', file)
   } catch (error: any) {
     ElMessage.error(error.message || '删除失败')
@@ -685,7 +685,7 @@ async function createFileOrDir() {
     
     showCreateDialog.value = false
     createForm.value.name = ''
-    await loadDirectory()
+    // 刷新操作会由adapter的回调自动触发
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
   } finally {

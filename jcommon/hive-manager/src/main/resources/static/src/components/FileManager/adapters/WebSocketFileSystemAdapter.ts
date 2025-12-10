@@ -118,71 +118,106 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
   private async handleMessage(data: string): Promise<void> {
     try {
       const message: WSRequest = JSON.parse(data)
-      console.log('[WebSocket] Received command:', message)
+      console.log('[WebSocket] Received message:', message)
 
-      let response: WSResponse = {
-        type: message.type,
-        requestId: message.requestId,
-        success: false,
-      }
+      // 根据type字段分发处理
+      switch (message.type) {
+        case 'heartbeat':
+          // 心跳包不需要响应
+          console.log('[WebSocket] Heartbeat received')
+          break
 
-      let needsRefresh = false
+        case 'call':
+          // 处理调用请求
+          await this.handleCallMessage(message)
+          break
 
-      try {
-        // 根据消息类型执行相应的本地文件操作
-        switch (message.type) {
-          case MsgType.LIST_DIRECTORY:
-            response.data = await this.executeListDirectory(message.data.path || '')
-            response.success = true
-            break
-
-          case MsgType.READ_FILE:
-            response.data = await this.executeReadFile(message.data.path || '')
-            response.success = true
-            break
-
-          case MsgType.WRITE_FILE:
-            await this.executeWriteFile(message.data.path || '', message.data.content || '')
-            response.success = true
-            needsRefresh = true
-            break
-
-          case MsgType.DELETE_FILE:
-            await this.executeDeleteFile(message.data.path || '', message.data.isDirectory || false)
-            response.success = true
-            needsRefresh = true
-            break
-
-          case MsgType.CREATE_DIRECTORY:
-            await this.executeCreateDirectory(message.data.parentPath || '', message.data.name || '')
-            response.success = true
-            needsRefresh = true
-            break
-
-          case MsgType.CREATE_FILE:
-            await this.executeCreateFile(message.data.parentPath || '', message.data.name || '')
-            response.success = true
-            needsRefresh = true
-            break
-
-          default:
-            throw new Error(`Unknown message type: ${message.type}`)
-        }
-      } catch (error: any) {
-        response.success = false
-        response.error = error.message || 'Operation failed'
-      }
-
-      // 发送响应回服务器
-      this.sendResponse(response)
-
-      // 如果操作成功且需要刷新，通知UI更新
-      if (response.success && needsRefresh && this.onOperationComplete) {
-        console.log('[WebSocket] Triggering UI refresh after operation')
-        this.onOperationComplete()
+        default:
+          console.warn('[WebSocket] Unknown message type:', message.type)
+          break
       }
     } catch (error) {
       console.error('[WebSocket] Failed to parse message:', error)
+    }
+  }
+
+  /**
+   * 处理call类型的消息
+   */
+  private async handleCallMessage(message: WSRequest): Promise<void> {
+    if (!message.action || !message.reqId) {
+      console.error('[WebSocket] Invalid call message: missing action or reqId')
+      return
+    }
+
+    let response: WSResponse = {
+      type: 'call_response',
+      action: message.action,
+      resId: message.reqId,
+      success: false,
+      timestamp: Date.now()
+    }
+
+    let needsRefresh = false
+    let isSend = true;
+    
+    try {
+      // 根据action执行相应的本地文件操作
+      switch (message.action) {
+        case 'list_directory':
+          response.data = await this.executeListDirectory(message.data?.path || '')
+          response.success = true
+          break
+
+        case 'read_file':
+          response.data = await this.executeReadFile(message.data?.path || '')
+          response.success = true
+          break
+
+        case 'write_file':
+          await this.executeWriteFile(message.data?.path || '', message.data?.content || '')
+          response.success = true
+          needsRefresh = true
+          break
+
+        case 'delete_file':
+          await this.executeDeleteFile(message.data?.path || '', message.data?.isDirectory || false)
+          response.success = true
+          needsRefresh = true
+          break
+
+        case 'create_directory':
+          await this.executeCreateDirectory(message.data?.parentPath || '', message.data?.name || '')
+          response.success = true
+          needsRefresh = true
+          break
+
+        case 'create_file':
+          await this.executeCreateFile(message.data?.parentPath || '', message.data?.name || '')
+          response.success = true
+          needsRefresh = true
+          break
+
+        default:
+          console.error('[WebSocket] Unknown action:', message.action)
+          throw new Error(`Unknown action: ${message.action}`)
+      }
+    } catch (error: any) {
+      console.error('[WebSocket] Operation failed:', error)
+      response.type = 'call_error'
+      response.success = false
+      response.error = error.message || 'Operation failed'
+    }
+
+    // 发送响应回服务器
+    if (isSend) {
+      this.sendResponse(response)
+    }
+
+    // 如果操作成功且需要刷新，通知UI更新
+    if (response.success && needsRefresh && this.onOperationComplete) {
+      console.log('[WebSocket] Triggering UI refresh after operation')
+      this.onOperationComplete()
     }
   }
 
@@ -198,9 +233,14 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
   /**
    * 发送通知到服务器
    */
-  private sendNotification(type: WSMessageType, data: any): void {
+  private sendNotification(action: WSMessageType, data: any): void {
     if (this.ws && this.isConnected) {
-      const notification: WSMessage = { type, data }
+      const notification: WSMessage = { 
+        type: 'notification',
+        action,
+        data,
+        timestamp: Date.now()
+      }
       this.ws.send(JSON.stringify(notification))
     }
   }
@@ -550,18 +590,38 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
 
   async writeFile(file: FileInfo, content: string): Promise<void> {
     await this.executeWriteFile(file.path, content)
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[WebSocket] Triggering UI refresh after writeFile')
+      this.onOperationComplete()
+    }
   }
 
   async deleteFile(file: FileInfo): Promise<void> {
     await this.executeDeleteFile(file.path, file.isDirectory)
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[WebSocket] Triggering UI refresh after deleteFile')
+      this.onOperationComplete()
+    }
   }
 
   async createDirectory(parentPath: string, name: string, parentHandle?: any): Promise<void> {
     await this.executeCreateDirectory(parentPath, name)
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[WebSocket] Triggering UI refresh after createDirectory')
+      this.onOperationComplete()
+    }
   }
 
   async createFile(parentPath: string, name: string, parentHandle?: any): Promise<void> {
     await this.executeCreateFile(parentPath, name)
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[WebSocket] Triggering UI refresh after createFile')
+      this.onOperationComplete()
+    }
   }
 
   /**

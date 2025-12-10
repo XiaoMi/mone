@@ -6,6 +6,7 @@ import type { IFileSystemAdapter, FileInfo, DirectoryStackItem } from '../types'
  */
 export class LocalFileSystemAdapter implements IFileSystemAdapter {
   private ignorePatterns: string[] = []
+  private onOperationComplete?: () => void
 
   constructor(ignorePatterns?: string[]) {
     // 默认忽略常见的目录和文件
@@ -126,6 +127,12 @@ export class LocalFileSystemAdapter implements IFileSystemAdapter {
     const writable = await fileHandle.createWritable()
     await writable.write(content)
     await writable.close()
+    
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[LocalFS] Triggering UI refresh after writeFile')
+      this.onOperationComplete()
+    }
   }
   
   async deleteFile(file: FileInfo): Promise<void> {
@@ -139,6 +146,12 @@ export class LocalFileSystemAdapter implements IFileSystemAdapter {
     }
     
     await parentHandle.getDirectoryHandle(name, { create: true })
+    
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[LocalFS] Triggering UI refresh after createDirectory')
+      this.onOperationComplete()
+    }
   }
   
   async createFile(parentPath: string, name: string, parentHandle?: FileSystemDirectoryHandle): Promise<void> {
@@ -150,6 +163,12 @@ export class LocalFileSystemAdapter implements IFileSystemAdapter {
     const writable = await fileHandle.createWritable()
     await writable.write('')
     await writable.close()
+    
+    // 触发UI刷新
+    if (this.onOperationComplete) {
+      console.log('[LocalFS] Triggering UI refresh after createFile')
+      this.onOperationComplete()
+    }
   }
 
   /**
@@ -180,5 +199,12 @@ export class LocalFileSystemAdapter implements IFileSystemAdapter {
    */
   getIgnorePatterns(): string[] {
     return [...this.ignorePatterns]
+  }
+
+  /**
+   * 设置操作完成回调
+   */
+  setOperationCompleteCallback(callback: () => void): void {
+    this.onOperationComplete = callback
   }
 }

@@ -48,6 +48,11 @@ export interface IFileSystemAdapter {
    * 创建文件
    */
   createFile(parentPath: string, name: string, parentHandle?: any): Promise<void>
+  
+  /**
+   * 设置操作完成回调（用于自动刷新UI）
+   */
+  setOperationCompleteCallback?(callback: () => void): void
 }
 
 /**
@@ -70,6 +75,7 @@ export enum WSMessageType {
   DELETE_FILE = 'delete_file',
   CREATE_DIRECTORY = 'create_directory',
   CREATE_FILE = 'create_file',
+  HEART_BEAT = 'heartbeat',
   
   // 响应类型
   DIRECTORY_LIST = 'directory_list',
@@ -87,34 +93,40 @@ export enum WSMessageType {
  * WebSocket消息接口
  */
 export interface WSMessage {
-  type: WSMessageType
-  requestId?: string
+  type: 'notification'
+  action: WSMessageType
   data?: any
   error?: string
+  timestamp?: number
 }
 
 /**
  * WebSocket请求接口
  */
 export interface WSRequest {
-  type: WSMessageType
-  requestId: string
-  data: {
+  type: string  // 'call' | 'heartbeat' 或其他类型
+  action?: string  // type为'call'时必填
+  reqId?: string
+  data?: {
     path?: string
     name?: string
     content?: string
     isDirectory?: boolean
+    parentPath?: string
     [key: string]: any
   }
+  timestamp?: number
 }
 
 /**
  * WebSocket响应接口
  */
 export interface WSResponse {
-  type: WSMessageType
-  requestId: string
+  type: 'call_response' | 'call_error'
+  action: string
+  resId: string
   success: boolean
   data?: any
   error?: string
+  timestamp?: number
 }
