@@ -168,7 +168,12 @@ const handleLogin = async () => {
         internalAccount: response.data.data.internalAccount || ""
       })
       if (!response.data.data.internalAccount) {
-        router.push('/bindInner')
+        // 跳转到绑定页面时携带 redirect 参数
+        if (redirectPath.value && redirectPath.value !== '/agents') {
+          router.push({ path: '/bindInner', query: { redirect: redirectPath.value } })
+        } else {
+          router.push('/bindInner')
+        }
         return
       }
       ElMessage.success('登录成功')
