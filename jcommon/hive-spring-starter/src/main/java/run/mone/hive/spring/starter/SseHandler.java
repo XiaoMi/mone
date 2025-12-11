@@ -340,8 +340,8 @@ public class SseHandler {
      */
     @GetMapping("/test/call/{clientId}")
     public WebSocketCallResponse testCall(
-            @PathVariable String clientId,
-            @RequestParam(value = "action", defaultValue = "list_directory") String action,
+            @PathVariable("clientId") String clientId,
+            @RequestParam(value = "action", defaultValue = "list_files") String action,
             @RequestParam(value = "path", defaultValue = "") String path,
             @RequestParam(value = "timeout", defaultValue = "30") int timeout) {
 
