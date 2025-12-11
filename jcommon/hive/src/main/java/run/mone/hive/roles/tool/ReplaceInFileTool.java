@@ -3,8 +3,11 @@ package run.mone.hive.roles.tool;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.dto.WebSocketCallRequest;
+import run.mone.hive.dto.WebSocketCallResponse;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.utils.RemoteFileUtils;
+import run.mone.hive.utils.WebSocketFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,13 +45,30 @@ public class ReplaceInFileTool implements ITool {
     private static final Pattern REPLACE_BLOCK_END_PATTERN = Pattern.compile("^[+]{3,}\\s+REPLACE>?$");
     private static final Pattern LEGACY_REPLACE_BLOCK_END_PATTERN = Pattern.compile("^[>]{3,}\\s+REPLACE>?$");
     private final boolean isRemote;
+    private final FileOperationMode mode;
 
     public ReplaceInFileTool() {
         this(false);
     }
 
+    /**
+     * 构造函数（旧版，保持向后兼容）
+     *
+     * @param isRemote 是否远程（true=REMOTE_HTTP, false=LOCAL）
+     */
     public ReplaceInFileTool(boolean isRemote) {
         this.isRemote = isRemote;
+        this.mode = FileOperationMode.fromLegacy(isRemote);
+    }
+
+    /**
+     * 构造函数（新版）
+     *
+     * @param mode 文件操作模式
+     */
+    public ReplaceInFileTool(FileOperationMode mode) {
+        this.mode = mode;
+        this.isRemote = mode.isRemote();
     }
 
     @Override
@@ -161,11 +181,12 @@ public class ReplaceInFileTool implements ITool {
             String path = inputJson.get("path").getAsString();
             String diff = inputJson.get("diff").getAsString();
 
-            if (isRemote) {
-                return performRemoteReplaceInFile(path, diff);
-            } else {
-                return performReplaceInFile(path, diff);
-            }
+            // 根据文件操作模式选择不同的处理方式
+            return switch (mode) {
+                case LOCAL -> performReplaceInFile(path, diff);
+                case REMOTE_HTTP -> performRemoteHttpReplaceInFile(path, diff);
+                case REMOTE_WS -> performWebSocketReplaceInFile(role, path, diff);
+            };
 
         } catch (Exception e) {
             log.error("执行replace_in_file操作时发生异常", e);
@@ -174,10 +195,12 @@ public class ReplaceInFileTool implements ITool {
         }
     }
 
-    private JsonObject performRemoteReplaceInFile(String path, String diff) {
+    /**
+     * 通过 HTTP API 替换远程文件内容
+     */
+    private JsonObject performRemoteHttpReplaceInFile(String path, String diff) {
         JsonObject result = new JsonObject();
         try {
-
             // 获取远程文件内容
             String remoteContent = RemoteFileUtils.getRemoteFileContent(path);
 
@@ -188,13 +211,71 @@ public class ReplaceInFileTool implements ITool {
             String base64Content = java.util.Base64.getEncoder().encodeToString(newContent.getBytes(StandardCharsets.UTF_8));
             String uploadResult = RemoteFileUtils.uploadFile(path, base64Content);
 
-            log.info("成功应用替换到远程文件：{}", path);
+            log.info("成功应用替换到远程 HTTP 文件：{}", path);
             result.addProperty("result", uploadResult);
+            result.addProperty("mode", "REMOTE_HTTP");
 
             return result;
         } catch (Exception e) {
-            log.error("执行远程replace_in_file操作时发生异常", e);
-            result.addProperty("error", "执行远程replace_in_file操作失败: " + e.getMessage());
+            log.error("执行远程 HTTP replace_in_file操作时发生异常", e);
+            result.addProperty("error", "执行远程 HTTP replace_in_file操作失败: " + e.getMessage());
+            return result;
+        }
+    }
+
+    /**
+     * 通过 WebSocket 替换远程文件内容
+     */
+    private JsonObject performWebSocketReplaceInFile(ReactorRole role, String path, String diff) {
+        JsonObject result = new JsonObject();
+
+        try {
+            String clientId = role.getClientId();
+            if (StringUtils.isEmpty(clientId)) {
+                result.addProperty("error", "ClientId is not available for WebSocket file operations");
+                return result;
+            }
+
+            // 1. 先读取远程文件内容
+            WebSocketCallRequest readRequest = WebSocketCallRequest.builder()
+                    .path(path)
+                    .build();
+            WebSocketCallResponse readResponse = WebSocketFileUtils.readFile(clientId, readRequest);
+
+            if (!readResponse.isSuccess()) {
+                result.addProperty("error", "Failed to read WebSocket file: " + readResponse.getError());
+                return result;
+            }
+
+            String remoteContent = readResponse.getResult();
+
+            // 2. 应用SEARCH/REPLACE块
+            String newContent = applySearchReplaceBlocks(remoteContent, diff);
+
+            // 3. 写回远程文件
+            WebSocketCallRequest writeRequest = WebSocketCallRequest.builder()
+                    .path(path)
+                    .content(newContent)
+                    .build();
+            WebSocketCallResponse writeResponse = WebSocketFileUtils.writeFile(clientId, writeRequest);
+
+            // 构建响应
+            result.addProperty("result", writeResponse.getResult());
+            result.addProperty("mode", writeResponse.getMode());
+            result.addProperty("success", writeResponse.isSuccess());
+
+            log.info("Successfully replaced content in WebSocket file: clientId={}, path={}", clientId, path);
+
+            return result;
+        } catch (IOException e) {
+            log.error("IO exception while replacing WebSocket file content: {}", path, e);
+            result.addProperty("error", "Failed to replace WebSocket file content: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        } catch (Exception e) {
+            log.error("Exception while replacing WebSocket file content: {}", path, e);
+            result.addProperty("error", "Error replacing WebSocket file content: " + e.getMessage());
+            result.addProperty("success", false);
             return result;
         }
     }
