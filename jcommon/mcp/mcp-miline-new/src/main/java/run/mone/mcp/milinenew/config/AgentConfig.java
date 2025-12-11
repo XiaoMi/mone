@@ -63,6 +63,9 @@ public class AgentConfig {
     private GetDeployMachinesFunction getDeployMachinesFunction;
 
     @Autowired
+    private ScaleOrderFunction scaleOrderFunction;
+  
+    @Autowired
     QueryPipelineByGitUrlFunction queryPipelineByGitUrlFunction;
 
     @Autowired
@@ -79,6 +82,9 @@ public class AgentConfig {
 
     @Autowired
     GetDeployMachinesTool getDeployMachinesTool;
+
+    @Autowired
+    private ScaleOrderTool scaleOrderTool;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -119,6 +125,7 @@ public class AgentConfig {
                                 generateGitCodeTool,
                                 createPipelineTool,
                                 runPipelineTool,
+                                scaleOrderTool,
                                 getDeployMachinesTool,
                                 gitCloneTool,
                                 gitCommitTool,
@@ -129,7 +136,7 @@ public class AgentConfig {
                 .mcpTools(
                         agentModel
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
-                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction)
+                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction, scaleOrderFunction)
                 )
                 .workflow(workflow)
                 .meta(

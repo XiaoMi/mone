@@ -1,7 +1,26 @@
 <template>
   <div class="chat-container">
     <div id="particles-js"></div>
-    <ChatWindow
+    
+    <!-- 文件管理器切换按钮 -->
+    <div v-if="showFileManagerButton" class="file-manager-toggle" @click="toggleFileManager">
+      <el-icon :size="20">
+        <component :is="showFileManager ? 'Close' : 'Folder'" />
+      </el-icon>
+    </div>
+
+    <!-- 主内容区域 - flex布局 -->
+    <div class="main-content">
+      <!-- 文件管理器 -->
+      <transition name="slide-fade">
+        <div v-if="showFileManager" class="file-manager-wrapper">
+          <FileManagerCore :adapter="fileAdapter" :mode="fileManagerMode" />
+        </div>
+      </transition>
+
+      <!-- 聊天窗口 -->
+      <div class="chat-window-wrapper">
+        <ChatWindow
       placeholder="placeholder"
       :messageList="list"
       :isOpen="true"
@@ -23,10 +42,14 @@
       @pidAction="onPidAction"
       @onClick2Conversion="onClick2Conversion"
     />
+      </div>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
 import ChatWindow from '@/components/Chat/ChatWindow.vue'
+import { FileManagerCore, LocalFileSystemAdapter, WebSocketFileSystemAdapter } from '@/components/FileManager'
+import { Close, Folder } from '@element-plus/icons-vue'
 import { type MessageClickPayload } from "@/components/Chat/messages/HelloMessage.vue";
 import { useUserStore } from '@/stores/user'
 import { useChatContextStore, type Message } from '@/stores/chat-context'
@@ -65,6 +88,82 @@ const sendMethod = ref<string>('ws')
 const list = computed(() => {
   return messageList
 })
+
+// 文件管理器相关
+const showFileManager = ref(false)
+const fileManagerMode = ref<'local' | 'websocket'>('local')
+const showFileManagerButton = ref(false)
+
+// 获取忽略模式配置
+const getIgnorePatterns = (): string[] | undefined => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const ignoreParam = urlParams.get('ignore')
+  return ignoreParam ? ignoreParam.split(',') : undefined
+}
+
+const fileAdapter = ref<LocalFileSystemAdapter | WebSocketFileSystemAdapter>(
+  new LocalFileSystemAdapter(getIgnorePatterns())
+)
+
+const toggleFileManager = () => {
+  showFileManager.value = !showFileManager.value
+  
+  // 首次打开文件管理器时，根据agent连接信息决定使用哪种模式
+  if (showFileManager.value && fileManagerMode.value === 'local') {
+    initFileManager()
+  }
+}
+
+// 初始化文件管理器
+const initFileManager = () => {
+  const agent = getAgent()
+  const instance = getSelectedInstance()
+  
+  // 如果有agent和实例信息，使用WebSocket模式
+  if (agent?.name && instance?.ip && instance?.port) {
+    fileManagerMode.value = 'websocket'
+    
+    // 构建WebSocket URL (使用与chat相同的连接信息)
+    // 支持通过URL参数指定wsUrl
+    const urlParams = new URLSearchParams(window.location.search)
+    const clientId = `${agent.name}:${agent.group}:${agent.version}:${instance.ip}:${instance.port}`
+    const baseWsUrl = urlParams.get('wsUrl') || `ws://127.0.0.1:8080/ws/echo`
+    const wsUrl = `${baseWsUrl}?clientId=${encodeURIComponent(clientId)}`
+    
+    // 支持通过URL参数指定忽略模式
+    const ignoreParam = urlParams.get('ignore')
+    const customIgnorePatterns = ignoreParam ? ignoreParam.split(',') : undefined
+    
+    const wsAdapter = new WebSocketFileSystemAdapter(
+      wsUrl,
+      () => {
+        console.log('[FileManager] WebSocket connected')
+        // 连接成功后，可以加载默认目录
+      },
+      () => {
+        console.log('[FileManager] WebSocket disconnected')
+      },
+      (error) => {
+        console.error('[FileManager] WebSocket error:', error)
+      },
+      customIgnorePatterns
+    )
+    
+    // 连接WebSocket
+    wsAdapter.connect().then(() => {
+      fileAdapter.value = wsAdapter
+    }).catch((error) => {
+      console.error('[FileManager] Failed to connect:', error)
+      // 如果连接失败，回退到本地模式
+      fileManagerMode.value = 'local'
+      fileAdapter.value = new LocalFileSystemAdapter(getIgnorePatterns())
+    })
+  } else {
+    // 没有agent信息，使用本地模式
+    fileManagerMode.value = 'local'
+    fileAdapter.value = new LocalFileSystemAdapter(getIgnorePatterns())
+  }
+}
 
 // 用于存储每个 uuid 对应的未处理数据
 const catches = new Map<string, any>()
@@ -799,12 +898,21 @@ onBeforeUnmount(() => {
   initCodePrompt()
   resetTokenUsage()
   clearAgentConfig()
+  
+  // 清理文件管理器WebSocket连接
+  if (fileManagerMode.value === 'websocket' && fileAdapter.value instanceof WebSocketFileSystemAdapter) {
+    fileAdapter.value.disconnect()
+  }
 })
 
 // 获取主题
 const { currentTheme } = useTheme()
 
 onMounted(async () => {
+  // 检查URL参数中是否有dir=true
+  const urlParams = new URLSearchParams(window.location.search)
+  showFileManagerButton.value = urlParams.get('dir') === 'true'
+  
   try {
     // 获取Agent详情
     const { data } = await getAgentDetail(Number(route.query.serverAgentId))
@@ -952,6 +1060,8 @@ onMounted(async () => {
   background-image: var(--el-color-chat-background-gradient);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 #particles-js {
@@ -993,17 +1103,122 @@ onMounted(async () => {
   animation: glowing 20s linear infinite;
 }
 
-.chat-container .sc-chat-window {
-  width: 70%;
+/* 主内容区域 - flex布局 */
+.main-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 20px;
   height: 100%;
-  margin: 0 auto;
+  width: 100%;
+  align-items: stretch;
+}
+
+/* 文件管理器切换按钮 */
+.file-manager-toggle {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  background: var(--el-bg-color);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  border: 1px solid var(--el-border-color);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.file-manager-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 30px var(--el-color-primary-light-5);
+  border-color: var(--el-color-primary);
+}
+
+.file-manager-toggle .el-icon {
+  color: var(--el-color-primary);
+}
+
+/* 文件管理器容器 */
+.file-manager-wrapper {
+  flex: 1;
+  min-width: 0;
+  background: var(--el-bg-color);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  border: 1px solid var(--el-border-color);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  :deep(.file-manager) {
+    height: 100%;
+    
+    .header {
+      h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+      
+      padding: 16px;
+    }
+
+    .content {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      
+      .file-list {
+        width: 100%;
+      }
+    }
+  }
+}
+
+/* 聊天窗口容器 */
+.chat-window-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+/* 滑入滑出动画 */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s ease-in;
+}
+
+.slide-fade-enter-from {
+  transform: translateX(-20px);
+  opacity: 0;
+  width: 0;
+}
+
+.slide-fade-leave-to {
+  transform: translateX(-20px);
+  opacity: 0;
+  width: 0;
+}
+
+.chat-container .sc-chat-window {
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
   background: var(--el-color-chat-window-background);
   backdrop-filter: blur(10px);
   border-radius: 15px;
-  // border: 1px solid var(--el-color-chat-link-color);
-  // box-shadow: 0 0 30px var(--el-color-chat-link-color);
   position: relative;
-  z-index: 2;
 }
 
 /* 添加量子光环效果 */
