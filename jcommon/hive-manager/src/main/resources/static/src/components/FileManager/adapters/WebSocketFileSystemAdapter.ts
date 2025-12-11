@@ -162,7 +162,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     let isSend = true;
     
     try {
-      if (message.data && message.data.path && message.data.path.startsWith('root/')) {
+      if (message.data && message.data.path && message.data.path.startsWith('root')) {
         message.data.path = message.data.path.slice(5)
       }
       // 根据action执行相应的本地文件操作
@@ -181,6 +181,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
           break
 
         case 'write_file':
+          await this.volidAndCreateFile(message.data?.path || '')
           await this.executeWriteFile(message.data?.path || '', message.data?.content || '')
           response.success = true
           needsRefresh = true
@@ -519,6 +520,30 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     const newPath = parentPath ? `${parentPath}/${name}` : name
     // 发送文件创建通知
     this.sendNotification(MsgType.FILE_CREATED, { path: newPath, name, isDirectory: true })
+  }
+
+  private async volidAndCreateFile(path: string): Promise<void> {
+    if (!this.rootDirHandle || !path) {
+      throw new Error('No directory selected or invalid path')
+    }
+
+    const parts = path.split('/').filter(p => p)
+    const fileName = parts.pop()
+    if (!fileName) {
+      throw new Error('Invalid path')
+    }
+
+    const parentPath = parts.join('/')
+    const parentHandle = await this.getHandleByPath(parentPath)
+    if (!parentHandle || parentHandle.kind !== 'directory') {
+      throw new Error('Invalid parent directory')
+    }
+
+    try {
+      await (parentHandle as FileSystemDirectoryHandle).getFileHandle(fileName, { create: true })
+    } catch (e) {
+      throw new Error('File already exists')
+    }
   }
 
   /**
