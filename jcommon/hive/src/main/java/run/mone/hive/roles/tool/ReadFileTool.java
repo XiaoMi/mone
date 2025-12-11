@@ -3,8 +3,11 @@ package run.mone.hive.roles.tool;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.dto.WebSocketCallRequest;
+import run.mone.hive.dto.WebSocketCallResponse;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.utils.RemoteFileUtils;
+import run.mone.hive.utils.WebSocketFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,13 +53,30 @@ public class ReadFileTool implements ITool {
             ".zip", ".rar", ".7z", ".tar", ".gz", ".exe", ".dll", ".so", ".dylib"
     );
     private final boolean isRemote;
+    private final FileOperationMode mode;
 
     public ReadFileTool() {
         this(false);
     }
 
+    /**
+     * 构造函数（旧版，保持向后兼容）
+     *
+     * @param isRemote 是否远程（true=REMOTE_HTTP, false=LOCAL）
+     */
     public ReadFileTool(boolean isRemote) {
         this.isRemote = isRemote;
+        this.mode = FileOperationMode.fromLegacy(isRemote);
+    }
+
+    /**
+     * 构造函数（新版）
+     *
+     * @param mode 文件操作模式
+     */
+    public ReadFileTool(FileOperationMode mode) {
+        this.mode = mode;
+        this.isRemote = mode.isRemote();
     }
 
     @Override
@@ -171,11 +191,13 @@ public class ReadFileTool implements ITool {
             }
 
             String path = inputJson.get("path").getAsString();
-            if (isRemote) {
-                return performRemoteReadFile(path);
-            } else {
-                return performReadFile(path);
-            }
+
+            // 根据文件操作模式选择不同的处理方式
+            return switch (mode) {
+                case LOCAL -> performReadFile(path);
+                case REMOTE_HTTP -> performRemoteHttpReadFile(path);
+                case REMOTE_WS -> performWebSocketReadFile(role, path);
+            };
 
         } catch (Exception e) {
             log.error("Exception occurred while executing read_file operation", e);
@@ -184,10 +206,13 @@ public class ReadFileTool implements ITool {
         }
     }
 
-    private JsonObject performRemoteReadFile(String path) {
+    /**
+     * 通过 HTTP API 读取远程文件
+     */
+    private JsonObject performRemoteHttpReadFile(String path) {
         JsonObject result = new JsonObject();
         try {
-            log.info("Reading remote file: {}", path);
+            log.info("Reading remote HTTP file: {}", path);
 
             // 获取远程文件内容
             String content = RemoteFileUtils.getRemoteFileContent(path);
@@ -200,16 +225,63 @@ public class ReadFileTool implements ITool {
             result.addProperty("result", content);
             result.addProperty("fileType", fileType);
             result.addProperty("encoding", "UTF-8");
+            result.addProperty("mode", "REMOTE_HTTP");
 
-            log.info("Successfully read remote file: {}, type: {}", path, fileType);
+            log.info("Successfully read remote HTTP file: {}, type: {}", path, fileType);
 
             return result;
         } catch (IOException e) {
-            log.error("Failed to read remote file: {}", path, e);
-            result.addProperty("error", "Failed to read remote file: " + e.getMessage());
+            log.error("Failed to read remote HTTP file: {}", path, e);
+            result.addProperty("error", "Failed to read remote HTTP file: " + e.getMessage());
             return result;
         }
+    }
 
+    /**
+     * 通过 WebSocket 读取远程文件
+     */
+    private JsonObject performWebSocketReadFile(ReactorRole role, String path) {
+        JsonObject result = new JsonObject();
+
+        try {
+            String clientId = role.getClientId();
+            if (StringUtils.isEmpty(clientId)) {
+                result.addProperty("error", "ClientId is not available for WebSocket file operations");
+                return result;
+            }
+
+            // 构建请求 DTO
+            WebSocketCallRequest request = WebSocketCallRequest.builder()
+                    .path(path)
+                    .build();
+
+            // 调用 WebSocket 文件工具
+            WebSocketCallResponse response = WebSocketFileUtils.readFile(clientId, request);
+
+            // 确定文件类型
+            String fileExtension = getFileExtension(path);
+            String fileType = determineFileType(fileExtension);
+
+            // 将 DTO 响应转换为 JsonObject
+            result.addProperty("result", response.getResult());
+            result.addProperty("fileType", fileType);
+            result.addProperty("mode", response.getMode());
+            result.addProperty("success", response.isSuccess());
+
+            log.info("Successfully read WebSocket file: clientId={}, path={}", clientId, path);
+
+            return result;
+        } catch (IOException e) {
+            log.error("IO exception while reading WebSocket file: {}", path, e);
+            result.addProperty("error", "Failed to read WebSocket file: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        } catch (Exception e) {
+            log.error("Exception while reading WebSocket file: {}", path, e);
+            result.addProperty("error", "Error reading WebSocket file: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        }
     }
 
     /**

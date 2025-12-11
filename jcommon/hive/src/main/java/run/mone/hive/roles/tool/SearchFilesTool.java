@@ -4,7 +4,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.dto.WebSocketCallRequest;
+import run.mone.hive.dto.WebSocketCallResponse;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.utils.RemoteFileUtils;
+import run.mone.hive.utils.WebSocketFileUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -61,13 +65,30 @@ public class SearchFilesTool implements ITool {
     );
 
     private final boolean isRemote;
+    private final FileOperationMode mode;
 
     public SearchFilesTool() {
         this(false);
     }
 
+    /**
+     * 构造函数（旧版，保持向后兼容）
+     *
+     * @param isRemote 是否远程（true=REMOTE_HTTP, false=LOCAL）
+     */
     public SearchFilesTool(boolean isRemote) {
         this.isRemote = isRemote;
+        this.mode = FileOperationMode.fromLegacy(isRemote);
+    }
+
+    /**
+     * 构造函数（新版）
+     *
+     * @param mode 文件操作模式
+     */
+    public SearchFilesTool(FileOperationMode mode) {
+        this.mode = mode;
+        this.isRemote = mode.isRemote();
     }
 
     @Override
@@ -209,12 +230,12 @@ public class SearchFilesTool implements ITool {
             String regex = inputJson.get("regex").getAsString();
             String filePattern = inputJson.has("file_pattern") ? inputJson.get("file_pattern").getAsString() : null;
 
-            // 根据是否为远程搜索调用不同的方法
-            if (isRemote) {
-                return performRemoteFileSearch(path, regex, filePattern);
-            } else {
-                return performFileSearch(path, regex, filePattern);
-            }
+            // 根据文件操作模式选择不同的处理方式
+            return switch (mode) {
+                case LOCAL -> performFileSearch(path, regex, filePattern);
+                case REMOTE_HTTP -> performRemoteHttpFileSearch(path, regex, filePattern);
+                case REMOTE_WS -> performWebSocketFileSearch(role, path, regex, filePattern);
+            };
 
         } catch (Exception e) {
             log.error("Exception occurred while executing search_files operation", e);
@@ -223,34 +244,87 @@ public class SearchFilesTool implements ITool {
         }
     }
 
-    private JsonObject performRemoteFileSearch(String path, String regex, String filePattern) {
+    /**
+     * 通过 HTTP API 搜索远程文件
+     */
+    private JsonObject performRemoteHttpFileSearch(String path, String regex, String filePattern) {
         JsonObject result = new JsonObject();
 
         try {
             // 调用RemoteFileUtils的searchFiles方法进行远程文件搜索
-            String searchResult = run.mone.hive.utils.RemoteFileUtils.searchFiles(path, regex, filePattern);
-            
+            String searchResult = RemoteFileUtils.searchFiles(path, regex, filePattern);
+
             // 构建结果对象
             result.addProperty("result", searchResult);
             result.addProperty("searchPath", path);
             result.addProperty("regex", regex);
+            result.addProperty("mode", "REMOTE_HTTP");
             if (filePattern != null) {
                 result.addProperty("filePattern", filePattern);
             }
-            
-            log.info("成功在远程目录 {} 中搜索文件，正则表达式: {}, 文件模式: {}", 
+
+            log.info("成功在远程 HTTP 目录 {} 中搜索文件，正则表达式: {}, 文件模式: {}",
                     path, regex, filePattern != null ? filePattern : "所有文件");
-            
+
             return result;
         } catch (IOException e) {
-            log.error("在远程目录中搜索文件时发生IO异常: {}", path, e);
-            result.addProperty("error", "远程文件搜索失败: " + e.getMessage());
+            log.error("在远程 HTTP 目录中搜索文件时发生IO异常: {}", path, e);
+            result.addProperty("error", "远程 HTTP 文件搜索失败: " + e.getMessage());
         } catch (Exception e) {
-            log.error("在远程目录中搜索文件时发生异常: {}", path, e);
-            result.addProperty("error", "远程文件搜索错误: " + e.getMessage());
+            log.error("在远程 HTTP 目录中搜索文件时发生异常: {}", path, e);
+            result.addProperty("error", "远程 HTTP 文件搜索错误: " + e.getMessage());
         }
 
         return result;
+    }
+
+    /**
+     * 通过 WebSocket 搜索远程文件
+     */
+    private JsonObject performWebSocketFileSearch(ReactorRole role, String path, String regex, String filePattern) {
+        JsonObject result = new JsonObject();
+
+        try {
+            String clientId = role.getClientId();
+            if (StringUtils.isEmpty(clientId)) {
+                result.addProperty("error", "ClientId is not available for WebSocket file operations");
+                return result;
+            }
+
+            // 构建请求 DTO
+            WebSocketCallRequest request = WebSocketCallRequest.builder()
+                    .path(path)
+                    .regex(regex)
+                    .filePattern(filePattern)
+                    .build();
+
+            // 调用 WebSocket 文件工具
+            WebSocketCallResponse response = WebSocketFileUtils.searchFiles(clientId, request);
+
+            // 将 DTO 响应转换为 JsonObject
+            result.addProperty("result", response.getResult());
+            result.addProperty("searchPath", path);
+            result.addProperty("regex", regex);
+            result.addProperty("mode", response.getMode());
+            result.addProperty("success", response.isSuccess());
+            if (filePattern != null) {
+                result.addProperty("filePattern", filePattern);
+            }
+
+            log.info("Successfully searched WebSocket files: clientId={}, path={}, regex={}", clientId, path, regex);
+
+            return result;
+        } catch (IOException e) {
+            log.error("IO exception while searching WebSocket files: {}", path, e);
+            result.addProperty("error", "Failed to search WebSocket files: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        } catch (Exception e) {
+            log.error("Exception while searching WebSocket files: {}", path, e);
+            result.addProperty("error", "Error searching WebSocket files: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        }
     }
 
 
