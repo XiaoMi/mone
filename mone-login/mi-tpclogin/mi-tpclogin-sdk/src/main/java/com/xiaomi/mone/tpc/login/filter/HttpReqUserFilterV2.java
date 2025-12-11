@@ -1,10 +1,7 @@
 package com.xiaomi.mone.tpc.login.filter;
 
 import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
-import com.xiaomi.mone.tpc.login.util.ConstUtil;
-import com.xiaomi.mone.tpc.login.util.GsonUtil;
-import com.xiaomi.mone.tpc.login.util.TokenUtil;
-import com.xiaomi.mone.tpc.login.util.UserUtil;
+import com.xiaomi.mone.tpc.login.util.*;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.login.vo.ResultVo;
 import jakarta.servlet.*;
@@ -12,7 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.*;
 import java.io.IOException;
 
 /**
@@ -125,7 +122,7 @@ public class HttpReqUserFilterV2 implements Filter {
         if (UserTypeEnum.CAS_TYPE.getCode().equals(userInfo.getUserType())) {
             userInfo.setLogoutUrl(logoutUrl);
         } else {
-            userInfo.setLogoutUrl(TokenUtil.getLogoutUrlWithToken(userInfo.getToken(), logoutUrl));
+            userInfo.setLogoutUrl(TokenUtilV2.getLogoutUrlWithToken(userInfo.getToken(), logoutUrl));
         }
         log.info("writeUserResponse.userInfo={}", userInfo);
         ResultVo<AuthUserVo> userResult = new ResultVo<>();
