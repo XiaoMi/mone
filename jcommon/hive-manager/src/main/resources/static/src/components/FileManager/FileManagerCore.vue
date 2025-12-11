@@ -487,6 +487,7 @@ async function handleFileDblClick(file: FileInfo) {
     await loadDirectory()
     emit('directoryChanged', currentPath.value)
   } else {
+    file.path = currentPath.value.split("/").slice(1).join("/") + '/' + file.path
     openFile(file)
   }
 }
@@ -500,6 +501,7 @@ async function handleFileAction(command: string, file: FileInfo) {
       }
       break
     case 'edit':
+      file.path = currentPath.value.split("/").slice(1).join("/") + '/' + file.path
       openFile(file)
       break
     case 'delete':
