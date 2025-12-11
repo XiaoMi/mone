@@ -123,28 +123,34 @@ const initFileManager = () => {
   if (agent?.name && instance?.ip && instance?.port) {
     fileManagerMode.value = 'websocket'
     
-    // 构建WebSocket URL (使用与chat相同的连接信息)
-    // 支持通过URL参数指定wsUrl
-    const urlParams = new URLSearchParams(window.location.search)
+    // 构建WebSocket代理URL
+    // 1. 首先构建目标WebSocket地址 (agent的实际连接地址)
     const clientId = `${agent.name}:${agent.group}:${agent.version}:${instance.ip}:${instance.port}`
-    const baseWsUrl = urlParams.get('wsUrl') || `ws://127.0.0.1:8080/ws/echo`
-    const wsUrl = `${baseWsUrl}?clientId=${encodeURIComponent(clientId)}`
+    const urlParams = new URLSearchParams(window.location.search)
+    const targetWsUrl = urlParams.get('wsUrl') || `ws://127.0.0.1:8080/ws/agent/chat`
+    const targetWsWithClient = `${targetWsUrl}?clientId=${encodeURIComponent(clientId)}`
+    
+    // 2. 使用代理连接到目标WebSocket
+    const proxyWsUrl = `/api/manager/ws/proxy?wsUrl=${encodeURIComponent(targetWsWithClient)}`
+    
+    console.log('[FileManager] 使用代理连接:', proxyWsUrl)
+    console.log('[FileManager] 目标地址:', targetWsWithClient)
     
     // 支持通过URL参数指定忽略模式
     const ignoreParam = urlParams.get('ignore')
     const customIgnorePatterns = ignoreParam ? ignoreParam.split(',') : undefined
     
     const wsAdapter = new WebSocketFileSystemAdapter(
-      wsUrl,
+      proxyWsUrl,
       () => {
-        console.log('[FileManager] WebSocket connected')
+        console.log('[FileManager] WebSocket proxy connected')
         // 连接成功后，可以加载默认目录
       },
       () => {
-        console.log('[FileManager] WebSocket disconnected')
+        console.log('[FileManager] WebSocket proxy disconnected')
       },
       (error) => {
-        console.error('[FileManager] WebSocket error:', error)
+        console.error('[FileManager] WebSocket proxy error:', error)
       },
       customIgnorePatterns
     )
@@ -152,8 +158,9 @@ const initFileManager = () => {
     // 连接WebSocket
     wsAdapter.connect().then(() => {
       fileAdapter.value = wsAdapter
+      console.log('[FileManager] 代理连接成功')
     }).catch((error) => {
-      console.error('[FileManager] Failed to connect:', error)
+      console.error('[FileManager] Failed to connect via proxy:', error)
       // 如果连接失败，回退到本地模式
       fileManagerMode.value = 'local'
       fileAdapter.value = new LocalFileSystemAdapter(getIgnorePatterns())
@@ -911,7 +918,7 @@ const { currentTheme } = useTheme()
 onMounted(async () => {
   // 检查URL参数中是否有dir=true
   const urlParams = new URLSearchParams(window.location.search)
-  showFileManagerButton.value = urlParams.get('dir') === 'true'
+  showFileManagerButton.value = urlParams.get('dir') === 'true' && urlParams.get('wsUrl') !== null
   
   try {
     // 获取Agent详情
