@@ -23,13 +23,22 @@ public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBro
     @Autowired
     private RealtimeWebSocketHandler realtimeWebSocketHandler;
 
+    @Autowired
+    private WebSocketProxyHandler webSocketProxyHandler;
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(webSocketHandler, "/ws/agent/chat")
-               .setAllowedOriginPatterns("*");
+               .setAllowedOriginPatterns("*")
+               .setAllowedOrigins("*");
         
         registry.addHandler(realtimeWebSocketHandler, "/ws/realtime/minimaxi")
-               .setAllowedOriginPatterns("*");
+               .setAllowedOriginPatterns("*")
+               .setAllowedOrigins("*");
+        
+        registry.addHandler(webSocketProxyHandler, "/ws/proxy")
+               .setAllowedOriginPatterns("*")
+               .setAllowedOrigins("*");
     }
 
     @Override
@@ -42,6 +51,7 @@ public class WebSocketConfig implements WebSocketConfigurer, WebSocketMessageBro
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                .setAllowedOriginPatterns("*")
+               .setAllowedOrigins("*")
                .withSockJS();
     }
 
