@@ -69,7 +69,7 @@ export interface DirectoryStackItem {
  */
 export enum WSMessageType {
   // 请求类型
-  LIST_DIRECTORY = 'list_directory',
+  LIST_FILES = 'list_files',
   READ_FILE = 'read_file',
   WRITE_FILE = 'write_file',
   DELETE_FILE = 'delete_file',
