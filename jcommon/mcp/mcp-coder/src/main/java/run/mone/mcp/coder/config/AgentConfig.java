@@ -8,7 +8,7 @@ import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.roles.tool.*;
-import run.mone.hive.spring.starter.WebSocketSessionManager;
+import run.mone.hive.spring.starter.WebSocketCaller;
 import run.mone.hive.utils.RemoteFileUtils;
 import run.mone.hive.utils.WebSocketFileUtils;
 
@@ -103,12 +103,8 @@ public class AgentConfig {
      * 初始化 WebSocket 消息发送器
      */
     private void initWebSocketMessageSender() {
-        // 设置 WebSocket 消息发送器
-        WebSocketFileUtils.setMessageSender((clientId, message) -> {
-            WebSocketSessionManager manager = WebSocketSessionManager.getInstance();
-            manager.sendMessage(clientId, message);
-            log.debug("发送 WebSocket 消息到客户端: clientId={}", clientId);
-        });
+        // 设置 WebSocket Caller（已处理好异步逻辑）
+        WebSocketFileUtils.setWebSocketCaller(WebSocketCaller.getInstance()::call);
         log.info("WebSocket 消息发送器已初始化");
     }
 
