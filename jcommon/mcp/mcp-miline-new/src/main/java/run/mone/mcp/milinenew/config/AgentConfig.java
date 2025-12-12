@@ -31,6 +31,7 @@ import static run.mone.hive.common.Constants.*;
 @Configuration
 @Slf4j
 public class AgentConfig {
+
     @Autowired
     private GitCloneTool gitCloneTool;
     @Autowired
@@ -63,6 +64,9 @@ public class AgentConfig {
     private GetDeployMachinesFunction getDeployMachinesFunction;
 
     @Autowired
+    private ScaleOrderFunction scaleOrderFunction;
+
+    @Autowired
     QueryPipelineByGitUrlFunction queryPipelineByGitUrlFunction;
 
     @Autowired
@@ -85,6 +89,9 @@ public class AgentConfig {
 
     @Autowired
     GetDeployMachinesTool getDeployMachinesTool;
+
+    @Autowired
+    private ScaleOrderTool scaleOrderTool;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -118,41 +125,40 @@ public class AgentConfig {
                 .constraints(constraints)
                 //内部工具
                 .tools(Lists.newArrayList(
-                                new ChatTool(),
-                                new AskTool(),
-                                new AttemptCompletionTool(),
-                                createProjectTool,
-                                generateGitCodeTool,
-                                createPipelineTool,
-                                runPipelineTool,
-                                getDeployMachinesTool,
-                                gitCloneTool,
-                                gitCommitTool,
-                                gitPushTool
-                        )
+                        new ChatTool(),
+                        new AskTool(),
+                        new AttemptCompletionTool(),
+                        createProjectTool,
+                        generateGitCodeTool,
+                        createPipelineTool,
+                        runPipelineTool,
+                        scaleOrderTool,
+                        getDeployMachinesTool,
+                        gitCloneTool,
+                        gitCommitTool,
+                        gitPushTool
+                )
                 )
                 .mode(RoleMeta.RoleMode.valueOf(agentMode))
                 .mcpTools(
                         agentModel
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
                                 : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction, k8sBatchDeployFunction,
-                                userBatchFunction)
+                                        userBatchFunction, scaleOrderFunction)
                 )
                 .workflow(workflow)
                 .meta(
                         agentModel
                                 ? ImmutableMap.of(Const.HTTP_PORT, httpPort,
-                                Const.AGENT_SERVER_NAME, "miline_server",
-                                Const.HTTP_ENABLE_AUTH, "true")
+                                        Const.AGENT_SERVER_NAME, "miline_server",
+                                        Const.HTTP_ENABLE_AUTH, "true")
                                 : ImmutableMap.of(Const.HTTP_PORT, httpPort,
-                                Const.AGENT_SERVER_NAME, "miline_server",
-                                Const.HTTP_ENABLE_AUTH, "true",
-                                META_KEY_PROFILE, profile,
-                                META_KEY_WORKFLOW, workflow)
+                                        Const.AGENT_SERVER_NAME, "miline_server",
+                                        Const.HTTP_ENABLE_AUTH, "true",
+                                        META_KEY_PROFILE, profile,
+                                        META_KEY_WORKFLOW, workflow)
                 )
                 .build();
     }
 
 }
-
-

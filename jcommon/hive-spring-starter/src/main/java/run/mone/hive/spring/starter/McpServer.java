@@ -110,6 +110,9 @@ public class McpServer {
 
         // 注册工具
         functionList.forEach(function -> {
+            // 将 asyncServer 实例注入到 McpFunction 中，使其能够调用 loggingNotification 等方法
+            function.setMcpAsyncServer(asyncServer);
+
             if (function.getName().startsWith("stream_")) {
                 var toolStreamRegistration = new ToolStreamRegistration(
                         new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function

@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,7 +113,7 @@ public class HttpTokenValidator implements TokenValidator {
                 Duration ttl = extractTtl(response);
 
                 // Extract user info from response if available
-                Map<String, Object> userInfo = extractUserInfo(response);
+                UserInfo userInfo = extractUserInfo(response);
 
                 logger.debug("Token validation successful: valid={}, ttl={}, userInfo={}, response={}",
                     isValid, ttl, userInfo, responseBody);
@@ -210,49 +208,46 @@ public class HttpTokenValidator implements TokenValidator {
      * - Also supports nested "data" field
      *
      * @param response The JSON response from the validation endpoint
-     * @return Map containing user information, or empty map if none found
+     * @return UserInfo containing user information, or empty UserInfo if none found
      */
-    protected Map<String, Object> extractUserInfo(JsonNode response) {
-        Map<String, Object> userInfo = new HashMap<>();
+    protected UserInfo extractUserInfo(JsonNode response) {
+        UserInfo userInfo = new UserInfo();
 
         try {
             // Try to extract from root level first (z-proxy/user format)
             if (response.has("name") && !response.get("name").isNull()) {
-                userInfo.put("username", response.get("name").asText());
+                userInfo.setUsername(response.get("name").asText());
             }
             if (response.has("userId") && !response.get("userId").isNull()) {
-                userInfo.put("userId", response.get("userId").asText());
+                userInfo.setUserId(response.get("userId").asText());
             }
-            if (response.has("avatar") && !response.get("avatar").isNull()) {
-                userInfo.put("avatar", response.get("avatar").asText());
+
+            // Extract from username field if name is not present
+            if (response.has("username") && !response.get("username").isNull()) {
+                userInfo.setUsername(response.get("username").asText());
             }
-            if (response.has("email") && !response.get("email").isNull()) {
-                userInfo.put("email", response.get("email").asText());
+
+            // Extract clientId if present
+            if (response.has("clientId") && !response.get("clientId").isNull()) {
+                userInfo.setClientId(response.get("clientId").asText());
             }
 
             // If data field exists, extract from there
             if (response.has("data") && response.get("data").isObject()) {
                 JsonNode dataNode = response.get("data");
-                dataNode.fields().forEachRemaining(entry -> {
-                    String key = entry.getKey();
-                    JsonNode value = entry.getValue();
 
-                    // Skip null values
-                    if (value.isNull()) {
-                        return;
-                    }
-
-                    // Convert to appropriate Java type
-                    if (value.isTextual()) {
-                        userInfo.put(key, value.asText());
-                    } else if (value.isNumber()) {
-                        userInfo.put(key, value.asLong());
-                    } else if (value.isBoolean()) {
-                        userInfo.put(key, value.asBoolean());
-                    } else if (value.isObject() || value.isArray()) {
-                        userInfo.put(key, value.toString());
-                    }
-                });
+                if (dataNode.has("userId") && !dataNode.get("userId").isNull()) {
+                    userInfo.setUserId(dataNode.get("userId").asText());
+                }
+                if (dataNode.has("username") && !dataNode.get("username").isNull()) {
+                    userInfo.setUsername(dataNode.get("username").asText());
+                }
+                if (dataNode.has("name") && !dataNode.get("name").isNull() && userInfo.getUsername() == null) {
+                    userInfo.setUsername(dataNode.get("name").asText());
+                }
+                if (dataNode.has("clientId") && !dataNode.get("clientId").isNull()) {
+                    userInfo.setClientId(dataNode.get("clientId").asText());
+                }
             }
 
             logger.debug("Extracted user info: {}", userInfo);

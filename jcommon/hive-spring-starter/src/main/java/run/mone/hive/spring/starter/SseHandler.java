@@ -11,6 +11,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
+import run.mone.hive.dto.WebSocketCallRequest;
+import run.mone.hive.dto.WebSocketCallResponse;
+
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
@@ -300,7 +303,7 @@ public class SseHandler {
 
     /**
      * 获取当前连接数
-     * 
+     *
      * @return 连接信息
      */
     @GetMapping("/status")
@@ -308,6 +311,123 @@ public class SseHandler {
         return Map.of(
                 "activeConnections", emitterMap.size(),
                 "clientIds", emitterMap.keySet()
+        );
+    }
+
+    /**
+     * 简单的 ping 测试接口，返回 pong
+     *
+     * @return pong 响应
+     */
+    @GetMapping("/ping")
+    public Map<String, Object> ping() {
+        return Map.of(
+                "message", "pong",
+                "timestamp", System.currentTimeMillis(),
+                "success", true
+        );
+    }
+
+    /**
+     * 测试接口：通过 WebSocketCaller 调用客户端
+     * 用于测试阻塞调用功能
+     *
+     * @param clientId 客户端ID
+     * @param action   调用动作，默认 list_directory
+     * @param path     路径参数，默认空
+     * @param timeout  超时时间（秒），默认 30
+     * @return 调用结果
+     */
+    @GetMapping("/test/call/{clientId}")
+    public WebSocketCallResponse testCall(
+            @PathVariable("clientId") String clientId,
+            @RequestParam(value = "action", defaultValue = "list_files") String action,
+            @RequestParam(value = "path", defaultValue = "") String path,
+            @RequestParam(value = "timeout", defaultValue = "30") int timeout) {
+
+        log.info("Test call to client {}, action: {}, path: {}, timeout: {}s", clientId, action, path, timeout);
+
+        try {
+            // 构造请求数据
+            WebSocketCallRequest request = WebSocketCallRequest.builder()
+                    .path(path)
+                    .build();
+
+            // 调用 WebSocketCaller（阻塞等待响应）
+            long startTime = System.currentTimeMillis();
+            Map<String, Object> response = WebSocketCaller.getInstance().call(
+                    clientId,
+                    action,
+                    objectMapper.convertValue(request, Map.class),
+                    timeout,
+                    java.util.concurrent.TimeUnit.SECONDS
+            );
+            long duration = System.currentTimeMillis() - startTime;
+
+            log.info("Test call succeeded, duration: {}ms, response: {}", duration, response);
+
+            return WebSocketCallResponse.builder()
+                    .success(true)
+                    .clientId(clientId)
+                    .action(action)
+                    .duration(duration)
+                    .response(response)
+                    .build();
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Test call timeout for client {}", clientId);
+            return WebSocketCallResponse.builder()
+                    .success(false)
+                    .clientId(clientId)
+                    .action(action)
+                    .error("Timeout after " + timeout + " seconds")
+                    .build();
+        } catch (Exception e) {
+            log.error("Test call failed for client {}", clientId, e);
+            return WebSocketCallResponse.builder()
+                    .success(false)
+                    .clientId(clientId)
+                    .action(action)
+                    .error(e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * 测试接口：异步调用客户端
+     *
+     * @param clientId 客户端ID
+     * @param action   调用动作
+     * @param path     路径参数
+     * @return 异步调用已发起
+     */
+    @GetMapping("/test/call-async/{clientId}")
+    public Map<String, Object> testCallAsync(
+            @PathVariable String clientId,
+            @RequestParam(value = "action", defaultValue = "list_directory") String action,
+            @RequestParam(value = "path", defaultValue = "") String path) {
+
+        log.info("Test async call to client {}, action: {}, path: {}", clientId, action, path);
+
+        // 构造请求数据
+        Map<String, Object> data = new java.util.HashMap<>();
+        data.put("path", path);
+
+        // 异步调用
+        WebSocketCaller.getInstance().callAsync(clientId, action, data)
+                .thenAccept(response -> {
+                    log.info("Async call succeeded for client {}, response: {}", clientId, response);
+                })
+                .exceptionally(throwable -> {
+                    log.error("Async call failed for client {}", clientId, throwable);
+                    return null;
+                });
+
+        return Map.of(
+                "success", true,
+                "message", "Async call initiated",
+                "clientId", clientId,
+                "action", action
         );
     }
 

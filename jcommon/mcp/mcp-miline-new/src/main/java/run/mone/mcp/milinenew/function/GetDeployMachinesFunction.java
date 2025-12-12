@@ -209,7 +209,6 @@ public class GetDeployMachinesFunction implements McpFunction {
             });
             sb.append("\n");
         }
-        
         sb.append("如果是灰度部署，则先检查是否已经确认了堡垒机，然后再执行各个批次的发布控制。\n");
         
         return sb.toString().trim();

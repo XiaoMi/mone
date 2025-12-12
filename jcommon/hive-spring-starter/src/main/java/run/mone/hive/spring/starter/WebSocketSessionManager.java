@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * WebSocket 会话管理器（单例）
  * 用于管理所有活跃的 WebSocket 连接，方便其他地方发送消息
+ * 使用 clientId 作为唯一键
  *
  * @author goodjava@qq.com
  */
@@ -22,7 +23,7 @@ public class WebSocketSessionManager {
 
     private static final WebSocketSessionManager INSTANCE = new WebSocketSessionManager();
 
-    // 存储所有活跃的WebSocket连接
+    // 存储所有活跃的WebSocket连接，使用 clientId 作为 key
     private final Map<String, WebSocketSession> sessionMap = new ConcurrentHashMap<>();
 
     // JSON序列化工具
@@ -36,35 +37,47 @@ public class WebSocketSessionManager {
     }
 
     /**
-     * 添加会话
+     * 添加会话，使用 clientId 作为唯一键
+     * 如果同一个 clientId 已经存在，会先关闭旧连接
      */
-    public void addSession(String sessionId, WebSocketSession session) {
-        sessionMap.put(sessionId, session);
-        log.info("Session added: {}, total sessions: {}", sessionId, sessionMap.size());
+    public void addSession(String clientId, WebSocketSession session) {
+        // 如果该 clientId 已存在连接，先关闭旧连接
+        WebSocketSession oldSession = sessionMap.get(clientId);
+        if (oldSession != null && oldSession.isOpen()) {
+            log.warn("Client {} already has an active session, closing old session", clientId);
+            try {
+                oldSession.close(CloseStatus.NORMAL);
+            } catch (IOException e) {
+                log.error("Failed to close old session for client {}", clientId, e);
+            }
+        }
+
+        sessionMap.put(clientId, session);
+        log.info("Session added for client: {}, total sessions: {}", clientId, sessionMap.size());
     }
 
     /**
-     * 移除会话
+     * 移除会话（通过 clientId）
      */
-    public void removeSession(String sessionId) {
-        sessionMap.remove(sessionId);
-        log.info("Session removed: {}, total sessions: {}", sessionId, sessionMap.size());
+    public void removeSession(String clientId) {
+        sessionMap.remove(clientId);
+        log.info("Session removed for client: {}, total sessions: {}", clientId, sessionMap.size());
     }
 
     /**
-     * 获取会话
+     * 获取会话（通过 clientId）
      */
-    public WebSocketSession getSession(String sessionId) {
-        return sessionMap.get(sessionId);
+    public WebSocketSession getSession(String clientId) {
+        return sessionMap.get(clientId);
     }
 
     /**
-     * 发送消息到指定会话
+     * 发送消息到指定客户端
      */
-    public void sendMessage(String sessionId, Map<String, Object> message) {
-        WebSocketSession session = sessionMap.get(sessionId);
+    public void sendMessage(String clientId, Map<String, Object> message) {
+        WebSocketSession session = sessionMap.get(clientId);
         if (session == null || !session.isOpen()) {
-            log.warn("Session {} not found or closed", sessionId);
+            log.warn("Client {} session not found or closed", clientId);
             return;
         }
 
@@ -72,35 +85,35 @@ public class WebSocketSessionManager {
             String json = objectMapper.writeValueAsString(message);
             session.sendMessage(new TextMessage(json));
         } catch (IOException e) {
-            log.error("Failed to send message to session {}", sessionId, e);
-            sessionMap.remove(sessionId);
+            log.error("Failed to send message to client {}", clientId, e);
+            sessionMap.remove(clientId);
             try {
                 session.close(CloseStatus.SERVER_ERROR);
             } catch (IOException ex) {
-                log.error("Failed to close session {}", sessionId, ex);
+                log.error("Failed to close session for client {}", clientId, ex);
             }
         }
     }
 
     /**
-     * 发送字符串消息到指定会话
+     * 发送字符串消息到指定客户端
      */
-    public void sendMessage(String sessionId, String message) {
-        WebSocketSession session = sessionMap.get(sessionId);
+    public void sendMessage(String clientId, String message) {
+        WebSocketSession session = sessionMap.get(clientId);
         if (session == null || !session.isOpen()) {
-            log.warn("Session {} not found or closed", sessionId);
+            log.warn("Client {} session not found or closed", clientId);
             return;
         }
 
         try {
             session.sendMessage(new TextMessage(message));
         } catch (IOException e) {
-            log.error("Failed to send message to session {}", sessionId, e);
-            sessionMap.remove(sessionId);
+            log.error("Failed to send message to client {}", clientId, e);
+            sessionMap.remove(clientId);
             try {
                 session.close(CloseStatus.SERVER_ERROR);
             } catch (IOException ex) {
-                log.error("Failed to close session {}", sessionId, ex);
+                log.error("Failed to close session for client {}", clientId, ex);
             }
         }
     }
@@ -110,8 +123,8 @@ public class WebSocketSessionManager {
      */
     public void broadcast(Map<String, Object> message) {
         log.info("Broadcasting message to {} sessions", sessionMap.size());
-        for (String sessionId : sessionMap.keySet()) {
-            sendMessage(sessionId, message);
+        for (String clientId : sessionMap.keySet()) {
+            sendMessage(clientId, message);
         }
     }
 
@@ -123,30 +136,30 @@ public class WebSocketSessionManager {
     }
 
     /**
-     * 获取所有活跃会话ID
+     * 获取所有活跃的客户端ID
      */
-    public Set<String> getActiveSessionIds() {
+    public Set<String> getActiveClientIds() {
         return sessionMap.keySet();
     }
 
     /**
-     * 检查会话是否存在且打开
+     * 检查客户端会话是否存在且打开
      */
-    public boolean isSessionActive(String sessionId) {
-        WebSocketSession session = sessionMap.get(sessionId);
+    public boolean isSessionActive(String clientId) {
+        WebSocketSession session = sessionMap.get(clientId);
         return session != null && session.isOpen();
     }
 
     /**
-     * 关闭指定会话
+     * 关闭指定客户端的会话
      */
-    public void closeSession(String sessionId) {
-        WebSocketSession session = sessionMap.remove(sessionId);
+    public void closeSession(String clientId) {
+        WebSocketSession session = sessionMap.remove(clientId);
         if (session != null && session.isOpen()) {
             try {
                 session.close(CloseStatus.NORMAL);
             } catch (IOException e) {
-                log.error("Failed to close session {}", sessionId, e);
+                log.error("Failed to close session for client {}", clientId, e);
             }
         }
     }

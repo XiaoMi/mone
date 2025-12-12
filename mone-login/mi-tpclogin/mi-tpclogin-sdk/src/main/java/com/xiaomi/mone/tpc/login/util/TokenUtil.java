@@ -53,18 +53,6 @@ public class TokenUtil {
         }
     }
 
-    public static void setCookie(HttpServletRequest request, AuthUserVo userVo, ServletResponse servletResponse) throws IOException {
-        HttpServletResponse response = (HttpServletResponse)servletResponse;
-        Cookie cookie = new Cookie(ConstUtil.AUTH_TOKEN, userVo.getToken());
-        cookie.setPath("/");
-        cookie.setMaxAge(userVo.getExprTime());
-        String origin = Optional.ofNullable(request.getHeader("Origin")).orElse(request.getHeader("Host"));
-        String domain = HostUtil.getDomain(origin);
-        if (StringUtils.isNotBlank(domain)) {
-            cookie.setDomain(domain);
-        }
-        response.addCookie(cookie);
-    }
 
     public static final AuthTokenVo parseAuthToken(HttpServletRequest request) {
         String authToken = request.getParameter(ConstUtil.AUTH_TOKEN);

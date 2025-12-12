@@ -99,18 +99,22 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { login, register } from '@/api/user'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
 const loading = ref(false)
 const isLoginForm = ref(true)
+
+// 获取重定向参数
+const redirectPath = ref<string>(route.query.redirect as string || '/agents')
 
 const loginForm = ref({
   username: '',
@@ -164,11 +168,17 @@ const handleLogin = async () => {
         internalAccount: response.data.data.internalAccount || ""
       })
       if (!response.data.data.internalAccount) {
-        router.push('/bindInner')
+        // 跳转到绑定页面时携带 redirect 参数
+        if (redirectPath.value && redirectPath.value !== '/agents') {
+          router.push({ path: '/bindInner', query: { redirect: redirectPath.value } })
+        } else {
+          router.push('/bindInner')
+        }
         return
       }
       ElMessage.success('登录成功')
-      router.push('/agents')
+      // 登录成功后跳转到重定向页面或默认页面
+      router.push(redirectPath.value || '/agents')
     } else {
       ElMessage.error(response.data.message || '登录失败')
     }
@@ -189,6 +199,10 @@ const handleRegister = async () => {
     if (response.data.code === 200) {
       ElMessage.success('注册成功')
       isLoginForm.value = true
+      // 注册成功后切换到登录表单时保持redirect参数
+      if (route.query.redirect) {
+        router.replace({ path: '/login', query: { redirect: route.query.redirect } })
+      }
     } else {
       ElMessage.error(response.data.message || '注册失败')
     }
@@ -201,6 +215,10 @@ const handleRegister = async () => {
 
 const toggleForm = () => {
   isLoginForm.value = !isLoginForm.value
+  // 切换表单时保持redirect参数
+  if (route.query.redirect) {
+    router.replace({ path: '/login', query: { redirect: route.query.redirect } })
+  }
 }
 
 // 添加粒子效果初始化

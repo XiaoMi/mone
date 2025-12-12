@@ -493,7 +493,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
      * @param userInfo User information to inject
      * @return Enriched params with user info injected into arguments
      */
-    private Object injectUserInfoToToolCall(Object params, Map<String, Object> userInfo) {
+    private Object injectUserInfoToToolCall(Object params, UserInfo userInfo) {
         if (params == null || userInfo == null || userInfo.isEmpty()) {
             return params;
         }
@@ -508,21 +508,21 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
                 Map<String, Object> enrichedArguments = new java.util.HashMap<>(callToolRequest.arguments());
 
                 // Inject user info with special prefix to avoid conflicts
-                enrichedArguments.put(Const.USER_INFO, userInfo);
+                enrichedArguments.put(Const.USER_INFO, userInfo.toMap());
 
                 // Also inject individual user fields for convenience
-                if (userInfo.containsKey("userId")) {
-                    enrichedArguments.putIfAbsent(Const.TOKEN_USER_ID, userInfo.get("userId"));
+                if (userInfo.getUserId() != null) {
+                    enrichedArguments.putIfAbsent(Const.TOKEN_USER_ID, userInfo.getUserId());
                 }
-                if (userInfo.containsKey("username")) {
-                    enrichedArguments.putIfAbsent(Const.TOKEN_USERNAME, userInfo.get("username"));
+                if (userInfo.getUsername() != null) {
+                    enrichedArguments.putIfAbsent(Const.TOKEN_USERNAME, userInfo.getUsername());
                 }
-                if (userInfo.containsKey("clientId")) {
-                    enrichedArguments.putIfAbsent("clientId", userInfo.get("clientId"));
+                if (userInfo.getClientId() != null) {
+                    enrichedArguments.putIfAbsent("clientId", userInfo.getClientId());
                 }
 
                 logger.debug("Injected user info into tool call arguments: userId={}, username={}, clientId={}",
-                    userInfo.get("userId"), userInfo.get("username"), userInfo.get("clientId"));
+                    userInfo.getUserId(), userInfo.getUsername(), userInfo.getClientId());
 
                 // Create new CallToolRequest with enriched arguments
                 return new McpSchema.CallToolRequest(
@@ -797,12 +797,12 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
 
         // Extract user info for later injection
-        final Map<String, Object> userInfo = (validationResult != null) ? validationResult.getUserInfo() : new java.util.HashMap<>();
+        final UserInfo userInfo = (validationResult != null) ? validationResult.getUserInfo() : new UserInfo();
 
         // Extract clientId from URL parameter and add to userInfo
         String clientIdParam = extractClientIdFromRequest(request);
         if (clientIdParam != null) {
-            userInfo.put("clientId", clientIdParam);
+            userInfo.setClientId(clientIdParam);
             logger.debug("Extracted clientId from URL parameter: {}", clientIdParam);
         }
 
@@ -1007,7 +1007,7 @@ public class HttpServletStreamableServerTransport extends HttpServlet implements
         }
     }
 
-    private void handleToolsCall(HttpServletResponse response, McpSchema.JSONRPCRequest req, Map<String, Object> userInfo) throws IOException {
+    private void handleToolsCall(HttpServletResponse response, McpSchema.JSONRPCRequest req, UserInfo userInfo) throws IOException {
         logger.info("call tool: {}", req);
         if (mcpServer != null && mcpServer.toolsCallRequestHandler() != null) {
             try {
