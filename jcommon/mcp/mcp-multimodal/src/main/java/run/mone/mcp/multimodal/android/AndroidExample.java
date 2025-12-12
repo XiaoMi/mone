@@ -43,7 +43,7 @@ public class AndroidExample {
     public static void main(String[] args) {
         // 远程设备地址（根据实际情况修改）
         String deviceHost = System.getenv("deviceHost");
-        int devicePort = 35999;
+        int devicePort = 37369;
 
         // 如果命令行传入参数
         if (args.length >= 1) {
@@ -139,9 +139,9 @@ public class AndroidExample {
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击微信");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击雹这个app");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击Clash");
-//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击小扫把");
+            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击小扫把");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击T这个群组");
-            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击通讯录");
+//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击通讯录");
             System.out.println(res);
 
             // 9. 通过 ADB 执行点击操作
