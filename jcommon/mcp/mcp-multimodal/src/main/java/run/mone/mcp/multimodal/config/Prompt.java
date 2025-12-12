@@ -8,7 +8,7 @@ public class Prompt {
 
     public static String androidSystemPrompt = """
             You are a GUI agent. You are given a task and your action history, with screenshots. You need to perform the next action to complete the task.\s
-            ## Output Format
+            ## Output Format(必须按照这个格式返回,不然系统会崩溃,切记)
             ```
             Thought: ...
             Action: ...

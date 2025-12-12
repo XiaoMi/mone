@@ -42,7 +42,7 @@ public class AndroidExample {
 
     public static void main(String[] args) {
         // 远程设备地址（根据实际情况修改）
-        String deviceHost = "10.220.151.48";
+        String deviceHost = System.getenv("deviceHost");
         int devicePort = 35999;
 
         // 如果命令行传入参数
@@ -137,9 +137,18 @@ public class AndroidExample {
 //            listInstalledApps(targetDevice, false); // false = 仅第三方应用
 
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击微信");
-            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击小米汽车");
+//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击雹这个app");
+//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击Clash");
+//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击小扫把");
+//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击T这个群组");
+            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击通讯录");
             System.out.println(res);
 
+            // 9. 通过 ADB 执行点击操作
+            if (res != null && res.getX() >= 0 && res.getY() >= 0) {
+                System.out.println("\n--- 执行点击操作 ---");
+                tapScreen(targetDevice, res.getX(), res.getY());
+            }
 
             System.out.println("\n=== 完成 ===");
 
@@ -430,11 +439,9 @@ public class AndroidExample {
             // 使用 compoundMsgCall 调用
             Flux<String> flux = llm.compoundMsgCall(msg, systemPrompt);
             StringBuilder sb = new StringBuilder();
-            flux.subscribe(chunk -> {
-                System.out.print(chunk);
+            flux.doOnNext(chunk->{
                 sb.append(chunk);
-            });
-            flux.blockLast();
+            }).collectList().block();
 
             String response = sb.toString();
             System.out.println("\n大模型响应完成:"+response);
@@ -629,6 +636,33 @@ public class AndroidExample {
             System.err.println("画红点失败: " + e.getMessage());
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * 在 Android 设备屏幕上执行点击操作
+     *
+     * @param device 设备
+     * @param x      X 坐标
+     * @param y      Y 坐标
+     */
+    private void tapScreen(IDevice device, int x, int y) {
+        try {
+            String command = String.format("input tap %d %d", x, y);
+            System.out.println("执行点击命令: " + command);
+
+            ShellOutputReceiver receiver = new ShellOutputReceiver();
+            device.executeShellCommand(command, receiver, 5000, TimeUnit.MILLISECONDS);
+
+            String output = receiver.getOutput();
+            if (output != null && !output.trim().isEmpty()) {
+                System.out.println("点击命令输出: " + output);
+            } else {
+                System.out.println("成功在坐标 (" + x + ", " + y + ") 执行点击");
+            }
+        } catch (Exception e) {
+            System.err.println("点击操作失败: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
