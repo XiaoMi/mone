@@ -1,7 +1,7 @@
 server:
   port: 8080
   cas:
-    ignoreUrl: ${CAS_IGNORE_URL:/api/v1/users/login,/api/v1/users/register,/api/v1/agents/*,/api/v1/tasks/execute}
+    ignoreUrl: ${CAS_IGNORE_URL:/api/v1/users/login,/api/v1/users/register,/api/v1/agents/*,/api/v1/tasks/execute,/api/v1/report/*}
 
 mcp:
 #  llm: CLAUDE_COMPANY
