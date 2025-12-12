@@ -75,6 +75,13 @@
             <version>3.5.11</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.android.tools.ddms</groupId>
+            <artifactId>ddmlib</artifactId>
+            <version>32.0.0-beta04</version>
+        </dependency>
+
     </dependencies>
 
     <build>
