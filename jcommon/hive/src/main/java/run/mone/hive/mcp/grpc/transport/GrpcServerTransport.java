@@ -189,10 +189,13 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (null != params && params.containsKey(Const.CLIENT_ID)) {
                 String clientId = params.get(Const.CLIENT_ID).toString();
                 StreamObserver<StreamResponse> observer = userConnections.get(clientId);
+                log.info("=========>sendMessage: clientId={}, observer存在={}, 当前所有连接={}",
+                    clientId, observer != null, userConnections.keySet());
                 //直接通知到client
                 if (null != observer) {
                     String reqId = UUID.randomUUID().toString();
                     observer.onNext(StreamResponse.newBuilder().setRequestId(reqId).setCmd(Const.NOTIFY_MSG).setData(GsonUtils.gson.toJson(params)).build());
+                    log.info("=========>消息已发送到客户端: clientId={}, reqId={}", clientId, reqId);
                     //阻塞访问
                     if (notification.params().containsKey(Const.BLOCK)) {
                         try {
@@ -207,6 +210,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
                             resMap.remove(reqId);
                         }
                     }
+                } else {
+                    log.warn("=========>无法发送消息: 找不到clientId={} 的连接", clientId);
                 }
             }
         }
@@ -315,14 +320,16 @@ public class GrpcServerTransport implements ServerMcpTransport {
                     clientId = getClientIdFromContext();
 
                     if (StringUtils.isEmpty(clientId) || clientId.startsWith("mcp_")) {
+                        log.info("=========>clientId为空或以mcp_开头, 跳过注册: clientId={}", clientId);
                         return;
                     }
 
-                    log.info("bidirectionalToolStream name:{} clientId:{}", name, clientId);
+                    log.info("=========>bidirectionalToolStream收到消息 name:{} clientId:{}", name, clientId);
                     //连接过来,随时可以通过服务器推回去信息
                     if (name.equals("observer")) {
                         // 尝试从元数据获取token，如果没有则使用请求中的
                         userConnections.putIfAbsent(clientId, responseObserver);
+                        log.info("=========>注册observer成功! clientId={}, 当前连接数={}", clientId, userConnections.size());
                     }
                 }
 

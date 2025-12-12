@@ -75,25 +75,6 @@ public class WebSocketFileUtils {
     }
 
     /**
-     * 列出远程文件或目录（旧版，保持向后兼容）
-     *
-     * @param clientId  客户端 ID
-     * @param dirName   目录路径
-     * @param recursive 是否递归
-     * @return 文件列表结果
-     * @throws IOException 如果操作失败
-     */
-    @Deprecated
-    public static String listFiles(String clientId, String dirName, boolean recursive) throws IOException {
-        WebSocketCallRequest request = WebSocketCallRequest.builder()
-                .path(dirName)
-                .recursive(recursive)
-                .build();
-        WebSocketCallResponse response = listFiles(clientId, request);
-        return response.getResult();
-    }
-
-    /**
      * 列出远程文件或目录（新版，使用 DTO）
      *
      * @param clientId 客户端 ID
@@ -120,22 +101,6 @@ public class WebSocketFileUtils {
                 .build();
     }
 
-    /**
-     * 获取远程文件内容（旧版，保持向后兼容）
-     *
-     * @param clientId 客户端 ID
-     * @param fileName 文件名
-     * @return 文件内容
-     * @throws IOException 如果获取失败
-     */
-    @Deprecated
-    public static String getRemoteFileContent(String clientId, String fileName) throws IOException {
-        WebSocketCallRequest request = WebSocketCallRequest.builder()
-                .path(fileName)
-                .build();
-        WebSocketCallResponse response = readFile(clientId, request);
-        return response.getResult();
-    }
 
     /**
      * 读取远程文件（新版，使用 DTO）
@@ -166,25 +131,6 @@ public class WebSocketFileUtils {
     }
 
     /**
-     * 上传文件到远程服务器（旧版，保持向后兼容）
-     *
-     * @param clientId    客户端 ID
-     * @param fileName    文件名
-     * @param fileContent 文件内容
-     * @return 上传结果
-     * @throws IOException 如果上传失败
-     */
-    @Deprecated
-    public static String uploadFile(String clientId, String fileName, String fileContent) throws IOException {
-        WebSocketCallRequest request = WebSocketCallRequest.builder()
-                .path(fileName)
-                .content(fileContent)
-                .build();
-        WebSocketCallResponse response = writeFile(clientId, request);
-        return response.getResult();
-    }
-
-    /**
      * 写入远程文件（新版，使用 DTO）
      *
      * @param clientId 客户端 ID
@@ -211,27 +157,6 @@ public class WebSocketFileUtils {
                 .result(resultMsg)
                 .response(responseMap)
                 .build();
-    }
-
-    /**
-     * 搜索远程文件（旧版，保持向后兼容）
-     *
-     * @param clientId      客户端 ID
-     * @param directoryPath 目录路径
-     * @param regex         正则表达式
-     * @param filePattern   文件模式
-     * @return 搜索结果
-     * @throws IOException 如果搜索失败
-     */
-    @Deprecated
-    public static String searchFiles(String clientId, String directoryPath, String regex, String filePattern) throws IOException {
-        WebSocketCallRequest request = WebSocketCallRequest.builder()
-                .path(directoryPath)
-                .regex(regex)
-                .filePattern(filePattern)
-                .build();
-        WebSocketCallResponse response = searchFiles(clientId, request);
-        return response.getResult();
     }
 
     /**
@@ -311,24 +236,4 @@ public class WebSocketFileUtils {
         return gson.toJson(responseMap);
     }
 
-    /**
-     * 远程执行命令行
-     *
-     * @param clientId  客户端 ID
-     * @param command   要执行的命令
-     * @param directory 执行命令的目录
-     * @param timeout   超时时间（秒）
-     * @return 命令执行结果
-     * @throws IOException 如果执行失败
-     */
-    public static String executeCommand(String clientId, String command, String directory, int timeout) throws IOException {
-        Map<String, Object> params = new HashMap<>();
-        params.put("command", command);
-        params.put("directory", directory != null ? directory : "");
-        params.put("timeout", timeout > 0 ? timeout : 30);
-
-        Map<String, Object> responseMap = sendAndWait(clientId, "execute_command", params);
-        log.info("通过 WebSocket 成功执行命令: clientId={}, command={}", clientId, command);
-        return gson.toJson(responseMap);
-    }
 }
