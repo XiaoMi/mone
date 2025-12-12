@@ -100,10 +100,11 @@ public class WebSocketProxyHandler extends AbstractWebSocketHandler {
         log.info("WebSocket Proxy - Received from client: sessionId={}, messageSize={}, payload={}", 
                 clientSession.getId(), message.getPayloadLength(), message.getPayload());
         
-        // 只打印日志，不转发消息
+        // 转发客户端消息到目标服务器
         WebSocketSession targetSession = clientToTargetMap.get(clientSession.getId());
         if (targetSession != null && targetSession.isOpen()) {
-            log.info("WebSocket Proxy - [NOT FORWARDING] Would send to target: sessionId={}, targetSessionId={}", 
+            targetSession.sendMessage(message);
+            log.info("WebSocket Proxy - Forwarded to target: sessionId={}, targetSessionId={}", 
                     clientSession.getId(), targetSession.getId());
         } else {
             log.warn("WebSocket Proxy - Target session not available: sessionId={}", clientSession.getId());
@@ -115,10 +116,11 @@ public class WebSocketProxyHandler extends AbstractWebSocketHandler {
         log.info("WebSocket Proxy - Received binary from client: sessionId={}, messageSize={}", 
                 clientSession.getId(), message.getPayloadLength());
         
-        // 只打印日志，不转发二进制消息
+        // 转发客户端二进制消息到目标服务器
         WebSocketSession targetSession = clientToTargetMap.get(clientSession.getId());
         if (targetSession != null && targetSession.isOpen()) {
-            log.info("WebSocket Proxy - [NOT FORWARDING] Would send binary to target: sessionId={}, targetSessionId={}", 
+            targetSession.sendMessage(message);
+            log.info("WebSocket Proxy - Forwarded binary to target: sessionId={}, targetSessionId={}", 
                     clientSession.getId(), targetSession.getId());
         } else {
             log.warn("WebSocket Proxy - Target session not available for binary: sessionId={}", clientSession.getId());
@@ -212,10 +214,11 @@ public class WebSocketProxyHandler extends AbstractWebSocketHandler {
             log.info("WebSocket Proxy - Received from target: targetSessionId={}, messageSize={}, payload={}", 
                     targetSession.getId(), message.getPayloadLength(), message.getPayload());
             
-            // 只打印日志，不转发目标服务器的消息到客户端
+            // 转发目标服务器消息到客户端
             if (clientSession.isOpen()) {
-                log.info("WebSocket Proxy - [NOT FORWARDING] Would send to client: clientSessionId={}", 
-                        clientSession.getId());
+                clientSession.sendMessage(message);
+                log.info("WebSocket Proxy - Forwarded to client: clientSessionId={}, targetSessionId={}", 
+                        clientSession.getId(), targetSession.getId());
             }
         }
         
@@ -224,10 +227,11 @@ public class WebSocketProxyHandler extends AbstractWebSocketHandler {
             log.info("WebSocket Proxy - Received binary from target: targetSessionId={}, messageSize={}", 
                     targetSession.getId(), message.getPayloadLength());
             
-            // 只打印日志，不转发目标服务器的二进制消息到客户端
+            // 转发目标服务器二进制消息到客户端
             if (clientSession.isOpen()) {
-                log.info("WebSocket Proxy - [NOT FORWARDING] Would send binary to client: clientSessionId={}", 
-                        clientSession.getId());
+                clientSession.sendMessage(message);
+                log.info("WebSocket Proxy - Forwarded binary to client: clientSessionId={}, targetSessionId={}", 
+                        clientSession.getId(), targetSession.getId());
             }
         }
         

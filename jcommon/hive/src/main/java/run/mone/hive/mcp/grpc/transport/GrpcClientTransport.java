@@ -191,9 +191,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     // 改进后的 observer 方法
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
-        log.info("=========>observer" + observer);
+        log.info("=========>observer被调用, observer={}, channel={}", observer, channel != null);
         // 确保连接已经建立再创建双向流
         waitForChannelReady();
+        log.info("=========>channel准备完成, 开始建立双向流");
         return createObserverWithReconnect(observer, 0);
     }
 

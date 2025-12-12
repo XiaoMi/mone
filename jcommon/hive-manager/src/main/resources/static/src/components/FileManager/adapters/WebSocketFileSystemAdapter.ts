@@ -162,10 +162,16 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     let isSend = true;
     
     try {
+      if (message.data && message.data.path && message.data.path.startsWith('root')) {
+        message.data.path = message.data.path.slice(5)
+      }
       // 根据action执行相应的本地文件操作
       switch (message.action) {
-        case 'list_directory':
-          response.data = await this.executeListDirectory(message.data?.path || '')
+        case 'list_files':
+          response.data = await this.executeListFiles(
+            message.data?.path || '',
+            message.data?.recursive !== undefined ? message.data.recursive : true
+          )
           response.success = true
           break
 
@@ -175,6 +181,7 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
           break
 
         case 'write_file':
+          await this.volidAndCreateFile(message.data?.path || '')
           await this.executeWriteFile(message.data?.path || '', message.data?.content || '')
           response.success = true
           needsRefresh = true
@@ -246,9 +253,11 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
   }
 
   /**
-   * 执行列出目录操作 - 递归获取完整目录结构
+   * 执行列出文件操作 - 可选递归获取目录结构
+   * @param path 目录路径
+   * @param recursive 是否递归获取子目录，默认为 true
    */
-  private async executeListDirectory(path: string): Promise<{ files: FileInfo[] }> {
+  private async executeListFiles(path: string, recursive: boolean = true): Promise<{ files: FileInfo[] }> {
     if (!this.rootDirHandle) {
       throw new Error('No directory selected')
     }
@@ -259,7 +268,11 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     }
 
     const files: FileInfo[] = []
-    await this.recursiveListDirectory(targetHandle as FileSystemDirectoryHandle, path, files)
+    if (recursive) {
+      await this.recursiveListDirectory(targetHandle as FileSystemDirectoryHandle, path, files)
+    } else {
+      await this.listDirectoryShallow(targetHandle as FileSystemDirectoryHandle, path, files)
+    }
 
     // 排序：目录优先，然后按名称
     files.sort((a, b) => {
@@ -269,6 +282,58 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     })
 
     return { files }
+  }
+
+  /**
+   * 非递归方式列出目录中的直接子项
+   */
+  private async listDirectoryShallow(
+    dirHandle: FileSystemDirectoryHandle,
+    currentPath: string,
+    files: FileInfo[]
+  ): Promise<void> {
+    // @ts-ignore - FileSystemDirectoryHandle values() method
+    for await (const entry of dirHandle.values()) {
+      try {
+        // 检查是否应该忽略此文件/目录
+        if (this.shouldIgnore(entry.name)) {
+          console.log(`[Ignore] Skipping: ${entry.name}`)
+          continue
+        }
+
+        const entryPath = currentPath ? `${currentPath}/${entry.name}` : entry.name
+        let size = 0
+        let lastModified = 0
+        
+        if (entry.kind === 'file') {
+          const fileHandle = entry as FileSystemFileHandle
+          const file_obj = await fileHandle.getFile()
+          size = file_obj.size
+          lastModified = file_obj.lastModified
+
+          files.push({
+            name: entry.name,
+            path: entryPath,
+            isDirectory: false,
+            size,
+            lastModified,
+            handle: entry,
+          })
+        } else if (entry.kind === 'directory') {
+          // 只添加目录本身，不递归
+          files.push({
+            name: entry.name,
+            path: entryPath,
+            isDirectory: true,
+            size: 0,
+            lastModified: 0,
+            handle: entry,
+          })
+        }
+      } catch (e) {
+        console.error('Error reading entry:', entry.name, e)
+      }
+    }
   }
 
   /**
@@ -457,6 +522,30 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
     this.sendNotification(MsgType.FILE_CREATED, { path: newPath, name, isDirectory: true })
   }
 
+  private async volidAndCreateFile(path: string): Promise<void> {
+    if (!this.rootDirHandle || !path) {
+      throw new Error('No directory selected or invalid path')
+    }
+
+    const parts = path.split('/').filter(p => p)
+    const fileName = parts.pop()
+    if (!fileName) {
+      throw new Error('Invalid path')
+    }
+
+    const parentPath = parts.join('/')
+    const parentHandle = await this.getHandleByPath(parentPath)
+    if (!parentHandle || parentHandle.kind !== 'directory') {
+      throw new Error('Invalid parent directory')
+    }
+
+    try {
+      await (parentHandle as FileSystemDirectoryHandle).getFileHandle(fileName, { create: true })
+    } catch (e) {
+      throw new Error('File already exists')
+    }
+  }
+
   /**
    * 执行创建文件操作
    */
@@ -578,8 +667,8 @@ export class WebSocketFileSystemAdapter implements IFileSystemAdapter {
       return files
     }
     
-    // 兼容旧的基于path的调用方式
-    const result = await this.executeListDirectory(path)
+    // 兼容旧的基于path的调用方式，默认递归
+    const result = await this.executeListFiles(path, true)
     return result.files
   }
 
