@@ -770,6 +770,112 @@ public class AndroidService {
     }
 
     /**
+     * 获取设备上已安装的所有应用列表
+     *
+     * @param deviceSerial 设备序列号（可选）
+     * @param includeSystemApps 是否包含系统应用
+     * @return 应用包名列表
+     */
+    public Flux<List<String>> listInstalledApps(String deviceSerial, boolean includeSystemApps) {
+        return Flux.create(sink -> {
+            try {
+                IDevice device = getDevice(deviceSerial);
+                if (device == null) {
+                    sink.next(new ArrayList<>());
+                    sink.complete();
+                    return;
+                }
+
+                ShellOutputReceiver receiver = new ShellOutputReceiver();
+                // pm list packages: -3 仅第三方应用，不加参数则包含所有应用
+                String command = includeSystemApps ? "pm list packages" : "pm list packages -3";
+                device.executeShellCommand(command, receiver, COMMAND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+                String output = receiver.getOutput();
+                List<String> apps = new ArrayList<>();
+                for (String line : output.split("\n")) {
+                    String trimmed = line.trim();
+                    // 格式为 "package:com.example.app"
+                    if (trimmed.startsWith("package:")) {
+                        apps.add(trimmed.substring(8));
+                    }
+                }
+
+                // 排序
+                Collections.sort(apps);
+
+                sink.next(apps);
+                sink.complete();
+            } catch (Exception e) {
+                log.error("获取应用列表失败", e);
+                sink.next(new ArrayList<>());
+                sink.complete();
+            }
+        });
+    }
+
+    /**
+     * 获取应用详细信息
+     *
+     * @param packageName 应用包名
+     * @param deviceSerial 设备序列号（可选）
+     * @return 应用信息
+     */
+    public Flux<String> getAppInfo(String packageName, String deviceSerial) {
+        return Flux.create(sink -> {
+            try {
+                IDevice device = getDevice(deviceSerial);
+                if (device == null) {
+                    sink.next("错误: 没有可用的设备");
+                    sink.complete();
+                    return;
+                }
+
+                ShellOutputReceiver receiver = new ShellOutputReceiver();
+                device.executeShellCommand("dumpsys package " + packageName + " | head -50", receiver, COMMAND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+                String output = receiver.getOutput();
+                sink.next(output);
+                sink.complete();
+            } catch (Exception e) {
+                log.error("获取应用信息失败", e);
+                sink.next("获取应用信息失败: " + e.getMessage());
+                sink.complete();
+            }
+        });
+    }
+
+    /**
+     * 启动应用
+     *
+     * @param packageName 应用包名
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> launchApp(String packageName, String deviceSerial) {
+        return executeShellCommand(
+            "monkey -p " + packageName + " -c android.intent.category.LAUNCHER 1",
+            deviceSerial,
+            "成功启动应用: " + packageName
+        );
+    }
+
+    /**
+     * 强制停止应用
+     *
+     * @param packageName 应用包名
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> forceStopApp(String packageName, String deviceSerial) {
+        return executeShellCommand(
+            "am force-stop " + packageName,
+            deviceSerial,
+            "成功停止应用: " + packageName
+        );
+    }
+
+    /**
      * 执行 shell 命令
      */
     private Flux<String> executeShellCommand(String command, String deviceSerial, String successMessage) {
