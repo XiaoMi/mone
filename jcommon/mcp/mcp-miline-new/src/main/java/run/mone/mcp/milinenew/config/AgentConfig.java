@@ -66,6 +66,12 @@ public class AgentConfig {
     QueryPipelineByGitUrlFunction queryPipelineByGitUrlFunction;
 
     @Autowired
+    private K8sBatchDeployFunction k8sBatchDeployFunction;
+
+    @Autowired
+    private UserBatchFunction userBatchFunction;
+
+    @Autowired
     private CreatePipelineTool createPipelineTool;
 
     @Autowired
@@ -129,19 +135,20 @@ public class AgentConfig {
                 .mcpTools(
                         agentModel
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
-                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction)
+                                : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction, k8sBatchDeployFunction,
+                                userBatchFunction)
                 )
                 .workflow(workflow)
                 .meta(
                         agentModel
-                        ? ImmutableMap.of(Const.HTTP_PORT, httpPort,
-                            Const.AGENT_SERVER_NAME, "miline_server",
-                            Const.HTTP_ENABLE_AUTH, "true")
-                        : ImmutableMap.of(Const.HTTP_PORT, httpPort,
-                            Const.AGENT_SERVER_NAME, "miline_server",
-                            Const.HTTP_ENABLE_AUTH, "true",
-                            META_KEY_PROFILE, profile,
-                            META_KEY_WORKFLOW, workflow)
+                                ? ImmutableMap.of(Const.HTTP_PORT, httpPort,
+                                Const.AGENT_SERVER_NAME, "miline_server",
+                                Const.HTTP_ENABLE_AUTH, "true")
+                                : ImmutableMap.of(Const.HTTP_PORT, httpPort,
+                                Const.AGENT_SERVER_NAME, "miline_server",
+                                Const.HTTP_ENABLE_AUTH, "true",
+                                META_KEY_PROFILE, profile,
+                                META_KEY_WORKFLOW, workflow)
                 )
                 .build();
     }
