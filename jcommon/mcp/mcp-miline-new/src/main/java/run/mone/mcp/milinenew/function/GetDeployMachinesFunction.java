@@ -186,7 +186,7 @@ public class GetDeployMachinesFunction implements McpFunction {
         machine.forEach((key, value) -> {
             sb.append(String.format("  %s: %s\n", key, value));
         });
-        sb.append("msg: 如果templateName = K8sDeploy 则为一次发布所有机器，不用人工确认后续批次部署，不需要关注UserBatchFunction、K8sBatchDeployFunction；如果TemplateRecord下的status=7&&(templateName=K8sBatchDeploy||templateName=FaasK8sBatchDeploy)则为灰度部署，（注意堡垒批次算在总批次中，如总批次数是3次=堡垒确认批次+批次1+批次2），则先检查是否已经确认了堡垒机，如果没确认过，需要执行UserBatchFunction进行确认，如果确认过了，就不用再确认了，然后再用K8sBatchDeployFunction，执行各个批次的发布。\n");
+        sb.append("msg: 如果templateName = K8sDeploy 则为一次发布所有机器，不用人工确认后续批次部署也不需要展示堡垒批次信息，不需要关注UserBatchFunction、K8sBatchDeployFunction；如果TemplateRecord下的status=7&&(templateName=K8sBatchDeploy||templateName=FaasK8sBatchDeploy)则为灰度部署，（注意堡垒批次算在总批次中，如总批次数是3次=堡垒确认批次+批次1+批次2），则先检查是否已经确认了堡垒机，如果没确认过，需要执行UserBatchFunction进行确认，如果确认过了，就不用再确认了，然后再用K8sBatchDeployFunction，执行各个批次的发布。\n");
         sb.append("\n");
 
         return sb.toString().trim();

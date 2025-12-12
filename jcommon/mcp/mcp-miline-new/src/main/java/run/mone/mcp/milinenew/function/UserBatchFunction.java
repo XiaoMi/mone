@@ -65,7 +65,7 @@ public class UserBatchFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String USER_BATCH_URL = BASE_URL != null ? "http://mione-gw.test.mi.com/mtop/miline" + "/userBatch" : null;
+    private static final String USER_BATCH_URL = BASE_URL != null ? BASE_URL + "/userBatch" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
