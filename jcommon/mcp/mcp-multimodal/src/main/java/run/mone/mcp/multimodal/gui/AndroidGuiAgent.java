@@ -41,6 +41,46 @@ public class AndroidGuiAgent {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * 是否启用任务纠正检测（默认关闭）
+     */
+    private boolean enableTaskCorrection = false;
+
+    /**
+     * 启用任务纠正检测
+     */
+    public void enableTaskCorrection() {
+        this.enableTaskCorrection = true;
+        log.info("任务纠正检测已启用");
+    }
+
+    /**
+     * 禁用任务纠正检测
+     */
+    public void disableTaskCorrection() {
+        this.enableTaskCorrection = false;
+        log.info("任务纠正检测已禁用");
+    }
+
+    /**
+     * 设置任务纠正检测开关
+     *
+     * @param enable true 启用，false 禁用
+     */
+    public void setEnableTaskCorrection(boolean enable) {
+        this.enableTaskCorrection = enable;
+        log.info("任务纠正检测: {}", enable ? "启用" : "禁用");
+    }
+
+    /**
+     * 获取任务纠正检测状态
+     *
+     * @return true 已启用，false 已禁用
+     */
+    public boolean isTaskCorrectionEnabled() {
+        return enableTaskCorrection;
+    }
+
+    /**
      * 根据指令拆分任务列表
      *
      * @param instruction 用户指令
@@ -594,7 +634,8 @@ public class AndroidGuiAgent {
 
 
                 // 在执行任务前，检查是否需要纠正（跳过 finished 任务的纠正检查）
-                if (!currentTask.contains("finished") && !currentTask.contains("message")) {
+                // 只有在启用任务纠正检测时才进行检查
+                if (enableTaskCorrection && !currentTask.contains("finished") && !currentTask.contains("message")) {
                     String correctedTaskList = correctTaskList(taskListJson, i, currentTask, originalGoal);
 
                     if (correctedTaskList != null && !correctedTaskList.isEmpty()) {
