@@ -25,7 +25,7 @@ import javax.annotation.PostConstruct;
  */
 @Slf4j
 @RequiredArgsConstructor
-@Service  // 取消注释以启用自动运行
+//@Service  // 取消注释以启用自动运行
 public class AndroidGuiAgentExample {
 
     private final AndroidService androidService;
