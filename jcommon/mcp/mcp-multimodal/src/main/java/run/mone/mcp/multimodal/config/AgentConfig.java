@@ -72,7 +72,7 @@ public class AgentConfig {
         return RoleMeta.builder()
                 .profile(AndroidConfig.PROFILE)
                 .goal(AndroidConfig.GOAL)
-                .workflow(AndroidConfig.WORKFLOW)
+                .workflow(AndroidConfig.WORKFLOW + "\n" + AndroidConfig.MEITUAN_KFC_WORKFLOW)
                 .outputFormat(AndroidConfig.OUTPUT_FORMAT)
                 .constraints(AndroidConfig.CONSTRAINTS)
                 //内部工具
