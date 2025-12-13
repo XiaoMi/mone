@@ -61,7 +61,7 @@ public class AndroidGuiAgentExample {
 //        String instruction = "用微信给聊天组T发送大家好这个信息";
 //        String instruction = "帮我点击小米人图标";
 //        String instruction = "打开美团";
-        String instruction = "用美团点餐肯德基";
+        String instruction = "打开美团,然后用美团点餐肯德基";
 
         log.info("开始执行指令: {}", instruction);
         androidGuiAgent.run(instruction, sink);

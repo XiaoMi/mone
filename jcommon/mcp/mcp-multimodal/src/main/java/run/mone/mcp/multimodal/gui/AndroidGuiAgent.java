@@ -420,7 +420,7 @@ public class AndroidGuiAgent {
                 run2(str, sink);
 
                 try {
-                    TimeUnit.MILLISECONDS.sleep(1500);
+                    TimeUnit.MILLISECONDS.sleep(2000);
                 } catch (InterruptedException e) {
                     log.warn("等待被中断", e);
                 }
