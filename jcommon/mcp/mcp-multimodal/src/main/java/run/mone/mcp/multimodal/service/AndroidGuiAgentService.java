@@ -59,8 +59,8 @@ public class AndroidGuiAgentService {
         try {
             String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
             LLM llm = new LLM(LLMConfig.builder()
-                    .llmProvider(LLMProvider.DEEPSEEK)
-                    .temperature(Prompt.deepseek_temperature)
+                    .llmProvider(LLMProvider.DOUBAO_UI_TARS)
+                    .temperature(Prompt.temperature)
                     .thinking(true)
                     .build());
             LLM.LLMCompoundMsg m = LLM.getLlmCompoundMsg(userPrompt,
