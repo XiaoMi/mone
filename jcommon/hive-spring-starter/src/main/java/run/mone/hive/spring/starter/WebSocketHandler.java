@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import javax.annotation.PreDestroy;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -165,6 +166,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     break;
                 case "task":
                     handleTask(clientId, messageMap);
+                    break;
+                case "get_clients":
+                    handleGetClients(clientId);
+                    break;
+                case "send_to_client":
+                    handleSendToClient(clientId, messageMap);
                     break;
                 default:
                     log.warn("Unknown message type: {}", type);
@@ -425,6 +432,92 @@ public class WebSocketHandler extends TextWebSocketHandler {
             );
             sendMessage(clientId, errorResponse);
         }
+    }
+
+    /**
+     * 获取所有已连接的客户端列表
+     */
+    private void handleGetClients(String clientId) {
+        log.info("Getting client list for client: {}", clientId);
+
+        Set<String> clientIds = sessionManager.getActiveClientIds();
+
+        Map<String, Object> response = Map.of(
+                "type", "clients_list",
+                "clients", clientIds.toArray(new String[0]),
+                "count", clientIds.size(),
+                "timestamp", System.currentTimeMillis()
+        );
+        sendMessage(clientId, response);
+    }
+
+    /**
+     * 发送消息给指定的客户端
+     *
+     * 客户端发送格式:
+     * <pre>
+     * {
+     *     "type": "send_to_client",
+     *     "data": {
+     *         "targetClientId": "目标客户端ID",
+     *         "message": "要发送的消息内容"
+     *     }
+     * }
+     * </pre>
+     */
+    @SuppressWarnings("unchecked")
+    private void handleSendToClient(String clientId, Map<String, Object> messageMap) {
+        Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+
+        if (data == null) {
+            sendError(clientId, "Missing data field");
+            return;
+        }
+
+        String targetClientId = (String) data.get("targetClientId");
+        Object messageContent = data.get("message");
+
+        if (targetClientId == null || targetClientId.isEmpty()) {
+            sendError(clientId, "Missing targetClientId");
+            return;
+        }
+
+        if (messageContent == null) {
+            sendError(clientId, "Missing message content");
+            return;
+        }
+
+        log.info("Sending message from {} to {}: {}", clientId, targetClientId, messageContent);
+
+        // 检查目标客户端是否存在
+        if (!sessionManager.isSessionActive(targetClientId)) {
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "send_to_client_error",
+                    "targetClientId", targetClientId,
+                    "error", "Target client not found or disconnected",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+            return;
+        }
+
+        // 发送消息给目标客户端
+        Map<String, Object> targetMessage = Map.of(
+                "type", "message_from_client",
+                "fromClientId", clientId,
+                "message", messageContent,
+                "timestamp", System.currentTimeMillis()
+        );
+        sendMessage(targetClientId, targetMessage);
+
+        // 确认发送成功
+        Map<String, Object> confirmResponse = Map.of(
+                "type", "send_to_client_success",
+                "targetClientId", targetClientId,
+                "message", "Message sent successfully",
+                "timestamp", System.currentTimeMillis()
+        );
+        sendMessage(clientId, confirmResponse);
     }
 
     /**
