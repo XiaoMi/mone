@@ -298,7 +298,7 @@ public class AndroidGuiAgent {
      * @param instruction 任务指令
      * @param sink        Flux Sink
      */
-    public void run2(String instruction, FluxSink<String> sink) {
+    public void executeGuiAutomation(String instruction, FluxSink<String> sink) {
         if (instruction.contains(".finished")) {
             androidGuiAgentService.executeAction(new Gson().toJson(ImmutableMap.of("action", "finished")))
                     .doOnNext(System.out::println)
@@ -417,7 +417,7 @@ public class AndroidGuiAgent {
             array.forEach(it -> {
                 String str = it.getAsString();
                 log.info("执行任务: {}", str);
-                run2(str, sink);
+                executeGuiAutomation(str, sink);
 
                 try {
                     TimeUnit.MILLISECONDS.sleep(2000);
