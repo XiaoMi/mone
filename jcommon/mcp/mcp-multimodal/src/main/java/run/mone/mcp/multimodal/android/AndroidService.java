@@ -17,6 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import run.mone.mcp.multimodal.util.AndroidResponseParser;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -127,6 +129,8 @@ public class AndroidService {
                     // 更新设备缓存
                     if (device.isOnline()) {
                         connectedDevices.put(device.getSerialNumber(), device);
+                        // 初始化屏幕分辨率
+                        initScreenSize(device);
                     }
                 }
 
@@ -276,6 +280,8 @@ public class AndroidService {
                         if (device.getSerialNumber().equals(address) ||
                             device.getSerialNumber().contains(host)) {
                             connectedDevices.put(address, device);
+                            // 初始化屏幕分辨率
+                            initScreenSize(device);
                             log.info("成功连接到设备: {}", address);
                             sink.next("成功连接到设备: " + address);
                             sink.complete();
@@ -755,6 +761,22 @@ public class AndroidService {
         }
         // 默认尺寸
         return new int[]{1080, 1920};
+    }
+
+    /**
+     * 初始化屏幕分辨率到 AndroidResponseParser
+     * 在设备连接成功后调用，确保坐标转换使用正确的屏幕尺寸
+     *
+     * @param device 设备对象
+     */
+    private void initScreenSize(IDevice device) {
+        try {
+            int[] size = getScreenSize(device);
+            AndroidResponseParser.setScreenSize(size[0], size[1]);
+            log.info("已初始化屏幕分辨率: {}x{}", size[0], size[1]);
+        } catch (Exception e) {
+            log.warn("初始化屏幕分辨率失败，使用默认值", e);
+        }
     }
 
     /**
