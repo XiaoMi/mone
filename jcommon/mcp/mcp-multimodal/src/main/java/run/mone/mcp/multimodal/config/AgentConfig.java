@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.UnicastProcessor;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
@@ -12,11 +14,13 @@ import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.mcp.multimodal.function.AndroidFunction;
 import run.mone.mcp.multimodal.function.MultimodalFunction;
+import run.mone.mcp.multimodal.gui.AndroidGuiAgent;
 import run.mone.mcp.multimodal.gui.GuiAgent;
 import run.mone.mcp.multimodal.service.GuiAgentService;
 import run.mone.mcp.multimodal.service.MultimodalService;
 
 import javax.annotation.Resource;
+import java.util.function.Function;
 
 /**
  * 多模态界面操作Agent配置
@@ -160,5 +164,26 @@ public class AgentConfig {
                 ))
                 .checkFinishFunc(msg -> msg.getContent().contains("任务完成:") ? -1 : 1)
                 .build();
+    }
+
+
+    @Bean("sseTaskHandler")
+    public Function<String, String> sseTaskHandler(AndroidGuiAgent androidGuiAgent) {
+        return task -> {
+            new Thread(()->{
+                // 业务处理逻辑
+                UnicastProcessor<String> processor = UnicastProcessor.create();
+                FluxSink<String> sink = processor.sink();
+
+                // 订阅结果输出
+                processor.subscribe(
+                        msg -> System.out.println("[Android Agent] " + msg),
+                        error -> System.err.println("[Error] " + error.getMessage()),
+                        () -> System.out.println("[Android Agent] 任务完成")
+                );
+                androidGuiAgent.run(task, sink);
+            }).start();
+            return "处理结果";
+        };
     }
 } 
