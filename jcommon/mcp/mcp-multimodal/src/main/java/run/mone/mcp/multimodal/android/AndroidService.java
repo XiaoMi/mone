@@ -335,6 +335,198 @@ public class AndroidService {
     }
 
     /**
+     * 在指定坐标执行长按操作
+     * 对应 Action: long_press(point='<point>x1 y1</point>')
+     *
+     * @param x X 坐标
+     * @param y Y 坐标
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> longPress(int x, int y, String deviceSerial) {
+        return longPress(x, y, 1000, deviceSerial);
+    }
+
+    /**
+     * 在指定坐标执行长按操作（可指定时长）
+     *
+     * @param x X 坐标
+     * @param y Y 坐标
+     * @param durationMs 长按持续时间（毫秒）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> longPress(int x, int y, int durationMs, String deviceSerial) {
+        // 长按通过 swipe 实现，起点和终点相同
+        return executeShellCommand(
+            String.format("input swipe %d %d %d %d %d", x, y, x, y, durationMs),
+            deviceSerial,
+            String.format("成功在坐标 (%d, %d) 执行长按 %dms", x, y, durationMs)
+        );
+    }
+
+    /**
+     * 在指定坐标向指定方向滚动
+     * 对应 Action: scroll(point='<point>x1 y1</point>', direction='down or up or right or left')
+     *
+     * @param x 起始 X 坐标
+     * @param y 起始 Y 坐标
+     * @param direction 滚动方向: up, down, left, right
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> scroll(int x, int y, String direction, String deviceSerial) {
+        return scroll(x, y, direction, 300, 300, deviceSerial);
+    }
+
+    /**
+     * 在指定坐标向指定方向滚动（可指定距离和时长）
+     *
+     * @param x 起始 X 坐标
+     * @param y 起始 Y 坐标
+     * @param direction 滚动方向: up, down, left, right
+     * @param distance 滚动距离（像素）
+     * @param durationMs 滚动持续时间（毫秒）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> scroll(int x, int y, String direction, int distance, int durationMs, String deviceSerial) {
+        int endX = x;
+        int endY = y;
+
+        switch (direction.toLowerCase()) {
+            case "up":
+                // 向上滚动：手指向上滑，内容向下移动
+                endY = y - distance;
+                break;
+            case "down":
+                // 向下滚动：手指向下滑，内容向上移动
+                endY = y + distance;
+                break;
+            case "left":
+                // 向左滚动：手指向左滑
+                endX = x - distance;
+                break;
+            case "right":
+                // 向右滚动：手指向右滑
+                endX = x + distance;
+                break;
+            default:
+                return Flux.just("错误: 不支持的滚动方向 '" + direction + "'，支持: up, down, left, right");
+        }
+
+        return executeShellCommand(
+            String.format("input swipe %d %d %d %d %d", x, y, endX, endY, durationMs),
+            deviceSerial,
+            String.format("成功在坐标 (%d, %d) 向 %s 滚动", x, y, direction)
+        );
+    }
+
+    /**
+     * 拖拽操作
+     * 对应 Action: drag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')
+     *
+     * @param startX 起始 X 坐标
+     * @param startY 起始 Y 坐标
+     * @param endX 结束 X 坐标
+     * @param endY 结束 Y 坐标
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> drag(int startX, int startY, int endX, int endY, String deviceSerial) {
+        return drag(startX, startY, endX, endY, 500, deviceSerial);
+    }
+
+    /**
+     * 拖拽操作（可指定时长）
+     *
+     * @param startX 起始 X 坐标
+     * @param startY 起始 Y 坐标
+     * @param endX 结束 X 坐标
+     * @param endY 结束 Y 坐标
+     * @param durationMs 拖拽持续时间（毫秒）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> drag(int startX, int startY, int endX, int endY, int durationMs, String deviceSerial) {
+        return executeShellCommand(
+            String.format("input swipe %d %d %d %d %d", startX, startY, endX, endY, durationMs),
+            deviceSerial,
+            String.format("成功执行拖拽: (%d,%d) -> (%d,%d)", startX, startY, endX, endY)
+        );
+    }
+
+    /**
+     * 通过应用名称打开应用
+     * 对应 Action: open_app(app_name='')
+     * 支持常见应用的中英文名称，如：微信、wechat、qq、抖音 等
+     *
+     * @param appName 应用名称（支持中英文别名）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> openApp(String appName, String deviceSerial) {
+        // 尝试从映射表中查找包名
+        String packageName = APP_NAME_TO_PACKAGE.get(appName.toLowerCase());
+        if (packageName == null) {
+            // 尝试原始名称（区分大小写）
+            packageName = APP_NAME_TO_PACKAGE.get(appName);
+        }
+
+        if (packageName != null) {
+            log.info("通过应用名称 '{}' 找到包名: {}", appName, packageName);
+            return launchApp(packageName, deviceSerial);
+        }
+
+        // 如果映射表中没有，尝试将 appName 当作包名直接使用
+        if (appName.contains(".")) {
+            log.info("将 '{}' 作为包名尝试启动", appName);
+            return launchApp(appName, deviceSerial);
+        }
+
+        // 尝试通过 pm 命令搜索包名
+        return Flux.create(sink -> {
+            try {
+                IDevice device = getDevice(deviceSerial);
+                if (device == null) {
+                    sink.next("错误: 没有可用的设备");
+                    sink.complete();
+                    return;
+                }
+
+                // 搜索包含该名称的包
+                ShellOutputReceiver receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    "pm list packages | grep -i " + appName,
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+
+                String output = receiver.getOutput().trim();
+                if (!output.isEmpty()) {
+                    // 取第一个匹配的包名
+                    String[] lines = output.split("\n");
+                    if (lines.length > 0) {
+                        String foundPackage = lines[0].replace("package:", "").trim();
+                        log.info("通过搜索找到包名: {}", foundPackage);
+                        launchApp(foundPackage, deviceSerial)
+                            .subscribe(sink::next, sink::error, sink::complete);
+                        return;
+                    }
+                }
+
+                sink.next("错误: 无法找到应用 '" + appName + "'，请确认应用名称或使用包名");
+                sink.complete();
+            } catch (Exception e) {
+                log.error("打开应用失败", e);
+                sink.next("打开应用失败: " + e.getMessage());
+                sink.complete();
+            }
+        });
+    }
+
+    /**
      * 输入文字
      *
      * @param text 要输入的文字
@@ -745,6 +937,94 @@ public class AndroidService {
      * ADB Keyboard 输入法 ID
      */
     private static final String ADB_KEYBOARD_IME = "com.android.adbkeyboard/.AdbIME";
+
+    /**
+     * 常见应用名称到包名的映射
+     */
+    private static final Map<String, String> APP_NAME_TO_PACKAGE = new HashMap<>() {{
+        // 社交通讯
+        put("微信", "com.tencent.mm");
+        put("wechat", "com.tencent.mm");
+        put("qq", "com.tencent.mobileqq");
+        put("QQ", "com.tencent.mobileqq");
+        put("钉钉", "com.alibaba.android.rimet");
+        put("dingtalk", "com.alibaba.android.rimet");
+        put("飞书", "com.ss.android.lark");
+        put("lark", "com.ss.android.lark");
+        put("企业微信", "com.tencent.wework");
+        put("whatsapp", "com.whatsapp");
+        put("telegram", "org.telegram.messenger");
+
+        // 浏览器
+        put("chrome", "com.android.chrome");
+        put("谷歌浏览器", "com.android.chrome");
+        put("firefox", "org.mozilla.firefox");
+        put("火狐", "org.mozilla.firefox");
+        put("edge", "com.microsoft.emmx");
+        put("浏览器", "com.android.browser");
+
+        // 视频娱乐
+        put("抖音", "com.ss.android.ugc.aweme");
+        put("douyin", "com.ss.android.ugc.aweme");
+        put("tiktok", "com.zhiliaoapp.musically");
+        put("快手", "com.smile.gifmaker");
+        put("bilibili", "tv.danmaku.bili");
+        put("b站", "tv.danmaku.bili");
+        put("哔哩哔哩", "tv.danmaku.bili");
+        put("youtube", "com.google.android.youtube");
+        put("爱奇艺", "com.qiyi.video");
+        put("优酷", "com.youku.phone");
+        put("腾讯视频", "com.tencent.qqlive");
+
+        // 购物
+        put("淘宝", "com.taobao.taobao");
+        put("taobao", "com.taobao.taobao");
+        put("京东", "com.jingdong.app.mall");
+        put("jd", "com.jingdong.app.mall");
+        put("拼多多", "com.xunmeng.pinduoduo");
+        put("pinduoduo", "com.xunmeng.pinduoduo");
+        put("美团", "com.sankuai.meituan");
+        put("饿了么", "me.ele");
+
+        // 出行
+        put("高德地图", "com.autonavi.minimap");
+        put("amap", "com.autonavi.minimap");
+        put("百度地图", "com.baidu.BaiduMap");
+        put("滴滴", "com.sdu.didi.psnger");
+        put("didi", "com.sdu.didi.psnger");
+
+        // 支付
+        put("支付宝", "com.eg.android.AlipayGphone");
+        put("alipay", "com.eg.android.AlipayGphone");
+
+        // 音乐
+        put("网易云音乐", "com.netease.cloudmusic");
+        put("cloudmusic", "com.netease.cloudmusic");
+        put("qq音乐", "com.tencent.qqmusic");
+        put("酷狗音乐", "com.kugou.android");
+        put("spotify", "com.spotify.music");
+
+        // 工具
+        put("相机", "com.android.camera");
+        put("camera", "com.android.camera");
+        put("相册", "com.android.gallery3d");
+        put("gallery", "com.android.gallery3d");
+        put("设置", "com.android.settings");
+        put("settings", "com.android.settings");
+        put("时钟", "com.android.deskclock");
+        put("clock", "com.android.deskclock");
+        put("计算器", "com.android.calculator2");
+        put("calculator", "com.android.calculator2");
+        put("日历", "com.android.calendar");
+        put("calendar", "com.android.calendar");
+        put("文件管理", "com.android.filemanager");
+        put("通讯录", "com.android.contacts");
+        put("contacts", "com.android.contacts");
+        put("电话", "com.android.dialer");
+        put("phone", "com.android.dialer");
+        put("短信", "com.android.mms");
+        put("messages", "com.android.mms");
+    }};
 
     /**
      * 使用 ADB Keyboard 输入文字的完整流程
