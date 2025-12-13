@@ -12,12 +12,16 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import javax.annotation.PreDestroy;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * WebSocket 处理器
@@ -47,6 +51,35 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     // 用于在 session attributes 中存储 clientId 的 key
     private static final String CLIENT_ID_ATTRIBUTE = "clientId";
+
+    // 业务方注入的任务处理函数
+    private Function<Map<String, Object>,String> taskHandler;
+
+    /**
+     * 设置任务处理函数（Spring 自动注入）
+     * 业务方只需定义一个名为 "wsTaskHandler" 的 Bean 即可自动注入
+     *
+     * 示例:
+     * <pre>
+     * {@code
+     * @Bean("wsTaskHandler")
+     * public Function<String, String> wsTaskHandler() {
+     *     return task -> {
+     *         // 业务处理逻辑
+     *         return "处理结果";
+     *     };
+     * }
+     * }
+     * </pre>
+     *
+     * @param taskHandler 任务处理函数，接收任务描述字符串，返回处理结果
+     */
+    @Autowired(required = false)
+    @Qualifier("wsTaskHandler")
+    public void setTaskHandler(Function<Map<String, Object>, String> taskHandler) {
+        this.taskHandler = taskHandler;
+        log.info("WebSocketHandler taskHandler injected: {}", taskHandler != null);
+    }
 
     /**
      * 连接建立成功时调用
@@ -129,6 +162,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     break;
                 case "call_error":
                     handleCallError(messageMap);
+                    break;
+                case "task":
+                    handleTask(clientId, messageMap);
                     break;
                 default:
                     log.warn("Unknown message type: {}", type);
@@ -319,6 +355,76 @@ public class WebSocketHandler extends TextWebSocketHandler {
         log.error("Received call error for resId: {}, error: {}", resId, errorMessage);
 
         WebSocketCaller.getInstance().handleError(resId, errorMessage != null ? errorMessage : "Unknown error");
+    }
+
+    /**
+     * 处理任务请求
+     * 调用业务方注入的 taskHandler 处理任务
+     *
+     * 客户端发送格式:
+     * <pre>
+     * {
+     *     "type": "task",
+     *     "data": {
+     *         "task": "你想让agent干的事情"
+     *     }
+     * }
+     * </pre>
+     */
+    @SuppressWarnings("unchecked")
+    private void handleTask(String clientId, Map<String, Object> messageMap) {
+        Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+        String task = data != null ? (String) data.get("task") : null;
+
+        log.info("Processing task for client {}: {}", clientId, task);
+
+        if (taskHandler == null) {
+            log.warn("TaskHandler not configured");
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "task_error",
+                    "error", "TaskHandler not configured, please inject a Function<String, String> Bean named 'wsTaskHandler'",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+            return;
+        }
+
+        if (task == null || task.isEmpty()) {
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "task_error",
+                    "error", "Task content is empty",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+            return;
+        }
+
+        try {
+            long startTime = System.currentTimeMillis();
+            String result = taskHandler.apply(data);
+            long duration = System.currentTimeMillis() - startTime;
+
+            log.info("Task completed for client {}, duration: {}ms", clientId, duration);
+
+            Map<String, Object> response = Map.of(
+                    "type", "task_response",
+                    "task", task,
+                    "result", result != null ? result : "",
+                    "duration", duration,
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, response);
+
+        } catch (Exception e) {
+            log.error("Task execution failed for client {}: {}", clientId, task, e);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "task_error",
+                    "task", task,
+                    "error", e.getMessage() != null ? e.getMessage() : "Unknown error",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+        }
     }
 
     /**

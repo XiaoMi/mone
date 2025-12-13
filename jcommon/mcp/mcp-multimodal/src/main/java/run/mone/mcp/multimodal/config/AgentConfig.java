@@ -20,6 +20,7 @@ import run.mone.mcp.multimodal.service.GuiAgentService;
 import run.mone.mcp.multimodal.service.MultimodalService;
 
 import javax.annotation.Resource;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -170,7 +171,7 @@ public class AgentConfig {
     @Bean("sseTaskHandler")
     public Function<String, String> sseTaskHandler(AndroidGuiAgent androidGuiAgent) {
         return task -> {
-            new Thread(()->{
+            new Thread(() -> {
                 // 业务处理逻辑
                 UnicastProcessor<String> processor = UnicastProcessor.create();
                 FluxSink<String> sink = processor.sink();
@@ -186,4 +187,15 @@ public class AgentConfig {
             return "处理结果";
         };
     }
-} 
+
+    //处理ws
+    @Bean("wsTaskHandler")
+    public Function<Map<String, Object>, String> wsTaskHandler() {
+        return data -> {
+            // 业务处理逻辑
+            log.info("req:{}", data);
+
+            return "处理结果";
+        };
+    }
+}
