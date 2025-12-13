@@ -10,6 +10,7 @@ import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.AskTool;
 import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
+import run.mone.mcp.multimodal.function.AndroidFunction;
 import run.mone.mcp.multimodal.function.MultimodalFunction;
 import run.mone.mcp.multimodal.gui.GuiAgent;
 import run.mone.mcp.multimodal.service.GuiAgentService;
@@ -44,6 +45,9 @@ public class AgentConfig {
     @Resource
     private GuiAgent guiAgent;
 
+    @Resource
+    private AndroidFunction androidFunction;
+
     /**
      * 判断是否为 Android 操作员模式
      */
@@ -77,10 +81,10 @@ public class AgentConfig {
                         new AskTool(),
                         new AttemptCompletionTool()
                 ))
-                //mcp工具
+                //mcp工具 - Android 模式使用 AndroidFunction
                 .mcpTools(Lists.newArrayList(
                         new ChatFunction(agentName, 20),
-                        new MultimodalFunction(multimodalService, guiAgent)
+                        androidFunction
                 ))
                 .checkFinishFunc(msg -> msg.getContent().contains("发送结果:") || msg.getContent().contains("任务完成:") ? -1 : 1)
                 .build();

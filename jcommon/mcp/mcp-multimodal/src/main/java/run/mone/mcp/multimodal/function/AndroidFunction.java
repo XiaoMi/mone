@@ -7,6 +7,7 @@ import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.multimodal.android.AndroidService;
+import run.mone.mcp.multimodal.gui.AndroidGuiAgent;
 
 import java.util.List;
 import java.util.Map;
@@ -23,10 +24,12 @@ import java.util.Map;
 public class AndroidFunction implements McpFunction {
 
     private final AndroidService androidService;
+    private final AndroidGuiAgent androidGuiAgent;
 
     @Autowired
-    public AndroidFunction(AndroidService androidService) {
+    public AndroidFunction(AndroidService androidService, AndroidGuiAgent androidGuiAgent) {
         this.androidService = androidService;
+        this.androidGuiAgent = androidGuiAgent;
     }
 
     private static final String TOOL_SCHEMA = """
@@ -35,8 +38,12 @@ public class AndroidFunction implements McpFunction {
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["click", "longPress", "type", "scroll", "drag", "openApp", "pressHome", "pressBack", "screenshot", "screenshotBase64", "connect", "disconnect", "getDevices", "launchApp", "forceStopApp"],
-                        "description": "要执行的操作类型: click=点击, longPress=长按, type=输入文字(支持中文), scroll=滚动, drag=拖拽, openApp=通过应用名打开应用, pressHome=按Home键, pressBack=按返回键, screenshot=截图保存文件, screenshotBase64=截图返回Base64, connect=连接设备, disconnect=断开设备, getDevices=获取设备列表, launchApp=通过包名启动应用, forceStopApp=强制停止应用"
+                        "enum": ["runAndroidGuiAgent", "click", "longPress", "type", "scroll", "drag", "openApp", "pressHome", "pressBack", "screenshot", "screenshotBase64", "connect", "disconnect", "getDevices", "launchApp", "forceStopApp"],
+                        "description": "要执行的操作类型: runAndroidGuiAgent=执行Android GUI Agent指令(内部会自动截图分析并执行), click=点击, longPress=长按, type=输入文字(支持中文), scroll=滚动, drag=拖拽, openApp=通过应用名打开应用, pressHome=按Home键, pressBack=按返回键, screenshot=截图保存文件, screenshotBase64=截图返回Base64, connect=连接设备, disconnect=断开设备, getDevices=获取设备列表, launchApp=通过包名启动应用, forceStopApp=强制停止应用"
+                    },
+                    "instruction": {
+                        "type": "string",
+                        "description": "用户指令，用于 runAndroidGuiAgent 操作，Agent会自动截图分析并执行操作"
                     },
                     "x": {
                         "type": "integer",
@@ -115,6 +122,11 @@ public class AndroidFunction implements McpFunction {
 
         try {
             Flux<String> result = switch (operation) {
+                // 运行 Android GUI Agent
+                case "runAndroidGuiAgent" -> runAndroidGuiAgent(
+                        (String) arguments.get("instruction"),
+                        deviceSerial);
+
                 // 点击操作
                 case "click" -> androidService.tap(
                         parseIntArg(arguments, "x"),
@@ -264,6 +276,37 @@ public class AndroidFunction implements McpFunction {
         }
     }
 
+    /**
+     * 运行 Android GUI Agent
+     *
+     * @param instruction  用户指令
+     * @param deviceSerial 设备序列号
+     * @return 执行结果流
+     */
+    private Flux<String> runAndroidGuiAgent(String instruction, String deviceSerial) {
+        if (instruction == null || instruction.isEmpty()) {
+            return Flux.error(new IllegalArgumentException("指令不能为空"));
+        }
+
+        return Flux.create(sink -> {
+            try {
+                sink.next("准备执行 Android GUI Agent\n");
+
+                // 设置目标设备
+                if (deviceSerial != null && !deviceSerial.isEmpty()) {
+                    androidGuiAgent.setDeviceSerial(deviceSerial);
+                    sink.next("目标设备: " + deviceSerial + "\n");
+                }
+
+                sink.next("开始执行 Android GUI Agent 任务\n");
+                androidGuiAgent.run(instruction, sink);
+            } catch (Exception e) {
+                log.error("执行 Android GUI Agent 失败", e);
+                sink.error(new RuntimeException("执行失败: " + e.getMessage(), e));
+            }
+        });
+    }
+
     @Override
     public String getName() {
         return "stream_android";
@@ -272,7 +315,8 @@ public class AndroidFunction implements McpFunction {
     @Override
     public String getDesc() {
         return "Android 设备操作工具，支持通过 ADB 控制 Android 设备。" +
-                "功能包括：点击(click)、长按(longPress)、输入文字(type，支持中文)、" +
+                "功能包括：runAndroidGuiAgent(执行GUI Agent指令，自动截图分析并执行)、" +
+                "点击(click)、长按(longPress)、输入文字(type，支持中文)、" +
                 "滚动(scroll)、拖拽(drag)、打开应用(openApp)、按键(pressHome/pressBack)、" +
                 "截图(screenshot/screenshotBase64)、设备管理(connect/disconnect/getDevices)等。";
     }
