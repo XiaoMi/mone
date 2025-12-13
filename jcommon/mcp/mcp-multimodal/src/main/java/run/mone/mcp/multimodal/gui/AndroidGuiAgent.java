@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.mcp.multimodal.config.Prompt;
 import run.mone.mcp.multimodal.service.AndroidGuiAgentService;
 
@@ -127,7 +128,8 @@ public class AndroidGuiAgent {
 
                 """.formatted(instruction);
 
-        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "").block();
+        // 使用 DOUBAO_VISION 生成任务列表
+        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
         log.warn("模型输出: {}", modelOutput);
         modelOutput = extractJsonArray(modelOutput);
         return modelOutput;

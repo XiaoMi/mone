@@ -48,7 +48,7 @@ public class AndroidGuiAgentService {
     }
 
     /**
-     * 运行 GUI Agent 分析 Android 截图
+     * 运行 GUI Agent 分析 Android 截图（使用默认模型 DOUBAO_UI_TARS）
      *
      * @param imagePath    截图路径
      * @param userPrompt   用户指令
@@ -56,10 +56,25 @@ public class AndroidGuiAgentService {
      * @return 模型响应
      */
     public Mono<String> run(String imagePath, String userPrompt, String systemPrompt) {
+        return run(imagePath, userPrompt, systemPrompt, LLMProvider.DOUBAO_UI_TARS);
+    }
+
+    /**
+     * 运行 GUI Agent 分析 Android 截图（指定模型类型）
+     * - 生成任务列表时使用 DOUBAO_VISION
+     * - 执行具体操作时使用 DOUBAO_UI_TARS
+     *
+     * @param imagePath    截图路径
+     * @param userPrompt   用户指令
+     * @param systemPrompt 系统提示词
+     * @param llmProvider  模型提供者
+     * @return 模型响应
+     */
+    public Mono<String> run(String imagePath, String userPrompt, String systemPrompt, LLMProvider llmProvider) {
         try {
             String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
             LLM llm = new LLM(LLMConfig.builder()
-                    .llmProvider(LLMProvider.DOUBAO_UI_TARS)
+                    .llmProvider(llmProvider)
                     .temperature(Prompt.temperature)
                     .thinking(true)
                     .build());
@@ -68,10 +83,11 @@ public class AndroidGuiAgentService {
                             .images(Lists.newArrayList(base64Image))
                             .build());
             m.setImageType("png");
+            log.info("使用模型: {} 分析截图", llmProvider);
             Flux<String> flux = llm.compoundMsgCall(m, systemPrompt);
             return flux.collect(Collectors.joining());
         } catch (Exception e) {
-            log.error("运行 Android GUI Agent 失败", e);
+            log.error("运行 Android GUI Agent 失败, 模型: {}", llmProvider, e);
             return Mono.error(e);
         }
     }
