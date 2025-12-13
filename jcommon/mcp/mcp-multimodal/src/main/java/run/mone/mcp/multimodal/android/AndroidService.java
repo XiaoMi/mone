@@ -5,6 +5,7 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.RawImage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -45,24 +46,100 @@ public class AndroidService {
     private static final long DEFAULT_TIMEOUT_MS = 30000;
     private static final long COMMAND_TIMEOUT_MS = 10000;
 
+    /**
+     * 远程 Android 设备 IP 地址
+     * 可通过环境变量 ANDROID_DEVICE_HOST 或配置 android.device.host 设置
+     */
+    @Value("${android.device.host:#{systemEnvironment['ANDROID_DEVICE_HOST'] ?: ''}}")
+    private String deviceHost;
+
+    /**
+     * 远程 Android 设备端口
+     * 可通过环境变量 ANDROID_DEVICE_PORT 或配置 android.device.port 设置
+     */
+    @Value("${android.device.port:#{systemEnvironment['ANDROID_DEVICE_PORT'] ?: '5555'}}")
+    private String devicePort;
+
+    /**
+     * 是否自动连接远程设备
+     */
+    @Value("${android.device.auto-connect:true}")
+    private boolean autoConnect;
+
     @PostConstruct
     public void init() {
         try {
-            // 初始化 ADB
+            // 1. 初始化 ADB
+            log.info("1. 初始化 Android Debug Bridge...");
             AndroidDebugBridge.init(false);
 
-            // 查找 adb 路径
+            // 2. 查找 adb 路径
             String adbPath = findAdbPath();
             if (adbPath == null) {
                 log.error("无法找到 adb，请确保 ANDROID_HOME 环境变量已设置或 adb 在 PATH 中");
                 return;
             }
 
-            log.info("使用 adb 路径: {}", adbPath);
-            bridge = AndroidDebugBridge.createBridge(adbPath, false);
+            log.info("   ADB 路径: {}", adbPath);
 
-            // 等待设备列表
+            // 3. 创建 Bridge
+            bridge = AndroidDebugBridge.createBridge(adbPath, false);
             waitForDeviceList();
+
+            // 4. 连接远程设备（如果配置了）
+            if (autoConnect && deviceHost != null && !deviceHost.isEmpty()) {
+                int port = 5555;
+                try {
+                    port = Integer.parseInt(devicePort);
+                } catch (NumberFormatException e) {
+                    log.warn("无效的端口号: {}，使用默认端口 5555", devicePort);
+                }
+
+                String address = deviceHost + ":" + port;
+                log.info("2. 连接到远程设备: {}", address);
+
+                ProcessBuilder pb = new ProcessBuilder(adbPath, "connect", address);
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.info("   {}", line);
+                }
+                process.waitFor();
+
+                // 等待设备连接
+                Thread.sleep(2000);
+
+                // 5. 获取设备
+                log.info("3. 获取已连接的设备...");
+                IDevice[] devices = bridge.getDevices();
+                log.info("   找到 {} 个设备", devices.length);
+
+                for (IDevice device : devices) {
+                    log.info("   - {} [{}] {}",
+                            device.getSerialNumber(),
+                            device.getState(),
+                            device.isOnline() ? "(在线)" : "(离线)");
+
+                    // 更新设备缓存
+                    if (device.isOnline()) {
+                        connectedDevices.put(device.getSerialNumber(), device);
+                    }
+                }
+
+                if (connectedDevices.isEmpty()) {
+                    log.warn("没有找到在线的设备，请确保设备已开启无线调试");
+                }
+            } else {
+                log.info("未配置远程设备地址，跳过自动连接");
+                log.info("可通过以下方式配置：");
+                log.info("  - 环境变量: ANDROID_DEVICE_HOST=<设备IP>");
+                log.info("  - 配置文件: android.device.host=<设备IP>");
+            }
+
             initialized = true;
             log.info("Android Debug Bridge 初始化成功");
         } catch (Exception e) {

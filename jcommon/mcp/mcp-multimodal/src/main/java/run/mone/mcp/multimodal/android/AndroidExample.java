@@ -43,7 +43,7 @@ public class AndroidExample {
     public static void main(String[] args) {
         // 远程设备地址（根据实际情况修改）
         String deviceHost = System.getenv("deviceHost");
-        int devicePort = 37369;
+        int devicePort = 42573;
 
         // 如果命令行传入参数
         if (args.length >= 1) {

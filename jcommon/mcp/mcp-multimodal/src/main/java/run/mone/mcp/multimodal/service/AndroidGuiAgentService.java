@@ -14,7 +14,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.multimodal.android.AndroidService;
 import run.mone.mcp.multimodal.config.Prompt;
-import run.mone.mcp.multimodal.util.ActionResponseParser;
+import run.mone.mcp.multimodal.util.AndroidResponseParser;
 import run.mone.mcp.multimodal.util.ImageProcessingUtil;
 
 import java.util.stream.Collectors;
@@ -59,8 +59,8 @@ public class AndroidGuiAgentService {
         try {
             String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
             LLM llm = new LLM(LLMConfig.builder()
-                    .llmProvider(LLMProvider.DOUBAO_UI_TARS)
-                    .temperature(Prompt.temperature)
+                    .llmProvider(LLMProvider.DEEPSEEK)
+                    .temperature(Prompt.deepseek_temperature)
                     .thinking(true)
                     .build());
             LLM.LLMCompoundMsg m = LLM.getLlmCompoundMsg(userPrompt,
@@ -83,7 +83,7 @@ public class AndroidGuiAgentService {
      * @return 解析后的 JSON 字符串
      */
     public String parseActionOutput(String modelResponse) {
-        return ActionResponseParser.parseActionOutput(modelResponse);
+        return AndroidResponseParser.parseActionOutput(modelResponse);
     }
 
     /**

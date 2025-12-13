@@ -3,6 +3,7 @@ package run.mone.mcp.multimodal.gui;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.UnicastProcessor;
 import run.mone.mcp.multimodal.android.AndroidService;
@@ -24,7 +25,7 @@ import javax.annotation.PostConstruct;
  */
 @Slf4j
 @RequiredArgsConstructor
-//@Service  // 取消注释以启用自动运行
+@Service  // 取消注释以启用自动运行
 public class AndroidGuiAgentExample {
 
     private final AndroidService androidService;

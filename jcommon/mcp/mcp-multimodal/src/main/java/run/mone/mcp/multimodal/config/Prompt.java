@@ -67,6 +67,8 @@ public class Prompt {
 
     public static double temperature = 0;
 
+    public static double deepseek_temperature = 0.7;
+
     public static double top_p = 0.7f;
 
 }
