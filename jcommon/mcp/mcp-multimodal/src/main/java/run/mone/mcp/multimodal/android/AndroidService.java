@@ -742,6 +742,95 @@ public class AndroidService {
     }
 
     /**
+     * ADB Keyboard 输入法 ID
+     */
+    private static final String ADB_KEYBOARD_IME = "com.android.adbkeyboard/.AdbIME";
+
+    /**
+     * 使用 ADB Keyboard 输入文字的完整流程
+     * 操作步骤：
+     * 1. 查询当前默认输入法
+     * 2. 切换到 ADB Keyboard 输入法
+     * 3. 输入内容
+     * 4. 切换回原来的输入法
+     *
+     * @param text 要输入的文字（支持中文和特殊字符）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> inputTextWithImeSwitching(String text, String deviceSerial) {
+        return Flux.create(sink -> {
+            try {
+                IDevice device = getDevice(deviceSerial);
+                if (device == null) {
+                    sink.next("错误: 没有可用的设备");
+                    sink.complete();
+                    return;
+                }
+
+                // 1. 获取当前默认输入法
+                ShellOutputReceiver receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    "settings get secure default_input_method",
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+                String originalIme = receiver.getOutput().trim();
+                log.info("当前输入法: {}", originalIme);
+
+                // 2. 切换到 ADB Keyboard 输入法
+                receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    "ime set " + ADB_KEYBOARD_IME,
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+                log.info("已切换到 ADB Keyboard 输入法");
+
+                // 等待输入法切换完成
+                Thread.sleep(200);
+
+                // 3. 使用 ADB Keyboard 输入文字
+                String base64Text = Base64.getEncoder().encodeToString(
+                    text.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                );
+                receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    String.format("am broadcast -a ADB_INPUT_B64 --es msg %s", base64Text),
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+                log.info("已输入文字: {}", text.length() > 20 ? text.substring(0, 20) + "..." : text);
+
+                // 等待输入完成
+                Thread.sleep(200);
+
+                // 4. 切换回原来的输入法
+                if (originalIme != null && !originalIme.isEmpty() && !originalIme.equals("null")) {
+                    receiver = new ShellOutputReceiver();
+                    device.executeShellCommand(
+                        "ime set " + originalIme,
+                        receiver,
+                        COMMAND_TIMEOUT_MS,
+                        TimeUnit.MILLISECONDS
+                    );
+                    log.info("已切换回原输入法: {}", originalIme);
+                }
+
+                sink.next("成功输入文字: " + (text.length() > 20 ? text.substring(0, 20) + "..." : text));
+                sink.complete();
+            } catch (Exception e) {
+                log.error("输入文字失败", e);
+                sink.next("输入文字失败: " + e.getMessage());
+                sink.complete();
+            }
+        });
+    }
+
+    /**
      * 按下返回键
      */
     public Flux<String> pressBack(String deviceSerial) {
