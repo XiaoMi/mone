@@ -31,6 +31,43 @@ public class AndroidResponseParser {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * 设备屏幕宽度（默认 1080）
+     */
+    private static int screenWidth = 1080;
+
+    /**
+     * 设备屏幕高度（默认 2400）
+     */
+    private static int screenHeight = 2400;
+
+    /**
+     * 设置设备屏幕尺寸
+     * 用于将相对坐标(0-1000)转换为设备屏幕绝对坐标
+     *
+     * @param width  屏幕宽度
+     * @param height 屏幕高度
+     */
+    public static void setScreenSize(int width, int height) {
+        screenWidth = width;
+        screenHeight = height;
+        log.info("设置屏幕尺寸: {}x{}", width, height);
+    }
+
+    /**
+     * 获取当前设置的屏幕宽度
+     */
+    public static int getScreenWidth() {
+        return screenWidth;
+    }
+
+    /**
+     * 获取当前设置的屏幕高度
+     */
+    public static int getScreenHeight() {
+        return screenHeight;
+    }
+
+    /**
      * 解析模型输出文本为结构化的 JSON 格式
      *
      * @param outputText 模型原始输出文本
@@ -163,6 +200,11 @@ public class AndroidResponseParser {
      * 解析 point 参数
      * 支持格式: point='<point>x y</point>'
      *
+     * 坐标转换说明：
+     * - 模型返回的是相对坐标(0-1000)，左上角(0,0)，右下角(1000,1000)
+     * - 需要转换为设备屏幕的绝对坐标
+     * - 转换公式：screenX = relativeX / 1000.0 * screenWidth
+     *
      * @param paramsText 参数文本
      * @param paramName  参数名称 (point, start_point, end_point)
      * @param result     结果对象
@@ -175,14 +217,48 @@ public class AndroidResponseParser {
 
         if (matcher.find()) {
             try {
-                int x = Integer.parseInt(matcher.group(1));
-                int y = Integer.parseInt(matcher.group(2));
-                result.putArray(paramName).add(x).add(y);
-                log.debug("解析 {} 坐标: ({}, {})", paramName, x, y);
+                int relativeX = Integer.parseInt(matcher.group(1));
+                int relativeY = Integer.parseInt(matcher.group(2));
+
+                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                int absoluteX = (int) (relativeX / 1000.0 * screenWidth);
+                int absoluteY = (int) (relativeY / 1000.0 * screenHeight);
+
+                result.putArray(paramName).add(absoluteX).add(absoluteY);
+                log.debug("解析 {} 坐标: 相对({}, {}) -> 绝对({}, {})",
+                        paramName, relativeX, relativeY, absoluteX, absoluteY);
             } catch (NumberFormatException e) {
                 log.warn("解析 {} 坐标失败: {}", paramName, e.getMessage());
             }
         }
+    }
+
+    /**
+     * 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+     *
+     * @param relativeX 相对 X 坐标 (0-1000)
+     * @param relativeY 相对 Y 坐标 (0-1000)
+     * @return int[] 包含 [absoluteX, absoluteY]
+     */
+    public static int[] relativeToAbsoluteCoordinates(int relativeX, int relativeY) {
+        int absoluteX = (int) (relativeX / 1000.0 * screenWidth);
+        int absoluteY = (int) (relativeY / 1000.0 * screenHeight);
+        return new int[]{absoluteX, absoluteY};
+    }
+
+    /**
+     * 将相对坐标(0-1000)转换为设备屏幕绝对坐标（指定屏幕尺寸）
+     *
+     * @param relativeX 相对 X 坐标 (0-1000)
+     * @param relativeY 相对 Y 坐标 (0-1000)
+     * @param width     屏幕宽度
+     * @param height    屏幕高度
+     * @return int[] 包含 [absoluteX, absoluteY]
+     */
+    public static int[] relativeToAbsoluteCoordinates(int relativeX, int relativeY, int width, int height) {
+        int absoluteX = (int) (relativeX / 1000.0 * width);
+        int absoluteY = (int) (relativeY / 1000.0 * height);
+        return new int[]{absoluteX, absoluteY};
     }
 
     /**

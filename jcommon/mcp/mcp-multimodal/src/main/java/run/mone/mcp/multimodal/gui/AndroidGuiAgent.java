@@ -124,39 +124,71 @@ public class AndroidGuiAgent {
 
                 需求: %s
 
-                返回: (必须是json array格式，每一步都要明确标注操作类型和参数)
+                返回: (必须是json array格式，每一步都要明确标注操作类型,但不需要你提供任何参数,尤其是x,y),并且需要把这个结果用<list></list>标签所包裹
 
                 """.formatted(instruction);
 
         // 使用 DOUBAO_VISION 生成任务列表
         String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
-        log.warn("模型输出: {}", modelOutput);
+        log.info("模型输出: {}", modelOutput);
         modelOutput = extractJsonArray(modelOutput);
         return modelOutput;
     }
 
     /**
      * 从字符串中提取 JSON 数组
+     * 优先从 <list></list> 标签中提取，如果没有则直接查找 JSON 数组
      *
      * @param input 输入字符串
      * @return JSON 数组字符串
      */
     public static String extractJsonArray(String input) {
         if (input == null) return null;
-        int start = input.indexOf('[');
+
+        // 优先从 <list></list> 标签中提取内容
+        String content = extractFromListTag(input);
+        if (content == null) {
+            content = input;
+        }
+
+        // 从内容中提取 JSON 数组
+        int start = content.indexOf('[');
         while (start != -1) {
             int count = 0;
-            for (int i = start; i < input.length(); i++) {
-                char c = input.charAt(i);
+            for (int i = start; i < content.length(); i++) {
+                char c = content.charAt(i);
                 if (c == '[') count++;
                 else if (c == ']') count--;
                 if (count == 0 && c == ']') {
-                    return input.substring(start, i + 1);
+                    return content.substring(start, i + 1);
                 }
             }
-            start = input.indexOf('[', start + 1);
+            start = content.indexOf('[', start + 1);
         }
         return null;
+    }
+
+    /**
+     * 从 <list></list> 标签中提取内容（只提取最后一组标签）
+     *
+     * @param input 输入字符串
+     * @return 标签内的内容，如果没有找到则返回 null
+     */
+    private static String extractFromListTag(String input) {
+        if (input == null) return null;
+
+        String startTag = "<list>";
+        String endTag = "</list>";
+
+        // 找最后一个 </list> 标签
+        int endIndex = input.lastIndexOf(endTag);
+        if (endIndex == -1) return null;
+
+        // 在 </list> 之前找最近的 <list> 标签
+        int startIndex = input.lastIndexOf(startTag, endIndex);
+        if (startIndex == -1) return null;
+
+        return input.substring(startIndex + startTag.length(), endIndex).trim();
     }
 
     /**
