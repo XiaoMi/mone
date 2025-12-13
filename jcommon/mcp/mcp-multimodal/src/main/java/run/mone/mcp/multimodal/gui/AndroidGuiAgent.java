@@ -139,6 +139,149 @@ public class AndroidGuiAgent {
     }
 
     /**
+     * 纠正任务列表
+     * 根据当前截图、已有任务列表和当前任务，判断是否需要生成新的任务列表
+     *
+     * 使用场景：
+     * - 当前任务与当前页面不匹配时（如页面跳转异常、弹窗干扰等）
+     * - 需要根据实际页面状态调整后续任务
+     *
+     * @param originalTaskList 原始任务列表（JSON 数组字符串）
+     * @param currentTaskIndex 当前执行到的任务索引（从0开始）
+     * @param currentTask      当前正在执行的任务描述
+     * @param originalGoal     原始目标/需求
+     * @return 新的任务列表（JSON 数组字符串），如果不需要纠正则返回空字符串 ""
+     */
+    public String correctTaskList(String originalTaskList, int currentTaskIndex, String currentTask, String originalGoal) {
+        // 从 Android 设备截图
+        String imagePath = androidGuiAgentService.captureScreenshot(null).blockFirst();
+        log.info("纠正任务 - 截图路径: {}", imagePath);
+
+        String prompt = """
+                ## 任务：判断当前页面状态是否与预期任务匹配，如果不匹配则生成新的任务列表
+
+                ## 背景信息：
+                - 原始目标: %s
+                - 原始任务列表: %s
+                - 当前执行到第 %d 个任务（从1开始）
+                - 当前任务描述: %s
+
+                ## 你需要做的：
+                1. 仔细观察当前 Android 设备截图
+                2. 判断当前页面状态是否与"当前任务描述"匹配
+                3. 如果匹配（页面状态正常，可以继续执行当前任务）：
+                   - 返回: <need_correct>false</need_correct>
+                4. 如果不匹配（页面状态异常，需要调整任务）：
+                   - 分析当前页面实际状态
+                   - 根据原始目标，生成从当前页面状态到完成目标的新任务列表
+                   - 返回: <need_correct>true</need_correct>
+                   - 并提供新的任务列表，用 <list></list> 包裹
+
+                ## 常见需要纠正的情况：
+                - 出现了意外弹窗（广告、权限请求、登录提示等）
+                - 页面加载失败或超时
+                - 点击位置错误导致进入了错误页面
+                - 应用崩溃或返回了主屏幕
+                - 网络错误提示
+
+                ## 返回格式示例：
+
+                ### 不需要纠正时：
+                <need_correct>false</need_correct>
+
+                ### 需要纠正时：
+                <need_correct>true</need_correct>
+                <reason>发现页面出现了登录弹窗，需要先关闭弹窗再继续</reason>
+                <list>
+                [
+                "1.点击弹窗右上角的关闭按钮 (click, 关闭登录弹窗)",
+                "2.继续原任务：%s",
+                ...后续任务...
+                ]
+                </list>
+
+                ## 支持的操作类型：
+                click, long_press, type, scroll, open_app, drag, press_home, press_back, finished, message
+
+                请根据截图分析并返回结果：
+                """.formatted(
+                        originalGoal,
+                        originalTaskList,
+                        currentTaskIndex + 1,
+                        currentTask,
+                        currentTask
+                );
+
+        // 使用 DOUBAO_VISION 分析页面状态
+        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
+        log.info("纠正任务 - 模型输出: {}", modelOutput);
+
+        // 解析是否需要纠正
+        boolean needCorrect = parseNeedCorrect(modelOutput);
+
+        if (!needCorrect) {
+            log.info("纠正任务 - 不需要纠正，继续执行原任务");
+            return "";
+        }
+
+        // 需要纠正，提取新的任务列表
+        String newTaskList = extractJsonArray(modelOutput);
+        if (newTaskList != null && !newTaskList.isEmpty()) {
+            log.info("纠正任务 - 生成新任务列表: {}", newTaskList);
+
+            // 提取纠正原因
+            String reason = extractCorrectionReason(modelOutput);
+            if (reason != null && !reason.isEmpty()) {
+                log.info("纠正原因: {}", reason);
+            }
+
+            return newTaskList;
+        }
+
+        log.warn("纠正任务 - 需要纠正但未能生成新任务列表");
+        return "";
+    }
+
+    /**
+     * 解析模型输出中是否需要纠正
+     *
+     * @param modelOutput 模型输出
+     * @return true 需要纠正，false 不需要纠正
+     */
+    private boolean parseNeedCorrect(String modelOutput) {
+        if (modelOutput == null) return false;
+
+        // 查找 <need_correct>true</need_correct> 或 <need_correct>false</need_correct>
+        Pattern pattern = Pattern.compile("<need_correct>\\s*(true|false)\\s*</need_correct>", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(modelOutput);
+
+        if (matcher.find()) {
+            return "true".equalsIgnoreCase(matcher.group(1).trim());
+        }
+
+        // 如果没有找到标签，检查是否包含新的任务列表作为备用判断
+        return modelOutput.contains("<list>") && modelOutput.contains("</list>");
+    }
+
+    /**
+     * 提取纠正原因
+     *
+     * @param modelOutput 模型输出
+     * @return 纠正原因，如果没有则返回 null
+     */
+    private String extractCorrectionReason(String modelOutput) {
+        if (modelOutput == null) return null;
+
+        Pattern pattern = Pattern.compile("<reason>(.+?)</reason>", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(modelOutput);
+
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+        return null;
+    }
+
+    /**
      * 从字符串中提取 JSON 数组
      * 优先从 <list></list> 标签中提取，如果没有则直接查找 JSON 数组
      * 如果都没有找到，尝试将逗号分隔的字符串转换为 JSON 数组
@@ -412,28 +555,78 @@ public class AndroidGuiAgent {
             return "error";
         }
 
-        try {
-            JsonArray array = JsonParser.parseString(s).getAsJsonArray();
-            array.forEach(it -> {
-                String str = it.getAsString();
-                log.info("执行任务: {}", str);
-                executeGuiAutomation(str, sink);
+        // 执行任务列表（带纠正逻辑）
+        executeTaskListWithCorrection(s, instruction, sink, 0);
 
+        return "finish";
+    }
+
+    /**
+     * 执行任务列表（带纠正逻辑）
+     * 在执行每个任务前检查是否需要纠正，如果需要则切换到新的任务列表
+     *
+     * @param taskListJson   任务列表 JSON 字符串
+     * @param originalGoal   原始目标
+     * @param sink           Flux Sink
+     * @param correctionDepth 纠正深度（防止无限递归）
+     */
+    private void executeTaskListWithCorrection(String taskListJson, String originalGoal, FluxSink<String> sink, int correctionDepth) {
+        // 防止无限递归纠正
+        final int MAX_CORRECTION_DEPTH = 3;
+        if (correctionDepth > MAX_CORRECTION_DEPTH) {
+            log.warn("纠正深度超过最大限制 {}，停止执行", MAX_CORRECTION_DEPTH);
+            sink.next("纠正次数过多，停止执行");
+            sink.complete();
+            return;
+        }
+
+        try {
+            JsonArray array = JsonParser.parseString(taskListJson).getAsJsonArray();
+            int totalTasks = array.size();
+
+            for (int i = 0; i < totalTasks; i++) {
+                String currentTask = array.get(i).getAsString();
+                log.info("执行任务 [{}/{}]: {}", i + 1, totalTasks, currentTask);
+                sink.next("\n--- 任务 [" + (i + 1) + "/" + totalTasks + "] ---\n" + currentTask);
+
+                // 执行当前任务
+                executeGuiAutomation(currentTask, sink);
+
+
+                // 在执行任务前，检查是否需要纠正（跳过 finished 任务的纠正检查）
+                if (!currentTask.contains("finished") && !currentTask.contains("message")) {
+                    String correctedTaskList = correctTaskList(taskListJson, i, currentTask, originalGoal);
+
+                    if (correctedTaskList != null && !correctedTaskList.isEmpty()) {
+                        // 需要纠正，切换到新的任务列表
+                        log.info("检测到需要纠正任务列表，切换到新列表执行");
+                        sink.next("\n⚠️ 检测到页面异常，正在纠正任务列表...\n");
+                        sink.next("新任务列表:\n" + correctedTaskList);
+
+                        // 递归执行纠正后的任务列表
+                        executeTaskListWithCorrection(correctedTaskList, originalGoal, sink, correctionDepth + 1);
+                        return; // 退出当前任务列表的执行
+                    }
+                }
+
+
+                // 任务间等待
                 try {
                     TimeUnit.MILLISECONDS.sleep(2000);
                 } catch (InterruptedException e) {
                     log.warn("等待被中断", e);
+                    Thread.currentThread().interrupt();
                 }
-            });
+            }
+
             sink.next("所有任务执行结束");
             sink.complete();
+
         } catch (Exception e) {
             log.error("解析任务列表失败", e);
             sink.next("解析任务列表失败: " + e.getMessage());
             sink.complete();
         }
-
-        return "finish";
     }
 
     /**
