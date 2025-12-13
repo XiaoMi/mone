@@ -43,7 +43,7 @@ public class AndroidExample {
     public static void main(String[] args) {
         // 远程设备地址（根据实际情况修改）
         String deviceHost = System.getenv("deviceHost");
-        int devicePort = 42573;
+        int devicePort = null == System.getenv("devicePort") ? 5555 : Integer.parseInt(System.getenv("devicePort"));
 
         // 如果命令行传入参数
         if (args.length >= 1) {
@@ -136,10 +136,10 @@ public class AndroidExample {
 //            System.out.println("\n6. 获取已安装应用列表...");
 //            listInstalledApps(targetDevice, false); // false = 仅第三方应用
 
-//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击微信");
+            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击微信");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击雹这个app");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击Clash");
-            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击小扫把");
+//            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击小扫把");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击T这个群组");
 //            CoordinateResult res = getCoordinateByInstruction(targetDevice, "帮我点击通讯录");
             System.out.println(res);
@@ -642,23 +642,47 @@ public class AndroidExample {
     /**
      * 在 Android 设备屏幕上执行点击操作
      *
+     * 使用 adb shell 命令通过 ProcessBuilder 执行，避免 INJECT_EVENTS 权限问题
+     *
      * @param device 设备
      * @param x      X 坐标
      * @param y      Y 坐标
      */
     private void tapScreen(IDevice device, int x, int y) {
         try {
-            String command = String.format("input tap %d %d", x, y);
-            System.out.println("执行点击命令: " + command);
+            String adbPath = findAdbPath();
+            if (adbPath == null) {
+                System.err.println("无法找到 adb，点击操作失败");
+                return;
+            }
 
-            ShellOutputReceiver receiver = new ShellOutputReceiver();
-            device.executeShellCommand(command, receiver, 5000, TimeUnit.MILLISECONDS);
+            String deviceSerial = device.getSerialNumber();
+            String tapCommand = String.format("input tap %d %d", x, y);
+            System.out.println("执行点击命令: " + tapCommand);
 
-            String output = receiver.getOutput();
-            if (output != null && !output.trim().isEmpty()) {
-                System.out.println("点击命令输出: " + output);
-            } else {
+            // 使用 ProcessBuilder 通过 adb shell 执行命令
+            ProcessBuilder pb = new ProcessBuilder(adbPath, "-s", deviceSerial, "shell", "input", "tap",
+                    String.valueOf(x), String.valueOf(y));
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(process.getInputStream()));
+            StringBuilder output = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0) {
                 System.out.println("成功在坐标 (" + x + ", " + y + ") 执行点击");
+            } else {
+                System.err.println("点击命令返回非零退出码: " + exitCode);
+                if (output.length() > 0) {
+                    System.err.println("输出: " + output.toString().trim());
+                }
             }
         } catch (Exception e) {
             System.err.println("点击操作失败: " + e.getMessage());
