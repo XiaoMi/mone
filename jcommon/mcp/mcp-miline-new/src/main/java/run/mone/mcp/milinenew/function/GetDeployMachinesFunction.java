@@ -235,7 +235,7 @@ public class GetDeployMachinesFunction implements McpFunction {
     @Override
     public String getDesc() {
         return """
-                查看流水线部署机器信息。
+                查看流水线运行状态。
                 
                 **使用场景：**
                 - 获取当前流水线部署的机器列表，以便输出机器信息等操作。

@@ -170,10 +170,14 @@ public class RunPipelineFunction implements McpFunction {
                 Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
                 String url = (String) data.get("url");
 
-                String resultText = String.format("成功触发流水线，pipelineRecordId: %d，URL: %s", pipelineRecordId, url);
+//                StringBuilder resultText = String.format("成功触发流水线，流水线运行记录ID（pipelineRecordId）: %d，URL: %s", pipelineRecordId, url);
+                StringBuilder resultText = new StringBuilder();
+                resultText.append("成功触发流水线。\n");
+                resultText.append(String.format("流水线运行记录ID（pipelineRecordId）: %d\n", pipelineRecordId));
+                resultText.append(String.format("URL: %s", url));
 
                 return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent(resultText)),
+                        List.of(new McpSchema.TextContent(resultText.toString())),
                         false
                 ));
             }
