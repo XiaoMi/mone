@@ -5,6 +5,7 @@ import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.RawImage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -16,6 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import run.mone.mcp.multimodal.util.AndroidResponseParser;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -45,24 +48,102 @@ public class AndroidService {
     private static final long DEFAULT_TIMEOUT_MS = 30000;
     private static final long COMMAND_TIMEOUT_MS = 10000;
 
+    /**
+     * 远程 Android 设备 IP 地址
+     * 可通过环境变量 ANDROID_DEVICE_HOST 或配置 android.device.host 设置
+     */
+    @Value("${android.device.host:#{systemEnvironment['ANDROID_DEVICE_HOST'] ?: ''}}")
+    private String deviceHost;
+
+    /**
+     * 远程 Android 设备端口
+     * 可通过环境变量 ANDROID_DEVICE_PORT 或配置 android.device.port 设置
+     */
+    @Value("${android.device.port:#{systemEnvironment['ANDROID_DEVICE_PORT'] ?: '5555'}}")
+    private String devicePort;
+
+    /**
+     * 是否自动连接远程设备
+     */
+    @Value("${android.device.auto-connect:true}")
+    private boolean autoConnect;
+
     @PostConstruct
     public void init() {
         try {
-            // 初始化 ADB
+            // 1. 初始化 ADB
+            log.info("1. 初始化 Android Debug Bridge...");
             AndroidDebugBridge.init(false);
 
-            // 查找 adb 路径
+            // 2. 查找 adb 路径
             String adbPath = findAdbPath();
             if (adbPath == null) {
                 log.error("无法找到 adb，请确保 ANDROID_HOME 环境变量已设置或 adb 在 PATH 中");
                 return;
             }
 
-            log.info("使用 adb 路径: {}", adbPath);
-            bridge = AndroidDebugBridge.createBridge(adbPath, false);
+            log.info("   ADB 路径: {}", adbPath);
 
-            // 等待设备列表
+            // 3. 创建 Bridge
+            bridge = AndroidDebugBridge.createBridge(adbPath, false);
             waitForDeviceList();
+
+            // 4. 连接远程设备（如果配置了）
+            if (autoConnect && deviceHost != null && !deviceHost.isEmpty()) {
+                int port = 5555;
+                try {
+                    port = Integer.parseInt(devicePort);
+                } catch (NumberFormatException e) {
+                    log.warn("无效的端口号: {}，使用默认端口 5555", devicePort);
+                }
+
+                String address = deviceHost + ":" + port;
+                log.info("2. 连接到远程设备: {}", address);
+
+                ProcessBuilder pb = new ProcessBuilder(adbPath, "connect", address);
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(process.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.info("   {}", line);
+                }
+                process.waitFor();
+
+                // 等待设备连接
+                Thread.sleep(2000);
+
+                // 5. 获取设备
+                log.info("3. 获取已连接的设备...");
+                IDevice[] devices = bridge.getDevices();
+                log.info("   找到 {} 个设备", devices.length);
+
+                for (IDevice device : devices) {
+                    log.info("   - {} [{}] {}",
+                            device.getSerialNumber(),
+                            device.getState(),
+                            device.isOnline() ? "(在线)" : "(离线)");
+
+                    // 更新设备缓存
+                    if (device.isOnline()) {
+                        connectedDevices.put(device.getSerialNumber(), device);
+                        // 初始化屏幕分辨率
+                        initScreenSize(device);
+                    }
+                }
+
+                if (connectedDevices.isEmpty()) {
+                    log.warn("没有找到在线的设备，请确保设备已开启无线调试");
+                }
+            } else {
+                log.info("未配置远程设备地址，跳过自动连接");
+                log.info("可通过以下方式配置：");
+                log.info("  - 环境变量: ANDROID_DEVICE_HOST=<设备IP>");
+                log.info("  - 配置文件: android.device.host=<设备IP>");
+            }
+
             initialized = true;
             log.info("Android Debug Bridge 初始化成功");
         } catch (Exception e) {
@@ -199,6 +280,8 @@ public class AndroidService {
                         if (device.getSerialNumber().equals(address) ||
                             device.getSerialNumber().contains(host)) {
                             connectedDevices.put(address, device);
+                            // 初始化屏幕分辨率
+                            initScreenSize(device);
                             log.info("成功连接到设备: {}", address);
                             sink.next("成功连接到设备: " + address);
                             sink.complete();
@@ -332,6 +415,198 @@ public class AndroidService {
             deviceSerial,
             String.format("成功在坐标 (%d, %d) 执行点击", x, y)
         );
+    }
+
+    /**
+     * 在指定坐标执行长按操作
+     * 对应 Action: long_press(point='<point>x1 y1</point>')
+     *
+     * @param x X 坐标
+     * @param y Y 坐标
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> longPress(int x, int y, String deviceSerial) {
+        return longPress(x, y, 1000, deviceSerial);
+    }
+
+    /**
+     * 在指定坐标执行长按操作（可指定时长）
+     *
+     * @param x X 坐标
+     * @param y Y 坐标
+     * @param durationMs 长按持续时间（毫秒）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> longPress(int x, int y, int durationMs, String deviceSerial) {
+        // 长按通过 swipe 实现，起点和终点相同
+        return executeShellCommand(
+            String.format("input swipe %d %d %d %d %d", x, y, x, y, durationMs),
+            deviceSerial,
+            String.format("成功在坐标 (%d, %d) 执行长按 %dms", x, y, durationMs)
+        );
+    }
+
+    /**
+     * 在指定坐标向指定方向滚动
+     * 对应 Action: scroll(point='<point>x1 y1</point>', direction='down or up or right or left')
+     *
+     * @param x 起始 X 坐标
+     * @param y 起始 Y 坐标
+     * @param direction 滚动方向: up, down, left, right
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> scroll(int x, int y, String direction, String deviceSerial) {
+        return scroll(x, y, direction, 300, 300, deviceSerial);
+    }
+
+    /**
+     * 在指定坐标向指定方向滚动（可指定距离和时长）
+     *
+     * @param x 起始 X 坐标
+     * @param y 起始 Y 坐标
+     * @param direction 滚动方向: up, down, left, right
+     * @param distance 滚动距离（像素）
+     * @param durationMs 滚动持续时间（毫秒）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> scroll(int x, int y, String direction, int distance, int durationMs, String deviceSerial) {
+        int endX = x;
+        int endY = y;
+
+        switch (direction.toLowerCase()) {
+            case "up":
+                // 向上滚动：手指向上滑，内容向下移动
+                endY = y - distance;
+                break;
+            case "down":
+                // 向下滚动：手指向下滑，内容向上移动
+                endY = y + distance;
+                break;
+            case "left":
+                // 向左滚动：手指向左滑
+                endX = x - distance;
+                break;
+            case "right":
+                // 向右滚动：手指向右滑
+                endX = x + distance;
+                break;
+            default:
+                return Flux.just("错误: 不支持的滚动方向 '" + direction + "'，支持: up, down, left, right");
+        }
+
+        return executeShellCommand(
+            String.format("input swipe %d %d %d %d %d", x, y, endX, endY, durationMs),
+            deviceSerial,
+            String.format("成功在坐标 (%d, %d) 向 %s 滚动", x, y, direction)
+        );
+    }
+
+    /**
+     * 拖拽操作
+     * 对应 Action: drag(start_point='<point>x1 y1</point>', end_point='<point>x2 y2</point>')
+     *
+     * @param startX 起始 X 坐标
+     * @param startY 起始 Y 坐标
+     * @param endX 结束 X 坐标
+     * @param endY 结束 Y 坐标
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> drag(int startX, int startY, int endX, int endY, String deviceSerial) {
+        return drag(startX, startY, endX, endY, 500, deviceSerial);
+    }
+
+    /**
+     * 拖拽操作（可指定时长）
+     *
+     * @param startX 起始 X 坐标
+     * @param startY 起始 Y 坐标
+     * @param endX 结束 X 坐标
+     * @param endY 结束 Y 坐标
+     * @param durationMs 拖拽持续时间（毫秒）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> drag(int startX, int startY, int endX, int endY, int durationMs, String deviceSerial) {
+        return executeShellCommand(
+            String.format("input swipe %d %d %d %d %d", startX, startY, endX, endY, durationMs),
+            deviceSerial,
+            String.format("成功执行拖拽: (%d,%d) -> (%d,%d)", startX, startY, endX, endY)
+        );
+    }
+
+    /**
+     * 通过应用名称打开应用
+     * 对应 Action: open_app(app_name='')
+     * 支持常见应用的中英文名称，如：微信、wechat、qq、抖音 等
+     *
+     * @param appName 应用名称（支持中英文别名）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> openApp(String appName, String deviceSerial) {
+        // 尝试从映射表中查找包名
+        String packageName = APP_NAME_TO_PACKAGE.get(appName.toLowerCase());
+        if (packageName == null) {
+            // 尝试原始名称（区分大小写）
+            packageName = APP_NAME_TO_PACKAGE.get(appName);
+        }
+
+        if (packageName != null) {
+            log.info("通过应用名称 '{}' 找到包名: {}", appName, packageName);
+            return launchApp(packageName, deviceSerial);
+        }
+
+        // 如果映射表中没有，尝试将 appName 当作包名直接使用
+        if (appName.contains(".")) {
+            log.info("将 '{}' 作为包名尝试启动", appName);
+            return launchApp(appName, deviceSerial);
+        }
+
+        // 尝试通过 pm 命令搜索包名
+        return Flux.create(sink -> {
+            try {
+                IDevice device = getDevice(deviceSerial);
+                if (device == null) {
+                    sink.next("错误: 没有可用的设备");
+                    sink.complete();
+                    return;
+                }
+
+                // 搜索包含该名称的包
+                ShellOutputReceiver receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    "pm list packages | grep -i " + appName,
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+
+                String output = receiver.getOutput().trim();
+                if (!output.isEmpty()) {
+                    // 取第一个匹配的包名
+                    String[] lines = output.split("\n");
+                    if (lines.length > 0) {
+                        String foundPackage = lines[0].replace("package:", "").trim();
+                        log.info("通过搜索找到包名: {}", foundPackage);
+                        launchApp(foundPackage, deviceSerial)
+                            .subscribe(sink::next, sink::error, sink::complete);
+                        return;
+                    }
+                }
+
+                sink.next("错误: 无法找到应用 '" + appName + "'，请确认应用名称或使用包名");
+                sink.complete();
+            } catch (Exception e) {
+                log.error("打开应用失败", e);
+                sink.next("打开应用失败: " + e.getMessage());
+                sink.complete();
+            }
+        });
     }
 
     /**
@@ -486,6 +761,22 @@ public class AndroidService {
         }
         // 默认尺寸
         return new int[]{1080, 1920};
+    }
+
+    /**
+     * 初始化屏幕分辨率到 AndroidResponseParser
+     * 在设备连接成功后调用，确保坐标转换使用正确的屏幕尺寸
+     *
+     * @param device 设备对象
+     */
+    private void initScreenSize(IDevice device) {
+        try {
+            int[] size = getScreenSize(device);
+            AndroidResponseParser.setScreenSize(size[0], size[1]);
+            log.info("已初始化屏幕分辨率: {}x{}", size[0], size[1]);
+        } catch (Exception e) {
+            log.warn("初始化屏幕分辨率失败，使用默认值", e);
+        }
     }
 
     /**
@@ -736,6 +1027,183 @@ public class AndroidService {
             } catch (Exception e) {
                 log.error("获取当前输入法失败", e);
                 sink.next("获取当前输入法失败: " + e.getMessage());
+                sink.complete();
+            }
+        });
+    }
+
+    /**
+     * ADB Keyboard 输入法 ID
+     */
+    private static final String ADB_KEYBOARD_IME = "com.android.adbkeyboard/.AdbIME";
+
+    /**
+     * 常见应用名称到包名的映射
+     */
+    private static final Map<String, String> APP_NAME_TO_PACKAGE = new HashMap<>() {{
+        // 社交通讯
+        put("微信", "com.tencent.mm");
+        put("wechat", "com.tencent.mm");
+        put("qq", "com.tencent.mobileqq");
+        put("QQ", "com.tencent.mobileqq");
+        put("钉钉", "com.alibaba.android.rimet");
+        put("dingtalk", "com.alibaba.android.rimet");
+        put("飞书", "com.ss.android.lark");
+        put("lark", "com.ss.android.lark");
+        put("企业微信", "com.tencent.wework");
+        put("whatsapp", "com.whatsapp");
+        put("telegram", "org.telegram.messenger");
+
+        // 浏览器
+        put("chrome", "com.android.chrome");
+        put("谷歌浏览器", "com.android.chrome");
+        put("firefox", "org.mozilla.firefox");
+        put("火狐", "org.mozilla.firefox");
+        put("edge", "com.microsoft.emmx");
+        put("浏览器", "com.android.browser");
+
+        // 视频娱乐
+        put("抖音", "com.ss.android.ugc.aweme");
+        put("douyin", "com.ss.android.ugc.aweme");
+        put("tiktok", "com.zhiliaoapp.musically");
+        put("快手", "com.smile.gifmaker");
+        put("bilibili", "tv.danmaku.bili");
+        put("b站", "tv.danmaku.bili");
+        put("哔哩哔哩", "tv.danmaku.bili");
+        put("youtube", "com.google.android.youtube");
+        put("爱奇艺", "com.qiyi.video");
+        put("优酷", "com.youku.phone");
+        put("腾讯视频", "com.tencent.qqlive");
+
+        // 购物
+        put("淘宝", "com.taobao.taobao");
+        put("taobao", "com.taobao.taobao");
+        put("京东", "com.jingdong.app.mall");
+        put("jd", "com.jingdong.app.mall");
+        put("拼多多", "com.xunmeng.pinduoduo");
+        put("pinduoduo", "com.xunmeng.pinduoduo");
+        put("美团", "com.sankuai.meituan");
+        put("饿了么", "me.ele");
+
+        // 出行
+        put("高德地图", "com.autonavi.minimap");
+        put("amap", "com.autonavi.minimap");
+        put("百度地图", "com.baidu.BaiduMap");
+        put("滴滴", "com.sdu.didi.psnger");
+        put("didi", "com.sdu.didi.psnger");
+
+        // 支付
+        put("支付宝", "com.eg.android.AlipayGphone");
+        put("alipay", "com.eg.android.AlipayGphone");
+
+        // 音乐
+        put("网易云音乐", "com.netease.cloudmusic");
+        put("cloudmusic", "com.netease.cloudmusic");
+        put("qq音乐", "com.tencent.qqmusic");
+        put("酷狗音乐", "com.kugou.android");
+        put("spotify", "com.spotify.music");
+
+        // 工具
+        put("相机", "com.android.camera");
+        put("camera", "com.android.camera");
+        put("相册", "com.android.gallery3d");
+        put("gallery", "com.android.gallery3d");
+        put("设置", "com.android.settings");
+        put("settings", "com.android.settings");
+        put("时钟", "com.android.deskclock");
+        put("clock", "com.android.deskclock");
+        put("计算器", "com.android.calculator2");
+        put("calculator", "com.android.calculator2");
+        put("日历", "com.android.calendar");
+        put("calendar", "com.android.calendar");
+        put("文件管理", "com.android.filemanager");
+        put("通讯录", "com.android.contacts");
+        put("contacts", "com.android.contacts");
+        put("电话", "com.android.dialer");
+        put("phone", "com.android.dialer");
+        put("短信", "com.android.mms");
+        put("messages", "com.android.mms");
+    }};
+
+    /**
+     * 使用 ADB Keyboard 输入文字的完整流程
+     * 操作步骤：
+     * 1. 查询当前默认输入法
+     * 2. 切换到 ADB Keyboard 输入法
+     * 3. 输入内容
+     * 4. 切换回原来的输入法
+     *
+     * @param text 要输入的文字（支持中文和特殊字符）
+     * @param deviceSerial 设备序列号（可选）
+     * @return 操作结果
+     */
+    public Flux<String> inputTextWithImeSwitching(String text, String deviceSerial) {
+        return Flux.create(sink -> {
+            try {
+                IDevice device = getDevice(deviceSerial);
+                if (device == null) {
+                    sink.next("错误: 没有可用的设备");
+                    sink.complete();
+                    return;
+                }
+
+                // 1. 获取当前默认输入法
+                ShellOutputReceiver receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    "settings get secure default_input_method",
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+                String originalIme = receiver.getOutput().trim();
+                log.info("当前输入法: {}", originalIme);
+
+                // 2. 切换到 ADB Keyboard 输入法
+                receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    "ime set " + ADB_KEYBOARD_IME,
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+                log.info("已切换到 ADB Keyboard 输入法");
+
+                // 等待输入法切换完成
+                Thread.sleep(200);
+
+                // 3. 使用 ADB Keyboard 输入文字
+                String base64Text = Base64.getEncoder().encodeToString(
+                    text.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+                );
+                receiver = new ShellOutputReceiver();
+                device.executeShellCommand(
+                    String.format("am broadcast -a ADB_INPUT_B64 --es msg %s", base64Text),
+                    receiver,
+                    COMMAND_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS
+                );
+                log.info("已输入文字: {}", text.length() > 20 ? text.substring(0, 20) + "..." : text);
+
+                // 等待输入完成
+                Thread.sleep(200);
+
+                // 4. 切换回原来的输入法
+                if (originalIme != null && !originalIme.isEmpty() && !originalIme.equals("null")) {
+                    receiver = new ShellOutputReceiver();
+                    device.executeShellCommand(
+                        "ime set " + originalIme,
+                        receiver,
+                        COMMAND_TIMEOUT_MS,
+                        TimeUnit.MILLISECONDS
+                    );
+                    log.info("已切换回原输入法: {}", originalIme);
+                }
+
+                sink.next("成功输入文字: " + (text.length() > 20 ? text.substring(0, 20) + "..." : text));
+                sink.complete();
+            } catch (Exception e) {
+                log.error("输入文字失败", e);
+                sink.next("输入文字失败: " + e.getMessage());
                 sink.complete();
             }
         });
