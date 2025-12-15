@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.multimodal")
+@ComponentScan({"run.mone.mcp.multimodal", "run.mone.hive.spring.starter"})
 public class MultimodalMcpBootstrap {
 
     public static void main(String[] args) {

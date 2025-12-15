@@ -305,6 +305,96 @@
             font-size: 13px;
             word-break: break-all;
         }
+
+        .clients-panel {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #b8daff;
+        }
+
+        .clients-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #004085;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clients-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+            min-height: 30px;
+        }
+
+        .client-item {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            transition: all 0.2s;
+        }
+
+        .client-item:hover {
+            border-color: #17a2b8;
+            background: #f8f9fa;
+        }
+
+        .client-item.selected {
+            border-color: #f5576c;
+            background: #fff5f5;
+            font-weight: 600;
+        }
+
+        .client-item.self {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .no-clients {
+            color: #666;
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        .send-to-client-panel {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .send-to-client-panel label {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .btn-refresh {
+            background: #6c757d;
+            color: white;
+            padding: 4px 10px;
+            font-size: 12px;
+            min-width: auto;
+            flex: none;
+        }
+
+        .btn-refresh:hover {
+            background: #5a6268;
+        }
+
+        .selected-client-info {
+            background: #fff3cd;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -356,6 +446,32 @@
             <div class="quick-actions">
                 <button class="btn-primary" onclick="sendAgentMessage()">🤖 发送给 Agent</button>
             </div>
+
+            <!-- 客户端列表面板 -->
+            <div class="clients-panel" id="clientsPanel">
+                <h3>
+                    <span>📋 已连接客户端列表</span>
+                    <button class="btn-refresh" onclick="refreshClients()">🔄 刷新</button>
+                </h3>
+                <div class="clients-list" id="clientsList">
+                    <span class="no-clients">请先连接后点击刷新获取客户端列表</span>
+                </div>
+
+                <!-- 发送消息给选中客户端 -->
+                <div class="send-to-client-panel" id="sendToClientPanel" style="display: none;">
+                    <div class="selected-client-info">
+                        <strong>已选中客户端:</strong> <span id="selectedClientId">--</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="clientMessage">发送给选中客户端的消息</label>
+                        <textarea id="clientMessage" rows="2" placeholder="输入要发送的消息内容"></textarea>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button class="btn-primary" onclick="sendToSelectedClient()">📤 发送消息</button>
+                        <button class="btn-danger" onclick="clearSelectedClient()" style="flex: 0.5;">取消选择</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="stats">
@@ -389,6 +505,8 @@
         let connectTime = null;
         let timerInterval = null;
         let currentSessionId = null;
+        let currentClientId = null;  // 当前连接的 clientId
+        let selectedTargetClientId = null;  // 选中的目标客户端 ID
 
         function updateStatus(connected) {
             const status = document.getElementById('status');
@@ -488,11 +606,12 @@
 
         function handleMessage(message) {
             const type = message.type || 'unknown';
-            
+
             switch (type) {
                 case 'connected':
                     currentSessionId = message.sessionId;
-                    document.getElementById('sessionId').textContent = currentSessionId;
+                    currentClientId = message.clientId;
+                    document.getElementById('sessionId').textContent = currentClientId || currentSessionId;
                     document.getElementById('sessionIdDisplay').style.display = 'block';
                     addMessage('received', type, JSON.stringify(message, null, 2));
                     break;
@@ -500,19 +619,32 @@
                     addMessage('received', type, 'Pong 响应');
                     break;
                 case 'heartbeat':
-                    addMessage('received', type, '心跳检测');
+                    // 心跳消息不显示
                     break;
                 case 'agent_response':
-                    // Agent 流式响应
                     addMessage('received', 'agent_response', message.data);
                     break;
                 case 'agent_error':
-                    // Agent 错误
                     addMessage('received', 'agent_error', JSON.stringify(message, null, 2));
                     break;
                 case 'agent_complete':
-                    // Agent 完成
                     addMessage('received', 'agent_complete', JSON.stringify(message, null, 2));
+                    break;
+                case 'clients_list':
+                    // 处理客户端列表
+                    updateClientsList(message.clients);
+                    addMessage('received', type, `共 ${message.count} 个客户端在线`);
+                    break;
+                case 'message_from_client':
+                    // 收到其他客户端发来的消息
+                    addMessage('received', 'message_from_client',
+                        `来自 ${message.fromClientId}:\n${JSON.stringify(message.message, null, 2)}`);
+                    break;
+                case 'send_to_client_success':
+                    addMessage('received', type, `消息已发送给 ${message.targetClientId}`);
+                    break;
+                case 'send_to_client_error':
+                    addMessage('received', type, `发送失败: ${message.error}`);
                     break;
                 case 'message_response':
                 case 'broadcast':
@@ -520,6 +652,117 @@
                 default:
                     addMessage('received', type, JSON.stringify(message, null, 2));
             }
+        }
+
+        // 刷新客户端列表
+        function refreshClients() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('请先建立连接');
+                return;
+            }
+
+            const message = { type: 'get_clients' };
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+            addMessage('sent', 'get_clients', '请求获取客户端列表');
+        }
+
+        // 更新客户端列表显示
+        function updateClientsList(clients) {
+            const clientsList = document.getElementById('clientsList');
+            clientsList.innerHTML = '';
+
+            if (!clients || clients.length === 0) {
+                clientsList.innerHTML = '<span class="no-clients">暂无其他客户端连接</span>';
+                return;
+            }
+
+            clients.forEach(clientId => {
+                const item = document.createElement('span');
+                item.className = 'client-item';
+                item.textContent = clientId;
+                item.onclick = () => selectClient(clientId);
+
+                // 如果是自己，添加特殊标记
+                if (clientId === currentClientId) {
+                    item.classList.add('self');
+                    item.textContent = clientId + ' (我)';
+                }
+
+                // 如果已选中
+                if (clientId === selectedTargetClientId) {
+                    item.classList.add('selected');
+                }
+
+                clientsList.appendChild(item);
+            });
+        }
+
+        // 选择目标客户端
+        function selectClient(clientId) {
+            // 不能选择自己
+            if (clientId === currentClientId) {
+                alert('不能给自己发送消息');
+                return;
+            }
+
+            selectedTargetClientId = clientId;
+            document.getElementById('selectedClientId').textContent = clientId;
+            document.getElementById('sendToClientPanel').style.display = 'block';
+
+            // 更新选中状态
+            document.querySelectorAll('.client-item').forEach(item => {
+                item.classList.remove('selected');
+                if (item.textContent === clientId || item.textContent.startsWith(clientId)) {
+                    item.classList.add('selected');
+                }
+            });
+        }
+
+        // 清除选中的客户端
+        function clearSelectedClient() {
+            selectedTargetClientId = null;
+            document.getElementById('selectedClientId').textContent = '--';
+            document.getElementById('sendToClientPanel').style.display = 'none';
+            document.getElementById('clientMessage').value = '';
+
+            document.querySelectorAll('.client-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+
+        // 发送消息给选中的客户端
+        function sendToSelectedClient() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                alert('请先选择目标客户端');
+                return;
+            }
+
+            const messageContent = document.getElementById('clientMessage').value.trim();
+            if (!messageContent) {
+                alert('请输入消息内容');
+                return;
+            }
+
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: messageContent
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+            addMessage('sent', 'send_to_client', `发送给 ${selectedTargetClientId}: ${messageContent}`);
+            document.getElementById('clientMessage').value = '';
         }
 
         function sendMessage() {

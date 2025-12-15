@@ -14,6 +14,9 @@ import run.mone.hive.schema.Message;
 import run.mone.hive.dto.WebSocketCallRequest;
 import run.mone.hive.dto.WebSocketCallResponse;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
@@ -21,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * SSE (Server-Sent Events) 处理器
@@ -49,6 +53,35 @@ public class SseHandler {
 
     // JSON 工具
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // 业务方注入的任务处理函数
+    private Function<String, String> taskHandler;
+
+    /**
+     * 设置任务处理函数（Spring 自动注入）
+     * 业务方只需定义一个名为 "sseTaskHandler" 的 Bean 即可自动注入
+     *
+     * 示例:
+     * <pre>
+     * {@code
+     * @Bean("sseTaskHandler")
+     * public Function<String, String> sseTaskHandler() {
+     *     return task -> {
+     *         // 业务处理逻辑
+     *         return "处理结果";
+     *     };
+     * }
+     * }
+     * </pre>
+     *
+     * @param taskHandler 任务处理函数，接收任务描述字符串，返回处理结果
+     */
+    @Autowired(required = false)
+    @Qualifier("sseTaskHandler")
+    public void setTaskHandler(Function<String, String> taskHandler) {
+        this.taskHandler = taskHandler;
+        log.info("SseHandler taskHandler injected: {}", taskHandler != null);
+    }
 
     /**
      * 建立SSE连接
@@ -326,6 +359,51 @@ public class SseHandler {
                 "timestamp", System.currentTimeMillis(),
                 "success", true
         );
+    }
+
+    /**
+     * 执行 Agent 任务接口
+     * 接收任务描述，调用业务方注入的 taskHandler 处理
+     *
+     * @param task 任务描述，告诉 agent 要干什么
+     * @return 任务执行结果
+     */
+    @GetMapping("/task")
+    public Map<String, Object> executeTask(@RequestParam("task") String task) {
+        log.info("Executing agent task: {}", task);
+
+        if (taskHandler == null) {
+            log.warn("TaskHandler not configured");
+            return Map.of(
+                    "success", false,
+                    "error", "TaskHandler not configured, please inject a Function<String, String> via setTaskHandler()",
+                    "timestamp", System.currentTimeMillis()
+            );
+        }
+
+        try {
+            long startTime = System.currentTimeMillis();
+            String result = taskHandler.apply(task);
+            long duration = System.currentTimeMillis() - startTime;
+
+            log.info("Agent task completed, duration: {}ms", duration);
+
+            return Map.of(
+                    "success", true,
+                    "task", task,
+                    "result", result != null ? result : "",
+                    "duration", duration,
+                    "timestamp", System.currentTimeMillis()
+            );
+        } catch (Exception e) {
+            log.error("Agent task execution failed: {}", task, e);
+            return Map.of(
+                    "success", false,
+                    "task", task,
+                    "error", e.getMessage() != null ? e.getMessage() : "Unknown error",
+                    "timestamp", System.currentTimeMillis()
+            );
+        }
     }
 
     /**
