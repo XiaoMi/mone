@@ -14,21 +14,22 @@ import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.milinenew.params.RunPipelineParams;
+import run.mone.mcp.milinenew.params.UserBatchParams;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行
+ * 灰度部署(堡垒批次发布)工具
+ * 用于执行流水线的灰度批次发布
  *
  * @author liguanchen
- * @date 2025/11/18
+ * @date 2025/12/11
  */
 @Slf4j
 @Component
-public class RunPipelineFunction implements McpFunction {
+public class UserBatchFunction implements McpFunction {
 
     @Value("${git.default.username}")
     private String gitUserName;
@@ -39,51 +40,52 @@ public class RunPipelineFunction implements McpFunction {
                 "properties": {
                     "projectId": {
                         "type": "number",
-                        "description": "项目ID（必填）"
+                        "description": "项目ID(必填)"
                     },
                     "pipelineId": {
                         "type": "number",
-                        "description": "流水线ID（必填）"
+                        "description": "流水线ID(必填)"
                     },
-                    "commitId": {
-                        "type": "string",
-                        "description": "git的commitId（选填，不填为最新一次的commitId）"
+                    "pipelineRecordId": {
+                        "type": "number",
+                        "description": "流水线运行记录ID(必填)"
                     },
-                    "runType": {
-                        "type": "string",
-                        "description": "运行类型，不填则为commitId模式，值可以为commitId=>commitId或者应用变更=>changes"
+            
+                    "operation": {
+                        "type": "number",
+                        "description": "操作类型(必填),默认为1"
                     },
-                    "changeIds": {
-                        "type": "string",
-                        "description": "changeIds，为字符串形式，如1,2,3（选填，多个值用逗号分隔，仅runType为changes时有效）"
+                    "forceCheck": {
+                        "type": "boolean",
+                        "description": "是否强制检查(选填),默认为false"
                     }
                 },
-                "required": ["projectId", "pipelineId"]
+                "required": ["projectId", "pipelineId", "pipelineRecordId"]
             }
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String RUN_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/runPipelineWithLatestCommit" : null;
+    private static final String USER_BATCH_URL = BASE_URL != null ? BASE_URL + "/userBatch" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
-    public RunPipelineFunction() {
+    public UserBatchFunction() {
         this.client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
         this.objectMapper = new ObjectMapper();
     }
 
     @Override
-    @ReportCallCount(businessName = "miline-api-runPipeline", description = "miline-api操作工具调用")
+    @ReportCallCount(businessName = "miline-api-userBatch", description = "miline-api灰度部署工具调用")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
-        log.info("RunPipeline arguments: {}", arguments);
+        log.info("UserBatch arguments: {}", arguments);
 
         try {
-            if (BASE_URL == null || RUN_PIPELINE_URL == null) {
+            if (BASE_URL == null || USER_BATCH_URL == null) {
                 return Flux.just(new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("错误：配置错误: req_base_url 环境变量未设置")),
                         true
@@ -93,9 +95,10 @@ public class RunPipelineFunction implements McpFunction {
             // 验证必填参数
             Object projectIdObj = arguments.get("projectId");
             Object pipelineIdObj = arguments.get("pipelineId");
-            Object commitId = arguments.get("commitId");
-            Object runType = arguments.get("runType") != null ? arguments.get("runType") : "commitId";
-            Object changeIds = arguments.get("changeIds");
+            Object pipelineRecordIdObj = arguments.get("pipelineRecordId");
+//            Object batchNumObj = 0;
+            Object operationObj = arguments.get("operation");
+            Object forceCheckObj = arguments.get("forceCheck");
 
             if (projectIdObj == null || StringUtils.isBlank(projectIdObj.toString())) {
                 return Flux.just(new McpSchema.CallToolResult(
@@ -109,28 +112,44 @@ public class RunPipelineFunction implements McpFunction {
                         true
                 ));
             }
+            if (pipelineRecordIdObj == null || StringUtils.isBlank(pipelineRecordIdObj.toString())) {
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("错误：缺少必填参数'pipelineRecordId'")),
+                        true
+                ));
+            }
+//            if (batchNumObj == null || StringUtils.isBlank(batchNumObj.toString())) {
+//                return Flux.just(new McpSchema.CallToolResult(
+//                        List.of(new McpSchema.TextContent("错误：缺少必填参数'batchNum'")),
+//                        true
+//                ));
+//            }
 
-            Integer projectId = convertToInteger(projectIdObj);
-            Integer pipelineId = convertToInteger(pipelineIdObj);
+            Long projectId = convertToLong(projectIdObj);
+            Long pipelineId = convertToLong(pipelineIdObj);
+            Long pipelineRecordId = convertToLong(pipelineRecordIdObj);
+//            Integer batchNum = convertToInteger(batchNumObj);
+            Integer operation = operationObj != null ? convertToInteger(operationObj) : 1;
+            Boolean forceCheck = forceCheckObj != null ? Boolean.parseBoolean(forceCheckObj.toString()) : false;
+
+            // 构建请求体
             String tokenUsername = (String) arguments.get(Const.TOKEN_USERNAME);
 
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("baseUserName", StringUtils.isNotBlank(tokenUsername) ? tokenUsername : gitUserName);
             userMap.put("userType", 0);
-            RunPipelineParams params = RunPipelineParams.builder()
+
+            UserBatchParams params = UserBatchParams.builder()
                     .projectId(projectId)
                     .pipelineId(pipelineId)
-                    .commitId(commitId != null ? commitId.toString() : null)
-                    .runType(runType != null ? runType.toString() : "commitId")
-                    .changeIds(changeIds != null ? Arrays.stream(changeIds.toString().split(","))
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .map(Integer::parseInt)
-                            .toList() : Collections.emptyList())
+                    .pipelineRecordId(pipelineRecordId)
+                    .batchNum(0)
+                    .operation(operation)
+                    .forceCheck(forceCheck)
                     .build();
             List<Object> requestBody = List.of(userMap, params);
             String requestBodyStr = objectMapper.writeValueAsString(requestBody);
-            log.info("runPipeline request: {}", requestBodyStr);
+            log.info("userBatch request: {}", requestBodyStr);
 
             RequestBody body = RequestBody.create(
                     requestBodyStr,
@@ -138,61 +157,62 @@ public class RunPipelineFunction implements McpFunction {
             );
 
             Request request = new Request.Builder()
-                    .url(RUN_PIPELINE_URL)
+                    .url(USER_BATCH_URL)
                     .post(body)
                     .build();
 
-            OkHttpClient pipelineClient = client.newBuilder()
-                    .connectTimeout(3, TimeUnit.SECONDS)
-                    .readTimeout(3, TimeUnit.SECONDS)
-                    .writeTimeout(3, TimeUnit.SECONDS)
-                    .build();
-
-            try (Response response = pipelineClient.newCall(request).execute()) {
+            try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     throw new IOException("Unexpected response code: " + response);
                 }
 
                 String responseBody = response.body().string();
-                log.info("runPipeline response: {}", responseBody);
+                log.info("userBatch response: {}", responseBody);
 
-                ApiResponse<Map<String, Object>> apiResponse = objectMapper.readValue(
+                ApiResponse<Boolean> apiResponse = objectMapper.readValue(
                         responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
-                                objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class))
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Boolean.class)
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                Map<String, Object> data = apiResponse.getData();
-                Integer pipelineRecordId = (Integer) data.get("pipelineRecordId");
-                String url = (String) data.get("url");
-
-//                StringBuilder resultText = String.format("成功触发流水线，流水线运行记录ID（pipelineRecordId）: %d，URL: %s", pipelineRecordId, url);
-                StringBuilder resultText = new StringBuilder();
-                resultText.append("成功触发流水线。\n");
-                resultText.append(String.format("流水线运行记录ID（pipelineRecordId）: %d\n", pipelineRecordId));
-                resultText.append(String.format("URL: %s", url));
+                Boolean success = apiResponse.getData();
+                String resultText = success
+                        ? String.format("堡垒批次部署批次执行成功，后续请直接进行k8s批次部署")
+                        : String.format("灰度部署批次执行失败");
 
                 return Flux.just(new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent(resultText.toString())),
-                        false
+                        List.of(new McpSchema.TextContent(resultText)),
+                        !success
                 ));
             }
         } catch (NumberFormatException e) {
-            log.error("项目ID或流水线ID格式不正确", e);
+            log.error("参数格式不正确", e);
             return Flux.just(new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("错误：'projectId'与'pipelineId'必须是数字")),
+                    List.of(new McpSchema.TextContent("错误：参数格式必须是数字")),
                     true
             ));
         } catch (Exception e) {
-            log.error("执行run_pipeline操作时发生异常", e);
+            log.error("执行user_batch操作时发生异常", e);
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("错误：执行操作失败: " + e.getMessage())),
                     true
             ));
+        }
+    }
+
+    /**
+     * 将对象转换为 Long 类型
+     */
+    private Long convertToLong(Object obj) {
+        if (obj instanceof Number n) {
+            return n.longValue();
+        } else if (obj instanceof String) {
+            return Long.parseLong((String) obj);
+        } else {
+            throw new IllegalArgumentException("无法将 " + obj + " 转换为长整数");
         }
     }
 
@@ -211,19 +231,19 @@ public class RunPipelineFunction implements McpFunction {
 
     @Override
     public String getName() {
-        return "run_pipeline";
+        return "user_batch";
     }
 
     @Override
     public String getDesc() {
         return """
-                运行Miline流水线的工具，触发指定项目下指定流水线以最新提交执行。
+                灰度部署-(堡垒批次确认)工具，仅用于执行流水线的堡垒批次的确认工作。
                 
                 **使用场景：**
-                - 需要在CI/CD中触发某个流水线
-                - 验证最近一次提交是否能通过流水线
-                - 集成到自动化流程中进行构建/部署
-                - 发布/部署系统
+                - 执行灰度部署的某个批次
+                - 控制流水线分批次发布
+                - 实现灰度发布策略
+                - 降低发布风险
                 """;
     }
 
@@ -241,3 +261,4 @@ public class RunPipelineFunction implements McpFunction {
         private String detailMsg;
     }
 }
+
