@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.llm.LLMProvider;
@@ -39,6 +40,12 @@ public class AndroidGuiAgent {
     private final AndroidGuiAgentService androidGuiAgentService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Vision Provider 配置，默认使用 DOUBAO_VISION
+     */
+    @Value("${mcp.android.vision.provider:DOUBAO_VISION}")
+    private String visionProvider;
 
     /**
      * 是否启用任务纠正检测（默认关闭）
@@ -171,8 +178,8 @@ public class AndroidGuiAgent {
                 
                 """.formatted(AndroidConfig.MEITUAN_KFC_WORKFLOW, instruction);
 
-        // 使用 DOUBAO_VISION 生成任务列表
-        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
+        // 使用配置的 Vision Provider 生成任务列表
+        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.valueOf(visionProvider)).block();
         log.info("模型输出: {}", modelOutput);
         modelOutput = extractJsonArray(modelOutput);
         return modelOutput;
@@ -252,8 +259,8 @@ public class AndroidGuiAgent {
                         currentTask
                 );
 
-        // 使用 DOUBAO_VISION 分析页面状态
-        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
+        // 使用配置的 Vision Provider 分析页面状态
+        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.valueOf(visionProvider)).block();
         log.info("纠正任务 - 模型输出: {}", modelOutput);
 
         // 解析是否需要纠正

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -36,6 +37,12 @@ public class AndroidGuiAgentService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * UI Provider 配置，默认使用 DOUBAO_UI_TARS
+     */
+    @Value("${mcp.gui.ui.provider:DOUBAO_UI_TARS}")
+    private String uiProvider;
+
+    /**
      * 当前设备序列号（可选）
      */
     private String deviceSerial;
@@ -48,7 +55,7 @@ public class AndroidGuiAgentService {
     }
 
     /**
-     * 运行 GUI Agent 分析 Android 截图（使用默认模型 DOUBAO_UI_TARS）
+     * 运行 GUI Agent 分析 Android 截图（使用默认配置的 UI Provider）
      *
      * @param imagePath    截图路径
      * @param userPrompt   用户指令
@@ -56,7 +63,7 @@ public class AndroidGuiAgentService {
      * @return 模型响应
      */
     public Mono<String> run(String imagePath, String userPrompt, String systemPrompt) {
-        return run(imagePath, userPrompt, systemPrompt, LLMProvider.DOUBAO_UI_TARS);
+        return run(imagePath, userPrompt, systemPrompt, LLMProvider.valueOf(uiProvider));
     }
 
     /**
