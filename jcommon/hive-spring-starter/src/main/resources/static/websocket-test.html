@@ -669,7 +669,21 @@
                         `来自 ${message.fromClientId}:\n${JSON.stringify(message.message, null, 2)}`);
                     break;
                 case 'send_to_client_success':
-                    addMessage('received', type, `消息已发送给 ${message.targetClientId}`);
+                    // 显示执行结果，包含 response 数据
+                    let successMsg = `消息已发送给 ${message.targetClientId}`;
+
+                    // 检查是否是截图响应（包含图片数据）
+                    if (message.response && message.response.data && message.response.data.image) {
+                        const imageData = message.response.data;
+                        successMsg += `\n\n截图成功 (${imageData.width}x${imageData.height})`;
+                        // 添加带图片的消息
+                        addMessageWithImage('received', type, successMsg, imageData.image);
+                    } else if (message.response) {
+                        successMsg += `\n\n执行结果:\n${JSON.stringify(message.response, null, 2)}`;
+                        addMessage('received', type, successMsg);
+                    } else {
+                        addMessage('received', type, successMsg);
+                    }
                     break;
                 case 'send_to_client_error':
                     addMessage('received', type, `发送失败: ${message.error}`);
@@ -917,7 +931,7 @@
             document.getElementById('lastMessageTime').textContent = timeStr;
 
             const messagePanel = document.getElementById('messagePanel');
-            
+
             const noMessages = messagePanel.querySelector('.no-messages');
             if (noMessages) {
                 noMessages.remove();
@@ -938,6 +952,56 @@
             if (messagePanel.children.length > 50) {
                 messagePanel.removeChild(messagePanel.lastChild);
             }
+        }
+
+        // 添加带图片的消息
+        function addMessageWithImage(direction, type, content, base64Image) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            document.getElementById('lastMessageTime').textContent = timeStr;
+
+            const messagePanel = document.getElementById('messagePanel');
+
+            const noMessages = messagePanel.querySelector('.no-messages');
+            if (noMessages) {
+                noMessages.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${direction}`;
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type">${direction === 'sent' ? '发送' : '接收'} - ${type}</span>
+                    <span class="message-time">${timeStr}</span>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+                <div class="screenshot-container" style="margin-top: 10px;">
+                    <img src="data:image/jpeg;base64,${base64Image}"
+                         alt="截图"
+                         style="max-width: 100%; max-height: 400px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2);"
+                         onclick="openImageInNewTab(this.src)"
+                         title="点击查看大图" />
+                </div>
+            `;
+
+            messagePanel.insertBefore(messageDiv, messagePanel.firstChild);
+
+            if (messagePanel.children.length > 50) {
+                messagePanel.removeChild(messagePanel.lastChild);
+            }
+        }
+
+        // 在新标签页中打开图片
+        function openImageInNewTab(imageSrc) {
+            const newWindow = window.open();
+            newWindow.document.write(`
+                <html>
+                <head><title>截图预览</title></head>
+                <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #333;">
+                    <img src="${imageSrc}" style="max-width: 100%; max-height: 100vh;" />
+                </body>
+                </html>
+            `);
         }
 
         function clearMessages() {

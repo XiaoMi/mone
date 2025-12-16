@@ -141,6 +141,27 @@ public class WebSocketCaller {
     }
 
     /**
+     * 注册等待响应的请求（由外部调用者使用）
+     *
+     * @param reqId  请求ID
+     * @param future 用于等待响应的 CompletableFuture
+     */
+    public void registerPendingRequest(String reqId, CompletableFuture<Map<String, Object>> future) {
+        pendingRequests.put(reqId, future);
+        log.debug("Registered pending request: {}", reqId);
+    }
+
+    /**
+     * 移除等待响应的请求（由外部调用者使用）
+     *
+     * @param reqId 请求ID
+     */
+    public void removePendingRequest(String reqId) {
+        pendingRequests.remove(reqId);
+        log.debug("Removed pending request: {}", reqId);
+    }
+
+    /**
      * 处理客户端响应（由 WebSocketHandler 调用）
      *
      * @param resId    响应ID（对应请求的 reqId）
