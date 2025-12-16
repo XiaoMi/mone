@@ -18,7 +18,99 @@
             padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .screenshot-preview-panel {
+            position: sticky;
+            top: 20px;
+            width: 320px;
+            min-width: 320px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screenshot-preview-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+            display: flex;
             align-items: center;
+            gap: 8px;
+        }
+
+        .screenshot-container-preview {
+            position: relative;
+            width: 100%;
+            border: 3px solid #f5576c;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screenshot-container-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: crosshair;
+        }
+
+        .screenshot-placeholder {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .coordinate-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ff0000;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 10;
+        }
+
+        .coordinate-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 11;
+            display: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .screenshot-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .screenshot-info .resolution {
+            color: #f5576c;
+            font-weight: 600;
         }
 
         .container {
@@ -28,6 +120,7 @@
             max-width: 900px;
             width: 100%;
             padding: 40px;
+            flex: 1;
         }
 
         h1 {
@@ -398,6 +491,22 @@
     </style>
 </head>
 <body>
+    <!-- 截图预览面板 -->
+    <div class="screenshot-preview-panel">
+        <h3>📱 最新截图预览</h3>
+        <div class="screenshot-container-preview" id="screenshotPreviewContainer">
+            <div class="screenshot-placeholder" id="screenshotPlaceholder">
+                暂无截图<br><small>收到截图后将在此显示</small>
+            </div>
+            <img id="screenshotPreviewImage" style="display: none;" alt="截图预览" />
+            <div class="coordinate-dot" id="coordinateDot"></div>
+            <div class="coordinate-label" id="coordinateLabel"></div>
+        </div>
+        <div class="screenshot-info" id="screenshotInfo" style="display: none;">
+            分辨率: <span class="resolution" id="screenshotResolution">--</span>
+        </div>
+    </div>
+
     <div class="container">
         <h1>🔌 WebSocket 测试页面</h1>
         <p class="subtitle">WebSocket 双向通信测试工具</p>
@@ -675,9 +784,11 @@
                     // 检查是否是截图响应（包含图片数据）
                     if (message.response && message.response.data && message.response.data.image) {
                         const imageData = message.response.data;
-                        successMsg += `\n\n截图成功 (${imageData.width}x${imageData.height})`;
+                        successMsg += ` 截图成功 (${imageData.width}x${imageData.height})`;
                         // 添加带图片的消息
                         addMessageWithImage('received', type, successMsg, imageData.image);
+                        // 更新截图预览面板
+                        updateScreenshotPreview(imageData.image, imageData.width, imageData.height);
                     } else if (message.response) {
                         successMsg += `\n\n执行结果:\n${JSON.stringify(message.response, null, 2)}`;
                         addMessage('received', type, successMsg);
@@ -1212,7 +1323,138 @@
                     });
                 });
             }, 100);
+
+            // 初始化截图预览的鼠标事件
+            initScreenshotPreview();
         });
+
+        // 截图预览相关变量
+        let lastScreenshotData = null;  // 存储最后一张截图的数据
+        let screenshotWidth = 1440;     // 默认截图宽度
+        let screenshotHeight = 3200;    // 默认截图高度
+
+        // 更新截图预览
+        function updateScreenshotPreview(base64Image, width, height) {
+            lastScreenshotData = {
+                image: base64Image,
+                width: width || 1440,
+                height: height || 3200
+            };
+
+            screenshotWidth = lastScreenshotData.width;
+            screenshotHeight = lastScreenshotData.height;
+
+            const placeholder = document.getElementById('screenshotPlaceholder');
+            const previewImage = document.getElementById('screenshotPreviewImage');
+            const screenshotInfo = document.getElementById('screenshotInfo');
+            const screenshotResolution = document.getElementById('screenshotResolution');
+
+            // 隐藏占位符，显示图片
+            placeholder.style.display = 'none';
+            previewImage.src = 'data:image/jpeg;base64,' + base64Image;
+            previewImage.style.display = 'block';
+
+            // 显示分辨率信息
+            screenshotInfo.style.display = 'block';
+            screenshotResolution.textContent = `${screenshotWidth}x${screenshotHeight}`;
+        }
+
+        // 初始化截图预览的鼠标事件
+        function initScreenshotPreview() {
+            const container = document.getElementById('screenshotPreviewContainer');
+            const previewImage = document.getElementById('screenshotPreviewImage');
+            const dot = document.getElementById('coordinateDot');
+            const label = document.getElementById('coordinateLabel');
+
+            previewImage.addEventListener('mousemove', function(e) {
+                if (!lastScreenshotData) return;
+
+                const rect = previewImage.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                // 计算鼠标在图片上的相对位置 (0-1)
+                const relativeX = (e.clientX - rect.left) / rect.width;
+                const relativeY = (e.clientY - rect.top) / rect.height;
+
+                // 转换为 Android 坐标系 (左上角 0,0)
+                const androidX = Math.round(relativeX * screenshotWidth);
+                const androidY = Math.round(relativeY * screenshotHeight);
+
+                // 确保坐标在有效范围内
+                const clampedX = Math.max(0, Math.min(screenshotWidth, androidX));
+                const clampedY = Math.max(0, Math.min(screenshotHeight, androidY));
+
+                // 计算红点在容器中的位置
+                const dotX = e.clientX - containerRect.left;
+                const dotY = e.clientY - containerRect.top;
+
+                // 显示红点
+                dot.style.display = 'block';
+                dot.style.left = dotX + 'px';
+                dot.style.top = dotY + 'px';
+
+                // 显示坐标标签
+                label.style.display = 'block';
+                label.textContent = `x: ${clampedX}, y: ${clampedY}`;
+
+                // 调整标签位置，避免超出边界
+                let labelX = dotX + 15;
+                let labelY = dotY - 25;
+
+                // 如果标签会超出右边界，显示在左侧
+                if (labelX + 120 > containerRect.width) {
+                    labelX = dotX - 120;
+                }
+                // 如果标签会超出上边界，显示在下方
+                if (labelY < 0) {
+                    labelY = dotY + 20;
+                }
+
+                label.style.left = labelX + 'px';
+                label.style.top = labelY + 'px';
+            });
+
+            previewImage.addEventListener('mouseleave', function() {
+                dot.style.display = 'none';
+                label.style.display = 'none';
+            });
+
+            // 点击图片复制坐标
+            previewImage.addEventListener('click', function(e) {
+                if (!lastScreenshotData) return;
+
+                const rect = previewImage.getBoundingClientRect();
+                const relativeX = (e.clientX - rect.left) / rect.width;
+                const relativeY = (e.clientY - rect.top) / rect.height;
+
+                const androidX = Math.round(relativeX * screenshotWidth);
+                const androidY = Math.round(relativeY * screenshotHeight);
+
+                const clampedX = Math.max(0, Math.min(screenshotWidth, androidX));
+                const clampedY = Math.max(0, Math.min(screenshotHeight, androidY));
+
+                // 复制坐标到剪贴板
+                const coordText = `${clampedX}, ${clampedY}`;
+                navigator.clipboard.writeText(coordText).then(() => {
+                    addMessage('system', 'coordinate_copied', `坐标已复制: (${coordText})`);
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                });
+
+                // 如果有选中的客户端，自动填充点击指令
+                if (selectedTargetClientId) {
+                    const clickCommand = {
+                        action: "click",
+                        params: {
+                            x: clampedX,
+                            y: clampedY
+                        }
+                    };
+                    document.getElementById('clientMessage').value = JSON.stringify(clickCommand, null, 2);
+                    addMessage('system', 'click_command', `已生成点击指令: (${clampedX}, ${clampedY})`);
+                }
+            });
+        }
     </script>
 </body>
 </html>
