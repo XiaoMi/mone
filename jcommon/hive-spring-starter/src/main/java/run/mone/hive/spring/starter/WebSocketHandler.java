@@ -27,9 +27,9 @@ import java.util.function.Function;
 /**
  * WebSocket 处理器
  * 支持双向实时通信
- * 
+ * <p>
  * 配置项: mcp.websocket.enabled=true 启用
- * 
+ *
  * @author goodjava@qq.com
  */
 @Slf4j
@@ -54,12 +54,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private static final String CLIENT_ID_ATTRIBUTE = "clientId";
 
     // 业务方注入的任务处理函数
-    private Function<Map<String, Object>,String> taskHandler;
+    private Function<Map<String, Object>, String> taskHandler;
 
     /**
      * 设置任务处理函数（Spring 自动注入）
      * 业务方只需定义一个名为 "wsTaskHandler" 的 Bean 即可自动注入
-     *
+     * <p>
      * 示例:
      * <pre>
      * {@code
@@ -143,6 +143,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // 解析消息
             Map<String, Object> messageMap = objectMapper.readValue(payload, Map.class);
             String type = (String) messageMap.get("type");
+
+            if (null == type) {
+                return;
+            }
 
             // 根据消息类型处理
             switch (type) {
@@ -367,7 +371,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理任务请求
      * 调用业务方注入的 taskHandler 处理任务
-     *
+     * <p>
      * 客户端发送格式:
      * <pre>
      * {
@@ -453,7 +457,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     /**
      * 发送消息给指定的客户端
-     *
+     * <p>
      * 客户端发送格式:
      * <pre>
      * {
@@ -501,14 +505,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // 发送消息给目标客户端
-        Map<String, Object> targetMessage = Map.of(
-                "type", "message_from_client",
-                "fromClientId", clientId,
-                "message", messageContent,
-                "timestamp", System.currentTimeMillis()
-        );
-        sendMessage(targetClientId, targetMessage);
+        // 发送消息给目标客户端（将 JSON 字符串解析为 Map 发送）
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> targetMessage = objectMapper.readValue((String) messageContent, Map.class);
+            sendMessage(targetClientId, targetMessage);
+        } catch (Exception e) {
+            log.error("Failed to parse message content as JSON: {}", messageContent, e);
+            sendError(clientId, "Invalid JSON format in message content");
+            return;
+        }
 
         // 确认发送成功
         Map<String, Object> confirmResponse = Map.of(
@@ -554,6 +560,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             log.debug("Sending heartbeat to {} clients", sessionManager.getActiveConnectionCount());
 
             Map<String, Object> heartbeat = Map.of(
+                    "action", "heartbeat",
                     "type", "heartbeat",
                     "timestamp", System.currentTimeMillis()
             );
