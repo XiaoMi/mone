@@ -669,7 +669,12 @@
                         `来自 ${message.fromClientId}:\n${JSON.stringify(message.message, null, 2)}`);
                     break;
                 case 'send_to_client_success':
-                    addMessage('received', type, `消息已发送给 ${message.targetClientId}`);
+                    // 显示执行结果，包含 response 数据
+                    let successMsg = `消息已发送给 ${message.targetClientId}`;
+                    if (message.response) {
+                        successMsg += `\n\n执行结果:\n${JSON.stringify(message.response, null, 2)}`;
+                    }
+                    addMessage('received', type, successMsg);
                     break;
                 case 'send_to_client_error':
                     addMessage('received', type, `发送失败: ${message.error}`);
