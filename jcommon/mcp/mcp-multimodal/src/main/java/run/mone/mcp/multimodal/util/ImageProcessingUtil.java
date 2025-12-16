@@ -12,12 +12,14 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 
 @Slf4j
@@ -27,6 +29,31 @@ public class ImageProcessingUtil {
      * 图片压缩阈值：1MB
      */
     private static final long COMPRESSION_THRESHOLD = 1024 * 1024;
+
+    /**
+     * 图片压缩结果，包含 Base64 和元信息
+     */
+    public static class CompressionResult {
+        private final String base64;
+        private final boolean compressed;
+        private final String imageType;
+        private final long originalSize;
+        private final long resultSize;
+
+        public CompressionResult(String base64, boolean compressed, String imageType, long originalSize, long resultSize) {
+            this.base64 = base64;
+            this.compressed = compressed;
+            this.imageType = imageType;
+            this.originalSize = originalSize;
+            this.resultSize = resultSize;
+        }
+
+        public String getBase64() { return base64; }
+        public boolean isCompressed() { return compressed; }
+        public String getImageType() { return imageType; }
+        public long getOriginalSize() { return originalSize; }
+        public long getResultSize() { return resultSize; }
+    }
 
     /**
      * 默认压缩比例：保持原尺寸（1.0），只做格式压缩
@@ -311,25 +338,29 @@ public class ImageProcessingUtil {
     }
 
     /**
-     * 将图片文件转换为 Base64，如果超过 1MB 则自动压缩为原尺寸的 1/2
+     * 将图片文件转换为 Base64，如果超过 1MB 则自动压缩
+     * 返回包含 Base64 和元信息的结果对象
+     * 压缩后的图片会异步保存到磁盘（用于校验）
      *
      * @param imagePath 图片文件路径
-     * @return Base64 编码的字符串
+     * @return CompressionResult 包含 base64、是否压缩、图片类型等信息
      * @throws IOException 如果文件读取失败
      */
-    public static String imageToBase64WithCompression(String imagePath) throws IOException {
+    public static CompressionResult compressAndEncode(String imagePath) throws IOException {
         Path path = Paths.get(imagePath);
         File file = path.toFile();
         long fileSize = file.length();
+        String originalType = getImageTypeFromPath(imagePath);
 
         // 如果文件小于 1MB，直接返回原图的 Base64
         if (fileSize <= COMPRESSION_THRESHOLD) {
             log.debug("图片大小 {}KB，无需压缩", fileSize / 1024);
-            return imageToBase64(imagePath);
+            String base64 = imageToBase64(imagePath);
+            return new CompressionResult(base64, false, originalType, fileSize, fileSize);
         }
 
         // 文件超过 1MB，进行压缩
-        log.info("图片大小 {}KB 超过 1MB，进行压缩（缩放到 50%）", fileSize / 1024);
+        log.info("图片大小 {}KB 超过 1MB，进行 JPEG 压缩", fileSize / 1024);
 
         BufferedImage originalImage = ImageIO.read(file);
         if (originalImage == null) {
@@ -338,13 +369,96 @@ public class ImageProcessingUtil {
 
         // 压缩图片
         byte[] compressedBytes = compressImage(originalImage, DEFAULT_SCALE, JPEG_QUALITY);
+        long resultSize = compressedBytes.length;
 
         log.info("压缩完成: {}KB -> {}KB (压缩率 {:.1f}%)",
                 fileSize / 1024,
-                compressedBytes.length / 1024,
-                (1 - (double) compressedBytes.length / fileSize) * 100);
+                resultSize / 1024,
+                (1 - (double) resultSize / fileSize) * 100);
 
-        return Base64.getEncoder().encodeToString(compressedBytes);
+        // 异步保存压缩后的图片到磁盘（用于校验）
+        saveCompressedImageAsync(imagePath, compressedBytes);
+
+        String base64 = Base64.getEncoder().encodeToString(compressedBytes);
+        return new CompressionResult(base64, true, "jpeg", fileSize, resultSize);
+    }
+
+    /**
+     * 异步保存压缩后的图片到磁盘
+     * 文件名格式：原文件名_compressed.jpg
+     *
+     * @param originalPath    原始图片路径
+     * @param compressedBytes 压缩后的字节数组
+     */
+    private static void saveCompressedImageAsync(String originalPath, byte[] compressedBytes) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 生成压缩后的文件路径
+                String compressedPath = generateCompressedFilePath(originalPath);
+
+                // 保存到磁盘
+                try (FileOutputStream fos = new FileOutputStream(compressedPath)) {
+                    fos.write(compressedBytes);
+                }
+
+                log.info("压缩图片已保存: {}", compressedPath);
+            } catch (Exception e) {
+                log.warn("异步保存压缩图片失败: {}", e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 生成压缩后的文件路径
+     * 例如：/path/to/screenshot.png -> /path/to/screenshot_compressed.jpg
+     *
+     * @param originalPath 原始文件路径
+     * @return 压缩后的文件路径
+     */
+    private static String generateCompressedFilePath(String originalPath) {
+        Path path = Paths.get(originalPath);
+        String fileName = path.getFileName().toString();
+
+        // 移除原扩展名
+        int dotIndex = fileName.lastIndexOf('.');
+        String baseName = (dotIndex > 0) ? fileName.substring(0, dotIndex) : fileName;
+
+        // 添加 _compressed 后缀和 .jpg 扩展名
+        String compressedFileName = baseName + "_compressed.jpg";
+
+        // 返回完整路径
+        Path parent = path.getParent();
+        if (parent != null) {
+            return parent.resolve(compressedFileName).toString();
+        }
+        return compressedFileName;
+    }
+
+    /**
+     * 将图片文件转换为 Base64，如果超过 1MB 则自动压缩
+     * 简化版本，只返回 Base64 字符串
+     *
+     * @param imagePath 图片文件路径
+     * @return Base64 编码的字符串
+     * @throws IOException 如果文件读取失败
+     */
+    public static String imageToBase64WithCompression(String imagePath) throws IOException {
+        return compressAndEncode(imagePath).getBase64();
+    }
+
+    /**
+     * 从文件路径获取图片类型
+     */
+    private static String getImageTypeFromPath(String imagePath) {
+        String lower = imagePath.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "jpeg";
+        } else if (lower.endsWith(".gif")) {
+            return "gif";
+        } else if (lower.endsWith(".webp")) {
+            return "webp";
+        }
+        return "png";
     }
 
     /**
