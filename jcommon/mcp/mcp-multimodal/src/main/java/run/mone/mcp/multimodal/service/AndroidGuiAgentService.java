@@ -79,7 +79,10 @@ public class AndroidGuiAgentService {
      */
     public Mono<String> run(String imagePath, String userPrompt, String systemPrompt, LLMProvider llmProvider) {
         try {
-            String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
+            // 使用带压缩的方法：超过 1MB 自动压缩为 JPEG
+            // 返回结果包含 base64 和图片类型，避免重复检查文件大小
+            ImageProcessingUtil.CompressionResult result = ImageProcessingUtil.compressAndEncode(imagePath);
+
             LLM llm = new LLM(LLMConfig.builder()
                     .llmProvider(llmProvider)
                     .temperature(Prompt.temperature)
@@ -87,10 +90,19 @@ public class AndroidGuiAgentService {
                     .build());
             LLM.LLMCompoundMsg m = LLM.getLlmCompoundMsg(userPrompt,
                     Message.builder()
-                            .images(Lists.newArrayList(base64Image))
+                            .images(Lists.newArrayList(result.getBase64()))
                             .build());
-            m.setImageType("png");
-            log.info("使用模型: {} 分析截图", llmProvider);
+            m.setImageType(result.getImageType());
+
+            if (result.isCompressed()) {
+                log.info("使用模型: {} 分析截图, 图片类型: {} (已压缩: {}KB -> {}KB)",
+                        llmProvider, result.getImageType(),
+                        result.getOriginalSize() / 1024, result.getResultSize() / 1024);
+            } else {
+                log.info("使用模型: {} 分析截图, 图片类型: {} (原始大小: {}KB)",
+                        llmProvider, result.getImageType(), result.getOriginalSize() / 1024);
+            }
+
             Flux<String> flux = llm.compoundMsgCall(m, systemPrompt);
             return flux.collect(Collectors.joining());
         } catch (Exception e) {
