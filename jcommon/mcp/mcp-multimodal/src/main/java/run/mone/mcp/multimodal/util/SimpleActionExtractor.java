@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  * - scroll(point='<point>x y</point>', direction='xxx')
  * - drag(start_point='<point>x y</point>', end_point='<point>x y</point>')
  *
- * @author goodjava@qq.com
+ * @author shanwb
  * @date 2025/12/16
  */
 @Slf4j

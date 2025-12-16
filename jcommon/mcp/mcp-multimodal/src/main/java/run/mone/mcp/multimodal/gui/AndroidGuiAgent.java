@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
  * 负责分析 Android 设备截图，拆分任务并执行操作
  *
  * @author goodjava@qq.com
+ * @author shanwb
  * @date 2025/12/13
  */
 @Service
