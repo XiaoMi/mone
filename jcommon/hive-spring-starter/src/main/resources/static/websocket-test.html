@@ -447,6 +447,34 @@
                 <button class="btn-primary" onclick="sendAgentMessage()">🤖 发送给 Agent</button>
             </div>
 
+            <!-- 无障碍指令任务面板 -->
+            <div class="clients-panel">
+                <h3>
+                    <span>📱 无障碍指令任务列表</span>
+                    <button class="btn-refresh" onclick="toggleCommandList()">👁️ 显示/隐藏</button>
+                </h3>
+                <div class="command-list" id="commandList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px;">
+                    <span class="no-clients">点击显示/隐藏按钮查看指令列表</span>
+                </div>
+                <div class="quick-actions" style="margin-top: 15px;">
+                    <button class="btn-info" onclick="insertCommand('heartbeat')">心跳检测</button>
+                    <button class="btn-info" onclick="insertCommand('click')">点击坐标</button>
+                    <button class="btn-info" onclick="insertCommand('long_press')">长按</button>
+                    <button class="btn-info" onclick="insertCommand('scroll')">滑动</button>
+                    <button class="btn-info" onclick="insertCommand('drag')">拖拽</button>
+                    <button class="btn-info" onclick="insertCommand('type')">输入文本</button>
+                    <button class="btn-info" onclick="insertCommand('press_home')">Home键</button>
+                    <button class="btn-info" onclick="insertCommand('press_back')">返回键</button>
+                    <button class="btn-info" onclick="insertCommand('press_recents')">最近任务</button>
+                    <button class="btn-info" onclick="insertCommand('open_notifications')">通知栏</button>
+                    <button class="btn-info" onclick="insertCommand('open_quick_settings')">快速设置</button>
+                    <button class="btn-info" onclick="insertCommand('screenshot')">截图</button>
+                    <button class="btn-info" onclick="insertCommand('open_app')">打开应用</button>
+                    <button class="btn-info" onclick="insertCommand('ping')">Ping</button>
+                    <button class="btn-info" onclick="insertCommand('status')">状态查询</button>
+                </div>
+            </div>
+
             <!-- 客户端列表面板 -->
             <div class="clients-panel" id="clientsPanel">
                 <h3>
@@ -940,6 +968,186 @@
             if (ws) {
                 ws.close();
             }
+        });
+
+        // 无障碍指令命令模板
+        const commandTemplates = {
+            heartbeat: {
+                action: "heartbeat"
+            },
+            click: {
+                action: "click",
+                params: {
+                    x: 500,
+                    y: 800
+                }
+            },
+            long_press: {
+                action: "long_press",
+                params: {
+                    x: 500,
+                    y: 800,
+                    duration: 1000
+                }
+            },
+            scroll: {
+                action: "scroll",
+                params: {
+                    x: 500,
+                    y: 800,
+                    direction: "up",
+                    distance: 500
+                }
+            },
+            drag: {
+                action: "drag",
+                params: {
+                    x: 300,
+                    y: 800,
+                    x2: 700,
+                    y2: 800,
+                    duration: 500
+                }
+            },
+            type: {
+                action: "type",
+                params: {
+                    content: "输入的文本内容"
+                }
+            },
+            press_home: {
+                action: "press_home"
+            },
+            press_back: {
+                action: "press_back"
+            },
+            press_recents: {
+                action: "press_recents"
+            },
+            open_notifications: {
+                action: "open_notifications"
+            },
+            open_quick_settings: {
+                action: "open_quick_settings"
+            },
+            screenshot: {
+                action: "screenshot"
+            },
+            open_app: {
+                action: "open_app",
+                params: {
+                    packageName: "com.android.settings"
+                }
+            },
+            ping: {
+                action: "ping"
+            },
+            status: {
+                action: "status"
+            }
+        };
+
+        // 切换命令列表显示
+        function toggleCommandList() {
+            const commandList = document.getElementById('commandList');
+            if (commandList.style.display === 'none') {
+                // 显示命令列表
+                commandList.style.display = 'grid';
+                commandList.innerHTML = '';
+
+                Object.keys(commandTemplates).forEach(command => {
+                    const item = document.createElement('div');
+                    item.className = 'client-item';
+                    item.style.cursor = 'pointer';
+                    item.textContent = command;
+                    item.onclick = () => insertCommand(command);
+                    commandList.appendChild(item);
+                });
+            } else {
+                commandList.style.display = 'none';
+            }
+        }
+
+        // 插入命令到消息框
+        function insertCommand(commandType) {
+            const template = commandTemplates[commandType];
+            if (!template) return;
+
+            // 构建无障碍指令的 JSON 格式
+            const accessibilityCommand = {
+                ...template
+            };
+
+            // 检查是否选中了目标客户端
+            if (!selectedTargetClientId) {
+                alert('请先选择要发送指令的目标客户端');
+                return;
+            }
+
+            // 将 JSON 插入到客户端消息框
+            const clientMessageTextarea = document.getElementById('clientMessage');
+            clientMessageTextarea.value = JSON.stringify(accessibilityCommand, null, 2);
+
+            // 显示提示
+            addMessage('system', 'command_inserted', `已插入 ${commandType} 指令模板到消息框`);
+
+            // 聚焦到消息框
+            clientMessageTextarea.focus();
+
+            // 滚动到发送面板
+            document.getElementById('sendToClientPanel').scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest'
+            });
+        }
+
+        // 显示命令详情（可选功能）
+        function showCommandDetails(command) {
+            const template = commandTemplates[command];
+            if (!template) return;
+
+            let details = `指令: ${command}\n`;
+            if (template.params) {
+                details += `参数: ${JSON.stringify(template.params, null, 2)}`;
+            } else {
+                details += '参数: 无';
+            }
+
+            alert(details);
+        }
+
+        // 双击显示命令详情
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为所有命令按钮添加双击事件
+            setTimeout(() => {
+                const commandButtons = document.querySelectorAll('.quick-actions .btn-info');
+                commandButtons.forEach(button => {
+                    button.addEventListener('dblclick', function() {
+                        const command = this.textContent.replace(/[Α-￥]/g, ''); // 移除中文
+                        const commandMap = {
+                            '心跳检测': 'heartbeat',
+                            '点击坐标': 'click',
+                            '长按': 'long_press',
+                            '滑动': 'scroll',
+                            '拖拽': 'drag',
+                            '输入文本': 'type',
+                            'Home键': 'press_home',
+                            '返回键': 'press_back',
+                            '最近任务': 'press_recents',
+                            '通知栏': 'open_notifications',
+                            '快速设置': 'open_quick_settings',
+                            '截图': 'screenshot',
+                            '打开应用': 'open_app',
+                            'Ping': 'ping',
+                            '状态查询': 'status'
+                        };
+                        const englishCommand = commandMap[this.textContent];
+                        if (englishCommand) {
+                            showCommandDetails(englishCommand);
+                        }
+                    });
+                });
+            }, 100);
         });
     </script>
 </body>
