@@ -29,7 +29,7 @@ public class HttpUtils {
     }
 
 
-    public <T> String request(String url, Map<String, Object> params, Class<?> clazz) throws JsonProcessingException {
+    public <T> String request(String url, Map<String, Object> params, Class<T> clazz) throws JsonProcessingException {
         RequestBody body = RequestBody.create(
                 objectMapper.writeValueAsString(params),
                 MediaType.parse("application/json; charset=utf-8")
