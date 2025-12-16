@@ -9,10 +9,18 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import reactor.core.publisher.Flux;
+
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PreDestroy;
@@ -40,6 +48,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final RoleService roleService;
     private final WebSocketProperties webSocketProperties;
+
+    /**
+     * 图片分析使用的 LLM Provider，默认使用 DOUBAO_VISION
+     */
+    @Value("${mcp.websocket.img.provider:DOUBAO_VISION}")
+    private String imgLlmProvider;
 
     // 使用单例管理会话
     private final WebSocketSessionManager sessionManager = WebSocketSessionManager.getInstance();
@@ -228,10 +242,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理普通消息
      */
+    @SuppressWarnings("unchecked")
     private void handleMessage(String clientId, Map<String, Object> messageMap) {
         // 这里可以调用 roleService 处理业务逻辑
         Object data = messageMap.get("data");
         log.info("Processing message from client {}: {}", clientId, data);
+
+        // 检查是否有 cmd 字段
+        if (data instanceof Map) {
+            Map<String, Object> dataMap = (Map<String, Object>) data;
+            String cmd = (String) dataMap.get("cmd");
+
+            if ("img".equals(cmd)) {
+                // 处理图片分析请求
+                handleImageAnalysis(clientId, dataMap);
+                return;
+            }
+        }
 
         // 发送响应
         Map<String, Object> response = Map.of(
@@ -241,6 +268,159 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 "timestamp", System.currentTimeMillis()
         );
         sendMessage(clientId, response);
+    }
+
+    /**
+     * 处理图片分析请求
+     * 当 cmd=img 时，调用大模型分析图片
+     *
+     * 客户端发送格式:
+     * <pre>
+     * {
+     *     "type": "message",
+     *     "data": {
+     *         "cmd": "img",
+     *         "image": "base64编码的图片数据",
+     *         "prompt": "用户提示词",
+     *         "systemPrompt": "系统提示词(可选)"
+     *     }
+     * }
+     * </pre>
+     */
+    private void handleImageAnalysis(String clientId, Map<String, Object> dataMap) {
+        String imageBase64 = (String) dataMap.get("image");
+        String userPrompt = (String) dataMap.get("prompt");
+        String systemPrompt = dataMap.containsKey("systemPrompt") ?
+                (String) dataMap.get("systemPrompt") : "你是一个智能助手，请分析图片内容并回答用户的问题。";
+
+        // 参数校验
+        if (imageBase64 == null || imageBase64.isEmpty()) {
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "img_analysis_error",
+                    "error", "图片数据不能为空",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+            return;
+        }
+
+        if (userPrompt == null || userPrompt.isEmpty()) {
+            userPrompt = "请描述这张图片的内容";
+        }
+
+        log.info("Processing image analysis for client {}, prompt: {}", clientId, userPrompt);
+
+        try {
+            // 确定 LLMProvider
+            LLMProvider llmProvider;
+            try {
+                llmProvider = LLMProvider.valueOf(imgLlmProvider);
+            } catch (IllegalArgumentException e) {
+                llmProvider = LLMProvider.DOUBAO_VISION;
+                log.warn("Invalid imgLlmProvider: {}, using default: DOUBAO_VISION", imgLlmProvider);
+            }
+
+            // 创建 LLM 实例
+            LLM llm = new LLM(LLMConfig.builder()
+                    .llmProvider(llmProvider)
+                    .temperature(0.7)
+                    .thinking(true)
+                    .build());
+
+            // 构建包含图片的消息
+            LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt,
+                    Message.builder()
+                            .images(Lists.newArrayList(imageBase64))
+                            .build());
+
+            // 根据图片数据判断图片类型
+            String imageType = detectImageType(imageBase64);
+            compoundMsg.setImageType(imageType);
+
+            log.info("使用模型: {} 分析图片, 图片类型: {}", llmProvider, imageType);
+
+            // 调用大模型进行图片分析
+            String finalUserPrompt = userPrompt;
+            Flux<String> flux = llm.compoundMsgCall(compoundMsg, systemPrompt);
+            flux.collect(Collectors.joining())
+                    .subscribe(
+                            result -> {
+                                // 成功回调
+                                log.info("Image analysis completed for client {}", clientId);
+                                Map<String, Object> successResponse = new java.util.HashMap<>();
+                                successResponse.put("type", "img_analysis_response");
+                                successResponse.put("result", result);
+                                successResponse.put("prompt", finalUserPrompt);
+                                successResponse.put("timestamp", System.currentTimeMillis());
+                                sendMessage(clientId, successResponse);
+                            },
+                            error -> {
+                                // 错误回调
+                                log.error("Image analysis failed for client {}: {}", clientId, error.getMessage(), error);
+                                Map<String, Object> errorResponse = Map.of(
+                                        "type", "img_analysis_error",
+                                        "error", error.getMessage() != null ? error.getMessage() : "图片分析失败",
+                                        "timestamp", System.currentTimeMillis()
+                                );
+                                sendMessage(clientId, errorResponse);
+                            }
+                    );
+
+        } catch (Exception e) {
+            log.error("Failed to process image analysis for client {}: {}", clientId, e.getMessage(), e);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "img_analysis_error",
+                    "error", e.getMessage() != null ? e.getMessage() : "图片分析处理异常",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+        }
+    }
+
+    /**
+     * 检测图片类型
+     * 根据 base64 数据的前缀判断图片类型
+     */
+    private String detectImageType(String base64Data) {
+        if (base64Data == null || base64Data.isEmpty()) {
+            return "jpeg";
+        }
+
+        // 检查是否包含 data URI scheme
+        if (base64Data.startsWith("data:")) {
+            if (base64Data.startsWith("data:image/png")) {
+                return "png";
+            } else if (base64Data.startsWith("data:image/gif")) {
+                return "gif";
+            } else if (base64Data.startsWith("data:image/webp")) {
+                return "webp";
+            }
+            return "png";
+        }
+
+        // 通过 base64 数据的头部字节判断
+        try {
+            byte[] bytes = java.util.Base64.getDecoder().decode(
+                    base64Data.length() > 20 ? base64Data.substring(0, 20) : base64Data);
+            if (bytes.length >= 8) {
+                // PNG: 89 50 4E 47 0D 0A 1A 0A
+                if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+                    return "png";
+                }
+                // GIF: 47 49 46 38
+                if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) {
+                    return "gif";
+                }
+                // JPEG: FF D8 FF
+                if (bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8 && bytes[2] == (byte) 0xFF) {
+                    return "jpeg";
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to detect image type from base64 data: {}", e.getMessage());
+        }
+
+        return "jpeg";
     }
 
     /**

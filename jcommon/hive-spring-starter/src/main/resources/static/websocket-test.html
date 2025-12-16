@@ -834,6 +834,14 @@
                 case 'agent_complete':
                     addMessage('received', 'agent_complete', JSON.stringify(message, null, 2));
                     break;
+                case 'img_analysis_response':
+                    // 图片分析响应
+                    addMessage('received', 'img_analysis', `🤖 图片分析结果:\n\n提示词: ${message.prompt}\n\n${message.result}`);
+                    break;
+                case 'img_analysis_error':
+                    // 图片分析错误
+                    addMessage('received', 'img_analysis_error', `❌ 图片分析失败: ${message.error}`);
+                    break;
                 case 'clients_list':
                     // 处理客户端列表
                     updateClientsList(message.clients);
@@ -1020,26 +1028,56 @@
             }
 
             try {
+                let data = JSON.parse(content);
+
+                // 如果有截图预览，自动添加 cmd=img 和 image 参数
+                if (lastScreenshotData && lastScreenshotData.image) {
+                    data.cmd = 'img';
+                    data.image = lastScreenshotData.image;
+                    // 如果用户输入的内容没有 prompt，使用 content 作为 prompt
+                    if (!data.prompt && data.content) {
+                        data.prompt = data.content;
+                    }
+                }
+
                 const message = {
                     type: 'message',
-                    data: JSON.parse(content)
+                    data: data
                 };
 
                 ws.send(JSON.stringify(message));
                 sentCount++;
                 document.getElementById('sentCount').textContent = sentCount;
-                addMessage('sent', 'message', JSON.stringify(message, null, 2));
+                // 显示消息时隐藏 image 数据（太长了）
+                const displayData = { ...data };
+                if (displayData.image) {
+                    displayData.image = '[base64 image data...]';
+                }
+                addMessage('sent', 'message', JSON.stringify({ type: 'message', data: displayData }, null, 2));
                 messageInput.value = '';
             } catch (error) {
-                // 如果不是 JSON，直接发送字符串
+                // 如果不是 JSON，直接发送字符串作为 prompt
+                let data = { prompt: content };
+
+                // 如果有截图预览，自动添加 cmd=img 和 image 参数
+                if (lastScreenshotData && lastScreenshotData.image) {
+                    data.cmd = 'img';
+                    data.image = lastScreenshotData.image;
+                }
+
                 const message = {
                     type: 'message',
-                    data: { content: content }
+                    data: data
                 };
                 ws.send(JSON.stringify(message));
                 sentCount++;
                 document.getElementById('sentCount').textContent = sentCount;
-                addMessage('sent', 'message', JSON.stringify(message, null, 2));
+                // 显示消息时隐藏 image 数据
+                const displayData = { ...data };
+                if (displayData.image) {
+                    displayData.image = '[base64 image data...]';
+                }
+                addMessage('sent', 'message', JSON.stringify({ type: 'message', data: displayData }, null, 2));
                 messageInput.value = '';
             }
         }
