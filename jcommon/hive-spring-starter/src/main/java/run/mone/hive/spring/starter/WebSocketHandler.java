@@ -177,6 +177,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 case "send_to_client":
                     handleSendToClient(clientId, messageMap);
                     break;
+                case "client_response":
+                    handleClientResponse(messageMap);
+                    break;
                 default:
                     log.warn("Unknown message type: {}", type);
                     sendError(clientId, "Unknown message type: " + type);
@@ -456,7 +459,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 发送消息给指定的客户端
+     * 发送消息给指定的客户端（阻塞式，等待客户端响应）
      * <p>
      * 客户端发送格式:
      * <pre>
@@ -464,8 +467,29 @@ public class WebSocketHandler extends TextWebSocketHandler {
      *     "type": "send_to_client",
      *     "data": {
      *         "targetClientId": "目标客户端ID",
-     *         "message": "要发送的消息内容"
+     *         "message": "要发送的消息内容",
+     *         "timeout": 30  // 可选，超时时间（秒），默认30秒
      *     }
+     * }
+     * </pre>
+     * <p>
+     * 发送给目标客户端的消息格式:
+     * <pre>
+     * {
+     *     "type": "message_from_client",
+     *     "reqId": "请求ID，客户端需要在响应中返回相同的resId",
+     *     "fromClientId": "发送者ID",
+     *     "message": { ... },
+     *     "timestamp": 1234567890
+     * }
+     * </pre>
+     * <p>
+     * 客户端响应格式:
+     * <pre>
+     * {
+     *     "type": "client_response",
+     *     "resId": "与reqId相同",
+     *     "data": { ... }
      * }
      * </pre>
      */
@@ -480,6 +504,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         String targetClientId = (String) data.get("targetClientId");
         Object messageContent = data.get("message");
+        // 获取超时时间，默认30秒
+        Integer timeout = data.get("timeout") != null ? ((Number) data.get("timeout")).intValue() : 30;
 
         if (targetClientId == null || targetClientId.isEmpty()) {
             sendError(clientId, "Missing targetClientId");
@@ -491,7 +517,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        log.info("Sending message from {} to {}: {}", clientId, targetClientId, messageContent);
+        log.info("Sending blocking message from {} to {}: {}", clientId, targetClientId, messageContent);
 
         // 检查目标客户端是否存在
         if (!sessionManager.isSessionActive(targetClientId)) {
@@ -505,25 +531,100 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // 发送消息给目标客户端（将 JSON 字符串解析为 Map 发送）
+        // 生成唯一请求ID
+        String reqId = java.util.UUID.randomUUID().toString().replace("-", "");
+
+        // 创建 CompletableFuture 用于等待响应
+        java.util.concurrent.CompletableFuture<Map<String, Object>> future = new java.util.concurrent.CompletableFuture<>();
+        WebSocketCaller.getInstance().registerPendingRequest(reqId, future);
+
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> targetMessage = objectMapper.readValue((String) messageContent, Map.class);
+            // 解析消息内容并直接把 reqId 放入
+            Map<String, Object> targetMessage;
+            if (messageContent instanceof String) {
+                // 字符串类型：解析成 Map，直接放入 reqId 后发送
+                targetMessage = new java.util.HashMap<>(objectMapper.readValue((String) messageContent, Map.class));
+                targetMessage.put("reqId", reqId);
+            } else if (messageContent instanceof Map) {
+                // Map 类型：复制一份，放入 reqId 后发送
+                targetMessage = new java.util.HashMap<>((Map<String, Object>) messageContent);
+                targetMessage.put("reqId", reqId);
+            } else {
+                sendError(clientId, "Invalid message format");
+                return;
+            }
+
+            // 发送消息给目标客户端（直接发送带 reqId 的消息）
             sendMessage(targetClientId, targetMessage);
+
+            log.info("Waiting for response from client {}, reqId: {}, timeout: {}s", targetClientId, reqId, timeout);
+
+            // 阻塞等待响应
+            Map<String, Object> response = future.get(timeout, java.util.concurrent.TimeUnit.SECONDS);
+
+            log.info("Received response for reqId: {}, response: {}", reqId, response);
+
+            // 返回成功响应给调用者
+            Map<String, Object> confirmResponse = new java.util.HashMap<>();
+            confirmResponse.put("type", "send_to_client_success");
+            confirmResponse.put("targetClientId", targetClientId);
+            confirmResponse.put("reqId", reqId);
+            confirmResponse.put("response", response);
+            confirmResponse.put("message", "Message processed successfully");
+            confirmResponse.put("timestamp", System.currentTimeMillis());
+            sendMessage(clientId, confirmResponse);
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Timeout waiting for response from client {}, reqId: {}", targetClientId, reqId);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "send_to_client_error",
+                    "targetClientId", targetClientId,
+                    "reqId", reqId,
+                    "error", "Timeout waiting for client response",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
         } catch (Exception e) {
-            log.error("Failed to parse message content as JSON: {}", messageContent, e);
-            sendError(clientId, "Invalid JSON format in message content");
+            log.error("Failed to send message to client {}: {}", targetClientId, e.getMessage(), e);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "send_to_client_error",
+                    "targetClientId", targetClientId,
+                    "reqId", reqId,
+                    "error", e.getMessage() != null ? e.getMessage() : "Unknown error",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+        } finally {
+            // 清理等待的请求
+            WebSocketCaller.getInstance().removePendingRequest(reqId);
+        }
+    }
+
+    /**
+     * 处理客户端响应消息
+     * 当目标客户端处理完消息后，发送此响应解除调用者阻塞
+     * <p>
+     * 客户端响应格式:
+     * <pre>
+     * {
+     *     "type": "client_response",
+     *     "resId": "与reqId相同",
+     *     "data": { ... }
+     * }
+     * </pre>
+     */
+    @SuppressWarnings("unchecked")
+    private void handleClientResponse(Map<String, Object> messageMap) {
+        String resId = (String) messageMap.get("resId");
+        if (resId == null) {
+            log.warn("Client response missing resId");
             return;
         }
 
-        // 确认发送成功
-        Map<String, Object> confirmResponse = Map.of(
-                "type", "send_to_client_success",
-                "targetClientId", targetClientId,
-                "message", "Message sent successfully",
-                "timestamp", System.currentTimeMillis()
-        );
-        sendMessage(clientId, confirmResponse);
+        Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+        log.info("Received client response for resId: {}", resId);
+
+        WebSocketCaller.getInstance().handleResponse(resId, data != null ? data : Map.of());
     }
 
     /**
