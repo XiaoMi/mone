@@ -341,7 +341,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // 调用大模型进行图片分析
             String finalUserPrompt = userPrompt;
-            Flux<String> flux = llm.compoundMsgCall(compoundMsg, systemPrompt);
+            Flux<String> flux = llm.compoundMsgCall(compoundMsg, Prompt.prompt);
             flux.collect(Collectors.joining())
                     .subscribe(
                             result -> {
