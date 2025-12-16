@@ -1,19 +1,45 @@
 package run.mone.mcp.multimodal.util;
 
+import lombok.extern.slf4j.Slf4j;
+
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Iterator;
 
+
+@Slf4j
 public class ImageProcessingUtil {
+
+    /**
+     * 图片压缩阈值：1MB
+     */
+    private static final long COMPRESSION_THRESHOLD = 1024 * 1024;
+
+    /**
+     * 默认压缩比例：保持原尺寸（1.0），只做格式压缩
+     * 如果需要降采样可以改为 0.5 或 0.7
+     */
+    private static final double DEFAULT_SCALE = 1.0;
+
+    /**
+     * JPEG 压缩质量（0.0-1.0）
+     * 0.85 是高质量，文件较小
+     * 0.90 是接近无损，文件稍大
+     */
+    private static final float JPEG_QUALITY = 0.85f;
 
     /**
      * Convert image file to base64 string with MIME type prefix
@@ -282,5 +308,129 @@ public class ImageProcessingUtil {
         ImageIO.write(image, format, outputStream);
         byte[] imageBytes = outputStream.toByteArray();
         return Base64.getEncoder().encodeToString(imageBytes);
+    }
+
+    /**
+     * 将图片文件转换为 Base64，如果超过 1MB 则自动压缩为原尺寸的 1/2
+     *
+     * @param imagePath 图片文件路径
+     * @return Base64 编码的字符串
+     * @throws IOException 如果文件读取失败
+     */
+    public static String imageToBase64WithCompression(String imagePath) throws IOException {
+        Path path = Paths.get(imagePath);
+        File file = path.toFile();
+        long fileSize = file.length();
+
+        // 如果文件小于 1MB，直接返回原图的 Base64
+        if (fileSize <= COMPRESSION_THRESHOLD) {
+            log.debug("图片大小 {}KB，无需压缩", fileSize / 1024);
+            return imageToBase64(imagePath);
+        }
+
+        // 文件超过 1MB，进行压缩
+        log.info("图片大小 {}KB 超过 1MB，进行压缩（缩放到 50%）", fileSize / 1024);
+
+        BufferedImage originalImage = ImageIO.read(file);
+        if (originalImage == null) {
+            throw new IOException("无法读取图片: " + imagePath);
+        }
+
+        // 压缩图片
+        byte[] compressedBytes = compressImage(originalImage, DEFAULT_SCALE, JPEG_QUALITY);
+
+        log.info("压缩完成: {}KB -> {}KB (压缩率 {:.1f}%)",
+                fileSize / 1024,
+                compressedBytes.length / 1024,
+                (1 - (double) compressedBytes.length / fileSize) * 100);
+
+        return Base64.getEncoder().encodeToString(compressedBytes);
+    }
+
+    /**
+     * 压缩 BufferedImage
+     *
+     * @param image       原始图片
+     * @param scale       缩放比例 (0.0-1.0)
+     * @param jpegQuality JPEG 压缩质量 (0.0-1.0)
+     * @return 压缩后的字节数组
+     * @throws IOException 如果压缩失败
+     */
+    public static byte[] compressImage(BufferedImage image, double scale, float jpegQuality) throws IOException {
+        // 1. 计算新尺寸
+        int newWidth = (int) (image.getWidth() * scale);
+        int newHeight = (int) (image.getHeight() * scale);
+
+        // 2. 创建缩放后的图片（使用 RGB 类型，JPEG 不支持透明通道）
+        BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = resizedImage.createGraphics();
+
+        // 设置高质量缩放
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // 填充白色背景（处理 PNG 透明背景）
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(0, 0, newWidth, newHeight);
+
+        // 绘制缩放后的图片
+        g2d.drawImage(image, 0, 0, newWidth, newHeight, null);
+        g2d.dispose();
+
+        // 3. JPEG 压缩
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
+        if (!writers.hasNext()) {
+            throw new IOException("没有可用的 JPEG 编码器");
+        }
+
+        ImageWriter writer = writers.next();
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+            writer.setOutput(ios);
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionQuality(jpegQuality);
+
+            writer.write(null, new IIOImage(resizedImage, null, null), param);
+        } finally {
+            writer.dispose();
+        }
+
+        return baos.toByteArray();
+    }
+
+    /**
+     * 压缩 BufferedImage 并返回 Base64
+     *
+     * @param image       原始图片
+     * @param scale       缩放比例 (0.0-1.0)
+     * @param jpegQuality JPEG 压缩质量 (0.0-1.0)
+     * @return Base64 编码的字符串
+     * @throws IOException 如果压缩失败
+     */
+    public static String compressImageToBase64(BufferedImage image, double scale, float jpegQuality) throws IOException {
+        byte[] compressedBytes = compressImage(image, scale, jpegQuality);
+        return Base64.getEncoder().encodeToString(compressedBytes);
+    }
+
+    /**
+     * 根据文件大小判断是否需要压缩，并返回适当的 Base64
+     *
+     * @param image    BufferedImage 对象
+     * @param fileSize 原始文件大小（字节）
+     * @return Base64 编码的字符串
+     * @throws IOException 如果处理失败
+     */
+    public static String imageToBase64WithCompression(BufferedImage image, long fileSize) throws IOException {
+        // 估算：如果原始文件超过 1MB，进行压缩
+        if (fileSize > COMPRESSION_THRESHOLD) {
+            log.info("图片大小 {}KB 超过 1MB，进行压缩", fileSize / 1024);
+            return compressImageToBase64(image, DEFAULT_SCALE, JPEG_QUALITY);
+        }
+
+        // 否则直接转换
+        return imageToBase64(image, "png");
     }
 } 

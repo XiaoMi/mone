@@ -79,7 +79,12 @@ public class AndroidGuiAgentService {
      */
     public Mono<String> run(String imagePath, String userPrompt, String systemPrompt, LLMProvider llmProvider) {
         try {
-            String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
+            // 使用带压缩的方法：超过 1MB 自动压缩为 50%
+            String base64Image = ImageProcessingUtil.imageToBase64WithCompression(imagePath);
+
+            // 判断图片类型：压缩后是 JPEG，否则保持原格式
+            String imageType = isCompressed(imagePath) ? "jpeg" : getImageType(imagePath);
+
             LLM llm = new LLM(LLMConfig.builder()
                     .llmProvider(llmProvider)
                     .temperature(Prompt.temperature)
@@ -89,14 +94,41 @@ public class AndroidGuiAgentService {
                     Message.builder()
                             .images(Lists.newArrayList(base64Image))
                             .build());
-            m.setImageType("png");
-            log.info("使用模型: {} 分析截图", llmProvider);
+            m.setImageType(imageType);
+            log.info("使用模型: {} 分析截图, 图片类型: {}", llmProvider, imageType);
             Flux<String> flux = llm.compoundMsgCall(m, systemPrompt);
             return flux.collect(Collectors.joining());
         } catch (Exception e) {
             log.error("运行 Android GUI Agent 失败, 模型: {}", llmProvider, e);
             return Mono.error(e);
         }
+    }
+
+    /**
+     * 判断图片是否会被压缩（超过 1MB）
+     */
+    private boolean isCompressed(String imagePath) {
+        try {
+            java.io.File file = new java.io.File(imagePath);
+            return file.length() > 1024 * 1024; // 1MB
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 获取图片类型
+     */
+    private String getImageType(String imagePath) {
+        String lower = imagePath.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "jpeg";
+        } else if (lower.endsWith(".gif")) {
+            return "gif";
+        } else if (lower.endsWith(".webp")) {
+            return "webp";
+        }
+        return "png"; // 默认
     }
 
     /**
