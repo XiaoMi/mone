@@ -53,5 +53,27 @@ public class GatewayService {
         }
     }
 
+    public String searchFilter(String env, Map<String, Object> param) {
+        String path = "/open/v1/private/api/filter/search";
+        String host = urlConfig.get(env);
+        try {
+            JsonObject jsonObject = httpClient.post(host + path, gson.toJson(param));
+            return gson.toJson(jsonObject);
+        } catch (Exception e) {
+            return "error: " + e.getMessage();
+        }
+    }
+
+    public String searchApiByFilter(String env, Map<String, Object> param) {
+        String path = "/open/v1/private/api/apiInfo/searchByFilter";
+        String host = urlConfig.get(env);
+        try {
+            JsonObject jsonObject = httpClient.post(host + path, gson.toJson(param));
+            return gson.toJson(jsonObject);
+        } catch (Exception e) {
+            return "error: " + e.getMessage();
+        }
+    }
+
 
 }
