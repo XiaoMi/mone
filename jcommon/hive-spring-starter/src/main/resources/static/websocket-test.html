@@ -113,6 +113,53 @@
             font-weight: 600;
         }
 
+        .drag-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 12;
+            display: none;
+        }
+
+        .drag-line svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .drag-start-dot {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #00ff00;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 13;
+        }
+
+        .drag-info {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 14;
+            display: none;
+        }
+
         .container {
             background: white;
             border-radius: 16px;
@@ -501,9 +548,29 @@
             <img id="screenshotPreviewImage" style="display: none;" alt="截图预览" />
             <div class="coordinate-dot" id="coordinateDot"></div>
             <div class="coordinate-label" id="coordinateLabel"></div>
+            <div class="drag-start-dot" id="dragStartDot"></div>
+            <div class="drag-line" id="dragLine">
+                <svg id="dragLineSvg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ff6600" />
+                        </marker>
+                    </defs>
+                    <line id="dragLineElement" x1="0" y1="0" x2="0" y2="0"
+                          stroke="#ff6600" stroke-width="3" stroke-linecap="round"
+                          marker-end="url(#arrowhead)" />
+                </svg>
+            </div>
+            <div class="drag-info" id="dragInfo"></div>
         </div>
         <div class="screenshot-info" id="screenshotInfo" style="display: none;">
             分辨率: <span class="resolution" id="screenshotResolution">--</span>
+        </div>
+        <div class="screenshot-hint" style="margin-top: 8px; font-size: 11px; color: #888; text-align: center; line-height: 1.6;">
+            💡 点击 = 点击 | 拖动 = 滑动<br>
+            <span style="color: #00ff00;">●</span> 起点
+            <span style="color: #ff0000;">●</span> 当前位置
+            <span style="color: #ff6600;">→</span> 滑动方向
         </div>
     </div>
 
@@ -523,7 +590,7 @@
         <div class="control-panel">
             <div class="input-group">
                 <label for="serverUrl">服务器地址</label>
-                <input type="text" id="serverUrl" value="ws://localhost:8180/mcp/ws" placeholder="ws://localhost:8080/mcp/ws">
+                <input type="text" id="serverUrl" value="ws://localhost:8181/mcp/ws?clientId=admin" placeholder="ws://localhost:8080/mcp/ws">
             </div>
 
             <div class="button-group">
@@ -793,22 +860,24 @@
                         successMsg += `\n\n执行结果:\n${JSON.stringify(message.response, null, 2)}`;
                         addMessage('received', type, successMsg);
 
-                        // 检查是否需要自动截图（点击操作成功后）
+                        // 检查是否需要自动截图（UI改变操作成功后）
                         if (pendingAutoScreenshot && message.response.success) {
                             pendingAutoScreenshot = false;
-                            // 延迟一点时间让界面有时间响应点击
+                            // 延迟2秒让界面有时间响应操作
+                            addMessage('system', 'auto_screenshot_pending', '⏳ 2秒后自动截图...');
                             setTimeout(() => {
                                 sendScreenshotCommand();
-                            }, 500);
+                            }, 2000);
                         }
                     } else {
                         addMessage('received', type, successMsg);
                         // 如果没有 response 但有待执行的自动截图，也触发
                         if (pendingAutoScreenshot) {
                             pendingAutoScreenshot = false;
+                            addMessage('system', 'auto_screenshot_pending', '⏳ 2秒后自动截图...');
                             setTimeout(() => {
                                 sendScreenshotCommand();
-                            }, 500);
+                            }, 2000);
                         }
                     }
                     break;
@@ -1261,15 +1330,17 @@
             }
         }
 
-        // 插入命令到消息框
+        // 会改变 Android 界面的命令列表
+        const uiChangingCommands = [
+            'click', 'long_press', 'scroll', 'drag', 'type',
+            'press_home', 'press_back', 'press_recents',
+            'open_notifications', 'open_quick_settings', 'open_app'
+        ];
+
+        // 插入命令到消息框并自动发送
         function insertCommand(commandType) {
             const template = commandTemplates[commandType];
             if (!template) return;
-
-            // 构建无障碍指令的 JSON 格式
-            const accessibilityCommand = {
-                ...template
-            };
 
             // 检查是否选中了目标客户端
             if (!selectedTargetClientId) {
@@ -1277,21 +1348,43 @@
                 return;
             }
 
-            // 将 JSON 插入到客户端消息框
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('请先建立连接');
+                return;
+            }
+
+            // 构建无障碍指令的 JSON 格式
+            const accessibilityCommand = {
+                ...template
+            };
+
+            // 将 JSON 插入到客户端消息框（显示当前指令）
             const clientMessageTextarea = document.getElementById('clientMessage');
             clientMessageTextarea.value = JSON.stringify(accessibilityCommand, null, 2);
 
-            // 显示提示
-            addMessage('system', 'command_inserted', `已插入 ${commandType} 指令模板到消息框`);
+            // 判断是否是会改变界面的命令
+            const willChangeUI = uiChangingCommands.includes(commandType);
 
-            // 聚焦到消息框
-            clientMessageTextarea.focus();
+            // 如果会改变界面，设置自动截图标记
+            if (willChangeUI) {
+                pendingAutoScreenshot = true;
+            }
 
-            // 滚动到发送面板
-            document.getElementById('sendToClientPanel').scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest'
-            });
+            // 自动发送命令
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(accessibilityCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+
+            const emoji = willChangeUI ? '🚀' : '📡';
+            addMessage('sent', 'command', `${emoji} ${commandType} → ${selectedTargetClientId}${willChangeUI ? ' (2秒后自动截图)' : ''}`);
         }
 
         // 显示命令详情（可选功能）
@@ -1352,6 +1445,13 @@
         let screenshotHeight = 3200;    // 默认截图高度
         let pendingAutoScreenshot = false;  // 是否有待执行的自动截图
 
+        // 滑动操作相关变量
+        let isDragging = false;         // 是否正在拖动
+        let dragStartX = 0;             // 拖动起始点 X (屏幕坐标)
+        let dragStartY = 0;             // 拖动起始点 Y (屏幕坐标)
+        let dragStartAndroidX = 0;      // 拖动起始点 Android X
+        let dragStartAndroidY = 0;      // 拖动起始点 Android Y
+
         // 更新截图预览
         function updateScreenshotPreview(base64Image, width, height) {
             lastScreenshotData = {
@@ -1384,88 +1484,171 @@
             const previewImage = document.getElementById('screenshotPreviewImage');
             const dot = document.getElementById('coordinateDot');
             const label = document.getElementById('coordinateLabel');
+            const dragStartDot = document.getElementById('dragStartDot');
+            const dragLine = document.getElementById('dragLine');
+            const dragLineElement = document.getElementById('dragLineElement');
+            const dragInfo = document.getElementById('dragInfo');
+
+            // 计算 Android 坐标的辅助函数
+            function getAndroidCoords(e) {
+                const rect = previewImage.getBoundingClientRect();
+                const relativeX = (e.clientX - rect.left) / rect.width;
+                const relativeY = (e.clientY - rect.top) / rect.height;
+                const androidX = Math.round(relativeX * screenshotWidth);
+                const androidY = Math.round(relativeY * screenshotHeight);
+                return {
+                    x: Math.max(0, Math.min(screenshotWidth, androidX)),
+                    y: Math.max(0, Math.min(screenshotHeight, androidY))
+                };
+            }
+
+            // 获取容器内的位置
+            function getContainerPosition(e) {
+                const containerRect = container.getBoundingClientRect();
+                return {
+                    x: e.clientX - containerRect.left,
+                    y: e.clientY - containerRect.top
+                };
+            }
 
             previewImage.addEventListener('mousemove', function(e) {
                 if (!lastScreenshotData) return;
 
-                const rect = previewImage.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
+                const containerPos = getContainerPosition(e);
+                const androidCoords = getAndroidCoords(e);
 
-                // 计算鼠标在图片上的相对位置 (0-1)
-                const relativeX = (e.clientX - rect.left) / rect.width;
-                const relativeY = (e.clientY - rect.top) / rect.height;
-
-                // 转换为 Android 坐标系 (左上角 0,0)
-                const androidX = Math.round(relativeX * screenshotWidth);
-                const androidY = Math.round(relativeY * screenshotHeight);
-
-                // 确保坐标在有效范围内
-                const clampedX = Math.max(0, Math.min(screenshotWidth, androidX));
-                const clampedY = Math.max(0, Math.min(screenshotHeight, androidY));
-
-                // 计算红点在容器中的位置
-                const dotX = e.clientX - containerRect.left;
-                const dotY = e.clientY - containerRect.top;
-
-                // 显示红点
+                // 显示红点跟随鼠标
                 dot.style.display = 'block';
-                dot.style.left = dotX + 'px';
-                dot.style.top = dotY + 'px';
+                dot.style.left = containerPos.x + 'px';
+                dot.style.top = containerPos.y + 'px';
 
-                // 显示坐标标签
-                label.style.display = 'block';
-                label.textContent = `x: ${clampedX}, y: ${clampedY}`;
+                // 如果正在拖动，更新拖动线和信息
+                if (isDragging) {
+                    // 更新拖动线
+                    dragLine.style.display = 'block';
+                    dragLineElement.setAttribute('x1', dragStartX);
+                    dragLineElement.setAttribute('y1', dragStartY);
+                    dragLineElement.setAttribute('x2', containerPos.x);
+                    dragLineElement.setAttribute('y2', containerPos.y);
 
-                // 调整标签位置，避免超出边界
-                let labelX = dotX + 15;
-                let labelY = dotY - 25;
+                    // 计算滑动距离和方向
+                    const deltaX = androidCoords.x - dragStartAndroidX;
+                    const deltaY = androidCoords.y - dragStartAndroidY;
+                    const distance = Math.round(Math.sqrt(deltaX * deltaX + deltaY * deltaY));
 
-                // 如果标签会超出右边界，显示在左侧
-                if (labelX + 120 > containerRect.width) {
-                    labelX = dotX - 120;
+                    // 判断滑动方向
+                    let direction = '';
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        direction = deltaX > 0 ? '→ 右' : '← 左';
+                    } else {
+                        direction = deltaY > 0 ? '↓ 下' : '↑ 上';
+                    }
+
+                    // 显示拖动信息
+                    dragInfo.style.display = 'block';
+                    dragInfo.textContent = `滑动: (${dragStartAndroidX},${dragStartAndroidY}) → (${androidCoords.x},${androidCoords.y}) | ${direction} | 距离: ${distance}`;
+
+                    // 隐藏普通坐标标签
+                    label.style.display = 'none';
+                } else {
+                    // 显示坐标标签
+                    label.style.display = 'block';
+                    label.textContent = `x: ${androidCoords.x}, y: ${androidCoords.y}`;
+
+                    // 调整标签位置，避免超出边界
+                    const containerRect = container.getBoundingClientRect();
+                    let labelX = containerPos.x + 15;
+                    let labelY = containerPos.y - 25;
+
+                    if (labelX + 120 > containerRect.width) {
+                        labelX = containerPos.x - 120;
+                    }
+                    if (labelY < 0) {
+                        labelY = containerPos.y + 20;
+                    }
+
+                    label.style.left = labelX + 'px';
+                    label.style.top = labelY + 'px';
                 }
-                // 如果标签会超出上边界，显示在下方
-                if (labelY < 0) {
-                    labelY = dotY + 20;
-                }
-
-                label.style.left = labelX + 'px';
-                label.style.top = labelY + 'px';
             });
 
             previewImage.addEventListener('mouseleave', function() {
                 dot.style.display = 'none';
                 label.style.display = 'none';
+
+                // 如果正在拖动，取消拖动
+                if (isDragging) {
+                    isDragging = false;
+                    dragStartDot.style.display = 'none';
+                    dragLine.style.display = 'none';
+                    dragInfo.style.display = 'none';
+                }
             });
 
-            // 点击图片发送点击指令并自动截图
-            previewImage.addEventListener('click', function(e) {
+            // 鼠标按下 - 开始拖动
+            previewImage.addEventListener('mousedown', function(e) {
                 if (!lastScreenshotData) return;
+                e.preventDefault();
 
-                const rect = previewImage.getBoundingClientRect();
-                const relativeX = (e.clientX - rect.left) / rect.width;
-                const relativeY = (e.clientY - rect.top) / rect.height;
+                isDragging = true;
+                const containerPos = getContainerPosition(e);
+                const androidCoords = getAndroidCoords(e);
 
-                const androidX = Math.round(relativeX * screenshotWidth);
-                const androidY = Math.round(relativeY * screenshotHeight);
+                // 记录起始点
+                dragStartX = containerPos.x;
+                dragStartY = containerPos.y;
+                dragStartAndroidX = androidCoords.x;
+                dragStartAndroidY = androidCoords.y;
 
-                const clampedX = Math.max(0, Math.min(screenshotWidth, androidX));
-                const clampedY = Math.max(0, Math.min(screenshotHeight, androidY));
+                // 显示起始点绿色圆点
+                dragStartDot.style.display = 'block';
+                dragStartDot.style.left = containerPos.x + 'px';
+                dragStartDot.style.top = containerPos.y + 'px';
 
-                // 复制坐标到剪贴板
-                const coordText = `${clampedX}, ${clampedY}`;
-                navigator.clipboard.writeText(coordText).then(() => {
-                    // 静默复制，不显示消息
-                }).catch(err => {
-                    console.error('复制失败:', err);
-                });
+                // 初始化拖动线
+                dragLine.style.display = 'block';
+                dragLineElement.setAttribute('x1', containerPos.x);
+                dragLineElement.setAttribute('y1', containerPos.y);
+                dragLineElement.setAttribute('x2', containerPos.x);
+                dragLineElement.setAttribute('y2', containerPos.y);
+            });
 
-                // 如果有选中的客户端，自动发送点击指令
-                if (selectedTargetClientId) {
-                    sendClickCommandAndScreenshot(clampedX, clampedY);
+            // 鼠标松开 - 结束拖动，执行操作
+            previewImage.addEventListener('mouseup', function(e) {
+                if (!lastScreenshotData || !isDragging) return;
+
+                const androidCoords = getAndroidCoords(e);
+                const deltaX = androidCoords.x - dragStartAndroidX;
+                const deltaY = androidCoords.y - dragStartAndroidY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                // 隐藏拖动相关元素
+                isDragging = false;
+                dragStartDot.style.display = 'none';
+                dragLine.style.display = 'none';
+                dragInfo.style.display = 'none';
+
+                // 判断是点击还是滑动（距离小于30像素认为是点击）
+                if (distance < 30) {
+                    // 点击操作
+                    if (selectedTargetClientId) {
+                        sendClickCommandAndScreenshot(dragStartAndroidX, dragStartAndroidY);
+                    } else {
+                        addMessage('system', 'warning', `请先选择目标客户端后再操作`);
+                    }
                 } else {
-                    addMessage('system', 'warning', `请先选择目标客户端后再点击截图`);
+                    // 滑动操作
+                    if (selectedTargetClientId) {
+                        sendSwipeCommand(dragStartAndroidX, dragStartAndroidY, androidCoords.x, androidCoords.y);
+                    } else {
+                        addMessage('system', 'warning', `请先选择目标客户端后再操作`);
+                    }
                 }
+            });
+
+            // 防止图片被拖拽
+            previewImage.addEventListener('dragstart', function(e) {
+                e.preventDefault();
             });
         }
 
@@ -1505,10 +1688,66 @@
             ws.send(JSON.stringify(message));
             sentCount++;
             document.getElementById('sentCount').textContent = sentCount;
-            addMessage('sent', 'auto_click', `🖱️ 点击坐标 (${x}, ${y}) → ${selectedTargetClientId}`);
+            addMessage('sent', 'auto_click', `🖱️ 点击坐标 (${x}, ${y}) → ${selectedTargetClientId} (2秒后自动截图)`);
 
             // 同时更新消息框显示当前指令
             document.getElementById('clientMessage').value = JSON.stringify(clickCommand, null, 2);
+        }
+
+        // 发送滑动指令并在成功后自动截图
+        function sendSwipeCommand(x1, y1, x2, y2) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('system', 'error', '请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                addMessage('system', 'error', '请先选择目标客户端');
+                return;
+            }
+
+            // 构建滑动指令 (使用 drag action)
+            const swipeCommand = {
+                action: "drag",
+                params: {
+                    x: x1,
+                    y: y1,
+                    x2: x2,
+                    y2: y2,
+                    duration: 300
+                }
+            };
+
+            // 设置待执行自动截图标记
+            pendingAutoScreenshot = true;
+
+            // 发送滑动指令
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(swipeCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+
+            // 计算滑动方向
+            const deltaX = x2 - x1;
+            const deltaY = y2 - y1;
+            let direction = '';
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                direction = deltaX > 0 ? '→' : '←';
+            } else {
+                direction = deltaY > 0 ? '↓' : '↑';
+            }
+
+            addMessage('sent', 'auto_swipe', `👆 滑动 ${direction} (${x1},${y1}) → (${x2},${y2}) → ${selectedTargetClientId} (2秒后自动截图)`);
+
+            // 同时更新消息框显示当前指令
+            document.getElementById('clientMessage').value = JSON.stringify(swipeCommand, null, 2);
         }
 
         // 发送截图指令
