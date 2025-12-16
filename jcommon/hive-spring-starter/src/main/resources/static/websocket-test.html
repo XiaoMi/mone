@@ -792,12 +792,30 @@
                     } else if (message.response) {
                         successMsg += `\n\n执行结果:\n${JSON.stringify(message.response, null, 2)}`;
                         addMessage('received', type, successMsg);
+
+                        // 检查是否需要自动截图（点击操作成功后）
+                        if (pendingAutoScreenshot && message.response.success) {
+                            pendingAutoScreenshot = false;
+                            // 延迟一点时间让界面有时间响应点击
+                            setTimeout(() => {
+                                sendScreenshotCommand();
+                            }, 500);
+                        }
                     } else {
                         addMessage('received', type, successMsg);
+                        // 如果没有 response 但有待执行的自动截图，也触发
+                        if (pendingAutoScreenshot) {
+                            pendingAutoScreenshot = false;
+                            setTimeout(() => {
+                                sendScreenshotCommand();
+                            }, 500);
+                        }
                     }
                     break;
                 case 'send_to_client_error':
                     addMessage('received', type, `发送失败: ${message.error}`);
+                    // 重置自动截图标记
+                    pendingAutoScreenshot = false;
                     break;
                 case 'message_response':
                 case 'broadcast':
@@ -1332,6 +1350,7 @@
         let lastScreenshotData = null;  // 存储最后一张截图的数据
         let screenshotWidth = 1440;     // 默认截图宽度
         let screenshotHeight = 3200;    // 默认截图高度
+        let pendingAutoScreenshot = false;  // 是否有待执行的自动截图
 
         // 更新截图预览
         function updateScreenshotPreview(base64Image, width, height) {
@@ -1419,7 +1438,7 @@
                 label.style.display = 'none';
             });
 
-            // 点击图片复制坐标
+            // 点击图片发送点击指令并自动截图
             previewImage.addEventListener('click', function(e) {
                 if (!lastScreenshotData) return;
 
@@ -1436,24 +1455,90 @@
                 // 复制坐标到剪贴板
                 const coordText = `${clampedX}, ${clampedY}`;
                 navigator.clipboard.writeText(coordText).then(() => {
-                    addMessage('system', 'coordinate_copied', `坐标已复制: (${coordText})`);
+                    // 静默复制，不显示消息
                 }).catch(err => {
                     console.error('复制失败:', err);
                 });
 
-                // 如果有选中的客户端，自动填充点击指令
+                // 如果有选中的客户端，自动发送点击指令
                 if (selectedTargetClientId) {
-                    const clickCommand = {
-                        action: "click",
-                        params: {
-                            x: clampedX,
-                            y: clampedY
-                        }
-                    };
-                    document.getElementById('clientMessage').value = JSON.stringify(clickCommand, null, 2);
-                    addMessage('system', 'click_command', `已生成点击指令: (${clampedX}, ${clampedY})`);
+                    sendClickCommandAndScreenshot(clampedX, clampedY);
+                } else {
+                    addMessage('system', 'warning', `请先选择目标客户端后再点击截图`);
                 }
             });
+        }
+
+        // 发送点击指令并在成功后自动截图
+        function sendClickCommandAndScreenshot(x, y) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('system', 'error', '请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                addMessage('system', 'error', '请先选择目标客户端');
+                return;
+            }
+
+            // 构建点击指令
+            const clickCommand = {
+                action: "click",
+                params: {
+                    x: x,
+                    y: y
+                }
+            };
+
+            // 设置待执行自动截图标记
+            pendingAutoScreenshot = true;
+
+            // 发送点击指令
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(clickCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+            addMessage('sent', 'auto_click', `🖱️ 点击坐标 (${x}, ${y}) → ${selectedTargetClientId}`);
+
+            // 同时更新消息框显示当前指令
+            document.getElementById('clientMessage').value = JSON.stringify(clickCommand, null, 2);
+        }
+
+        // 发送截图指令
+        function sendScreenshotCommand() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('system', 'error', '请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                addMessage('system', 'error', '请先选择目标客户端');
+                return;
+            }
+
+            const screenshotCommand = {
+                action: "screenshot"
+            };
+
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(screenshotCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+            addMessage('sent', 'auto_screenshot', `📸 自动截图请求 → ${selectedTargetClientId}`);
         }
     </script>
 </body>
