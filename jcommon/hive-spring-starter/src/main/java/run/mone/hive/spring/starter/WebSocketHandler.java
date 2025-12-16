@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PreDestroy;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -352,6 +353,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
                                 successResponse.put("result", result);
                                 successResponse.put("prompt", finalUserPrompt);
                                 successResponse.put("timestamp", System.currentTimeMillis());
+
+                                // 解析点击坐标信息并归一化到设备分辨率 (1440x3200)
+                                final int screenWidth = 1440;
+                                final int screenHeight = 3200;
+                                List<int[]> points = parseClickPoints(result);
+                                if (!points.isEmpty()) {
+                                    successResponse.put("points", points.stream()
+                                            .map(p -> {
+                                                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                                                int absoluteX = (int) (p[0] / 1000.0 * screenWidth);
+                                                int absoluteY = (int) (p[1] / 1000.0 * screenHeight);
+                                                return Map.of("x", absoluteX, "y", absoluteY);
+                                            })
+                                            .toList());
+                                    successResponse.put("result",successResponse.get("result")+"\n"+successResponse.get("points"));
+                                    log.info("Parsed {} click points from result (normalized to {}x{})",
+                                            points.size(), screenWidth, screenHeight);
+                                }
+
                                 sendMessage(clientId, successResponse);
                             },
                             error -> {
@@ -375,6 +395,38 @@ public class WebSocketHandler extends TextWebSocketHandler {
             );
             sendMessage(clientId, errorResponse);
         }
+    }
+
+    /**
+     * 解析大模型返回结果中的点击坐标
+     * 匹配格式: click(point='<point>x y</point>')
+     *
+     * @param result 大模型返回的结果
+     * @return 坐标列表，每个元素是 [x, y] 数组
+     */
+    private List<int[]> parseClickPoints(String result) {
+        List<int[]> points = new java.util.ArrayList<>();
+        if (result == null || result.isEmpty()) {
+            return points;
+        }
+
+        // 匹配 click(point='<point>x y</point>') 格式
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "click\\s*\\(\\s*point\\s*=\\s*['\"]<point>\\s*(\\d+)\\s+(\\d+)\\s*</point>['\"]\\s*\\)");
+        java.util.regex.Matcher matcher = pattern.matcher(result);
+
+        while (matcher.find()) {
+            try {
+                int x = Integer.parseInt(matcher.group(1));
+                int y = Integer.parseInt(matcher.group(2));
+                points.add(new int[]{x, y});
+                log.debug("Parsed click point: ({}, {})", x, y);
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse click point coordinates: {}", e.getMessage());
+            }
+        }
+
+        return points;
     }
 
     /**

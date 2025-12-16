@@ -44,13 +44,13 @@ public class Prompt {
                 分析: 需要先点击搜索，搜索联系人，进入聊天，输入消息并发送
                 返回:
                 [
-                "1.点击微信顶部搜索框 (click, 定位到界面顶部的搜索区域)",
-                "2.输入联系人名字张三 (type, content='张三')",
-                "3.点击搜索结果中的张三 (click, 定位到搜索结果列表中的联系人)",
-                "4.点击底部消息输入框 (click, 定位到聊天界面底部的输入框)",
-                "5.输入消息内容 (type, content='你好')",
-                "6.点击发送按钮 (click, 定位到输入框右侧的发送按钮)",
-                "7.finished(content='已成功给张三发送消息：你好')"
+                "1.点击微信顶部搜索框 (click, 定位到界面顶部的搜索区域 click(point='<point>x1 y1</point>'))",
+                "2.输入联系人名字张三 (type, type(content='张三'))",
+                "3.点击搜索结果中的张三 (click, 定位到搜索结果列表中的联系人 click(point='<point>x1 y1</point>'))",
+                "4.点击底部消息输入框 (click, 定位到聊天界面底部的输入框 click(point='<point>x1 y1</point>'))",
+                "5.输入消息内容 (type, type(content='你好'))",
+                "6.点击发送按钮 (click, 定位到输入框右侧的发送按钮 click(point='<point>x1 y1</point>'))",
+                "7.finished(content='已成功给张三发送消息：你好' finished(content='已成功给张三发送消息：你好'))"
                 ]
                 
                 ## 例子3 - 滚动浏览:
