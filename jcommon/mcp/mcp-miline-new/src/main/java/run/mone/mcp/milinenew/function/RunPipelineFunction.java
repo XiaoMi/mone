@@ -51,7 +51,7 @@ public class RunPipelineFunction implements McpFunction {
                     },
                     "runType": {
                         "type": "string",
-                        "description": "运行类型，不填则为commitId模式，值可以为commitId=>commitId或者应用变更=>changes"
+                        "description": "运行类型，不填则为changes模式，值可以为commitId=>commitId或者应用变更=>changes"
                     },
                     "changeIds": {
                         "type": "string",
@@ -94,7 +94,7 @@ public class RunPipelineFunction implements McpFunction {
             Object projectIdObj = arguments.get("projectId");
             Object pipelineIdObj = arguments.get("pipelineId");
             Object commitId = arguments.get("commitId");
-            Object runType = arguments.get("runType") != null ? arguments.get("runType") : "commitId";
+            Object runType = arguments.get("runType") != null ? arguments.get("runType") : "changes";
             Object changeIds = arguments.get("changeIds");
 
             if (projectIdObj == null || StringUtils.isBlank(projectIdObj.toString())) {
@@ -121,7 +121,7 @@ public class RunPipelineFunction implements McpFunction {
                     .projectId(projectId)
                     .pipelineId(pipelineId)
                     .commitId(commitId != null ? commitId.toString() : null)
-                    .runType(runType != null ? runType.toString() : "commitId")
+                    .runType(runType != null ? runType.toString() : "changes")
                     .changeIds(changeIds != null ? Arrays.stream(changeIds.toString().split(","))
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
