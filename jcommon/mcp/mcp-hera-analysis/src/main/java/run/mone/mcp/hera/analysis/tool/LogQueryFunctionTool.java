@@ -83,6 +83,7 @@ public class LogQueryFunctionTool implements ITool {
                 **重要提示：**
                 - level为日志级别（ERROR、WARN、INFO、DEBUG等），可选参数。如果需要查询错误日志，则传入ERROR；如果需要查询所有日志，则不传
                 - traceId为链路追踪ID（32位由0-9a-f组成的字符串），可选参数，用于追踪特定请求
+                - logIp为机器IP或容器IP，可选参数，用于筛选特定机器的日志
                 - projectId为项目ID（数字）
                 - pipelineId为流水线ID（数字）
                 - startTime和endTime为毫秒时间戳
@@ -99,6 +100,7 @@ public class LogQueryFunctionTool implements ITool {
                 - startTime: (可选) 查询开始时间，毫秒时间戳，不提供则使用当前时间前1小时
                 - endTime: (可选) 查询结束时间，毫秒时间戳，不提供则使用当前时间
                 - traceId: (可选) 链路追踪ID，32位由0-9a-f组成的字符串，用于追踪特定请求的完整调用链路
+                - logIp: (可选) 机器IP或容器IP，用于筛选特定机器的日志
                 """;
     }
 
@@ -120,6 +122,7 @@ public class LogQueryFunctionTool implements ITool {
                 <startTime>开始时间戳（可选）</startTime>
                 <endTime>结束时间戳（可选）</endTime>
                 <traceId>链路追踪ID（可选）</traceId>
+                <logIp>机器IP或容器IP（可选）</logIp>
                 %s
                 </stream_log_query>
                 """.formatted(taskProgress);
@@ -168,6 +171,13 @@ public class LogQueryFunctionTool implements ITool {
                 <startTime>1763515783000</startTime>
                 <endTime>1763519383000</endTime>
                 </stream_log_query>
+
+                示例 6: 查询特定机器IP的日志
+                <stream_log_query>
+                <projectId>301316</projectId>
+                <pipelineId>1170008</pipelineId>
+                <logIp>192.168.1.100</logIp>
+                </stream_log_query>
                 """;
     }
 
@@ -212,6 +222,12 @@ public class LogQueryFunctionTool implements ITool {
                 }
             }
 
+            // 获取可选参数：logIp
+            String logIp = null;
+            if (inputJson.has("logIp") && !StringUtils.isBlank(inputJson.get("logIp").getAsString())) {
+                logIp = inputJson.get("logIp").getAsString().trim();
+            }
+
             // 获取时间参数，如果未提供则使用默认值（最近1小时）
             long endTime = inputJson.has("endTime")
                     ? inputJson.get("endTime").getAsLong()
@@ -221,8 +237,8 @@ public class LogQueryFunctionTool implements ITool {
                     ? inputJson.get("startTime").getAsLong()
                     : endTime - 3600000; // 默认查询最近1小时（毫秒）
 
-            log.info("开始查询日志，level: {}, projectId: {}, pipelineId: {}, startTime: {}, endTime: {}, traceId: {}",
-                    level, projectId, pipelineId, startTime, endTime, traceId);
+            log.info("开始查询日志，level: {}, projectId: {}, pipelineId: {}, startTime: {}, endTime: {}, traceId: {}, logIp: {}",
+                    level, projectId, pipelineId, startTime, endTime, traceId, logIp);
 
             // 构建Function参数
             Map<String, Object> functionArgs = new HashMap<>();
@@ -235,6 +251,9 @@ public class LogQueryFunctionTool implements ITool {
             functionArgs.put("endTime", endTime);
             if (traceId != null) {
                 functionArgs.put("traceId", traceId);
+            }
+            if (logIp != null) {
+                functionArgs.put("logIp", logIp);
             }
 
             // 调用Function的apply方法
@@ -268,13 +287,16 @@ public class LogQueryFunctionTool implements ITool {
             if (traceId != null) {
                 result.addProperty("traceId", traceId);
             }
+            if (logIp != null) {
+                result.addProperty("logIp", logIp);
+            }
             result.addProperty("projectId", projectId);
             result.addProperty("pipelineId", pipelineId);
             result.addProperty("startTime", startTime);
             result.addProperty("endTime", endTime);
             result.addProperty("success", true);
 
-            log.info("成功查询日志，level: {}, projectId: {}, pipelineId: {}, traceId: {}", level, projectId, pipelineId, traceId);
+            log.info("成功查询日志，level: {}, projectId: {}, pipelineId: {}, traceId: {}, logIp: {}", level, projectId, pipelineId, traceId, logIp);
 
             return result;
 
