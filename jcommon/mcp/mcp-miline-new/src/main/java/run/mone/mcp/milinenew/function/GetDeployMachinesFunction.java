@@ -238,7 +238,7 @@ public class GetDeployMachinesFunction implements McpFunction {
                 查看流水线运行状态。
                 
                 **使用场景：**
-                - 获取当前流水线部署的机器列表，以便输出机器信息等操作。
+                - 查看流水线运行状态（部署机器等），以便对输出的流水线状态做出响应等操作。
                 """;
     }
 
