@@ -178,7 +178,7 @@ public class AndroidScreenshotTool implements ITool {
         try {
             // 通过 WebSocket 调用 Android 客户端 - 使用 callAndroid，action 在根级别
             WebSocketCaller caller = WebSocketCaller.getInstance();
-            Map<String, Object> response = caller.callAndroid(clientId, "screenshot", null, timeout, TimeUnit.SECONDS);
+            Map<String, Object> response = caller.callAndroid(clientId, "screenshot", null, timeout, TimeUnit.SECONDS,false);
 
             // 解析响应
             return parseScreenshotResponse(response, clientId);

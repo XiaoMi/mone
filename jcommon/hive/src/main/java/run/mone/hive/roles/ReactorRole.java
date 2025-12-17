@@ -761,6 +761,7 @@ public class ReactorRole extends Role {
                 } else {
                     contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
                     contentForUser = tool.formatResult(toolRes);
+                    imageList.clear();
                 }
 
                 if (tool.show()) {
@@ -840,18 +841,28 @@ public class ReactorRole extends Role {
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
 
-        // 如果有图片，获取最后一张图片放到 compoundMsg 的 parts 中
+        // 如果有图片，获取最后两张图片放到 compoundMsg 的 parts 中
         if (!imageList.isEmpty()) {
-            String lastImage = imageList.get(imageList.size() - 1);
-            log.info("发现图片列表中有图片，将最后一张图片添加到用户消息中");
+            log.info("发现图片列表中有图片，尝试添加最后两张图片到用户消息中");
             if (compoundMsg.getParts() == null) {
                 compoundMsg.setParts(new ArrayList<>());
             }
-            compoundMsg.getParts().add(LLM.LLMPart.builder()
-                    .type(LLM.TYPE_IMAGE)
-                    .data(lastImage)
-                    .mimeType("image/png")
-                    .build());
+
+//            // 添加文字描述
+//            compoundMsg.getParts().add(LLM.LLMPart.builder()
+//                    .type(LLM.TYPE_TEXT)
+//                    .data("最后的两张操作截图")
+//                    .build());
+
+            // 计算要添加的图片数量（最多两张）
+            int startIndex = Math.max(0, imageList.size() - 2);
+            for (int i = startIndex; i < imageList.size(); i++) {
+                compoundMsg.getParts().add(LLM.LLMPart.builder()
+                        .type(LLM.TYPE_IMAGE)
+                        .data(imageList.get(i))
+                        .mimeType("image/png")
+                        .build());
+            }
         }
 
         // 使用重试执行器

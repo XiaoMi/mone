@@ -101,14 +101,14 @@ public class WebSocketCaller {
     /**
      * 同步调用 Android 客户端，阻塞等待响应
      * 与 call 方法不同，此方法将 action 和 params 放在消息根级别
-     *
+     * <p>
      * 发送的消息格式:
      * {
-     *   "type": "call",
-     *   "reqId": "xxx",
-     *   "action": "click",
-     *   "params": { "x": 500, "y": 800 },
-     *   "timestamp": 1234567890
+     * "type": "call",
+     * "reqId": "xxx",
+     * "action": "click",
+     * "params": { "x": 500, "y": 800 },
+     * "timestamp": 1234567890
      * }
      *
      * @param clientId 客户端ID
@@ -118,7 +118,7 @@ public class WebSocketCaller {
      * @throws TimeoutException 超时异常
      */
     public Map<String, Object> callAndroid(String clientId, String action, Map<String, Object> params) throws TimeoutException {
-        return callAndroid(clientId, action, params, DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        return callAndroid(clientId, action, params, DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS, false);
     }
 
     /**
@@ -133,7 +133,7 @@ public class WebSocketCaller {
      * @return 响应数据
      * @throws TimeoutException 超时异常
      */
-    public Map<String, Object> callAndroid(String clientId, String action, Map<String, Object> params, long timeout, TimeUnit unit) throws TimeoutException {
+    public Map<String, Object> callAndroid(String clientId, String action, Map<String, Object> params, long timeout, TimeUnit unit, boolean isLast) throws TimeoutException {
         // 生成唯一请求ID
         String reqId = generateReqId();
 
@@ -147,6 +147,7 @@ public class WebSocketCaller {
             request.put("type", "call");
             request.put("reqId", reqId);
             request.put("action", action);
+            request.put("isLast", isLast);
             if (params != null && !params.isEmpty()) {
                 request.put("params", params);
             }

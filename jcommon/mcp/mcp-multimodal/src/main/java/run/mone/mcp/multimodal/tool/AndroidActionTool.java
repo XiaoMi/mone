@@ -62,7 +62,7 @@ public class AndroidActionTool implements ITool {
         return """
                 Execute actions on an Android device via WebSocket connection.
                 Actions are executed sequentially in the order provided.
-
+                
                 **Supported actions:**
                 - click: Tap at specified coordinates (x, y)
                 - long_press: Long press at coordinates (x, y) for duration ms
@@ -76,7 +76,7 @@ public class AndroidActionTool implements ITool {
                 - open_quick_settings: Open quick settings
                 - open_app: Open app by package name
                 - screenshot: Take a screenshot
-
+                
                 **Example use cases:**
                 - Login flow: type username -> type password -> click login button
                 - Form submission: fill fields sequentially, then submit
@@ -140,7 +140,7 @@ public class AndroidActionTool implements ITool {
                 ]
                 </actions>
                 </android_action>
-
+                
                 Example 2: Scroll and click
                 <android_action>
                 <clientId>7225a92dc463ada1</clientId>
@@ -151,7 +151,7 @@ public class AndroidActionTool implements ITool {
                 ]
                 </actions>
                 </android_action>
-
+                
                 Example 3: Open app and interact
                 <android_action>
                 <actions>
@@ -238,7 +238,8 @@ public class AndroidActionTool implements ITool {
                 item.setIndex(i);
                 item.setAction((String) actionMap.get("action"));
                 item.setParams(actionMap);
-                item.setLast(i == totalActions - 1); // 标记是否是最后一个操作
+//                item.setLast(i == totalActions - 1); // 标记是否是最后一个操作
+                item.setLast(false);
 
                 ActionResult actionResult = executeAction(clientId, item, timeout);
                 allResults.add(actionResult);
@@ -283,7 +284,7 @@ public class AndroidActionTool implements ITool {
 
             // 通过 WebSocket 调用 Android 客户端 - 使用 callAndroid，action 在根级别
             WebSocketCaller caller = WebSocketCaller.getInstance();
-            Map<String, Object> response = caller.callAndroid(clientId, actionItem.getAction(), params, timeout, TimeUnit.SECONDS);
+            Map<String, Object> response = caller.callAndroid(clientId, actionItem.getAction(), params, timeout, TimeUnit.SECONDS, actionItem.isLast);
 
             result.setSuccess(true);
             result.setResponse(response);
@@ -433,22 +434,26 @@ public class AndroidActionTool implements ITool {
         result.addProperty("result", summary.toString());
         result.add("details", detailsArray);
 
-        // 从最后一个操作的响应中提取截图
+        // 从最后一个操作的响应中提取截图（截图数据在 response.data 里）
         if (!results.isEmpty()) {
             ActionResult lastResult = results.get(results.size() - 1);
             if (lastResult.getResponse() != null) {
-                Object image = lastResult.getResponse().get("image");
-                if (image != null) {
-                    result.addProperty("image", image.toString());
-                }
-                // 同时提取图片尺寸信息
-                Object imageWidth = lastResult.getResponse().get("imageWidth");
-                Object imageHeight = lastResult.getResponse().get("imageHeight");
-                if (imageWidth != null) {
-                    result.addProperty("imageWidth", ((Number) imageWidth).intValue());
-                }
-                if (imageHeight != null) {
-                    result.addProperty("imageHeight", ((Number) imageHeight).intValue());
+                Object dataObj = lastResult.getResponse().get("data");
+                if (dataObj instanceof Map) {
+                    Map<String, Object> data = (Map<String, Object>) dataObj;
+                    Object image = data.get("image");
+                    if (image != null) {
+                        result.addProperty("image", image.toString());
+                    }
+                    // 同时提取图片尺寸信息
+                    Object imageWidth = data.get("imageWidth");
+                    Object imageHeight = data.get("imageHeight");
+                    if (imageWidth != null) {
+                        result.addProperty("imageWidth", ((Number) imageWidth).intValue());
+                    }
+                    if (imageHeight != null) {
+                        result.addProperty("imageHeight", ((Number) imageHeight).intValue());
+                    }
                 }
             }
         }
