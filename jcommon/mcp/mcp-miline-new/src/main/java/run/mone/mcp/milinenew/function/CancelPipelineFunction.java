@@ -52,7 +52,7 @@ public class CancelPipelineFunction implements McpFunction {
             """;
 
     private static final String BASE_URL = System.getenv("req_base_url");
-    private static final String CANCEL_PIPELINE_URL = BASE_URL != null ? "http://mione-gw.test.mi.com/mtop/miline" + "/cancelPipeline" : null;
+    private static final String CANCEL_PIPELINE_URL = BASE_URL != null ? BASE_URL + "/cancelPipeline" : null;
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
