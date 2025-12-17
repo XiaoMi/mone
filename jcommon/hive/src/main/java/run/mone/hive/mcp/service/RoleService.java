@@ -484,6 +484,7 @@ public class RoleService {
         ReactorRole role = roleMap.get(from);
         if (null != role) {
             role.clearMemory();
+            role.getImageList().clear();
         }
     }
 
