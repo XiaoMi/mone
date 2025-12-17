@@ -76,6 +76,12 @@ public class AgentConfig {
     private UserBatchFunction userBatchFunction;
 
     @Autowired
+    private CancelPipelineFunction cancelPipelineFunction;
+
+    @Autowired
+    private JvmGenerationFunction jvmGenerationFunction;
+
+    @Autowired
     private CreatePipelineTool createPipelineTool;
 
     @Autowired
@@ -144,7 +150,7 @@ public class AgentConfig {
                         agentModel
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
                                 : Lists.newArrayList(createPipelineFunction, createProjectFunction, generateGitCodeFunction, runPipelineFunction, getDeployMachinesFunction, queryPipelineByGitUrlFunction, k8sBatchDeployFunction,
-                                        userBatchFunction, scaleOrderFunction)
+                                        userBatchFunction, scaleOrderFunction, cancelPipelineFunction, jvmGenerationFunction)
                 )
                 .workflow(workflow)
                 .meta(
