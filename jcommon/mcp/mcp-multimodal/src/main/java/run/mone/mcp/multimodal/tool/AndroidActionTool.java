@@ -186,7 +186,28 @@ public class AndroidActionTool implements ITool {
                 return result;
             }
 
-            JsonArray actionsArray = inputJson.getAsJsonArray("actions");
+            // 容错处理：LLM 调用时 actions 可能是 String 类型，需要转换为 JsonArray
+            JsonArray actionsArray;
+            try {
+                if (inputJson.get("actions").isJsonArray()) {
+                    actionsArray = inputJson.getAsJsonArray("actions");
+                } else if (inputJson.get("actions").isJsonPrimitive()
+                        && inputJson.get("actions").getAsJsonPrimitive().isString()) {
+                    // actions 是字符串，需要解析为 JsonArray
+                    String actionsStr = inputJson.get("actions").getAsString();
+                    actionsArray = gson.fromJson(actionsStr, JsonArray.class);
+                } else {
+                    result.addProperty("error", "Invalid 'actions' parameter type, expected array or JSON string");
+                    result.addProperty("success", false);
+                    return result;
+                }
+            } catch (Exception e) {
+                log.error("Failed to parse actions parameter", e);
+                result.addProperty("error", "Failed to parse 'actions' parameter: " + e.getMessage());
+                result.addProperty("success", false);
+                return result;
+            }
+
             if (actionsArray == null || actionsArray.isEmpty()) {
                 result.addProperty("error", "Actions array is empty");
                 result.addProperty("success", false);
@@ -248,18 +269,14 @@ public class AndroidActionTool implements ITool {
                 Thread.sleep(delay);
             }
 
-            // 构建命令
-            Map<String, Object> command = buildCommand(actionItem);
-            String commandJson = gson.toJson(command);
+            // 构建命令参数
+            Map<String, Object> params = buildActionParams(actionItem);
 
-            log.info("执行操作 [{}]: {} -> {}", actionItem.getIndex(), actionItem.getAction(), commandJson);
+            log.info("执行操作 [{}]: {} -> {}", actionItem.getIndex(), actionItem.getAction(), gson.toJson(params));
 
-            // 发送命令
+            // 通过 WebSocket 调用 Android 客户端 - 使用 callAndroid，action 在根级别
             WebSocketCaller caller = WebSocketCaller.getInstance();
-            Map<String, Object> data = new HashMap<>();
-            data.put("message", commandJson);
-
-            Map<String, Object> response = caller.call(clientId, "action", data, timeout, TimeUnit.SECONDS);
+            Map<String, Object> response = caller.callAndroid(clientId, actionItem.getAction(), params, timeout, TimeUnit.SECONDS);
 
             result.setSuccess(true);
             result.setResponse(response);
@@ -293,14 +310,11 @@ public class AndroidActionTool implements ITool {
     }
 
     /**
-     * 构建操作命令
+     * 构建操作参数
      */
-    private Map<String, Object> buildCommand(ActionItem actionItem) {
-        Map<String, Object> command = new HashMap<>();
+    private Map<String, Object> buildActionParams(ActionItem actionItem) {
         Map<String, Object> params = actionItem.getParams();
         String action = actionItem.getAction();
-
-        command.put("action", action);
 
         Map<String, Object> actionParams = new HashMap<>();
 
@@ -349,11 +363,7 @@ public class AndroidActionTool implements ITool {
                 break;
         }
 
-        if (!actionParams.isEmpty()) {
-            command.put("params", actionParams);
-        }
-
-        return command;
+        return actionParams;
     }
 
     /**

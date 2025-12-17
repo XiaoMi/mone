@@ -79,7 +79,7 @@ public class AgentConfig {
         return RoleMeta.builder()
                 .profile(AndroidConfig.PROFILE)
                 .goal(AndroidConfig.GOAL)
-                .workflow(AndroidConfig.WORKFLOW + "\n" + AndroidConfig.MEITUAN_KFC_WORKFLOW)
+                .workflow(AndroidConfig.WORKFLOW)
                 .outputFormat(AndroidConfig.OUTPUT_FORMAT)
                 .constraints(AndroidConfig.CONSTRAINTS)
                 //内部工具
@@ -92,8 +92,7 @@ public class AgentConfig {
                 ))
                 //mcp工具 - Android 模式使用 AndroidFunction
                 .mcpTools(Lists.newArrayList(
-                        new ChatFunction(agentName, 20),
-                        androidFunction
+                        new ChatFunction(agentName, 20)
                 ))
                 .checkFinishFunc(msg -> msg.getContent().contains("发送结果:") || msg.getContent().contains("任务完成:") ? -1 : 1)
                 .build();
