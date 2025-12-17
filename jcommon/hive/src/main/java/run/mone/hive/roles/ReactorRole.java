@@ -749,10 +749,11 @@ public class ReactorRole extends Role {
                 String contentForUser;
                 if (toolRes.has("image")) {
                     contentForLlm = "执行 tool: 成功获取到图片";
-                    contentForUser = "执行 tool: 成功获取到图片";
                     // 将 base64 图片添加到 imageList 中
                     String imageBase64 = toolRes.get("image").getAsString();
                     addImageToList(imageBase64);
+                    toolRes.remove("image");
+                    contentForUser = "执行 tool 结果: " + toolRes.toString();
                 } else if (toolRes.has("toolMsgType")) {
                     // 说明需要调用方做特殊处理
                     contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";

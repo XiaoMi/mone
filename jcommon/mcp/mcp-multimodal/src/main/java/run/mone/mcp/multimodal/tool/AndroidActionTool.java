@@ -229,7 +229,8 @@ public class AndroidActionTool implements ITool {
 
             // 按顺序执行操作
             List<ActionResult> allResults = new ArrayList<>();
-            for (int i = 0; i < actionsArray.size(); i++) {
+            int totalActions = actionsArray.size();
+            for (int i = 0; i < totalActions; i++) {
                 JsonObject actionObj = actionsArray.get(i).getAsJsonObject();
                 Map<String, Object> actionMap = gson.fromJson(actionObj, Map.class);
 
@@ -237,6 +238,7 @@ public class AndroidActionTool implements ITool {
                 item.setIndex(i);
                 item.setAction((String) actionMap.get("action"));
                 item.setParams(actionMap);
+                item.setLast(i == totalActions - 1); // 标记是否是最后一个操作
 
                 ActionResult actionResult = executeAction(clientId, item, timeout);
                 allResults.add(actionResult);
@@ -372,6 +374,11 @@ public class AndroidActionTool implements ITool {
                 break;
         }
 
+        // 如果是最后一个操作，添加 isLast 参数，前端会在最后一个操作完成后延时截屏
+        if (actionItem.isLast()) {
+            actionParams.put("isLast", true);
+        }
+
         return actionParams;
     }
 
@@ -426,6 +433,26 @@ public class AndroidActionTool implements ITool {
         result.addProperty("result", summary.toString());
         result.add("details", detailsArray);
 
+        // 从最后一个操作的响应中提取截图
+        if (!results.isEmpty()) {
+            ActionResult lastResult = results.get(results.size() - 1);
+            if (lastResult.getResponse() != null) {
+                Object image = lastResult.getResponse().get("image");
+                if (image != null) {
+                    result.addProperty("image", image.toString());
+                }
+                // 同时提取图片尺寸信息
+                Object imageWidth = lastResult.getResponse().get("imageWidth");
+                Object imageHeight = lastResult.getResponse().get("imageHeight");
+                if (imageWidth != null) {
+                    result.addProperty("imageWidth", ((Number) imageWidth).intValue());
+                }
+                if (imageHeight != null) {
+                    result.addProperty("imageHeight", ((Number) imageHeight).intValue());
+                }
+            }
+        }
+
         return result;
     }
 
@@ -444,6 +471,7 @@ public class AndroidActionTool implements ITool {
         private int index;
         private String action;
         private Map<String, Object> params;
+        private boolean isLast; // 标记是否是最后一个操作
     }
 
     @Data
