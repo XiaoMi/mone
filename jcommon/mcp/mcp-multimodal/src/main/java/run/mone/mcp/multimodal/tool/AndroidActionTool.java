@@ -320,8 +320,15 @@ public class AndroidActionTool implements ITool {
 
         switch (action) {
             case "click":
-                actionParams.put("x", parseIntOrDefault(params.get("x"), 0));
-                actionParams.put("y", parseIntOrDefault(params.get("y"), 0));
+                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标 (1440x3200)
+                final int screenWidth = 1440;
+                final int screenHeight = 3200;
+                int rawX = parseIntOrDefault(params.get("x"), 0);
+                int rawY = parseIntOrDefault(params.get("y"), 0);
+                int absoluteX = (int) (rawX / 1000.0 * screenWidth);
+                int absoluteY = (int) (rawY / 1000.0 * screenHeight);
+                actionParams.put("x", absoluteX);
+                actionParams.put("y", absoluteY);
                 break;
 
             case "long_press":
