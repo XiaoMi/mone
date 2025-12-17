@@ -521,6 +521,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .userId(userId)
                     .agentId(agentId)
                     .createTime(System.currentTimeMillis())
+                    //每次清空记录
+                    .clearHistory(true)
                     .build();
 
             // 调用 RoleService.receiveMsg 并订阅响应
