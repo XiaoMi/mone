@@ -139,9 +139,28 @@ public class ReactorRole extends Role {
 
     private Set<String> mcpNames = new HashSet<>();
 
+    // 存储 base64 图片的列表，最大长度为 20
+    private List<String> imageList = new ArrayList<>();
+    private static final int MAX_IMAGE_LIST_SIZE = 20;
+
     public void addTool(ITool tool) {
         this.tools.add(tool);
         this.toolMap.put(tool.getName(), tool);
+    }
+
+    /**
+     * 添加 base64 图片到 imageList 中，如果超过 MAX_IMAGE_LIST_SIZE 则裁剪最早的
+     */
+    private void addImageToList(String imageBase64) {
+        if (StringUtils.isEmpty(imageBase64)) {
+            return;
+        }
+        imageList.add(imageBase64);
+        // 如果超过最大长度，裁剪最早的
+        while (imageList.size() > MAX_IMAGE_LIST_SIZE) {
+            imageList.remove(0);
+        }
+        log.info("添加图片到列表，当前图片数量: {}", imageList.size());
     }
 
     public void addMcpTool(McpSchema.Tool tool) {
@@ -728,13 +747,21 @@ public class ReactorRole extends Role {
             try {
                 JsonObject toolRes = this.toolMap.get(name).execute(this, params);
                 String contentForUser;
-                if (toolRes.has("toolMsgType")) {
+                if (toolRes.has("image")) {
+                    contentForLlm = "执行 tool: 成功获取到图片";
+                    // 将 base64 图片添加到 imageList 中
+                    String imageBase64 = toolRes.get("image").getAsString();
+                    addImageToList(imageBase64);
+                    toolRes.remove("image");
+                    contentForUser = "执行 tool 结果: " + toolRes.toString();
+                } else if (toolRes.has("toolMsgType")) {
                     // 说明需要调用方做特殊处理
                     contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
                     contentForUser = toolRes.toString();
                 } else {
                     contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
                     contentForUser = tool.formatResult(toolRes);
+                    imageList.clear();
                 }
 
                 if (tool.show()) {
@@ -813,6 +840,30 @@ public class ReactorRole extends Role {
         StringBuilder sb = new StringBuilder();
         String llmProvider = this.getRoleConfig().getOrDefault("llm", "");
         LLM curLLM = getLlm(llmProvider);
+
+        // 如果有图片，获取最后两张图片放到 compoundMsg 的 parts 中
+        if (!imageList.isEmpty()) {
+            log.info("发现图片列表中有图片，尝试添加最后两张图片到用户消息中");
+            if (compoundMsg.getParts() == null) {
+                compoundMsg.setParts(new ArrayList<>());
+            }
+
+//            // 添加文字描述
+//            compoundMsg.getParts().add(LLM.LLMPart.builder()
+//                    .type(LLM.TYPE_TEXT)
+//                    .data("最后的两张操作截图")
+//                    .build());
+
+            // 计算要添加的图片数量（最多两张）
+            int startIndex = Math.max(0, imageList.size() - 2);
+            for (int i = startIndex; i < imageList.size(); i++) {
+                compoundMsg.getParts().add(LLM.LLMPart.builder()
+                        .type(LLM.TYPE_IMAGE)
+                        .data(imageList.get(i))
+                        .mimeType("image/png")
+                        .build());
+            }
+        }
 
         // 使用重试执行器
         RetryExecutor<String> retryExecutor = new RetryExecutor<>(

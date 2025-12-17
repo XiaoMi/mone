@@ -77,6 +77,7 @@ public class LogQueryTool implements ITool {
                 **重要提示：**
                 - level为日志级别（ERROR、WARN、INFO、DEBUG等），可选参数。如果需要查询错误日志，则传入ERROR；如果需要查询所有日志，则不传
                 - traceId为链路追踪ID（32位由0-9a-f组成的字符串），可选参数，用于追踪特定请求
+                - logIp为机器IP或容器IP，可选参数，用于筛选特定机器的日志
                 - projectId为项目ID（数字）
                 - envId为环境ID（数字）
                 - startTime和endTime为毫秒时间戳
@@ -93,6 +94,7 @@ public class LogQueryTool implements ITool {
                 - startTime: (可选) 查询开始时间，毫秒时间戳，不提供则使用当前时间前1小时
                 - endTime: (可选) 查询结束时间，毫秒时间戳，不提供则使用当前时间
                 - traceId: (可选) 链路追踪ID，32位由0-9a-f组成的字符串，用于追踪特定请求的完整调用链路
+                - logIp: (可选) 机器IP或容器IP，用于筛选特定机器的日志
                 """;
     }
 
@@ -114,6 +116,7 @@ public class LogQueryTool implements ITool {
                 <startTime>开始时间戳（可选）</startTime>
                 <endTime>结束时间戳（可选）</endTime>
                 <traceId>链路追踪ID（可选）</traceId>
+                <logIp>机器IP或容器IP（可选）</logIp>
                 %s
                 </log_query>
                 """.formatted(taskProgress);
@@ -162,6 +165,13 @@ public class LogQueryTool implements ITool {
                 <startTime>1763515783000</startTime>
                 <endTime>1763519383000</endTime>
                 </log_query>
+
+                示例 6: 查询特定机器IP的日志
+                <log_query>
+                <projectId>301316</projectId>
+                <envId>1170008</envId>
+                <logIp>192.168.1.100</logIp>
+                </log_query>
                 """;
     }
 
@@ -206,6 +216,12 @@ public class LogQueryTool implements ITool {
                 }
             }
 
+            // 获取可选参数：logIp
+            String logIp = null;
+            if (inputJson.has("logIp") && !StringUtils.isBlank(inputJson.get("logIp").getAsString())) {
+                logIp = inputJson.get("logIp").getAsString().trim();
+            }
+
             // 获取时间参数，如果未提供则使用默认值（最近1小时）
             long endTime = inputJson.has("endTime")
                     ? inputJson.get("endTime").getAsLong()
@@ -219,11 +235,11 @@ public class LogQueryTool implements ITool {
             int page = inputJson.has("page") ? inputJson.get("page").getAsInt() : 1;
             int pageSize = inputJson.has("pageSize") ? inputJson.get("pageSize").getAsInt() : 20;
 
-            log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}, page: {}, pageSize: {}",
-                    level, projectId, envId, startTime, endTime, traceId, page, pageSize);
+            log.info("开始查询日志，level: {}, projectId: {}, envId: {}, startTime: {}, endTime: {}, traceId: {}, logIp: {}, page: {}, pageSize: {}",
+                    level, projectId, envId, startTime, endTime, traceId, logIp, page, pageSize);
 
             // 调用服务查询日志
-            String logResult = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId, page, pageSize);
+            String logResult = logQueryService.queryLogs(level, projectId, envId, startTime, endTime, traceId, logIp, page, pageSize);
 
             // 设置成功响应
             result.addProperty("result", logResult);
@@ -233,6 +249,9 @@ public class LogQueryTool implements ITool {
             if (traceId != null) {
                 result.addProperty("traceId", traceId);
             }
+            if (logIp != null) {
+                result.addProperty("logIp", logIp);
+            }
             result.addProperty("projectId", projectId);
             result.addProperty("envId", envId);
             result.addProperty("startTime", startTime);
@@ -241,8 +260,8 @@ public class LogQueryTool implements ITool {
             result.addProperty("pageSize", pageSize);
             result.addProperty("success", true);
 
-            log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}, page: {}, pageSize: {}",
-                    level, projectId, envId, traceId, page, pageSize);
+            log.info("成功查询日志，level: {}, projectId: {}, envId: {}, traceId: {}, logIp: {}, page: {}, pageSize: {}",
+                    level, projectId, envId, traceId, logIp, page, pageSize);
 
             return result;
 

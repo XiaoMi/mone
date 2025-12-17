@@ -8,18 +8,22 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.mcp.multimodal.config.AndroidConfig;
 import run.mone.mcp.multimodal.config.Prompt;
 import run.mone.mcp.multimodal.service.AndroidGuiAgentService;
+import run.mone.mcp.multimodal.util.SimpleActionExtractor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,6 +33,7 @@ import java.util.regex.Pattern;
  * 负责分析 Android 设备截图，拆分任务并执行操作
  *
  * @author goodjava@qq.com
+ * @author shanwb
  * @date 2025/12/13
  */
 @Service
@@ -39,6 +44,14 @@ public class AndroidGuiAgent {
     private final AndroidGuiAgentService androidGuiAgentService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private final Random random = new Random();
+
+    /**
+     * Vision Provider 配置，默认使用 DOUBAO_VISION
+     */
+    @Value("${mcp.android.vision.provider:DOUBAO_VISION}")
+    private String visionProvider;
 
     /**
      * 是否启用任务纠正检测（默认关闭）
@@ -171,8 +184,8 @@ public class AndroidGuiAgent {
                 
                 """.formatted(AndroidConfig.MEITUAN_KFC_WORKFLOW, instruction);
 
-        // 使用 DOUBAO_VISION 生成任务列表
-        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
+        // 使用配置的 Vision Provider 生成任务列表
+        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.valueOf(visionProvider)).block();
         log.info("模型输出: {}", modelOutput);
         modelOutput = extractJsonArray(modelOutput);
         return modelOutput;
@@ -252,8 +265,8 @@ public class AndroidGuiAgent {
                         currentTask
                 );
 
-        // 使用 DOUBAO_VISION 分析页面状态
-        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.DOUBAO_VISION).block();
+        // 使用配置的 Vision Provider 分析页面状态
+        String modelOutput = androidGuiAgentService.run(imagePath, prompt, "", LLMProvider.valueOf(visionProvider)).block();
         log.info("纠正任务 - 模型输出: {}", modelOutput);
 
         // 解析是否需要纠正
@@ -602,8 +615,12 @@ public class AndroidGuiAgent {
     }
 
     /**
-     * 执行任务列表（带纠正逻辑）
-     * 在执行每个任务前检查是否需要纠正，如果需要则切换到新的任务列表
+     * 执行任务列表（带纠正逻辑和简单操作优化）
+     *
+     * 性能优化：
+     * 1. 简单操作（type, open_app, press_home, press_back, finished, message）直接从任务描述提取参数执行，跳过截图+LLM分析
+     * 2. click + type 连续模式：执行 click 后直接执行 type，不需要重新截图分析
+     * 3. 在执行每个任务前检查是否需要纠正，如果需要则切换到新的任务列表
      *
      * @param taskListJson   任务列表 JSON 字符串
      * @param originalGoal   原始目标
@@ -623,17 +640,51 @@ public class AndroidGuiAgent {
         try {
             JsonArray array = JsonParser.parseString(taskListJson).getAsJsonArray();
             int totalTasks = array.size();
+            int i = 0;
+            String previousTask = null; // 追踪前一个已执行的任务
 
-            for (int i = 0; i < totalTasks; i++) {
+            while (i < totalTasks) {
                 String currentTask = array.get(i).getAsString();
+                String nextTask = (i + 1 < totalTasks) ? array.get(i + 1).getAsString() : null;
+
                 log.info("执行任务 [{}/{}]: {}", i + 1, totalTasks, currentTask);
                 sink.next("\n--- 任务 [" + (i + 1) + "/" + totalTasks + "] ---\n" + currentTask);
 
-                // 执行当前任务
-                executeGuiAutomation(currentTask, sink);
+                // 优化1: 检查是否是简单操作（open_app, press_home, press_back, finished, message）
+                // 这些操作不需要坐标，可以直接执行
+                if (SimpleActionExtractor.isSimpleAction(currentTask)) {
+                    log.info("检测到简单操作，跳过截图+LLM分析，直接执行");
+                    sink.next("⚡ 简单操作，直接执行\n");
+                    executeSimpleAction(currentTask, sink);
+                }
+                // 优化2: 检查是否是 click + type 连续模式（向前看）
+                // 当前是 click，下一个是 type，可以合并执行
+                else if (nextTask != null && SimpleActionExtractor.isClickThenTypePattern(currentTask, nextTask)) {
+                    log.info("检测到 click + type 连续模式，合并执行");
+                    sink.next("⚡ click + type 连续模式，合并执行\n");
 
+                    // 执行 click（需要截图+LLM定位）
+                    executeGuiAutomation(currentTask, sink);
 
-                // 在执行任务前，检查是否需要纠正（跳过 finished 任务的纠正检查）
+                    // 模拟人类操作：随机延迟 500-1200ms，避免被风控检测
+                    int humanDelay = randomDelay(500, 1200);
+                    log.info("模拟人类操作延迟: {}ms", humanDelay);
+                    Thread.sleep(humanDelay);
+
+                    // 直接执行 type（不需要重新截图分析，因为焦点已在输入框）
+                    previousTask = currentTask; // 更新前一个任务
+                    i++;
+                    currentTask = array.get(i).getAsString();
+                    log.info("合并执行任务 [{}/{}]: {}", i + 1, totalTasks, currentTask);
+                    sink.next("\n--- 任务 [" + (i + 1) + "/" + totalTasks + "] (合并执行) ---\n" + currentTask);
+                    executeSimpleAction(currentTask, sink);
+                }
+                // 普通操作：需要截图+LLM分析
+                else {
+                    executeGuiAutomation(currentTask, sink);
+                }
+
+                // 在执行任务后，检查是否需要纠正（跳过 finished 任务的纠正检查）
                 // 只有在启用任务纠正检测时才进行检查
                 if (enableTaskCorrection && !currentTask.contains("finished") && !currentTask.contains("message")) {
                     String correctedTaskList = correctTaskList(taskListJson, i, currentTask, originalGoal);
@@ -650,14 +701,19 @@ public class AndroidGuiAgent {
                     }
                 }
 
-
-                // 任务间等待
+                // 任务间等待（根据操作类型设置不同的等待时间）
+                int waitTime = getWaitTimeForTask(currentTask);
+                log.debug("任务间等待: {}ms", waitTime);
                 try {
-                    TimeUnit.MILLISECONDS.sleep(2000);
+                    TimeUnit.MILLISECONDS.sleep(waitTime);
                 } catch (InterruptedException e) {
                     log.warn("等待被中断", e);
                     Thread.currentThread().interrupt();
                 }
+
+                // 更新前一个任务记录，用于判断 type 是否可以直接执行
+                previousTask = currentTask;
+                i++;
             }
 
             sink.next("所有任务执行结束");
@@ -667,6 +723,97 @@ public class AndroidGuiAgent {
             log.error("解析任务列表失败", e);
             sink.next("解析任务列表失败: " + e.getMessage());
             sink.complete();
+        }
+    }
+
+    /**
+     * 生成指定范围内的随机延迟时间
+     * 用于模拟人类操作的随机性，避免被 App 风控系统检测
+     *
+     * @param minMs 最小延迟（毫秒）
+     * @param maxMs 最大延迟（毫秒）
+     * @return 随机延迟时间（毫秒）
+     */
+    private int randomDelay(int minMs, int maxMs) {
+        return minMs + random.nextInt(maxMs - minMs + 1);
+    }
+
+    /**
+     * 根据任务类型获取适当的等待时间
+     * 不同操作需要的等待时间差异很大
+     *
+     * @param taskDescription 任务描述
+     * @return 等待时间（毫秒）
+     */
+    private int getWaitTimeForTask(String taskDescription) {
+        if (taskDescription == null || taskDescription.isEmpty()) {
+            return randomDelay(1500, 2500);
+        }
+
+        String lower = taskDescription.toLowerCase();
+
+        // open_app: 应用启动需要较长时间，尤其是大型App（微信、淘宝等）
+        if (lower.contains("open_app") || lower.contains("打开应用")) {
+            return randomDelay(2500, 4000);
+        }
+
+        // press_home: 返回主屏幕，系统级操作，较快但需要等待动画
+        if (lower.contains("press_home") || lower.contains("返回主屏幕")) {
+            return randomDelay(800, 1500);
+        }
+
+        // press_back: 返回上一页，较快
+        if (lower.contains("press_back") || lower.contains("返回键")) {
+            return randomDelay(600, 1200);
+        }
+
+        // type: 输入文字后需要等待输入法响应和界面更新
+        if (lower.contains("type") || lower.contains("输入")) {
+            return randomDelay(500, 1000);
+        }
+
+        // scroll: 滚动后需要等待内容加载
+        if (lower.contains("scroll") || lower.contains("滚动")) {
+            return randomDelay(1000, 2000);
+        }
+
+        // finished/message: 只是返回信息，几乎不需要等待
+        if (lower.contains("finished") || lower.contains("message")) {
+            return randomDelay(100, 300);
+        }
+
+        // click: 点击后需要等待界面响应
+        if (lower.contains("click") || lower.contains("点击")) {
+            return randomDelay(1500, 2500);
+        }
+
+        // 默认等待时间
+        return randomDelay(1500, 2500);
+    }
+
+    /**
+     * 执行简单操作（不需要截图+LLM分析）
+     * 直接从任务描述中提取参数并执行
+     *
+     * @param taskDescription 任务描述
+     * @param sink Flux Sink
+     */
+    private void executeSimpleAction(String taskDescription, FluxSink<String> sink) {
+        Optional<String> actionJson = SimpleActionExtractor.extractAction(taskDescription);
+
+        if (actionJson.isPresent()) {
+            String parsedOutput = actionJson.get();
+            log.info("直接执行简单操作: {}", parsedOutput);
+
+            String res = androidGuiAgentService.executeAction(parsedOutput)
+                    .doOnNext(System.out::println)
+                    .blockLast();
+
+            sink.next("结果: " + res + "\n");
+        } else {
+            log.warn("无法从任务描述中提取简单操作，回退到完整流程: {}", taskDescription);
+            sink.next("无法直接提取操作，使用完整流程\n");
+            executeGuiAutomation(taskDescription, sink);
         }
     }
 

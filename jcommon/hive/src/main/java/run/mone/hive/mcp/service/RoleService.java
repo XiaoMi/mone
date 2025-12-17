@@ -417,6 +417,7 @@ public class RoleService {
 
             if (message.isClearHistory()) {
                 reactorRole.clearMemory();
+                reactorRole.getImageList().clear();
             }
 
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
@@ -484,6 +485,7 @@ public class RoleService {
         ReactorRole role = roleMap.get(from);
         if (null != role) {
             role.clearMemory();
+            role.getImageList().clear();
         }
     }
 

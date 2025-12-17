@@ -9,14 +9,23 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.service.RoleService;
 import run.mone.hive.schema.Message;
 
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import reactor.core.publisher.Flux;
+
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PreDestroy;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -27,9 +36,9 @@ import java.util.function.Function;
 /**
  * WebSocket 处理器
  * 支持双向实时通信
- * 
+ * <p>
  * 配置项: mcp.websocket.enabled=true 启用
- * 
+ *
  * @author goodjava@qq.com
  */
 @Slf4j
@@ -40,6 +49,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final RoleService roleService;
     private final WebSocketProperties webSocketProperties;
+
+    /**
+     * 图片分析使用的 LLM Provider，默认使用 DOUBAO_VISION
+     */
+    @Value("${mcp.websocket.img.provider:DOUBAO_VISION}")
+    private String imgLlmProvider;
 
     // 使用单例管理会话
     private final WebSocketSessionManager sessionManager = WebSocketSessionManager.getInstance();
@@ -54,12 +69,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private static final String CLIENT_ID_ATTRIBUTE = "clientId";
 
     // 业务方注入的任务处理函数
-    private Function<Map<String, Object>,String> taskHandler;
+    private Function<Map<String, Object>, String> taskHandler;
 
     /**
      * 设置任务处理函数（Spring 自动注入）
      * 业务方只需定义一个名为 "wsTaskHandler" 的 Bean 即可自动注入
-     *
+     * <p>
      * 示例:
      * <pre>
      * {@code
@@ -144,6 +159,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             Map<String, Object> messageMap = objectMapper.readValue(payload, Map.class);
             String type = (String) messageMap.get("type");
 
+            if (null == type) {
+                return;
+            }
+
             // 根据消息类型处理
             switch (type) {
                 case "ping":
@@ -172,6 +191,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     break;
                 case "send_to_client":
                     handleSendToClient(clientId, messageMap);
+                    break;
+                case "client_response":
+                    handleClientResponse(messageMap);
                     break;
                 default:
                     log.warn("Unknown message type: {}", type);
@@ -221,10 +243,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理普通消息
      */
+    @SuppressWarnings("unchecked")
     private void handleMessage(String clientId, Map<String, Object> messageMap) {
         // 这里可以调用 roleService 处理业务逻辑
         Object data = messageMap.get("data");
         log.info("Processing message from client {}: {}", clientId, data);
+
+        // 检查是否有 cmd 字段
+        if (data instanceof Map) {
+            Map<String, Object> dataMap = (Map<String, Object>) data;
+            String cmd = (String) dataMap.get("cmd");
+
+            if ("img".equals(cmd)) {
+                // 处理图片分析请求
+                handleImageAnalysis(clientId, dataMap);
+                return;
+            }
+        }
 
         // 发送响应
         Map<String, Object> response = Map.of(
@@ -234,6 +269,210 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 "timestamp", System.currentTimeMillis()
         );
         sendMessage(clientId, response);
+    }
+
+    /**
+     * 处理图片分析请求
+     * 当 cmd=img 时，调用大模型分析图片
+     *
+     * 客户端发送格式:
+     * <pre>
+     * {
+     *     "type": "message",
+     *     "data": {
+     *         "cmd": "img",
+     *         "image": "base64编码的图片数据",
+     *         "prompt": "用户提示词",
+     *         "systemPrompt": "系统提示词(可选)"
+     *     }
+     * }
+     * </pre>
+     */
+    private void handleImageAnalysis(String clientId, Map<String, Object> dataMap) {
+        String imageBase64 = (String) dataMap.get("image");
+        String userPrompt = (String) dataMap.get("prompt");
+        String systemPrompt = dataMap.containsKey("systemPrompt") ?
+                (String) dataMap.get("systemPrompt") : "你是一个智能助手，请分析图片内容并回答用户的问题。";
+
+        // 参数校验
+        if (imageBase64 == null || imageBase64.isEmpty()) {
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "img_analysis_error",
+                    "error", "图片数据不能为空",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+            return;
+        }
+
+        if (userPrompt == null || userPrompt.isEmpty()) {
+            userPrompt = "请描述这张图片的内容";
+        }
+
+        log.info("Processing image analysis for client {}, prompt: {}", clientId, userPrompt);
+
+        try {
+            // 确定 LLMProvider
+            LLMProvider llmProvider;
+            try {
+                llmProvider = LLMProvider.valueOf(imgLlmProvider);
+            } catch (IllegalArgumentException e) {
+                llmProvider = LLMProvider.DOUBAO_VISION;
+                log.warn("Invalid imgLlmProvider: {}, using default: DOUBAO_VISION", imgLlmProvider);
+            }
+
+            // 创建 LLM 实例
+            LLM llm = new LLM(LLMConfig.builder()
+                    .llmProvider(llmProvider)
+                    .temperature(0.7)
+                    .thinking(true)
+                    .build());
+
+            // 构建包含图片的消息
+            LLM.LLMCompoundMsg compoundMsg = LLM.getLlmCompoundMsg(userPrompt,
+                    Message.builder()
+                            .images(Lists.newArrayList(imageBase64))
+                            .build());
+
+            // 根据图片数据判断图片类型
+            String imageType = detectImageType(imageBase64);
+            compoundMsg.setImageType(imageType);
+
+            log.info("使用模型: {} 分析图片, 图片类型: {}", llmProvider, imageType);
+
+            // 调用大模型进行图片分析
+            String finalUserPrompt = userPrompt;
+            Flux<String> flux = llm.compoundMsgCall(compoundMsg, Prompt.prompt);
+            flux.collect(Collectors.joining())
+                    .subscribe(
+                            result -> {
+                                // 成功回调
+                                log.info("Image analysis completed for client {}", clientId);
+                                Map<String, Object> successResponse = new java.util.HashMap<>();
+                                successResponse.put("type", "img_analysis_response");
+                                successResponse.put("result", result);
+                                successResponse.put("prompt", finalUserPrompt);
+                                successResponse.put("timestamp", System.currentTimeMillis());
+
+                                // 解析点击坐标信息并归一化到设备分辨率 (1440x3200)
+                                final int screenWidth = 1440;
+                                final int screenHeight = 3200;
+                                List<int[]> points = parseClickPoints(result);
+                                if (!points.isEmpty()) {
+                                    successResponse.put("points", points.stream()
+                                            .map(p -> {
+                                                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                                                int absoluteX = (int) (p[0] / 1000.0 * screenWidth);
+                                                int absoluteY = (int) (p[1] / 1000.0 * screenHeight);
+                                                return Map.of("x", absoluteX, "y", absoluteY);
+                                            })
+                                            .toList());
+                                    successResponse.put("result",successResponse.get("result")+"\n"+successResponse.get("points"));
+                                    log.info("Parsed {} click points from result (normalized to {}x{})",
+                                            points.size(), screenWidth, screenHeight);
+                                }
+
+                                sendMessage(clientId, successResponse);
+                            },
+                            error -> {
+                                // 错误回调
+                                log.error("Image analysis failed for client {}: {}", clientId, error.getMessage(), error);
+                                Map<String, Object> errorResponse = Map.of(
+                                        "type", "img_analysis_error",
+                                        "error", error.getMessage() != null ? error.getMessage() : "图片分析失败",
+                                        "timestamp", System.currentTimeMillis()
+                                );
+                                sendMessage(clientId, errorResponse);
+                            }
+                    );
+
+        } catch (Exception e) {
+            log.error("Failed to process image analysis for client {}: {}", clientId, e.getMessage(), e);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "img_analysis_error",
+                    "error", e.getMessage() != null ? e.getMessage() : "图片分析处理异常",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+        }
+    }
+
+    /**
+     * 解析大模型返回结果中的点击坐标
+     * 匹配格式: click(point='<point>x y</point>')
+     *
+     * @param result 大模型返回的结果
+     * @return 坐标列表，每个元素是 [x, y] 数组
+     */
+    private List<int[]> parseClickPoints(String result) {
+        List<int[]> points = new java.util.ArrayList<>();
+        if (result == null || result.isEmpty()) {
+            return points;
+        }
+
+        // 匹配 click(point='<point>x y</point>') 格式
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "click\\s*\\(\\s*point\\s*=\\s*['\"]<point>\\s*(\\d+)\\s+(\\d+)\\s*</point>['\"]\\s*\\)");
+        java.util.regex.Matcher matcher = pattern.matcher(result);
+
+        while (matcher.find()) {
+            try {
+                int x = Integer.parseInt(matcher.group(1));
+                int y = Integer.parseInt(matcher.group(2));
+                points.add(new int[]{x, y});
+                log.debug("Parsed click point: ({}, {})", x, y);
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse click point coordinates: {}", e.getMessage());
+            }
+        }
+
+        return points;
+    }
+
+    /**
+     * 检测图片类型
+     * 根据 base64 数据的前缀判断图片类型
+     */
+    private String detectImageType(String base64Data) {
+        if (base64Data == null || base64Data.isEmpty()) {
+            return "jpeg";
+        }
+
+        // 检查是否包含 data URI scheme
+        if (base64Data.startsWith("data:")) {
+            if (base64Data.startsWith("data:image/png")) {
+                return "png";
+            } else if (base64Data.startsWith("data:image/gif")) {
+                return "gif";
+            } else if (base64Data.startsWith("data:image/webp")) {
+                return "webp";
+            }
+            return "png";
+        }
+
+        // 通过 base64 数据的头部字节判断
+        try {
+            byte[] bytes = java.util.Base64.getDecoder().decode(
+                    base64Data.length() > 20 ? base64Data.substring(0, 20) : base64Data);
+            if (bytes.length >= 8) {
+                // PNG: 89 50 4E 47 0D 0A 1A 0A
+                if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+                    return "png";
+                }
+                // GIF: 47 49 46 38
+                if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) {
+                    return "gif";
+                }
+                // JPEG: FF D8 FF
+                if (bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8 && bytes[2] == (byte) 0xFF) {
+                    return "jpeg";
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to detect image type from base64 data: {}", e.getMessage());
+        }
+
+        return "jpeg";
     }
 
     /**
@@ -282,6 +521,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .userId(userId)
                     .agentId(agentId)
                     .createTime(System.currentTimeMillis())
+                    //每次清空记录
+                    .clearHistory(true)
                     .build();
 
             // 调用 RoleService.receiveMsg 并订阅响应
@@ -367,7 +608,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理任务请求
      * 调用业务方注入的 taskHandler 处理任务
-     *
+     * <p>
      * 客户端发送格式:
      * <pre>
      * {
@@ -452,16 +693,37 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 发送消息给指定的客户端
-     *
+     * 发送消息给指定的客户端（阻塞式，等待客户端响应）
+     * <p>
      * 客户端发送格式:
      * <pre>
      * {
      *     "type": "send_to_client",
      *     "data": {
      *         "targetClientId": "目标客户端ID",
-     *         "message": "要发送的消息内容"
+     *         "message": "要发送的消息内容",
+     *         "timeout": 30  // 可选，超时时间（秒），默认30秒
      *     }
+     * }
+     * </pre>
+     * <p>
+     * 发送给目标客户端的消息格式:
+     * <pre>
+     * {
+     *     "type": "message_from_client",
+     *     "reqId": "请求ID，客户端需要在响应中返回相同的resId",
+     *     "fromClientId": "发送者ID",
+     *     "message": { ... },
+     *     "timestamp": 1234567890
+     * }
+     * </pre>
+     * <p>
+     * 客户端响应格式:
+     * <pre>
+     * {
+     *     "type": "client_response",
+     *     "resId": "与reqId相同",
+     *     "data": { ... }
      * }
      * </pre>
      */
@@ -476,6 +738,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         String targetClientId = (String) data.get("targetClientId");
         Object messageContent = data.get("message");
+        // 获取超时时间，默认30秒
+        Integer timeout = data.get("timeout") != null ? ((Number) data.get("timeout")).intValue() : 30;
 
         if (targetClientId == null || targetClientId.isEmpty()) {
             sendError(clientId, "Missing targetClientId");
@@ -487,7 +751,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        log.info("Sending message from {} to {}: {}", clientId, targetClientId, messageContent);
+        log.info("Sending blocking message from {} to {}: {}", clientId, targetClientId, messageContent);
 
         // 检查目标客户端是否存在
         if (!sessionManager.isSessionActive(targetClientId)) {
@@ -501,23 +765,100 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // 发送消息给目标客户端
-        Map<String, Object> targetMessage = Map.of(
-                "type", "message_from_client",
-                "fromClientId", clientId,
-                "message", messageContent,
-                "timestamp", System.currentTimeMillis()
-        );
-        sendMessage(targetClientId, targetMessage);
+        // 生成唯一请求ID
+        String reqId = java.util.UUID.randomUUID().toString().replace("-", "");
 
-        // 确认发送成功
-        Map<String, Object> confirmResponse = Map.of(
-                "type", "send_to_client_success",
-                "targetClientId", targetClientId,
-                "message", "Message sent successfully",
-                "timestamp", System.currentTimeMillis()
-        );
-        sendMessage(clientId, confirmResponse);
+        // 创建 CompletableFuture 用于等待响应
+        java.util.concurrent.CompletableFuture<Map<String, Object>> future = new java.util.concurrent.CompletableFuture<>();
+        WebSocketCaller.getInstance().registerPendingRequest(reqId, future);
+
+        try {
+            // 解析消息内容并直接把 reqId 放入
+            Map<String, Object> targetMessage;
+            if (messageContent instanceof String) {
+                // 字符串类型：解析成 Map，直接放入 reqId 后发送
+                targetMessage = new java.util.HashMap<>(objectMapper.readValue((String) messageContent, Map.class));
+                targetMessage.put("reqId", reqId);
+            } else if (messageContent instanceof Map) {
+                // Map 类型：复制一份，放入 reqId 后发送
+                targetMessage = new java.util.HashMap<>((Map<String, Object>) messageContent);
+                targetMessage.put("reqId", reqId);
+            } else {
+                sendError(clientId, "Invalid message format");
+                return;
+            }
+
+            // 发送消息给目标客户端（直接发送带 reqId 的消息）
+            sendMessage(targetClientId, targetMessage);
+
+            log.info("Waiting for response from client {}, reqId: {}, timeout: {}s", targetClientId, reqId, timeout);
+
+            // 阻塞等待响应
+            Map<String, Object> response = future.get(timeout, java.util.concurrent.TimeUnit.SECONDS);
+
+            log.info("Received response for reqId: {}, response: {}", reqId, response);
+
+            // 返回成功响应给调用者
+            Map<String, Object> confirmResponse = new java.util.HashMap<>();
+            confirmResponse.put("type", "send_to_client_success");
+            confirmResponse.put("targetClientId", targetClientId);
+            confirmResponse.put("reqId", reqId);
+            confirmResponse.put("response", response);
+            confirmResponse.put("message", "Message processed successfully");
+            confirmResponse.put("timestamp", System.currentTimeMillis());
+            sendMessage(clientId, confirmResponse);
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Timeout waiting for response from client {}, reqId: {}", targetClientId, reqId);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "send_to_client_error",
+                    "targetClientId", targetClientId,
+                    "reqId", reqId,
+                    "error", "Timeout waiting for client response",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+        } catch (Exception e) {
+            log.error("Failed to send message to client {}: {}", targetClientId, e.getMessage(), e);
+            Map<String, Object> errorResponse = Map.of(
+                    "type", "send_to_client_error",
+                    "targetClientId", targetClientId,
+                    "reqId", reqId,
+                    "error", e.getMessage() != null ? e.getMessage() : "Unknown error",
+                    "timestamp", System.currentTimeMillis()
+            );
+            sendMessage(clientId, errorResponse);
+        } finally {
+            // 清理等待的请求
+            WebSocketCaller.getInstance().removePendingRequest(reqId);
+        }
+    }
+
+    /**
+     * 处理客户端响应消息
+     * 当目标客户端处理完消息后，发送此响应解除调用者阻塞
+     * <p>
+     * 客户端响应格式:
+     * <pre>
+     * {
+     *     "type": "client_response",
+     *     "resId": "与reqId相同",
+     *     "data": { ... }
+     * }
+     * </pre>
+     */
+    @SuppressWarnings("unchecked")
+    private void handleClientResponse(Map<String, Object> messageMap) {
+        String resId = (String) messageMap.get("resId");
+        if (resId == null) {
+            log.warn("Client response missing resId");
+            return;
+        }
+
+        Map<String, Object> data = (Map<String, Object>) messageMap.get("data");
+        log.info("Received client response for resId: {}", resId);
+
+        WebSocketCaller.getInstance().handleResponse(resId, data != null ? data : Map.of());
     }
 
     /**
@@ -554,6 +895,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             log.debug("Sending heartbeat to {} clients", sessionManager.getActiveConnectionCount());
 
             Map<String, Object> heartbeat = Map.of(
+                    "action", "heartbeat",
                     "type", "heartbeat",
                     "timestamp", System.currentTimeMillis()
             );

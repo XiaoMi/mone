@@ -99,6 +99,87 @@ public class WebSocketCaller {
     }
 
     /**
+     * 同步调用 Android 客户端，阻塞等待响应
+     * 与 call 方法不同，此方法将 action 和 params 放在消息根级别
+     * <p>
+     * 发送的消息格式:
+     * {
+     * "type": "call",
+     * "reqId": "xxx",
+     * "action": "click",
+     * "params": { "x": 500, "y": 800 },
+     * "timestamp": 1234567890
+     * }
+     *
+     * @param clientId 客户端ID
+     * @param action   操作类型 (click, type, scroll, etc.)
+     * @param params   操作参数
+     * @return 响应数据
+     * @throws TimeoutException 超时异常
+     */
+    public Map<String, Object> callAndroid(String clientId, String action, Map<String, Object> params) throws TimeoutException {
+        return callAndroid(clientId, action, params, DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS, false);
+    }
+
+    /**
+     * 同步调用 Android 客户端，阻塞等待响应（可指定超时时间）
+     * 与 call 方法不同，此方法将 action 和 params 放在消息根级别
+     *
+     * @param clientId 客户端ID
+     * @param action   操作类型 (click, type, scroll, etc.)
+     * @param params   操作参数
+     * @param timeout  超时时间
+     * @param unit     时间单位
+     * @return 响应数据
+     * @throws TimeoutException 超时异常
+     */
+    public Map<String, Object> callAndroid(String clientId, String action, Map<String, Object> params, long timeout, TimeUnit unit, boolean isLast) throws TimeoutException {
+        // 生成唯一请求ID
+        String reqId = generateReqId();
+
+        // 创建 CompletableFuture 用于等待响应
+        CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
+        pendingRequests.put(reqId, future);
+
+        try {
+            // 构造请求消息 - Android 客户端期望 action 和 params 在根级别
+            java.util.HashMap<String, Object> request = new java.util.HashMap<>();
+            request.put("type", "call");
+            request.put("reqId", reqId);
+            request.put("action", action);
+            request.put("isLast", isLast);
+            if (params != null && !params.isEmpty()) {
+                request.put("params", params);
+            }
+            request.put("timestamp", System.currentTimeMillis());
+
+            log.info("Sending Android call request to client {}, reqId: {}, action: {}", clientId, reqId, action);
+
+            // 发送请求到客户端
+            WebSocketSessionManager.getInstance().sendMessage(clientId, request);
+
+            // 阻塞等待响应
+            Map<String, Object> response = future.get(timeout, unit);
+            log.info("Received Android response for reqId: {}", reqId);
+            return response;
+
+        } catch (TimeoutException e) {
+            log.error("Android call timeout for client {}, reqId: {}, action: {}", clientId, reqId, action);
+            throw e;
+        } catch (InterruptedException e) {
+            log.error("Android call interrupted for client {}, reqId: {}", clientId, reqId);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Android call interrupted", e);
+        } catch (ExecutionException e) {
+            log.error("Android call execution error for client {}, reqId: {}", clientId, reqId, e);
+            throw new RuntimeException("Android call execution error", e.getCause());
+        } finally {
+            // 清理等待的请求
+            pendingRequests.remove(reqId);
+        }
+    }
+
+    /**
      * 异步调用客户端，返回 CompletableFuture
      *
      * @param clientId 客户端ID
@@ -138,6 +219,27 @@ public class WebSocketCaller {
                 });
 
         return future;
+    }
+
+    /**
+     * 注册等待响应的请求（由外部调用者使用）
+     *
+     * @param reqId  请求ID
+     * @param future 用于等待响应的 CompletableFuture
+     */
+    public void registerPendingRequest(String reqId, CompletableFuture<Map<String, Object>> future) {
+        pendingRequests.put(reqId, future);
+        log.debug("Registered pending request: {}", reqId);
+    }
+
+    /**
+     * 移除等待响应的请求（由外部调用者使用）
+     *
+     * @param reqId 请求ID
+     */
+    public void removePendingRequest(String reqId) {
+        pendingRequests.remove(reqId);
+        log.debug("Removed pending request: {}", reqId);
     }
 
     /**

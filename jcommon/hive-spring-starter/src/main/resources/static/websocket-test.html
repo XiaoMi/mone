@@ -18,7 +18,146 @@
             padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .screenshot-preview-panel {
+            position: sticky;
+            top: 20px;
+            width: 320px;
+            min-width: 320px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screenshot-preview-panel h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #333;
+            display: flex;
             align-items: center;
+            gap: 8px;
+        }
+
+        .screenshot-container-preview {
+            position: relative;
+            width: 100%;
+            border: 3px solid #f5576c;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screenshot-container-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+            cursor: crosshair;
+        }
+
+        .screenshot-placeholder {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .coordinate-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ff0000;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 10;
+        }
+
+        .coordinate-label {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 11;
+            display: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .screenshot-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .screenshot-info .resolution {
+            color: #f5576c;
+            font-weight: 600;
+        }
+
+        .drag-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 12;
+            display: none;
+        }
+
+        .drag-line svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .drag-start-dot {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #00ff00;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 13;
+        }
+
+        .drag-info {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff00;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 14;
+            display: none;
         }
 
         .container {
@@ -28,6 +167,7 @@
             max-width: 900px;
             width: 100%;
             padding: 40px;
+            flex: 1;
         }
 
         h1 {
@@ -398,6 +538,42 @@
     </style>
 </head>
 <body>
+    <!-- 截图预览面板 -->
+    <div class="screenshot-preview-panel">
+        <h3>📱 最新截图预览</h3>
+        <div class="screenshot-container-preview" id="screenshotPreviewContainer">
+            <div class="screenshot-placeholder" id="screenshotPlaceholder">
+                暂无截图<br><small>收到截图后将在此显示</small>
+            </div>
+            <img id="screenshotPreviewImage" style="display: none;" alt="截图预览" />
+            <div class="coordinate-dot" id="coordinateDot"></div>
+            <div class="coordinate-label" id="coordinateLabel"></div>
+            <div class="drag-start-dot" id="dragStartDot"></div>
+            <div class="drag-line" id="dragLine">
+                <svg id="dragLineSvg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ff6600" />
+                        </marker>
+                    </defs>
+                    <line id="dragLineElement" x1="0" y1="0" x2="0" y2="0"
+                          stroke="#ff6600" stroke-width="3" stroke-linecap="round"
+                          marker-end="url(#arrowhead)" />
+                </svg>
+            </div>
+            <div class="drag-info" id="dragInfo"></div>
+        </div>
+        <div class="screenshot-info" id="screenshotInfo" style="display: none;">
+            分辨率: <span class="resolution" id="screenshotResolution">--</span>
+        </div>
+        <div class="screenshot-hint" style="margin-top: 8px; font-size: 11px; color: #888; text-align: center; line-height: 1.6;">
+            💡 点击 = 点击 | 拖动 = 滑动<br>
+            <span style="color: #00ff00;">●</span> 起点
+            <span style="color: #ff0000;">●</span> 当前位置
+            <span style="color: #ff6600;">→</span> 滑动方向
+        </div>
+    </div>
+
     <div class="container">
         <h1>🔌 WebSocket 测试页面</h1>
         <p class="subtitle">WebSocket 双向通信测试工具</p>
@@ -414,7 +590,7 @@
         <div class="control-panel">
             <div class="input-group">
                 <label for="serverUrl">服务器地址</label>
-                <input type="text" id="serverUrl" value="ws://localhost:8180/mcp/ws" placeholder="ws://localhost:8080/mcp/ws">
+                <input type="text" id="serverUrl" value="ws://localhost:8181/mcp/ws?clientId=admin" placeholder="ws://localhost:8080/mcp/ws">
             </div>
 
             <div class="button-group">
@@ -445,6 +621,34 @@
 
             <div class="quick-actions">
                 <button class="btn-primary" onclick="sendAgentMessage()">🤖 发送给 Agent</button>
+            </div>
+
+            <!-- 无障碍指令任务面板 -->
+            <div class="clients-panel">
+                <h3>
+                    <span>📱 无障碍指令任务列表</span>
+                    <button class="btn-refresh" onclick="toggleCommandList()">👁️ 显示/隐藏</button>
+                </h3>
+                <div class="command-list" id="commandList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 10px;">
+                    <span class="no-clients">点击显示/隐藏按钮查看指令列表</span>
+                </div>
+                <div class="quick-actions" style="margin-top: 15px;">
+                    <button class="btn-info" onclick="insertCommand('heartbeat')">心跳检测</button>
+                    <button class="btn-info" onclick="insertCommand('click')">点击坐标</button>
+                    <button class="btn-info" onclick="insertCommand('long_press')">长按</button>
+                    <button class="btn-info" onclick="insertCommand('scroll')">滑动</button>
+                    <button class="btn-info" onclick="insertCommand('drag')">拖拽</button>
+                    <button class="btn-info" onclick="insertCommand('type')">输入文本</button>
+                    <button class="btn-info" onclick="insertCommand('press_home')">Home键</button>
+                    <button class="btn-info" onclick="insertCommand('press_back')">返回键</button>
+                    <button class="btn-info" onclick="insertCommand('press_recents')">最近任务</button>
+                    <button class="btn-info" onclick="insertCommand('open_notifications')">通知栏</button>
+                    <button class="btn-info" onclick="insertCommand('open_quick_settings')">快速设置</button>
+                    <button class="btn-info" onclick="insertCommand('screenshot')">截图</button>
+                    <button class="btn-info" onclick="insertCommand('open_app')">打开应用</button>
+                    <button class="btn-info" onclick="insertCommand('ping')">Ping</button>
+                    <button class="btn-info" onclick="insertCommand('status')">状态查询</button>
+                </div>
             </div>
 
             <!-- 客户端列表面板 -->
@@ -630,6 +834,14 @@
                 case 'agent_complete':
                     addMessage('received', 'agent_complete', JSON.stringify(message, null, 2));
                     break;
+                case 'img_analysis_response':
+                    // 图片分析响应
+                    addMessage('received', 'img_analysis', `🤖 图片分析结果:\n\n提示词: ${message.prompt}\n\n${message.result}`);
+                    break;
+                case 'img_analysis_error':
+                    // 图片分析错误
+                    addMessage('received', 'img_analysis_error', `❌ 图片分析失败: ${message.error}`);
+                    break;
                 case 'clients_list':
                     // 处理客户端列表
                     updateClientsList(message.clients);
@@ -641,10 +853,46 @@
                         `来自 ${message.fromClientId}:\n${JSON.stringify(message.message, null, 2)}`);
                     break;
                 case 'send_to_client_success':
-                    addMessage('received', type, `消息已发送给 ${message.targetClientId}`);
+                    // 显示执行结果，包含 response 数据
+                    let successMsg = `消息已发送给 ${message.targetClientId}`;
+
+                    // 检查是否是截图响应（包含图片数据）
+                    if (message.response && message.response.data && message.response.data.image) {
+                        const imageData = message.response.data;
+                        successMsg += ` 截图成功 (${imageData.width}x${imageData.height})`;
+                        // 添加带图片的消息
+                        addMessageWithImage('received', type, successMsg, imageData.image);
+                        // 更新截图预览面板
+                        updateScreenshotPreview(imageData.image, imageData.width, imageData.height);
+                    } else if (message.response) {
+                        successMsg += `\n\n执行结果:\n${JSON.stringify(message.response, null, 2)}`;
+                        addMessage('received', type, successMsg);
+
+                        // 检查是否需要自动截图（UI改变操作成功后）
+                        if (pendingAutoScreenshot && message.response.success) {
+                            pendingAutoScreenshot = false;
+                            // 延迟2秒让界面有时间响应操作
+                            addMessage('system', 'auto_screenshot_pending', '⏳ 2秒后自动截图...');
+                            setTimeout(() => {
+                                sendScreenshotCommand();
+                            }, 2000);
+                        }
+                    } else {
+                        addMessage('received', type, successMsg);
+                        // 如果没有 response 但有待执行的自动截图，也触发
+                        if (pendingAutoScreenshot) {
+                            pendingAutoScreenshot = false;
+                            addMessage('system', 'auto_screenshot_pending', '⏳ 2秒后自动截图...');
+                            setTimeout(() => {
+                                sendScreenshotCommand();
+                            }, 2000);
+                        }
+                    }
                     break;
                 case 'send_to_client_error':
                     addMessage('received', type, `发送失败: ${message.error}`);
+                    // 重置自动截图标记
+                    pendingAutoScreenshot = false;
                     break;
                 case 'message_response':
                 case 'broadcast':
@@ -780,26 +1028,56 @@
             }
 
             try {
+                let data = JSON.parse(content);
+
+                // 如果有截图预览，自动添加 cmd=img 和 image 参数
+                if (lastScreenshotData && lastScreenshotData.image) {
+                    data.cmd = 'img';
+                    data.image = lastScreenshotData.image;
+                    // 如果用户输入的内容没有 prompt，使用 content 作为 prompt
+                    if (!data.prompt && data.content) {
+                        data.prompt = data.content;
+                    }
+                }
+
                 const message = {
                     type: 'message',
-                    data: JSON.parse(content)
+                    data: data
                 };
 
                 ws.send(JSON.stringify(message));
                 sentCount++;
                 document.getElementById('sentCount').textContent = sentCount;
-                addMessage('sent', 'message', JSON.stringify(message, null, 2));
+                // 显示消息时隐藏 image 数据（太长了）
+                const displayData = { ...data };
+                if (displayData.image) {
+                    displayData.image = '[base64 image data...]';
+                }
+                addMessage('sent', 'message', JSON.stringify({ type: 'message', data: displayData }, null, 2));
                 messageInput.value = '';
             } catch (error) {
-                // 如果不是 JSON，直接发送字符串
+                // 如果不是 JSON，直接发送字符串作为 prompt
+                let data = { prompt: content };
+
+                // 如果有截图预览，自动添加 cmd=img 和 image 参数
+                if (lastScreenshotData && lastScreenshotData.image) {
+                    data.cmd = 'img';
+                    data.image = lastScreenshotData.image;
+                }
+
                 const message = {
                     type: 'message',
-                    data: { content: content }
+                    data: data
                 };
                 ws.send(JSON.stringify(message));
                 sentCount++;
                 document.getElementById('sentCount').textContent = sentCount;
-                addMessage('sent', 'message', JSON.stringify(message, null, 2));
+                // 显示消息时隐藏 image 数据
+                const displayData = { ...data };
+                if (displayData.image) {
+                    displayData.image = '[base64 image data...]';
+                }
+                addMessage('sent', 'message', JSON.stringify({ type: 'message', data: displayData }, null, 2));
                 messageInput.value = '';
             }
         }
@@ -889,7 +1167,7 @@
             document.getElementById('lastMessageTime').textContent = timeStr;
 
             const messagePanel = document.getElementById('messagePanel');
-            
+
             const noMessages = messagePanel.querySelector('.no-messages');
             if (noMessages) {
                 noMessages.remove();
@@ -910,6 +1188,56 @@
             if (messagePanel.children.length > 50) {
                 messagePanel.removeChild(messagePanel.lastChild);
             }
+        }
+
+        // 添加带图片的消息
+        function addMessageWithImage(direction, type, content, base64Image) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            document.getElementById('lastMessageTime').textContent = timeStr;
+
+            const messagePanel = document.getElementById('messagePanel');
+
+            const noMessages = messagePanel.querySelector('.no-messages');
+            if (noMessages) {
+                noMessages.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${direction}`;
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-type">${direction === 'sent' ? '发送' : '接收'} - ${type}</span>
+                    <span class="message-time">${timeStr}</span>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+                <div class="screenshot-container" style="margin-top: 10px;">
+                    <img src="data:image/jpeg;base64,${base64Image}"
+                         alt="截图"
+                         style="max-width: 100%; max-height: 400px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2);"
+                         onclick="openImageInNewTab(this.src)"
+                         title="点击查看大图" />
+                </div>
+            `;
+
+            messagePanel.insertBefore(messageDiv, messagePanel.firstChild);
+
+            if (messagePanel.children.length > 50) {
+                messagePanel.removeChild(messagePanel.lastChild);
+            }
+        }
+
+        // 在新标签页中打开图片
+        function openImageInNewTab(imageSrc) {
+            const newWindow = window.open();
+            newWindow.document.write(`
+                <html>
+                <head><title>截图预览</title></head>
+                <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #333;">
+                    <img src="${imageSrc}" style="max-width: 100%; max-height: 100vh;" />
+                </body>
+                </html>
+            `);
         }
 
         function clearMessages() {
@@ -941,6 +1269,554 @@
                 ws.close();
             }
         });
+
+        // 无障碍指令命令模板
+        const commandTemplates = {
+            heartbeat: {
+                action: "heartbeat"
+            },
+            click: {
+                action: "click",
+                params: {
+                    x: 500,
+                    y: 800
+                }
+            },
+            long_press: {
+                action: "long_press",
+                params: {
+                    x: 500,
+                    y: 800,
+                    duration: 1000
+                }
+            },
+            scroll: {
+                action: "scroll",
+                params: {
+                    x: 500,
+                    y: 800,
+                    direction: "up",
+                    distance: 500
+                }
+            },
+            drag: {
+                action: "drag",
+                params: {
+                    x: 300,
+                    y: 800,
+                    x2: 700,
+                    y2: 800,
+                    duration: 500
+                }
+            },
+            type: {
+                action: "type",
+                params: {
+                    content: "输入的文本内容"
+                }
+            },
+            press_home: {
+                action: "press_home"
+            },
+            press_back: {
+                action: "press_back"
+            },
+            press_recents: {
+                action: "press_recents"
+            },
+            open_notifications: {
+                action: "open_notifications"
+            },
+            open_quick_settings: {
+                action: "open_quick_settings"
+            },
+            screenshot: {
+                action: "screenshot"
+            },
+            open_app: {
+                action: "open_app",
+                params: {
+                    packageName: "com.android.settings"
+                }
+            },
+            ping: {
+                action: "ping"
+            },
+            status: {
+                action: "status"
+            }
+        };
+
+        // 切换命令列表显示
+        function toggleCommandList() {
+            const commandList = document.getElementById('commandList');
+            if (commandList.style.display === 'none') {
+                // 显示命令列表
+                commandList.style.display = 'grid';
+                commandList.innerHTML = '';
+
+                Object.keys(commandTemplates).forEach(command => {
+                    const item = document.createElement('div');
+                    item.className = 'client-item';
+                    item.style.cursor = 'pointer';
+                    item.textContent = command;
+                    item.onclick = () => insertCommand(command);
+                    commandList.appendChild(item);
+                });
+            } else {
+                commandList.style.display = 'none';
+            }
+        }
+
+        // 会改变 Android 界面的命令列表
+        const uiChangingCommands = [
+            'click', 'long_press', 'scroll', 'drag', 'type',
+            'press_home', 'press_back', 'press_recents',
+            'open_notifications', 'open_quick_settings', 'open_app'
+        ];
+
+        // 插入命令到消息框并自动发送
+        function insertCommand(commandType) {
+            const template = commandTemplates[commandType];
+            if (!template) return;
+
+            // 检查是否选中了目标客户端
+            if (!selectedTargetClientId) {
+                alert('请先选择要发送指令的目标客户端');
+                return;
+            }
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('请先建立连接');
+                return;
+            }
+
+            // 构建无障碍指令的 JSON 格式
+            const accessibilityCommand = {
+                ...template
+            };
+
+            // 将 JSON 插入到客户端消息框（显示当前指令）
+            const clientMessageTextarea = document.getElementById('clientMessage');
+            clientMessageTextarea.value = JSON.stringify(accessibilityCommand, null, 2);
+
+            // 判断是否是会改变界面的命令
+            const willChangeUI = uiChangingCommands.includes(commandType);
+
+            // 如果会改变界面，设置自动截图标记
+            if (willChangeUI) {
+                pendingAutoScreenshot = true;
+            }
+
+            // 自动发送命令
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(accessibilityCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+
+            const emoji = willChangeUI ? '🚀' : '📡';
+            addMessage('sent', 'command', `${emoji} ${commandType} → ${selectedTargetClientId}${willChangeUI ? ' (2秒后自动截图)' : ''}`);
+        }
+
+        // 显示命令详情（可选功能）
+        function showCommandDetails(command) {
+            const template = commandTemplates[command];
+            if (!template) return;
+
+            let details = `指令: ${command}\n`;
+            if (template.params) {
+                details += `参数: ${JSON.stringify(template.params, null, 2)}`;
+            } else {
+                details += '参数: 无';
+            }
+
+            alert(details);
+        }
+
+        // 双击显示命令详情
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为所有命令按钮添加双击事件
+            setTimeout(() => {
+                const commandButtons = document.querySelectorAll('.quick-actions .btn-info');
+                commandButtons.forEach(button => {
+                    button.addEventListener('dblclick', function() {
+                        const command = this.textContent.replace(/[Α-￥]/g, ''); // 移除中文
+                        const commandMap = {
+                            '心跳检测': 'heartbeat',
+                            '点击坐标': 'click',
+                            '长按': 'long_press',
+                            '滑动': 'scroll',
+                            '拖拽': 'drag',
+                            '输入文本': 'type',
+                            'Home键': 'press_home',
+                            '返回键': 'press_back',
+                            '最近任务': 'press_recents',
+                            '通知栏': 'open_notifications',
+                            '快速设置': 'open_quick_settings',
+                            '截图': 'screenshot',
+                            '打开应用': 'open_app',
+                            'Ping': 'ping',
+                            '状态查询': 'status'
+                        };
+                        const englishCommand = commandMap[this.textContent];
+                        if (englishCommand) {
+                            showCommandDetails(englishCommand);
+                        }
+                    });
+                });
+            }, 100);
+
+            // 初始化截图预览的鼠标事件
+            initScreenshotPreview();
+        });
+
+        // 截图预览相关变量
+        let lastScreenshotData = null;  // 存储最后一张截图的数据
+        let screenshotWidth = 1440;     // 默认截图宽度
+        let screenshotHeight = 3200;    // 默认截图高度
+        let pendingAutoScreenshot = false;  // 是否有待执行的自动截图
+
+        // 滑动操作相关变量
+        let isDragging = false;         // 是否正在拖动
+        let dragStartX = 0;             // 拖动起始点 X (屏幕坐标)
+        let dragStartY = 0;             // 拖动起始点 Y (屏幕坐标)
+        let dragStartAndroidX = 0;      // 拖动起始点 Android X
+        let dragStartAndroidY = 0;      // 拖动起始点 Android Y
+
+        // 更新截图预览
+        function updateScreenshotPreview(base64Image, width, height) {
+            lastScreenshotData = {
+                image: base64Image,
+                width: width || 1440,
+                height: height || 3200
+            };
+
+            screenshotWidth = lastScreenshotData.width;
+            screenshotHeight = lastScreenshotData.height;
+
+            const placeholder = document.getElementById('screenshotPlaceholder');
+            const previewImage = document.getElementById('screenshotPreviewImage');
+            const screenshotInfo = document.getElementById('screenshotInfo');
+            const screenshotResolution = document.getElementById('screenshotResolution');
+
+            // 隐藏占位符，显示图片
+            placeholder.style.display = 'none';
+            previewImage.src = 'data:image/jpeg;base64,' + base64Image;
+            previewImage.style.display = 'block';
+
+            // 显示分辨率信息
+            screenshotInfo.style.display = 'block';
+            screenshotResolution.textContent = `${screenshotWidth}x${screenshotHeight}`;
+        }
+
+        // 初始化截图预览的鼠标事件
+        function initScreenshotPreview() {
+            const container = document.getElementById('screenshotPreviewContainer');
+            const previewImage = document.getElementById('screenshotPreviewImage');
+            const dot = document.getElementById('coordinateDot');
+            const label = document.getElementById('coordinateLabel');
+            const dragStartDot = document.getElementById('dragStartDot');
+            const dragLine = document.getElementById('dragLine');
+            const dragLineElement = document.getElementById('dragLineElement');
+            const dragInfo = document.getElementById('dragInfo');
+
+            // 计算 Android 坐标的辅助函数
+            function getAndroidCoords(e) {
+                const rect = previewImage.getBoundingClientRect();
+                const relativeX = (e.clientX - rect.left) / rect.width;
+                const relativeY = (e.clientY - rect.top) / rect.height;
+                const androidX = Math.round(relativeX * screenshotWidth);
+                const androidY = Math.round(relativeY * screenshotHeight);
+                return {
+                    x: Math.max(0, Math.min(screenshotWidth, androidX)),
+                    y: Math.max(0, Math.min(screenshotHeight, androidY))
+                };
+            }
+
+            // 获取容器内的位置
+            function getContainerPosition(e) {
+                const containerRect = container.getBoundingClientRect();
+                return {
+                    x: e.clientX - containerRect.left,
+                    y: e.clientY - containerRect.top
+                };
+            }
+
+            previewImage.addEventListener('mousemove', function(e) {
+                if (!lastScreenshotData) return;
+
+                const containerPos = getContainerPosition(e);
+                const androidCoords = getAndroidCoords(e);
+
+                // 显示红点跟随鼠标
+                dot.style.display = 'block';
+                dot.style.left = containerPos.x + 'px';
+                dot.style.top = containerPos.y + 'px';
+
+                // 如果正在拖动，更新拖动线和信息
+                if (isDragging) {
+                    // 更新拖动线
+                    dragLine.style.display = 'block';
+                    dragLineElement.setAttribute('x1', dragStartX);
+                    dragLineElement.setAttribute('y1', dragStartY);
+                    dragLineElement.setAttribute('x2', containerPos.x);
+                    dragLineElement.setAttribute('y2', containerPos.y);
+
+                    // 计算滑动距离和方向
+                    const deltaX = androidCoords.x - dragStartAndroidX;
+                    const deltaY = androidCoords.y - dragStartAndroidY;
+                    const distance = Math.round(Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+
+                    // 判断滑动方向
+                    let direction = '';
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        direction = deltaX > 0 ? '→ 右' : '← 左';
+                    } else {
+                        direction = deltaY > 0 ? '↓ 下' : '↑ 上';
+                    }
+
+                    // 显示拖动信息
+                    dragInfo.style.display = 'block';
+                    dragInfo.textContent = `滑动: (${dragStartAndroidX},${dragStartAndroidY}) → (${androidCoords.x},${androidCoords.y}) | ${direction} | 距离: ${distance}`;
+
+                    // 隐藏普通坐标标签
+                    label.style.display = 'none';
+                } else {
+                    // 显示坐标标签
+                    label.style.display = 'block';
+                    label.textContent = `x: ${androidCoords.x}, y: ${androidCoords.y}`;
+
+                    // 调整标签位置，避免超出边界
+                    const containerRect = container.getBoundingClientRect();
+                    let labelX = containerPos.x + 15;
+                    let labelY = containerPos.y - 25;
+
+                    if (labelX + 120 > containerRect.width) {
+                        labelX = containerPos.x - 120;
+                    }
+                    if (labelY < 0) {
+                        labelY = containerPos.y + 20;
+                    }
+
+                    label.style.left = labelX + 'px';
+                    label.style.top = labelY + 'px';
+                }
+            });
+
+            previewImage.addEventListener('mouseleave', function() {
+                dot.style.display = 'none';
+                label.style.display = 'none';
+
+                // 如果正在拖动，取消拖动
+                if (isDragging) {
+                    isDragging = false;
+                    dragStartDot.style.display = 'none';
+                    dragLine.style.display = 'none';
+                    dragInfo.style.display = 'none';
+                }
+            });
+
+            // 鼠标按下 - 开始拖动
+            previewImage.addEventListener('mousedown', function(e) {
+                if (!lastScreenshotData) return;
+                e.preventDefault();
+
+                isDragging = true;
+                const containerPos = getContainerPosition(e);
+                const androidCoords = getAndroidCoords(e);
+
+                // 记录起始点
+                dragStartX = containerPos.x;
+                dragStartY = containerPos.y;
+                dragStartAndroidX = androidCoords.x;
+                dragStartAndroidY = androidCoords.y;
+
+                // 显示起始点绿色圆点
+                dragStartDot.style.display = 'block';
+                dragStartDot.style.left = containerPos.x + 'px';
+                dragStartDot.style.top = containerPos.y + 'px';
+
+                // 初始化拖动线
+                dragLine.style.display = 'block';
+                dragLineElement.setAttribute('x1', containerPos.x);
+                dragLineElement.setAttribute('y1', containerPos.y);
+                dragLineElement.setAttribute('x2', containerPos.x);
+                dragLineElement.setAttribute('y2', containerPos.y);
+            });
+
+            // 鼠标松开 - 结束拖动，执行操作
+            previewImage.addEventListener('mouseup', function(e) {
+                if (!lastScreenshotData || !isDragging) return;
+
+                const androidCoords = getAndroidCoords(e);
+                const deltaX = androidCoords.x - dragStartAndroidX;
+                const deltaY = androidCoords.y - dragStartAndroidY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                // 隐藏拖动相关元素
+                isDragging = false;
+                dragStartDot.style.display = 'none';
+                dragLine.style.display = 'none';
+                dragInfo.style.display = 'none';
+
+                // 判断是点击还是滑动（距离小于30像素认为是点击）
+                if (distance < 30) {
+                    // 点击操作
+                    if (selectedTargetClientId) {
+                        sendClickCommandAndScreenshot(dragStartAndroidX, dragStartAndroidY);
+                    } else {
+                        addMessage('system', 'warning', `请先选择目标客户端后再操作`);
+                    }
+                } else {
+                    // 滑动操作
+                    if (selectedTargetClientId) {
+                        sendSwipeCommand(dragStartAndroidX, dragStartAndroidY, androidCoords.x, androidCoords.y);
+                    } else {
+                        addMessage('system', 'warning', `请先选择目标客户端后再操作`);
+                    }
+                }
+            });
+
+            // 防止图片被拖拽
+            previewImage.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+            });
+        }
+
+        // 发送点击指令并在成功后自动截图
+        function sendClickCommandAndScreenshot(x, y) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('system', 'error', '请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                addMessage('system', 'error', '请先选择目标客户端');
+                return;
+            }
+
+            // 构建点击指令
+            const clickCommand = {
+                action: "click",
+                params: {
+                    x: x,
+                    y: y
+                }
+            };
+
+            // 设置待执行自动截图标记
+            pendingAutoScreenshot = true;
+
+            // 发送点击指令
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(clickCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+            addMessage('sent', 'auto_click', `🖱️ 点击坐标 (${x}, ${y}) → ${selectedTargetClientId} (2秒后自动截图)`);
+
+            // 同时更新消息框显示当前指令
+            document.getElementById('clientMessage').value = JSON.stringify(clickCommand, null, 2);
+        }
+
+        // 发送滑动指令并在成功后自动截图
+        function sendSwipeCommand(x1, y1, x2, y2) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('system', 'error', '请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                addMessage('system', 'error', '请先选择目标客户端');
+                return;
+            }
+
+            // 构建滑动指令 (使用 drag action)
+            const swipeCommand = {
+                action: "drag",
+                params: {
+                    x: x1,
+                    y: y1,
+                    x2: x2,
+                    y2: y2,
+                    duration: 300
+                }
+            };
+
+            // 设置待执行自动截图标记
+            pendingAutoScreenshot = true;
+
+            // 发送滑动指令
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(swipeCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+
+            // 计算滑动方向
+            const deltaX = x2 - x1;
+            const deltaY = y2 - y1;
+            let direction = '';
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                direction = deltaX > 0 ? '→' : '←';
+            } else {
+                direction = deltaY > 0 ? '↓' : '↑';
+            }
+
+            addMessage('sent', 'auto_swipe', `👆 滑动 ${direction} (${x1},${y1}) → (${x2},${y2}) → ${selectedTargetClientId} (2秒后自动截图)`);
+
+            // 同时更新消息框显示当前指令
+            document.getElementById('clientMessage').value = JSON.stringify(swipeCommand, null, 2);
+        }
+
+        // 发送截图指令
+        function sendScreenshotCommand() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('system', 'error', '请先建立连接');
+                return;
+            }
+
+            if (!selectedTargetClientId) {
+                addMessage('system', 'error', '请先选择目标客户端');
+                return;
+            }
+
+            const screenshotCommand = {
+                action: "screenshot"
+            };
+
+            const message = {
+                type: 'send_to_client',
+                data: {
+                    targetClientId: selectedTargetClientId,
+                    message: JSON.stringify(screenshotCommand)
+                }
+            };
+
+            ws.send(JSON.stringify(message));
+            sentCount++;
+            document.getElementById('sentCount').textContent = sentCount;
+            addMessage('sent', 'auto_screenshot', `📸 自动截图请求 → ${selectedTargetClientId}`);
+        }
     </script>
 </body>
 </html>
