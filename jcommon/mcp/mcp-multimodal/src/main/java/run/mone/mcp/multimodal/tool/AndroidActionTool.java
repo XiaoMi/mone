@@ -37,6 +37,11 @@ public class AndroidActionTool implements ITool {
     private static final Gson gson = new Gson();
     private static final int DEFAULT_TIMEOUT = 30;
 
+    // 屏幕尺寸常量，用于坐标归一化
+    private static final int SCREEN_WIDTH = 1440;
+    private static final int SCREEN_HEIGHT = 3200;
+    private static final double COORDINATE_SCALE = 1000.0;
+
     @Override
     public String getName() {
         return name;
@@ -320,20 +325,15 @@ public class AndroidActionTool implements ITool {
 
         switch (action) {
             case "click":
-                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标 (1440x3200)
-                final int screenWidth = 1440;
-                final int screenHeight = 3200;
-                int rawX = parseIntOrDefault(params.get("x"), 0);
-                int rawY = parseIntOrDefault(params.get("y"), 0);
-                int absoluteX = (int) (rawX / 1000.0 * screenWidth);
-                int absoluteY = (int) (rawY / 1000.0 * screenHeight);
-                actionParams.put("x", absoluteX);
-                actionParams.put("y", absoluteY);
+                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0)));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0)));
                 break;
 
             case "long_press":
-                actionParams.put("x", parseIntOrDefault(params.get("x"), 0));
-                actionParams.put("y", parseIntOrDefault(params.get("y"), 0));
+                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0)));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0)));
                 actionParams.put("duration", parseIntOrDefault(params.get("duration"), 1000));
                 break;
 
@@ -342,17 +342,19 @@ public class AndroidActionTool implements ITool {
                 break;
 
             case "scroll":
-                actionParams.put("x", parseIntOrDefault(params.get("x"), 500));
-                actionParams.put("y", parseIntOrDefault(params.get("y"), 800));
+                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 500)));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 800)));
                 actionParams.put("direction", params.getOrDefault("direction", "up"));
                 actionParams.put("distance", parseIntOrDefault(params.get("distance"), 500));
                 break;
 
             case "drag":
-                actionParams.put("x", parseIntOrDefault(params.get("x"), 0));
-                actionParams.put("y", parseIntOrDefault(params.get("y"), 0));
-                actionParams.put("x2", parseIntOrDefault(params.get("x2"), 0));
-                actionParams.put("y2", parseIntOrDefault(params.get("y2"), 0));
+                // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0)));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0)));
+                actionParams.put("x2", normalizeX(parseIntOrDefault(params.get("x2"), 0)));
+                actionParams.put("y2", normalizeY(parseIntOrDefault(params.get("y2"), 0)));
                 actionParams.put("duration", parseIntOrDefault(params.get("duration"), 500));
                 break;
 
@@ -371,6 +373,20 @@ public class AndroidActionTool implements ITool {
         }
 
         return actionParams;
+    }
+
+    /**
+     * 将相对 X 坐标(0-1000)转换为设备屏幕绝对坐标
+     */
+    private int normalizeX(int rawX) {
+        return (int) (rawX / COORDINATE_SCALE * SCREEN_WIDTH);
+    }
+
+    /**
+     * 将相对 Y 坐标(0-1000)转换为设备屏幕绝对坐标
+     */
+    private int normalizeY(int rawY) {
+        return (int) (rawY / COORDINATE_SCALE * SCREEN_HEIGHT);
     }
 
     /**
