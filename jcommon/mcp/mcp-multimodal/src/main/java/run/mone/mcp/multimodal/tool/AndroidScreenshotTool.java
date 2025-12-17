@@ -7,8 +7,9 @@ import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.spring.starter.WebSocketCaller;
+import run.mone.mcp.multimodal.util.ImageProcessingUtil;
 
-import java.util.HashMap;
+import java.awt.image.BufferedImage;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,6 +35,21 @@ public class AndroidScreenshotTool implements ITool {
      * 默认超时时间（秒）
      */
     private static final int DEFAULT_TIMEOUT = 30;
+
+    /**
+     * 图片压缩阈值：1MB（Base64 编码后的大小）
+     */
+    private static final long COMPRESSION_THRESHOLD = 1024 * 1024;
+
+    /**
+     * 默认压缩比例：保持原尺寸
+     */
+    private static final double DEFAULT_SCALE = 1.0;
+
+    /**
+     * JPEG 压缩质量（0.0-1.0）
+     */
+    private static final float JPEG_QUALITY = 0.85f;
 
     @Override
     public String getName() {
@@ -230,11 +246,37 @@ public class AndroidScreenshotTool implements ITool {
             return result;
         }
 
-        // 提取图片数据
+        // 提取图片数据并进行压缩
         if (data.containsKey("image")) {
             String imageBase64 = String.valueOf(data.get("image"));
-            result.addProperty("image", imageBase64);
-            result.addProperty("imageSize", imageBase64.length());
+            long originalSize = imageBase64.length();
+
+            // 如果图片大于阈值，进行压缩
+            String finalBase64 = imageBase64;
+            boolean compressed = false;
+
+            if (originalSize > COMPRESSION_THRESHOLD) {
+                try {
+                    log.info("图片大小 {}KB 超过 1MB，进行压缩", originalSize / 1024);
+                    BufferedImage image = ImageProcessingUtil.base64ToImage(imageBase64);
+                    if (image != null) {
+                        finalBase64 = ImageProcessingUtil.compressImageToBase64(image, DEFAULT_SCALE, JPEG_QUALITY);
+                        compressed = true;
+                        log.info("压缩完成: {}KB -> {}KB (压缩率 {:.1f}%)",
+                                originalSize / 1024,
+                                finalBase64.length() / 1024,
+                                (1 - (double) finalBase64.length() / originalSize) * 100);
+                    }
+                } catch (Exception e) {
+                    log.warn("图片压缩失败，使用原图: {}", e.getMessage());
+                    finalBase64 = imageBase64;
+                }
+            }
+
+            result.addProperty("image", finalBase64);
+            result.addProperty("imageSize", finalBase64.length());
+            result.addProperty("originalSize", originalSize);
+            result.addProperty("compressed", compressed);
         } else {
             result.addProperty("error", "No image data in response");
             result.addProperty("success", false);
