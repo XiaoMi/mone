@@ -53,7 +53,8 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<tool_result>") ||
         mcpContent.includes("<pid>") ||
         mcpContent.includes("<terminal_append>") ||
-        mcpContent.includes("<notification>")
+        mcpContent.includes("<notification>") ||
+        mcpContent.includes("<tool_img>")
       )
     ) {
       return false;
@@ -302,6 +303,9 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (name === "notification") {
           // html += `<div class="notification-block"><span class="notification-label">通知：</span><span class="notification-content">`;
           currentNotication = "";
+        } else if (name === "tool_img") {
+          // tool_img 标签，输出 img 标签开始，等待 base64 内容
+          html += `<div style="text-align: center; margin: 15px 0;"><img src="data:image/png;base64,`;
         } else if (name === "terminal_append") {
           // terminal_append 标签开始，准备处理进程追加
           // html += `<!-- terminal_append_start -->`;
@@ -389,6 +393,10 @@ export function markdownItMcp(md: MarkdownIt) {
           return;
         } else if (tagName === "notification") {
           currentNotication += text;
+          return;
+        } else if (tagName === "tool_img") {
+          // 处理 tool_img 标签内的 base64 内容，直接输出不转义
+          html += text.trim();
           return;
         }
         if (isDownloadFile) {
@@ -482,6 +490,9 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "notification") {
           // html += `</span></div>`;
           useMcpNotificationStore().addNotification('info', '来自MCP的通知', currentNotication.trim());
+        } else if (tagname === "tool_img") {
+          // 关闭 img 标签和包裹的 div
+          html += `" alt="Tool Image" style="max-height: 200px; width: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);" /></div>`;
         } else if (tagname === "file_operation") {
           html += `</div></div>`;
         } else if (tagname === "execute") {
