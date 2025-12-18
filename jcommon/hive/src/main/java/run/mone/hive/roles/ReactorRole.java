@@ -88,6 +88,8 @@ public class ReactorRole extends Role {
 
     private String clientId;
 
+    private String androidId;
+
     private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
 
     private String version;
@@ -758,13 +760,13 @@ public class ReactorRole extends Role {
                     String imageBase64 = toolRes.get("image").getAsString();
                     addImageToList(imageBase64);
                     toolRes.remove("image");
-                    contentForUser = tool.formatResult("\n执行 tool " + tool.getName() + "成功 结果: " + toolRes + "\n" + "<tool_img>%s</tool_img>".formatted(imageBase64) + "\n");
+                    contentForUser = tool.formatResult("\n执行 tool " + tool.getName() + "成功获取到图片\n 结果:\n " + toolRes + "\n" + "<tool_img>%s</tool_img>".formatted(imageBase64) + "\n");
                 } else if (toolRes.has("toolMsgType")) {
                     // 说明需要调用方做特殊处理
-                    contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
+                    contentForLlm = "执行 tool:" + res + "\n执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
                     contentForUser = toolRes.toString();
                 } else {
-                    contentForLlm = "执行 tool " + tool.getName() + " \n 执行工具结果:\n" + toolRes;
+                    contentForLlm = "执行 tool " + tool.getName() +" params:("+ params + ") \n执行工具结果:\n" + toolRes;
                     contentForUser = tool.formatResult(toolRes);
                     imageList.clear();
                 }
@@ -853,11 +855,11 @@ public class ReactorRole extends Role {
                 compoundMsg.setParts(new ArrayList<>());
             }
 
-//            // 添加文字描述
-//            compoundMsg.getParts().add(LLM.LLMPart.builder()
-//                    .type(LLM.TYPE_TEXT)
-//                    .data("最后的两张操作截图")
-//                    .build());
+            // 添加文字描述
+            compoundMsg.getParts().add(LLM.LLMPart.builder()
+                    .type(LLM.TYPE_TEXT)
+                    .data("最后的两张操作截图")
+                    .build());
 
             // 计算要添加的图片数量（最多两张）
             int startIndex = Math.max(0, imageList.size() - 2);
@@ -934,6 +936,7 @@ public class ReactorRole extends Role {
     private String buildSystemPrompt(Message message) {
         String roleDescription = "";
         if (StringUtils.isNotEmpty(this.goal)) {
+            String clientId = StringUtils.isEmpty(this.getAndroidId()) ? this.getClientId() : this.getAndroidId();
             roleDescription = """
                     \n
                     profile: %s
@@ -942,7 +945,7 @@ public class ReactorRole extends Role {
                     output format: %s
                     clientId: %s
                     \n
-                    """.formatted(this.profile, this.goal, this.constraints, this.outputFormat, this.getClientId());
+                    """.formatted(this.profile, this.goal, this.constraints, this.outputFormat, clientId);
         }
         String prompt = MonerSystemPrompt.mcpPrompt(message, this, roleDescription, Const.DEFAULT, this.name, this.customInstructions, this.tools, this.mcpTools, this.workflow, this.focusChainManager.getFocusChainSettings().isEnabled());
         log.info("system prompt:{}", prompt);
