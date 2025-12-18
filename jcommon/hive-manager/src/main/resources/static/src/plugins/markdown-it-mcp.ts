@@ -55,6 +55,8 @@ export function markdownItMcp(md: MarkdownIt) {
         mcpContent.includes("<terminal_append>") ||
         mcpContent.includes("<notification>") ||
         mcpContent.includes("<tool_img>")
+        || mcpContent.includes("<android_action>")
+        || mcpContent.includes("<android_screenshot>")
       )
     ) {
       return false;
@@ -72,6 +74,11 @@ export function markdownItMcp(md: MarkdownIt) {
     let currentPid = "";
     let currentContent = "";
     let currentNotication = "";
+
+    // Android tags parsing
+    let androidActionClientId = "";
+    let androidActionActions = "";
+    let androidScreenshotClientId = "";
 
     // 辅助函数：获取当前标签栈顶的标签
     const getCurrentTag = () => tagStack[tagStack.length - 1];
@@ -324,6 +331,17 @@ export function markdownItMcp(md: MarkdownIt) {
             </div>
             <div class="file-url-content">
               <a class="file-url-link" href="javascript:;" data-name="${attributes.fileName}" data-url="${attributes.fileUrl}">${attributes.fileName}</a>`;
+        } else if (name === "android_action" || name === "android_ation") {
+          // Android action block
+          androidActionClientId = "";
+          androidActionActions = "";
+          html += `<div class="android-tool-block android-action" data-tool="android_action">`;
+        } else if (name === "android_screenshot") {
+          // Android screenshot block
+          androidScreenshotClientId = "";
+          html += `<div class="android-tool-block android-screenshot" data-tool="android_screenshot">`;
+        } else if (name === "clientId" || name === "clientid" || name === "client_id" || name === "actions") {
+          // Android inner tags: we only collect their text in ontext; don't render the tag itself.
         } else {
           console.log("unhandled tag", name,attributes);
             html += md.utils.escapeHtml(
@@ -335,6 +353,23 @@ export function markdownItMcp(md: MarkdownIt) {
       },
       ontext(text) {
         const tagName = getCurrentTag();
+        if (tagName === "clientId" || tagName === "clientid" || tagName === "client_id") {
+          const parent = tagStack[tagStack.length - 2];
+          if (parent === "android_action" || parent === "android_ation") {
+            androidActionClientId += text;
+            return;
+          }
+          if (parent === "android_screenshot") {
+            androidScreenshotClientId += text;
+            return;
+          }
+        } else if (tagName === "actions") {
+          const parent = tagStack[tagStack.length - 2];
+          if (parent === "android_action" || parent === "android_ation") {
+            androidActionActions += text;
+            return;
+          }
+        }
         if (tagName === "tool_result") {
           html += `${md.utils.escapeHtml(text)}`
           // try {
@@ -570,6 +605,35 @@ export function markdownItMcp(md: MarkdownIt) {
         } else if (tagname === "download_file") {
           isDownloadFile = false;
           html += `</div></div>`;
+        } else if (tagname === "android_action" || tagname === "android_ation") {
+          const clientId = md.utils.escapeHtml(androidActionClientId.trim());
+          const actions = md.utils.escapeHtml(androidActionActions.trim());
+          html += `
+            <div class="android-tool-header">
+              <i class="fa-solid fa-mobile-screen"></i>
+              <span>Android Action</span>
+            </div>
+            <div class="android-tool-content">
+              <div class="android-tool-field"><span class="label">clientId：</span><code>${clientId || '-'}</code></div>
+              <div class="android-tool-field"><span class="label">actions：</span><pre><code>${actions || '-'}</code></pre></div>
+            </div>
+          </div>`;
+          androidActionClientId = "";
+          androidActionActions = "";
+        } else if (tagname === "android_screenshot") {
+          const clientId = md.utils.escapeHtml(androidScreenshotClientId.trim());
+          html += `
+            <div class="android-tool-header">
+              <i class="fa-solid fa-camera"></i>
+              <span>Android Screenshot</span>
+            </div>
+            <div class="android-tool-content">
+              <div class="android-tool-field"><span class="label">clientId：</span><code>${clientId || '-'}</code></div>
+            </div>
+          </div>`;
+          androidScreenshotClientId = "";
+        } else if (tagname === "clientId" || tagname === "clientid" || tagname === "client_id" || tagname === "actions") {
+          // Android inner tags: nothing to close in HTML.
         } else {
           // if (!isImplied) {
           //   html += md.utils.escapeHtml(`</${tagname}>`);
