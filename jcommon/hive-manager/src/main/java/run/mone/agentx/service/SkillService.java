@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono;
 import run.mone.agentx.entity.Skill;
 import run.mone.agentx.repository.SkillRepository;
 
-@Service
+@Service("skillService2")
 @RequiredArgsConstructor
 public class SkillService {
     private final SkillRepository skillRepository;

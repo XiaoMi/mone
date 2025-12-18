@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class CreateProjectFunction implements McpFunction {
 
-    @Value("${git.email.suffix}")
+    @Value("${git.default.username}")
     private String gitUserName;
     
     public static final String TOOL_SCHEMA = """

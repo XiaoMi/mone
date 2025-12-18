@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
  * @author dingtao
  */
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.hera.analysis")
+@ComponentScan({"run.mone.mcp.hera.analysis", "run.mone.mcp.git", "run.mone.mcp.miline.function"})
 public class HeraAnalysisApplication {
     
     /**

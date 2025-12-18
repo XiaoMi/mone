@@ -1,0 +1,42 @@
+[project]
+name = "migrate-jdk25"
+version = "1.0.0"
+description = "Automated JDK8 to JDK25 migration toolkit with Spring Boot 3.x and reactive programming support"
+requires-python = ">=3.10"
+dependencies = [
+    "lxml>=5.0.0",
+    "rich>=13.0.0",
+    "click>=8.0.0",
+    "pyyaml>=6.0",
+    "gitpython>=3.1.0",
+    "colorama>=0.4.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+migrate-jdk25 = "migrate:main"
+upgrade-deps = "upgrade_dependencies:main"
+migrate-ns = "migrate_namespace:main"
+migrate-cfg = "migrate_config:main"
+gen-jvm = "generate_jvm_params:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+only-include = ["*.py", "*.md"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.4",
+    "black>=24.10.0",
+    "ruff>=0.8.4",
+]

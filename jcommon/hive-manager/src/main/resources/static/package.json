@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.4",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.10.2",
     "@types/uuid": "^10.0.0",
     "@types/vue": "latest",

@@ -40,9 +40,11 @@ public class HeraLogDetailService {
      * @param tailName 日志尾部名称
      * @param startTime 开始时间（毫秒时间戳字符串）
      * @param endTime 结束时间（毫秒时间戳字符串）
+     * @param page 分页页码，从1开始
+     * @param pageSize 每页大小
      * @return 格式化的日志查询结果
      */
-    public String queryLogDetail(int spaceId, int storeId, String input, String tailName, String startTime, String endTime) {
+    public String queryLogDetail(int spaceId, int storeId, String input, String tailName, String startTime, String endTime, int page, int pageSize) {
         try {
             // 构建请求体
             JsonArray requestArray = new JsonArray();
@@ -57,6 +59,8 @@ public class HeraLogDetailService {
             requestBody.addProperty("tailName", tailName);
             requestBody.addProperty("startTime", startTime);
             requestBody.addProperty("endTime", endTime);
+            requestBody.addProperty("page", page);
+            requestBody.addProperty("pageSize", pageSize);
 
             requestArray.add(requestBody);
 

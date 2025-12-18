@@ -204,8 +204,8 @@
         </dependency>
 
         <dependency>
-            <artifactId>mi-tpc-login</artifactId>
-            <groupId>com.xiaomi.mone</groupId>
+            <artifactId>mi-tpclogin-sdk</artifactId>
+            <groupId>run.mone</groupId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 

@@ -70,7 +70,6 @@ public class GitCloneTool implements ITool {
         return """
                 - repositoryUrl: (必填) Git仓库URL地址
                 - branchName: (可选) 分支名称，默认为main
-                - localPath: (可选) 本地存储路径
                 - username: (可选) 认证用户名
                 - token: (可选) 认证Token
                 """;
@@ -90,7 +89,6 @@ public class GitCloneTool implements ITool {
                 <git_clone>
                 <repositoryUrl>仓库URL</repositoryUrl>
                 <branchName>分支名称（可选，默认main）</branchName>
-                <localPath>本地路径（可选）</localPath>
                 <username>用户名（可选）</username>
                 <token>Token（可选）</token>
                 %s
@@ -138,7 +136,6 @@ public class GitCloneTool implements ITool {
             // 获取参数
             String repositoryUrl = inputJson.get("repositoryUrl").getAsString().trim();
             String branchName = inputJson.has("branchName") ? inputJson.get("branchName").getAsString().trim() : "main";
-            String localPath = inputJson.has("localPath") ? inputJson.get("localPath").getAsString().trim() : null;
             String username = inputJson.has("username") ? inputJson.get("username").getAsString().trim() : null;
             String token = inputJson.has("token") ? inputJson.get("token").getAsString().trim() : null;
 
@@ -155,7 +152,7 @@ public class GitCloneTool implements ITool {
             log.info("使用workspacePath: {}", workspacePath);
 
             // 执行克隆操作
-            GitResponse response = gitService.gitClone(repositoryUrl, branchName, localPath, username, token, workspacePath);
+            GitResponse response = gitService.gitClone(repositoryUrl, branchName, username, token, workspacePath);
 
             // 设置响应
             if (response.getSuccess()) {

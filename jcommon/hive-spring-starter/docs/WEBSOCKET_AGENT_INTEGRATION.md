@@ -63,8 +63,9 @@ WebSocket 支持以下消息类型：
 ### 2. JavaScript 使用示例
 
 ```javascript
-// 建立连接
-const ws = new WebSocket('ws://localhost:8180/mcp/ws');
+// 建立连接（需要传递 clientId 参数）
+const clientId = 'client-' + Date.now(); // 生成唯一的客户端ID
+const ws = new WebSocket(`ws://localhost:8180/mcp/ws?clientId=${clientId}`);
 
 ws.onopen = () => {
     console.log('Connected');
@@ -87,7 +88,7 @@ ws.onmessage = (event) => {
     
     switch (message.type) {
         case 'connected':
-            console.log('Session ID:', message.sessionId);
+            console.log('Client ID:', message.clientId);
             break;
             
         case 'agent_response':
@@ -162,7 +163,7 @@ websocat ws://localhost:8180/mcp/ws
 {
   "type": "connected",
   "message": "WebSocket connection established successfully",
-  "sessionId": "xyz123",
+  "clientId": "client-1234567890",
   "timestamp": 1728475200000
 }
 ```
@@ -205,8 +206,8 @@ Agent 处理错误：
 Message message = Message.builder()
     .content(content)              // 消息内容
     .role("user")                  // 角色：user
-    .sentFrom("ws_" + sessionId)   // 来源：ws_会话ID
-    .clientId(sessionId)           // 客户端ID（会话ID）
+    .sentFrom("ws_" + clientId)    // 来源：ws_客户端ID
+    .clientId(clientId)            // 客户端ID（从URL参数获取）
     .userId(userId)                // 用户ID（可选）
     .agentId(agentId)              // Agent ID（可选）
     .createTime(System.currentTimeMillis())  // 创建时间

@@ -978,6 +978,7 @@ const setSuggestion = (suggestion: string) => {
   text.value = suggestion;
   knowledgeBasesValue.value = [];
   nextTick(() => {
+    autoCompleteInput.value?.setTextContent(suggestion);
     autoCompleteInput.value?.focus();
   });
 };

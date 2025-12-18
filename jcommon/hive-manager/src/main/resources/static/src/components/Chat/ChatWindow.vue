@@ -60,6 +60,7 @@
         <el-button type="warning" size="small" @click="setIsFollow(!isFollow)">{{ isFollow ? '取消跟随' : '跟随输出' }}</el-button>
       </div>
     </div>
+    <McpServerNotification />
     <UserInput
       :on-submit="onUserInputSubmit"
       :placeholder="placeholder"
@@ -75,6 +76,7 @@
 import { computed } from 'vue'
 import MessageList from './MessageList.vue'
 import UserInput from './UserInput.vue'
+import McpServerNotification from './McpServerNotification.vue'
 import { useIdeaInfoStore } from '@/stores/idea-info'
 import { useEditStore } from '@/stores/edit'
 import { storeToRefs } from 'pinia'

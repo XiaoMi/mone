@@ -1,0 +1,51 @@
+# JDK25 JVM Parameters - Generated
+# Heap Memory: 8G
+# Virtual Threads: 10000
+
+# ===== Memory Configuration =====
+-Xms8192m
+-Xmx8192m
+-XX:MaxDirectMemorySize=2048M
+-XX:MetaspaceSize=1024M
+-XX:MaxMetaspaceSize=1024M
+
+# ===== ZGC Configuration =====
+# Enable ZGC with generational mode (JDK 21+)
+-XX:+UseZGC
+-XX:+ZGenerational
+
+# ===== GC Logging =====
+# Logs will be written to /home/work/log/ with rotation
+-Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=/home/work/log/gc-%t.log:time,level,tid,tags:filecount=5,filesize=50m
+
+# ===== Error Handling =====
+# Preserve stack traces in exceptions
+-XX:-OmitStackTraceInFastThrow
+
+# Auto-generate heap dump on OutOfMemoryError
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/home/work/log/errorDump.hprof
+
+# Show detailed exception messages (helpful for debugging)
+-XX:+ShowCodeDetailsInExceptionMessages
+
+# ===== JDK Module System (Required for JDK9+) =====
+# These are required for reflection and framework compatibility
+--add-opens=java.base/java.time=ALL-UNNAMED
+--add-opens=java.base/java.lang=ALL-UNNAMED
+--add-opens=java.base/java.util=ALL-UNNAMED
+--add-opens=java.base/java.math=ALL-UNNAMED
+--add-opens=java.base/sun.reflect=ALL-UNNAMED
+--add-opens=java.base/java.nio=ALL-UNNAMED
+--add-exports=java.base/sun.reflect.annotation=ALL-UNNAMED
+--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+
+# ===== Virtual Thread Configuration =====
+# Platform threads available for virtual thread scheduling
+# Default is CPU cores, can be set to match old dubbo thread count
+-Djdk.virtualThreadScheduler.parallelism=16
+
+# ===== Application Configuration =====
+# Set application-specific properties here
+# -Dapp.name=your-application
+# -Dspring.profiles.active=production

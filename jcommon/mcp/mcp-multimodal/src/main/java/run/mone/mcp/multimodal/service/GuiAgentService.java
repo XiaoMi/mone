@@ -42,6 +42,12 @@ public class GuiAgentService {
     private String defaultSystemPrompt;
 
     /**
+     * UI Provider 配置，默认使用 DOUBAO_UI_TARS
+     */
+    @Value("${mcp.gui.ui.provider:DOUBAO_UI_TARS}")
+    private String uiProvider;
+
+    /**
      * Default system prompt for GUI agent
      */
     private static final String DEFAULT_SYSTEM_PROMPT =
@@ -73,7 +79,7 @@ public class GuiAgentService {
         try {
             String base64Image = ImageProcessingUtil.imageToBase64(imagePath);
             LLM llm = new LLM(LLMConfig.builder()
-                    .llmProvider(LLMProvider.DOUBAO_UI_TARS)
+                    .llmProvider(LLMProvider.valueOf(uiProvider))
                     .temperature(Prompt.temperature)
                     .thinking(true)
                     .build());

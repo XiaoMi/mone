@@ -27,7 +27,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.34</version>
+            <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -57,6 +57,28 @@
             <artifactId>mcp-chat</artifactId>
             <version>1.6.1-jdk21-SNAPSHOT</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>mcp-miline</artifactId>
+            <version>1.6.1-jdk21-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-webmvc</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>mcp-git</artifactId>
+            <version>1.6.1-jdk21-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-webmvc</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.ozhera</groupId>

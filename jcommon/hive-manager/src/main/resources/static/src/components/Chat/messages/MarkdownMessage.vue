@@ -19,7 +19,6 @@ import mdKatex from "@traptitech/markdown-it-katex";
 // @ts-expect-error No type definitions available for markdown-it-link-attributes
 import mila from "markdown-it-link-attributes";
 import hljs from "highlight.js";
-// @ts-ignore
 import MarkdownIt from "markdown-it";
 import util from "@/libs/util";
 import { copyToClip } from "@/libs/copy";
@@ -132,7 +131,7 @@ let debounceTimer: number | null = null;
 
 watch(
   () => props.message.data.text,
-  (newText) => {
+  (newText) => {  
     // 清除之前的定时器
     if (debounceTimer !== null) {
       clearTimeout(debounceTimer);
@@ -141,7 +140,7 @@ watch(
     // 设置新的定时器
     debounceTimer = setTimeout(() => {
       nextTick(() => {
-        if (textRef.value) {
+        if (newText) {
           messageText.value = mdi.render(newText);
         }
       });

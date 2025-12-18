@@ -116,16 +116,19 @@ public class QueryPipelineByGitUrlFunction implements McpFunction {
                 String responseBody = response.body().string();
                 log.info("queryPipelineByGitUrl response: {}", responseBody);
 
-                ApiResponse<ProjectPipelineListDto> apiResponse = objectMapper.readValue(
-                        responseBody,
-                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, ProjectPipelineListDto.class)
+                ApiResponse<List<ProjectPipelineListDto>> apiResponse = objectMapper.readValue(responseBody,
+                        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class,
+                                objectMapper.getTypeFactory().constructCollectionType(
+                                        List.class, ProjectPipelineListDto.class
+                                )
+                        )
                 );
 
                 if (apiResponse.getCode() != 0) {
                     throw new Exception("API error: " + apiResponse.getMessage());
                 }
 
-                ProjectPipelineListDto data = apiResponse.getData();
+                List<ProjectPipelineListDto> data = apiResponse.getData();
                 String resultText = formatPipelineInfo(data);
                 log.info("queryPipelineByGitUrl data: {}", resultText);
 
@@ -146,61 +149,63 @@ public class QueryPipelineByGitUrlFunction implements McpFunction {
     /**
      * 格式化流水线信息输出
      */
-    private String formatPipelineInfo(ProjectPipelineListDto data) {
+    private String formatPipelineInfo(List<ProjectPipelineListDto> data) {
         if (data == null) {
             return "未查询到相关流水线信息";
         }
 
         StringBuilder sb = new StringBuilder("流水线查询结果：\n\n");
 
-        if (data.getId() != null) {
-            sb.append(String.format("项目ID: %s\n", data.getId()));
-        }
+        for (ProjectPipelineListDto d : data) {
 
-        if (data.getPipelineList() != null && !data.getPipelineList().isEmpty()) {
-            sb.append(String.format("\n共找到 %d 条流水线：\n\n", data.getPipelineList().size()));
-
-            int index = 1;
-            for (PipelineInfo pipeline : data.getPipelineList()) {
-                sb.append(String.format("流水线 %d:\n", index++));
-                sb.append(String.format("  - 流水线ID: %s\n", pipeline.getId()));
-                if (StringUtils.isNotBlank(pipeline.getPipelineName())) {
-                    sb.append(String.format("  - 流水线名称: %s\n", pipeline.getPipelineName()));
-                }
-                if (StringUtils.isNotBlank(pipeline.getPipelineCname())) {
-                    sb.append(String.format("  - 流水线中文名: %s\n", pipeline.getPipelineCname()));
-                }
-                if (StringUtils.isNotBlank(pipeline.getGitBranch())) {
-                    sb.append(String.format("  - Git分支: %s\n", pipeline.getGitBranch()));
-                }
-                if (StringUtils.isNotBlank(pipeline.getEnv())) {
-                    sb.append(String.format("  - 环境: %s\n", pipeline.getEnv()));
-                }
-                sb.append(String.format("  - 流水线状态: %d\n", pipeline.getStatus()));
-                sb.append(String.format("  - 流水线类型: %d\n", pipeline
-                        .getType()));
-                if (StringUtils.isNotBlank(pipeline.getDesc())) {
-                    sb.append(String.format("  - 流水线描述: %s\n", pipeline.getDesc()));
-                }
-                if (StringUtils.isNotBlank(pipeline.getGitUrl())) {
-                    sb.append(String.format("  - Git地址: %s\n", pipeline.getGitUrl()));
-                }
-                if (StringUtils.isNotBlank(pipeline.getDeployEnvGroup())) {
-                    sb.append(String.format("  - 部署环境组: %s\n", pipeline.getDeployEnvGroup()));
-                }
-                sb.append(String.format("  - 创建时间: %d\n", pipeline.getCreateTime()));
-                sb.append(String.format("  - 更新时间: %d\n", pipeline.getUpdateTime()));
-                if (StringUtils.isNotBlank(pipeline.getCreator())) {
-                    sb.append(String.format("  - 创建人: %s\n", pipeline.getCreator()));
-                }
-                
-
-                sb.append("\n");
+            if (d.getProjectId() != null) {
+                sb.append(String.format("项目ID: %s\n", d.getProjectId()));
+                sb.append(String.format("项目名称: %s\n", d.getProjectName()));
             }
-        } else {
-            sb.append("\n暂无流水线信息\n");
-        }
 
+            if (d.getPipelineList() != null && !d.getPipelineList().isEmpty()) {
+                sb.append(String.format("\n共找到 %d 条流水线：\n\n", d.getPipelineList().size()));
+
+                int index = 1;
+                for (PipelineInfo pipeline : d.getPipelineList()) {
+                    sb.append(String.format("流水线 %d:\n", index++));
+                    sb.append(String.format("  - 流水线ID: %s\n", pipeline.getId()));
+                    if (StringUtils.isNotBlank(pipeline.getPipelineName())) {
+                        sb.append(String.format("  - 流水线名称: %s\n", pipeline.getPipelineName()));
+                    }
+                    if (StringUtils.isNotBlank(pipeline.getPipelineCname())) {
+                        sb.append(String.format("  - 流水线中文名: %s\n", pipeline.getPipelineCname()));
+                    }
+                    if (StringUtils.isNotBlank(pipeline.getGitBranch())) {
+                        sb.append(String.format("  - Git分支: %s\n", pipeline.getGitBranch()));
+                    }
+                    if (StringUtils.isNotBlank(pipeline.getEnv())) {
+                        sb.append(String.format("  - 环境: %s\n", pipeline.getEnv()));
+                    }
+                    sb.append(String.format("  - 流水线状态: %d\n", pipeline.getStatus()));
+                    sb.append(String.format("  - 流水线类型: %d\n", pipeline.getType()));
+                    if (StringUtils.isNotBlank(pipeline.getDesc())) {
+                        sb.append(String.format("  - 流水线描述: %s\n", pipeline.getDesc()));
+                    }
+                    if (StringUtils.isNotBlank(pipeline.getGitUrl())) {
+                        sb.append(String.format("  - Git地址: %s\n", pipeline.getGitUrl()));
+                    }
+                    if (StringUtils.isNotBlank(pipeline.getDeployEnvGroup())) {
+                        sb.append(String.format("  - 部署环境组: %s\n", pipeline.getDeployEnvGroup()));
+                    }
+                    sb.append(String.format("  - 创建时间: %d\n", pipeline.getCreateTime()));
+                    sb.append(String.format("  - 更新时间: %d\n", pipeline.getUpdateTime()));
+                    if (StringUtils.isNotBlank(pipeline.getCreator())) {
+                        sb.append(String.format("  - 创建人: %s\n", pipeline.getCreator()));
+                    }
+
+
+                    sb.append("\n");
+                }
+            } else {
+                sb.append("\n暂无流水线信息\n");
+            }
+        }
         return sb.toString().trim();
     }
 
@@ -238,7 +243,8 @@ public class QueryPipelineByGitUrlFunction implements McpFunction {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ProjectPipelineListDto {
-        private Long id;
+        private Long projectId;
+        private String projectName;
         private List<PipelineInfo> pipelineList;
     }
 

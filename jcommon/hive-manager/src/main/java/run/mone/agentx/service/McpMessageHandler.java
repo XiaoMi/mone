@@ -35,7 +35,7 @@ public class McpMessageHandler {
      * @param msg 接收到的消息对象
      */
     public void handleMessage(Object msg) {
-        log.info("msg:{}", msg);
+        log.info("=========>McpMessageHandler收到消息, msg类型:{}, msg内容:{}", msg != null ? msg.getClass().getName() : "null", msg);
         if (msg instanceof Pair<?, ?> pair
                 && pair.getKey() instanceof StreamResponse response
                 && pair.getValue() instanceof StreamObserver) {
@@ -45,6 +45,7 @@ public class McpMessageHandler {
                     (StreamObserver<StreamRequest>) pair.getValue();
 
             String reqId = response.getRequestId();
+            log.info("=========>解析消息成功, cmd:{}, reqId:{}", response.getCmd(), reqId);
 
             if (response.getCmd().equals(Const.NOTIFY_MSG)) {
                 String data = response.getData();
@@ -55,7 +56,7 @@ public class McpMessageHandler {
                 String cmd = m.getOrDefault("cmd","").toString();
 
                 //通知过来信息,需要发送到用户的界面
-                if (null != id && cmd.equals("notify_hive_manager")) {
+                if (null != id && cmd.equals(Const.NOTIFY_HIVE_MANAGER)) {
                     if (WebSocketHolder.getSession(id.toString()) != null) {
                         //发到前端页面(必须用websocket连接过来的)
                         WebSocketHolder.sendMessageSafely(

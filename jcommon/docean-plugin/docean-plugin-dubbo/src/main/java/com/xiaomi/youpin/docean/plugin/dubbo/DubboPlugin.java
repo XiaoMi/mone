@@ -123,7 +123,7 @@ public class DubboPlugin implements IPlugin {
         }
         MetadataReportConfig metadataReportConfig = new MetadataReportConfig();
         metadataReportConfig.setId("meta");
-        metadataReportConfig.setId(metaAddr);
+        metadataReportConfig.setAddress(metaAddr);
         return metadataReportConfig;
     }
 
@@ -134,7 +134,7 @@ public class DubboPlugin implements IPlugin {
         }
         ConfigCenterConfig configCenterConfig = new ConfigCenterConfig();
         configCenterConfig.setId("cfg");
-        configCenterConfig.setId(cfgAddr);
+        configCenterConfig.setAddress(cfgAddr);
         return configCenterConfig;
     }
 

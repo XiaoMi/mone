@@ -67,5 +67,5 @@ public abstract class AbstractNotificationFluxSink implements FluxSink<String> {
      * 
      * @param message 要发送的消息内容
      */
-    protected abstract void sendNotification(String message);
+    abstract void sendNotification(String message);
 }

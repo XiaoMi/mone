@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"run.mone.mcp.mione", "run.mone.hive.spring.starter"})
+@ComponentScan(basePackages = {"run.mone.mcp.mione", "run.mone.hive.mcp.service", "run.mone.mcp.git"})
 public class MioneMcpBootstrap {
 
     public static void main(String[] args) {

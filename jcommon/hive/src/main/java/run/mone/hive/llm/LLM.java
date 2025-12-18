@@ -509,7 +509,7 @@ public class LLM {
             requestBody.addProperty("instructions", systemPrompt);
         }
 
-        if (llmProvider == LLMProvider.DOUBAO_VISION) {
+        if (llmProvider == LLMProvider.DOUBAO_VISION || llmProvider == LLMProvider.DOUBAO_UI_TARS) {
             if (StringUtils.isNotEmpty(systemPrompt)) {
                 JsonObject obj = new JsonObject();
                 obj.addProperty("role", "system");
@@ -534,6 +534,7 @@ public class LLM {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER
                     || this.llmProvider == LLMProvider.MOONSHOT
+                    || this.llmProvider == LLMProvider.DOUBAO_UI_TARS
                     || this.llmProvider == LLMProvider.DOUBAO_VISION
                     || this.llmProvider == LLMProvider.DOUBAO
                     || this.llmProvider == LLMProvider.DOUBAO_SEED_CODE

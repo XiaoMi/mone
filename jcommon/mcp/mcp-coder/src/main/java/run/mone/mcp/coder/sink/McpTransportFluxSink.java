@@ -11,9 +11,21 @@ import java.util.Map;
 /**
  * MCP Transport 的 FluxSink 实现
  * 通过 GrpcServerTransport 发送通知消息
- * 
+ *
  * @author goodjava@qq.com
  * @date 2025/10/9
+ *
+ * AgentConfig
+ *
+ * //                .taskList(Lists.newArrayList((role) -> {
+ * //                    role.putMessage(Message.builder()
+ * //                            .role("user")
+ * //                            .content("1+1=?")
+ * //                            .sink(new McpTransportFluxSink(transport, role))
+ * //                            .build());
+ * //                    return "ok";
+ * //                }))
+ *
  */
 public class McpTransportFluxSink extends AbstractNotificationFluxSink {
 
@@ -25,15 +37,14 @@ public class McpTransportFluxSink extends AbstractNotificationFluxSink {
         this.role = role;
     }
 
-    //处理的地方,可以看看hive-manager 里的
+    //处理的地方,可以看看hive-manager 里的(页面里直接显示出来)
     @Override
-    protected void sendNotification(String message) {
-        String clientId = role.getClientId();
+    public void sendNotification(String message) {
         Map<String, Object> params = new HashMap<>();
         // 通过 client_id 来找到接受者
-        params.put(Const.CLIENT_ID, clientId);
+        params.put(Const.CLIENT_ID, role.getClientId());
         params.put(Const.OWNER_ID, role.getOwner());
-        params.put("cmd", "notify_hive_manager");
+        params.put("cmd", Const.NOTIFY_HIVE_MANAGER);
         params.put("data", message);
         params.put("id", "1");
         transport.sendMessage(new McpSchema.JSONRPCNotification("", "msg", params));

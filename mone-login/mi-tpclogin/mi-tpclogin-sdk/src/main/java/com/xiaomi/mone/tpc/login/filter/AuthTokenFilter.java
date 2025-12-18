@@ -9,11 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.*;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
 import java.util.Optional;
 
 class AuthTokenFilter implements Filter {
@@ -72,7 +71,7 @@ class AuthTokenFilter implements Filter {
             return;
         }
         if (!authToken.isFromCookie()) {
-            TokenUtil.setCookie(request, resultVo.getData(), servletResponse);
+            setCookie(request, resultVo.getData(), servletResponse);
         }
         servletRequest.setAttribute(ConstUtil.TPC_USER, resultVo.getData());
         filterChain.doFilter(servletRequest, servletResponse);
@@ -92,6 +91,19 @@ class AuthTokenFilter implements Filter {
         response.setStatus(401);
         response.setHeader(ConstUtil.AUTH_TOKEN, "1");
         response.setHeader(ConstUtil.loginUrl, loginUrl);
+    }
+
+    public static void setCookie(HttpServletRequest request, AuthUserVo userVo, ServletResponse servletResponse) throws IOException {
+        HttpServletResponse response = (HttpServletResponse)servletResponse;
+        Cookie cookie = new Cookie(ConstUtil.AUTH_TOKEN, userVo.getToken());
+        cookie.setPath("/");
+        cookie.setMaxAge(userVo.getExprTime());
+        String origin = Optional.ofNullable(request.getHeader("Origin")).orElse(request.getHeader("Host"));
+        String domain = HostUtil.getDomain(origin);
+        if (StringUtils.isNotBlank(domain)) {
+            cookie.setDomain(domain);
+        }
+        response.addCookie(cookie);
     }
 
 }

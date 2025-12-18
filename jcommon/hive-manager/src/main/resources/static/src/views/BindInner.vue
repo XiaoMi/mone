@@ -22,13 +22,17 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus';
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { bindInner } from '@/api/user'
 import { useUserStore } from '@/stores/user';
 import { isInternal } from '@/utils/tools';
 import { ref } from 'vue';
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore()
+
+// 获取重定向参数，与登录逻辑保持一致
+const redirectPath = ref<string>(route.query.redirect as string || '/agents')
 const form = ref({
     internalAccount: ""
 })
@@ -50,7 +54,8 @@ const handleBind = async () => {
             internalAccount: response.data.data.internalAccount || ""
         })
         ElMessage.success('绑定成功')
-        router.push('/agents')
+        // 绑定成功后跳转到重定向页面或默认页面，与登录逻辑保持一致
+        router.push(redirectPath.value || '/agents')
     } else {
         ElMessage.error(response.data.message || '绑定失败')
     }

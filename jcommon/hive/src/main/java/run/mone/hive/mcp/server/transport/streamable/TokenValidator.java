@@ -5,8 +5,6 @@
 package run.mone.hive.mcp.server.transport.streamable;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Interface for validating bearer tokens.
@@ -27,7 +25,7 @@ public interface TokenValidator {
     class ValidationResult {
         private final boolean isValid;
         private final Duration ttl;
-        private final Map<String, Object> userInfo;
+        private final UserInfo userInfo;
 
         /**
          * Creates a validation result.
@@ -35,10 +33,10 @@ public interface TokenValidator {
          * @param ttl The time-to-live for caching this result (null to use default)
          * @param userInfo User information extracted from token validation (null if none)
          */
-        public ValidationResult(boolean isValid, Duration ttl, Map<String, Object> userInfo) {
+        public ValidationResult(boolean isValid, Duration ttl, UserInfo userInfo) {
             this.isValid = isValid;
             this.ttl = ttl;
-            this.userInfo = userInfo != null ? new HashMap<>(userInfo) : new HashMap<>();
+            this.userInfo = userInfo != null ? userInfo : new UserInfo();
         }
 
         /**
@@ -66,8 +64,8 @@ public interface TokenValidator {
             return ttl;
         }
 
-        public Map<String, Object> getUserInfo() {
-            return userInfo != null ? new HashMap<>(userInfo) : new HashMap<>();
+        public UserInfo getUserInfo() {
+            return userInfo;
         }
     }
 }

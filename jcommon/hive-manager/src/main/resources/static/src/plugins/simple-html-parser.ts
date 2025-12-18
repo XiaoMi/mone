@@ -123,7 +123,8 @@ const SUPPORTED_TAGS = [
   'pid',
   'terminal_append',
   'process_pid',
-  'process_content'
+  'process_content',
+  'notification'
 ] as const;
 
 /**
@@ -186,6 +187,12 @@ export class SimpleHtmlParser {
   private currentTag: string | null = null;
   private currentAttributes: Record<string, string> = {};
   private currentTagStack: string[] = [];
+  
+  // tool_result 标签特殊处理：记录是否在 tool_result 标签内
+  private isInToolResult: boolean = false;
+  
+  // notification 标签特殊处理：记录是否在 notification 标签内
+  private isInNotification: boolean = false;
 
   constructor(callbacks: ParserCallbacks) {
     this.callbacks = callbacks;
@@ -285,6 +292,17 @@ export class SimpleHtmlParser {
     this.currentTagStack.push(tag);
     this.currentTag = tag;
     this.currentAttributes = this.parseAttributes(attributeString);
+    
+    // 如果是 tool_result 标签，设置标志
+    if (tag === 'tool_result') {
+      this.isInToolResult = true;
+    }
+    
+    // 如果是 notification 标签，设置标志
+    if (tag === 'notification') {
+      this.isInNotification = true;
+    }
+    
     this.callbacks.onopentag?.(tag, this.currentAttributes, location);
   }
 
@@ -316,6 +334,17 @@ export class SimpleHtmlParser {
     if (lastTag === tag) {
       this.currentTagStack.pop();
       this.callbacks.onclosetag?.(tag, location);
+      
+      // 如果关闭的是 tool_result 标签，清除标志
+      if (tag === 'tool_result') {
+        this.isInToolResult = false;
+      }
+      
+      // 如果关闭的是 notification 标签，清除标志
+      if (tag === 'notification') {
+        this.isInNotification = false;
+      }
+      
       this.updateCurrentTagState();
       return;
     }
@@ -326,7 +355,18 @@ export class SimpleHtmlParser {
       // 找到匹配的标签，关闭所有中间的标签
       const tagsToClose = this.currentTagStack.splice(matchingIndex);
       for (let i = tagsToClose.length - 1; i >= 0; i--) {
-        this.callbacks.onclosetag?.(tagsToClose[i], location);
+        const closingTag = tagsToClose[i];
+        this.callbacks.onclosetag?.(closingTag, location);
+        
+        // 如果关闭的是 tool_result 标签，清除标志
+        if (closingTag === 'tool_result') {
+          this.isInToolResult = false;
+        }
+        
+        // 如果关闭的是 notification 标签，清除标志
+        if (closingTag === 'notification') {
+          this.isInNotification = false;
+        }
       }
       this.updateCurrentTagState();
     } else {
@@ -508,6 +548,60 @@ export class SimpleHtmlParser {
         }
       }
 
+      // 检查是否在 tool_result 标签内
+      if (this.isInToolResult) {
+        // 在 tool_result 内，检查是否是 tool_result 结束标签
+        const isEndTag = match[1] === '/';
+        const tagName = (match[2] || '').trim();
+        
+        if (isEndTag && tagName === 'tool_result') {
+          // 这是 tool_result 的结束标签，正常处理
+          const startPos = this.getPosition();
+          const fullTag = match[0];
+          this.updatePositionForText(fullTag);
+          const location = this.createLocation(startPos, this.getPosition(), fullTag);
+          this.handleCloseTag(tagName, fullTag, location);
+          lastIndex = matchIndex + matchLength;
+          continue;
+        } else {
+          // 在 tool_result 内的其他标签，作为纯文本处理
+          const startPos = this.getPosition();
+          const fullTag = match[0];
+          this.updatePositionForText(fullTag);
+          const location = this.createLocation(startPos, this.getPosition(), fullTag);
+          this.handleText(fullTag, location);
+          lastIndex = matchIndex + matchLength;
+          continue;
+        }
+      }
+      
+      // 检查是否在 notification 标签内
+      if (this.isInNotification) {
+        // 在 notification 内，检查是否是 notification 结束标签
+        const isEndTag = match[1] === '/';
+        const tagName = (match[2] || '').trim();
+        
+        if (isEndTag && tagName === 'notification') {
+          // 这是 notification 的结束标签，正常处理
+          const startPos = this.getPosition();
+          const fullTag = match[0];
+          this.updatePositionForText(fullTag);
+          const location = this.createLocation(startPos, this.getPosition(), fullTag);
+          this.handleCloseTag(tagName, fullTag, location);
+          lastIndex = matchIndex + matchLength;
+          continue;
+        } else {
+          // 在 notification 内的其他标签，作为纯文本处理
+          const startPos = this.getPosition();
+          const fullTag = match[0];
+          this.updatePositionForText(fullTag);
+          const location = this.createLocation(startPos, this.getPosition(), fullTag);
+          this.handleText(fullTag, location);
+          lastIndex = matchIndex + matchLength;
+          continue;
+        }
+      }
+      
       // 检查是否是 HTML 注释
       if (html.slice(matchIndex, matchIndex + COMMENT_START.length) === COMMENT_START) {
         const commentEndIndex = html.indexOf(COMMENT_END, matchIndex + COMMENT_START.length);
@@ -627,6 +721,8 @@ export class SimpleHtmlParser {
     this.currentTag = null;
     this.currentAttributes = {};
     this.currentTagStack = [];
+    this.isInToolResult = false;
+    this.isInNotification = false;
     this.line = 1;
     this.column = 1;
     this.offset = 0;

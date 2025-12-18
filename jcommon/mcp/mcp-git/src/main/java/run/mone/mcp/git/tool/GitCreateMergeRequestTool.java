@@ -74,7 +74,7 @@ public class GitCreateMergeRequestTool implements ITool {
                 - sourceBranch: (必填) 源分支名称（要合并的分支）
                 - targetBranch: (必填) 目标分支名称（合并到的分支）
                 - title: (可选) MR标题，不提供则自动生成
-                - description: (可选) MR描述，不提供则使用默认描述
+                - description: (可选) MR描述，不提供则使用默认描述。注意：description中不能包含换行符（\\n），如有换行符会自动替换为空格
                 """;
     }
 
@@ -172,16 +172,13 @@ public class GitCreateMergeRequestTool implements ITool {
                     ? inputJson.get("description").getAsString().trim()
                     : null;
 
-            String username = inputJson.has("username") && !StringUtils.isBlank(inputJson.get("username").getAsString())
-                    ? inputJson.get("username").getAsString().trim()
-                    : null;
+            // 去除 description 中的换行符，避免创建 MR 时报错
+            if (description != null) {
+                description = description.replaceAll("\\r\\n|\\r|\\n", " ");
+            }
 
-            String token = inputJson.has("token") && !StringUtils.isBlank(inputJson.get("token").getAsString())
-                    ? inputJson.get("token").getAsString().trim()
-                    : null;
-
-            log.info("开始创建Merge Request，gitUrl: {}, sourceBranch: {}, targetBranch: {}",
-                    gitUrl, sourceBranch, targetBranch);
+            log.info("开始创建Merge Request，gitUrl: {}, sourceBranch: {}, targetBranch: {}, title: {}, description: {}",
+                    gitUrl, sourceBranch, targetBranch, title, description);
 
             // 执行创建MR操作
             GitResponse response = gitService.createMergeRequest(

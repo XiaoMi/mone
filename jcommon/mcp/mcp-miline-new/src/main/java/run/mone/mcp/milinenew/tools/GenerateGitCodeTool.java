@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class GenerateGitCodeTool implements ITool {
 
-    @Value("${git.email.suffix}")
+    @Value("${git.default.username}")
     private String gitUserName;
     
     public static final String name = "generate_git_code";

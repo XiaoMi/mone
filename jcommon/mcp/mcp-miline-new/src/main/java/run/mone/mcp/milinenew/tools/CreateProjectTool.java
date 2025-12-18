@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class CreateProjectTool implements ITool {
 
-    @Value("${git.email.suffix}")
+    @Value("${git.default.username}")
     private String gitUserName;
     
     public static final String name = "create_project";

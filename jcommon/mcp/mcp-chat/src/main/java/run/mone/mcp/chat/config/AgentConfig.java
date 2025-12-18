@@ -3,6 +3,7 @@ package run.mone.mcp.chat.config;
 import com.google.common.collect.Lists;
 import com.google.common.collect.ImmutableMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,9 @@ public class AgentConfig {
 
     @Value("${mcp.agent.mode:MCP}")
     private String agentMode;
+
+    @Autowired
+    private AddTwoNumbersFunction addTwoNumbersFunction;
 
     @Bean
     public RoleMeta roleMeta() {
@@ -52,7 +56,7 @@ public class AgentConfig {
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT) ?
                                 Lists.newArrayList(
                                         new ChatFunction(agentName, 60)
-                                ) : Lists.newArrayList(new AddTwoNumbersFunction()))
+                                ) : Lists.newArrayList(addTwoNumbersFunction))
                 .meta(ImmutableMap.of(Const.HTTP_PORT,"8081",Const.AGENT_SERVER_NAME,"chat_server", Const.HTTP_ENABLE_AUTH, "true"))
                 .build();
     }

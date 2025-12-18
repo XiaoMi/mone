@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class CreatePipelineFunction implements McpFunction {
 
-    @Value("${git.email.suffix}")
+    @Value("${git.default.username}")
     private String gitUserName;
 
     public static final String TOOL_SCHEMA = """

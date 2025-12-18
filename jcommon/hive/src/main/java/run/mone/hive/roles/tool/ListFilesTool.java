@@ -4,8 +4,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.dto.WebSocketCallRequest;
+import run.mone.hive.dto.WebSocketCallResponse;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.utils.RemoteFileUtils;
+import run.mone.hive.utils.WebSocketFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,12 +52,30 @@ public class ListFilesTool implements ITool {
     private static final int DEFAULT_LIMIT = 200;
     private static final int MAX_DEPTH = 10; // Prevent infinite recursion
     private final boolean isRemote;
+    private final FileOperationMode mode;
 
     public ListFilesTool() {
         this(false);
     }
+
+    /**
+     * 构造函数（旧版，保持向后兼容）
+     *
+     * @param isRemote 是否远程（true=REMOTE_HTTP, false=LOCAL）
+     */
     public ListFilesTool(boolean isRemote) {
         this.isRemote = isRemote;
+        this.mode = FileOperationMode.fromLegacy(isRemote);
+    }
+
+    /**
+     * 构造函数（新版）
+     *
+     * @param mode 文件操作模式
+     */
+    public ListFilesTool(FileOperationMode mode) {
+        this.mode = mode;
+        this.isRemote = mode.isRemote();
     }
 
     @Override
@@ -171,11 +192,12 @@ public class ListFilesTool implements ITool {
             boolean recursive = inputJson.has("recursive") &&
                     "true".equalsIgnoreCase(inputJson.get("recursive").getAsString());
 
-            if (isRemote) {
-                return performRemoteListFiles(path, recursive);
-            } else {
-                return performListFiles(path, recursive);
-            }
+            // 根据文件操作模式选择不同的处理方式
+            return switch (mode) {
+                case LOCAL -> performListFiles(path, recursive);
+                case REMOTE_HTTP -> performRemoteHttpListFiles(path, recursive);
+                case REMOTE_WS -> performWebSocketListFiles(role, path, recursive);
+            };
 
         } catch (Exception e) {
             log.error("Exception occurred while executing list_files operation", e);
@@ -184,7 +206,10 @@ public class ListFilesTool implements ITool {
         }
     }
 
-    private JsonObject performRemoteListFiles(String path, boolean recursive) {
+    /**
+     * 通过 HTTP API 列出远程文件
+     */
+    private JsonObject performRemoteHttpListFiles(String path, boolean recursive) {
         JsonObject result = new JsonObject();
 
         try {
@@ -194,17 +219,64 @@ public class ListFilesTool implements ITool {
             result.addProperty("result", response);
             result.addProperty("directoryPath", path);
             result.addProperty("recursive", recursive);
+            result.addProperty("mode", "REMOTE_HTTP");
 
-            log.info("Successfully listed remote files in directory: {}, recursive: {}", path, recursive);
+            log.info("Successfully listed remote HTTP files in directory: {}, recursive: {}", path, recursive);
 
             return result;
         } catch (IOException e) {
-            log.error("IO exception while listing remote directory: {}", path, e);
-            result.addProperty("error", "Failed to list remote directory: " + e.getMessage());
+            log.error("IO exception while listing remote HTTP directory: {}", path, e);
+            result.addProperty("error", "Failed to list remote HTTP directory: " + e.getMessage());
             return result;
         } catch (Exception e) {
-            log.error("Exception while listing remote directory: {}", path, e);
-            result.addProperty("error", "Error listing remote directory: " + e.getMessage());
+            log.error("Exception while listing remote HTTP directory: {}", path, e);
+            result.addProperty("error", "Error listing remote HTTP directory: " + e.getMessage());
+            return result;
+        }
+    }
+
+    /**
+     * 通过 WebSocket 列出远程文件
+     */
+    private JsonObject performWebSocketListFiles(ReactorRole role, String path, boolean recursive) {
+        JsonObject result = new JsonObject();
+
+        try {
+            String clientId = role.getClientId();
+            if (StringUtils.isEmpty(clientId)) {
+                result.addProperty("error", "ClientId is not available for WebSocket file operations");
+                return result;
+            }
+
+            // 构建请求 DTO
+            WebSocketCallRequest request = WebSocketCallRequest.builder()
+                    .path(path)
+                    .recursive(recursive)
+                    .build();
+
+            // 调用 WebSocket 文件工具
+            WebSocketCallResponse response = WebSocketFileUtils.listFiles(clientId, request);
+
+            // 将 DTO 响应转换为 JsonObject
+            result.addProperty("result", response.getResult());
+            result.addProperty("directoryPath", response.getDirectoryPath());
+            result.addProperty("recursive", response.getRecursive());
+            result.addProperty("mode", response.getMode());
+            result.addProperty("success", response.isSuccess());
+
+            log.info("Successfully listed WebSocket files: clientId={}, path={}, recursive={}",
+                    clientId, path, recursive);
+
+            return result;
+        } catch (IOException e) {
+            log.error("IO exception while listing WebSocket directory: {}", path, e);
+            result.addProperty("error", "Failed to list WebSocket directory: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        } catch (Exception e) {
+            log.error("Exception while listing WebSocket directory: {}", path, e);
+            result.addProperty("error", "Error listing WebSocket directory: " + e.getMessage());
+            result.addProperty("success", false);
             return result;
         }
     }

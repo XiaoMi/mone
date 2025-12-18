@@ -37,6 +37,12 @@ public class AgentConfig {
     @Autowired
     private DubboTestFunction dubboTestFunction;
 
+    @Autowired
+    private AddMiApiConfig addMiApiConfig;
+
+    @Autowired
+    private CheckMiApiConfig checkMiApiConfig;
+
     @Bean
     public RoleMeta roleMeta() {
         return RoleMeta.builder()
@@ -54,7 +60,7 @@ public class AgentConfig {
                 .mcpTools(
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
                                 ? Lists.newArrayList(new ChatFunction("new-miapi", 20))
-                                : Lists.newArrayList(projectListFunction,miApiFunction, searchApiFunction, indexInfoFunction, indexDetailFunction, dubboTestFunction)
+                                : Lists.newArrayList(projectListFunction,miApiFunction, searchApiFunction, indexInfoFunction, indexDetailFunction, dubboTestFunction, addMiApiConfig, checkMiApiConfig)
                 )
                 .workflow("""
                     你是智能化系统，可以根据用户输入的项目名称查询项目信息

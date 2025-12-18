@@ -3,8 +3,11 @@ package run.mone.hive.roles.tool;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.dto.WebSocketCallRequest;
+import run.mone.hive.dto.WebSocketCallResponse;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.utils.RemoteFileUtils;
+import run.mone.hive.utils.WebSocketFileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,13 +34,30 @@ public class WriteToFileTool implements ITool {
     public static final String name = "write_to_file";
 
     private final boolean isRemote;
+    private final FileOperationMode mode;
 
     public WriteToFileTool() {
         this(false);
     }
 
+    /**
+     * 构造函数（旧版，保持向后兼容）
+     *
+     * @param isRemote 是否远程（true=REMOTE_HTTP, false=LOCAL）
+     */
     public WriteToFileTool(boolean isRemote) {
         this.isRemote = isRemote;
+        this.mode = FileOperationMode.fromLegacy(isRemote);
+    }
+
+    /**
+     * 构造函数（新版）
+     *
+     * @param mode 文件操作模式
+     */
+    public WriteToFileTool(FileOperationMode mode) {
+        this.mode = mode;
+        this.isRemote = mode.isRemote();
     }
 
     @Override
@@ -179,11 +199,12 @@ public class WriteToFileTool implements ITool {
             String path = inputJson.get("path").getAsString();
             String content = inputJson.get("content").getAsString();
 
-            if (isRemote) {
-                return performRemoteWriteToFile(path, content);
-            } else {
-                return performWriteToFile(path, content);
-            }
+            // 根据文件操作模式选择不同的处理方式
+            return switch (mode) {
+                case LOCAL -> performWriteToFile(path, content);
+                case REMOTE_HTTP -> performRemoteHttpWriteToFile(path, content);
+                case REMOTE_WS -> performWebSocketWriteToFile(role, path, content);
+            };
 
         } catch (Exception e) {
             log.error("执行write_to_file操作时发生异常", e);
@@ -193,9 +214,9 @@ public class WriteToFileTool implements ITool {
     }
 
     /**
-     * 远程执行文件写入操作
+     * 通过 HTTP API 写入远程文件
      */
-    private JsonObject performRemoteWriteToFile(String path, String content) {
+    private JsonObject performRemoteHttpWriteToFile(String path, String content) {
         JsonObject result = new JsonObject();
 
         try {
@@ -212,20 +233,73 @@ public class WriteToFileTool implements ITool {
             // 调用RemoteFileUtils上传文件
             String uploadResult = RemoteFileUtils.uploadFile(path, base64Content);
 
-            log.info("远程文件写入结果：{}", uploadResult);
+            log.info("远程 HTTP 文件写入结果：{}", uploadResult);
             result.addProperty("result", uploadResult);
             result.addProperty("path", path);
             result.addProperty("contentLength", content.length());
+            result.addProperty("mode", "REMOTE_HTTP");
 
         } catch (IOException e) {
-            log.error("远程写入文件时发生IO异常：{}", path, e);
-            result.addProperty("error", "远程文件写入失败: " + e.getMessage());
+            log.error("远程 HTTP 写入文件时发生IO异常：{}", path, e);
+            result.addProperty("error", "远程 HTTP 文件写入失败: " + e.getMessage());
         } catch (Exception e) {
-            log.error("远程写入文件时发生异常：{}", path, e);
-            result.addProperty("error", "远程文件写入失败: " + e.getMessage());
+            log.error("远程 HTTP 写入文件时发生异常：{}", path, e);
+            result.addProperty("error", "远程 HTTP 文件写入失败: " + e.getMessage());
         }
 
         return result;
+    }
+
+    /**
+     * 通过 WebSocket 写入远程文件
+     */
+    private JsonObject performWebSocketWriteToFile(ReactorRole role, String path, String content) {
+        JsonObject result = new JsonObject();
+
+        try {
+            String clientId = role.getClientId();
+            if (StringUtils.isEmpty(clientId)) {
+                result.addProperty("error", "ClientId is not available for WebSocket file operations");
+                return result;
+            }
+
+            // 检查路径安全性
+            if (!isPathSafe(path)) {
+                log.error("不安全的文件路径：{}", path);
+                result.addProperty("error", "不安全的文件路径: " + path);
+                return result;
+            }
+
+            // 构建请求 DTO
+            WebSocketCallRequest request = WebSocketCallRequest.builder()
+                    .path(path)
+                    .content(content)
+                    .build();
+
+            // 调用 WebSocket 文件工具
+            WebSocketCallResponse response = WebSocketFileUtils.writeFile(clientId, request);
+
+            // 将 DTO 响应转换为 JsonObject
+            result.addProperty("result", response.getResult());
+            result.addProperty("path", path);
+            result.addProperty("contentLength", content.length());
+            result.addProperty("mode", response.getMode());
+            result.addProperty("success", response.isSuccess());
+
+            log.info("Successfully wrote WebSocket file: clientId={}, path={}", clientId, path);
+
+            return result;
+        } catch (IOException e) {
+            log.error("IO exception while writing WebSocket file: {}", path, e);
+            result.addProperty("error", "Failed to write WebSocket file: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        } catch (Exception e) {
+            log.error("Exception while writing WebSocket file: {}", path, e);
+            result.addProperty("error", "Error writing WebSocket file: " + e.getMessage());
+            result.addProperty("success", false);
+            return result;
+        }
     }
 
 
