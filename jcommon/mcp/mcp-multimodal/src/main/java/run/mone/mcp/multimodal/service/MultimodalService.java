@@ -2,6 +2,7 @@ package run.mone.mcp.multimodal.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import run.mone.hive.llm.LLM;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "mcp.agent.type", havingValue = "default", matchIfMissing = true)
 public class MultimodalService {
 
     @Autowired
