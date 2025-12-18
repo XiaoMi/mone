@@ -68,7 +68,7 @@ public class AndroidService {
     @Value("${android.device.auto-connect:true}")
     private boolean autoConnect;
 
-    @PostConstruct
+    // @PostConstruct
     public void init() {
         try {
             // 1. 初始化 ADB
