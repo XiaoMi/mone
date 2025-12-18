@@ -56,6 +56,10 @@ public interface ITool {
         return JsonUtils.toolResult(res.toString());
     }
 
+    default String formatResult(String res) {
+        return JsonUtils.toolResult(res);
+    }
+
     default JsonObject execute(ReactorRole role, JsonObject req) {
         return new JsonObject();
     }

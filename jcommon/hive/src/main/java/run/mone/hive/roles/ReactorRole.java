@@ -550,7 +550,12 @@ public class ReactorRole extends Role {
         }
 
         try {
-            String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
+            // 获取历史记录，移除最后一条（当前问题）
+            List<Message> storage = this.getRc().getMemory().getStorage();
+            String history = storage.stream()
+                    .limit(Math.max(0, storage.size() - 1))
+                    .map(it -> it.getRole() + ":\n" + it.getContent())
+                    .collect(Collectors.joining("\n"));
             String userPrompt = buildUserPrompt(msg, history, sink);
             log.info("userPrompt:\n{}", userPrompt);
 
@@ -748,18 +753,18 @@ public class ReactorRole extends Role {
                 JsonObject toolRes = this.toolMap.get(name).execute(this, params);
                 String contentForUser;
                 if (toolRes.has("image")) {
-                    contentForLlm = "执行 tool: 成功获取到图片";
+                    contentForLlm = "执行 tool:%s 成功获取到图片".formatted(tool.getName());
                     // 将 base64 图片添加到 imageList 中
                     String imageBase64 = toolRes.get("image").getAsString();
                     addImageToList(imageBase64);
                     toolRes.remove("image");
-                    contentForUser = "执行 tool 结果: " + toolRes.toString();
+                    contentForUser = tool.formatResult("\n执行 tool " + tool.getName() + "成功 结果: " + toolRes + "\n" + "<tool_img>%s</tool_img>".formatted(imageBase64) + "\n");
                 } else if (toolRes.has("toolMsgType")) {
                     // 说明需要调用方做特殊处理
                     contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
                     contentForUser = toolRes.toString();
                 } else {
-                    contentForLlm = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes;
+                    contentForLlm = "执行 tool " + tool.getName() + " \n 执行工具结果:\n" + toolRes;
                     contentForUser = tool.formatResult(toolRes);
                     imageList.clear();
                 }
@@ -966,7 +971,7 @@ public class ReactorRole extends Role {
                 .put("web_query_info", queryInfo)
                 //rag上下文
                 .put("rag_info", ragInfo)
-                .put("question", msg.getContent())
+                .put("question", msg.getRole() + ":" + msg.getContent())
                 .build());
     }
 
