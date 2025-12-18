@@ -2,6 +2,7 @@ package run.mone.mcp.multimodal.function;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
@@ -21,6 +22,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "android.adb.enabled", havingValue = "true", matchIfMissing = false)
 public class AndroidFunction implements McpFunction {
 
     private final AndroidService androidService;

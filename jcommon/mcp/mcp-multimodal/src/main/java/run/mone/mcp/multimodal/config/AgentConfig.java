@@ -2,6 +2,7 @@ package run.mone.mcp.multimodal.config;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,17 +43,17 @@ public class AgentConfig {
     @Value("${mcp.agent.type:android}")
     private String agentType;
 
-    @Resource
+    @Autowired(required = false)
     private MultimodalService multimodalService;
 
 
-    @Resource
+    @Autowired(required = false)
     private GuiAgentService guiAgentService;
 
-    @Resource
+    @Autowired(required = false)
     private GuiAgent guiAgent;
 
-    @Resource
+    @Autowired(required = false)
     private AndroidFunction androidFunction;
 
     /**
@@ -123,35 +124,34 @@ public class AgentConfig {
                 .build();
     }
 
-
-    @Bean("sseTaskHandler")
-    public Function<String, String> sseTaskHandler(AndroidGuiAgent androidGuiAgent) {
-        return task -> {
-            new Thread(() -> {
-                // 业务处理逻辑
-                UnicastProcessor<String> processor = UnicastProcessor.create();
-                FluxSink<String> sink = processor.sink();
-
-                // 订阅结果输出
-                processor.subscribe(
-                        msg -> System.out.println("[Android Agent] " + msg),
-                        error -> System.err.println("[Error] " + error.getMessage()),
-                        () -> System.out.println("[Android Agent] 任务完成")
-                );
-                androidGuiAgent.run(task, sink);
-            }).start();
-            return "处理结果";
-        };
-    }
-
-    //处理ws
-    @Bean("wsTaskHandler")
-    public Function<Map<String, Object>, String> wsTaskHandler() {
-        return data -> {
-            // 业务处理逻辑
-            log.info("req:{}", data);
-
-            return "处理结果";
-        };
-    }
+//    @Bean("sseTaskHandler")
+//    public Function<String, String> sseTaskHandler(AndroidGuiAgent androidGuiAgent) {
+//        return task -> {
+//            new Thread(() -> {
+//                // 业务处理逻辑
+//                UnicastProcessor<String> processor = UnicastProcessor.create();
+//                FluxSink<String> sink = processor.sink();
+//
+//                // 订阅结果输出
+//                processor.subscribe(
+//                        msg -> System.out.println("[Android Agent] " + msg),
+//                        error -> System.err.println("[Error] " + error.getMessage()),
+//                        () -> System.out.println("[Android Agent] 任务完成")
+//                );
+//                androidGuiAgent.run(task, sink);
+//            }).start();
+//            return "处理结果";
+//        };
+//    }
+//
+//    //处理ws
+//    @Bean("wsTaskHandler")
+//    public Function<Map<String, Object>, String> wsTaskHandler() {
+//        return data -> {
+//            // 业务处理逻辑
+//            log.info("req:{}", data);
+//
+//            return "处理结果";
+//        };
+//    }
 }
