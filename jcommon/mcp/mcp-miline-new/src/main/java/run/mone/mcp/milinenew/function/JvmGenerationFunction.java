@@ -14,7 +14,8 @@ import java.util.Map;
 
 /**
  * JVM参数生成工具
- * 根据JDK版本和内存大小，调用大模型生成生产级JVM参数
+ * 根据JDK版本、内存大小和项目名，调用大模型生成生产级JVM参数
+ * 日志相关路径会根据项目名自动生成，格式为：/home/work/log/{项目名}/文件名
  *
  * @author goodjava@qq.com
  * @date 2025/1/17
@@ -27,14 +28,12 @@ public class JvmGenerationFunction implements McpFunction {
     private LLM llm;
 
     private static final String SYSTEM_PROMPT = """
-            部署平台 JVM 参数推荐 AI - System Prompt（精简版）
-            
-            你是 JVM 参数配置专家。根据用户提供的 JDK 版本和内存配置，直接输出单行生产级 JVM 参数，无需任何解释说明。
+            你是 JVM 参数配置专家。根据用户提供的 JDK 版本、内存配置和项目名，直接输出单行生产级 JVM 参数，无需任何解释说明。
             
             ## 输入格式
             
-            用户会提供：JDK 版本 + 内存大小
-            示例：JDK 17, 4G 或 JDK 8 8G 内存
+            用户会提供：JDK 版本 + 内存大小 + 项目名
+            示例：JDK 17, 4G, 项目名: tesla 或 JDK 8 8G 内存, 项目名: tesla
             
             ## 输出要求
             
@@ -61,21 +60,23 @@ public class JvmGenerationFunction implements McpFunction {
             - 内存 < 8G: -XX:+UseG1GC -XX:MaxGCPauseMillis=200
             - 内存 >= 8G: -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m
             
-            ### GC 日志
+            ### GC 日志路径（重要：必须使用项目名）
             
             **JDK 8:**
-            -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:/opt/logs/gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M
+            -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:/home/work/log/{项目名}/gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M
             
             **JDK 9+:**
-            -Xlog:gc*:file=/opt/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=100M
+            -Xlog:gc*:file=/home/work/log/{项目名}/gc.log:time,uptime,level,tags:filecount=10,filesize=100M
             
             ### 模块系统（JDK 9+ 必需）
             
             --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true
             
-            ### 标准参数
+            ### 标准参数（重要：日志路径必须使用项目名）
             
-            -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Djava.security.egd=file:/dev/./urandom -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/opt/logs/heapdump.hprof -XX:ErrorFile=/opt/logs/hs_err_pid.log
+            -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/work/log/{项目名}/{项目名}.hprof -XX:ErrorFile=/home/work/log/{项目名}/hs_err_pid.log
+            
+            **注意：** 所有日志相关路径必须使用格式：/home/work/log/{项目名}/文件名，其中 {项目名} 需要替换为用户提供的实际项目名。
             
             ### JDK 8 额外参数
             
@@ -83,13 +84,13 @@ public class JvmGenerationFunction implements McpFunction {
             
             ## 输出示例
             
-            用户输入：JDK 17, 4G
+            用户输入：JDK 17, 4G, 项目名: tesla
             你的输出：
-            -Xms2800m -Xmx2800m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:MaxDirectMemorySize=512m -Xss1m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xlog:gc*:file=/opt/logs/gc.log:time,uptime,level,tags:filecount=10,filesize=100M --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Djava.security.egd=file:/dev/./urandom -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/opt/logs/heapdump.hprof -XX:ErrorFile=/opt/logs/hs_err_pid.log
+            -Xms2800m -Xmx2800m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:MaxDirectMemorySize=512m -Xss1m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xlog:gc*:file=/home/work/log/tesla/gc.log:time,uptime,level,tags:filecount=10,filesize=100M --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.lang.reflect=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.util.concurrent=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/work/log/tesla/tesla.hprof -XX:ErrorFile=/home/work/log/tesla/hs_err_pid.log
             
-            用户输入：JDK 8, 8G
+            用户输入：JDK 8, 8G, 项目名: tesla
             你的输出：
-            -Xms5600m -Xmx5600m -Xmn2240m -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=1024m -XX:MaxDirectMemorySize=512m -Xss1m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:/opt/logs/gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Djava.security.egd=file:/dev/./urandom -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/opt/logs/heapdump.hprof -XX:ErrorFile=/opt/logs/hs_err_pid.log
+            -Xms5600m -Xmx5600m -Xmn2240m -XX:MetaspaceSize=512m -XX:MaxMetaspaceSize=1024m -XX:MaxDirectMemorySize=512m -Xss1m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:/home/work/log/tesla/gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=100M -XX:+UseCompressedOops -XX:+UseCompressedClassPointers -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/work/log/tesla/tesla.hprof -XX:ErrorFile=/home/work/log/tesla/hs_err_pid.log
             
             严格遵守：只输出参数，不输出任何其他内容。
             """;
@@ -105,9 +106,13 @@ public class JvmGenerationFunction implements McpFunction {
                     "memorySize": {
                         "type": "string",
                         "description": "内存大小，例如：2048 1024（必填）"
+                    },
+                    "projectName": {
+                        "type": "string",
+                        "description": "项目名称，用于生成日志路径，例如：tesla（必填）"
                     }
                 },
-                "required": ["jdkVersion", "memorySize"]
+                "required": ["jdkVersion", "memorySize", "projectName"]
             }
             """;
 
@@ -119,6 +124,7 @@ public class JvmGenerationFunction implements McpFunction {
             // 验证必填参数
             Object jdkVersionObj = arguments.get("jdkVersion");
             Object memorySizeObj = arguments.get("memorySize");
+            Object projectNameObj = arguments.get("projectName");
 
             if (jdkVersionObj == null || StringUtils.isBlank(jdkVersionObj.toString())) {
                 return Flux.just(new McpSchema.CallToolResult(
@@ -134,11 +140,19 @@ public class JvmGenerationFunction implements McpFunction {
                 ));
             }
 
+            if (projectNameObj == null || StringUtils.isBlank(projectNameObj.toString())) {
+                return Flux.just(new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("错误：缺少必填参数'projectName'")),
+                        true
+                ));
+            }
+
             String jdkVersion = jdkVersionObj.toString().trim();
             String memorySize = memorySizeObj.toString().trim();
+            String projectName = projectNameObj.toString().trim();
 
             // 构建用户输入
-            String userInput = String.format("JDK %s, %s", jdkVersion, memorySize);
+            String userInput = String.format("JDK %s, %s, 项目名: %s", jdkVersion, memorySize, projectName);
             log.info("JvmGeneration userInput: {}", userInput);
 
             // 调用大模型生成JVM参数
@@ -176,13 +190,14 @@ public class JvmGenerationFunction implements McpFunction {
     @Override
     public String getDesc() {
         return """
-                JVM参数生成工具，根据JDK版本和内存大小生成生产级JVM参数。
+                JVM参数生成工具，根据JDK版本、内存大小和项目名生成生产级JVM参数。
                 
                 **使用场景：**
                 - 需要为Java应用配置JVM参数
                 - 根据不同JDK版本选择合适的GC策略
                 - 根据内存大小优化堆配置
                 - 生成包含GC日志、OOM dump等生产级配置
+                - 根据项目名自动生成日志路径（格式：/home/work/log/{项目名}/文件名）
                 """;
     }
 
