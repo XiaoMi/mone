@@ -6,6 +6,7 @@ import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.RawImage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -15,14 +16,12 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import run.mone.mcp.multimodal.util.AndroidResponseParser;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Android 设备操作服务
@@ -38,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "android.adb.enabled", havingValue = "true", matchIfMissing = false)
 public class AndroidService {
 
     private AndroidDebugBridge bridge;

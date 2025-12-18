@@ -1,6 +1,7 @@
 package run.mone.mcp.multimodal.function;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.function.McpFunction;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
+@ConditionalOnProperty(name = "mcp.agent.type", havingValue = "default", matchIfMissing = true)
 public class GuiAgentFunction implements McpFunction {
 
     @Autowired

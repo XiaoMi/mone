@@ -2,6 +2,7 @@ package run.mone.mcp.multimodal.examples;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import run.mone.mcp.multimodal.service.MultimodalService;
 
@@ -20,6 +21,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "mcp.agent.type", havingValue = "default", matchIfMissing = true)
 public class MultiSpaceScreenshotExample {
 
     private final MultimodalService multimodalService;

@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.FluxSink;
 import run.mone.mcp.multimodal.config.Prompt;
@@ -30,6 +31,7 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "mcp.agent.type", havingValue = "default", matchIfMissing = true)
 public class GuiAgent {
 
     private final GuiAgentService guiAgentService;

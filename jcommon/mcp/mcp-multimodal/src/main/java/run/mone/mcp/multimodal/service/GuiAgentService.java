@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
  * Service for interacting with the GUI Agent model
  */
 @Service
+@ConditionalOnProperty(name = "mcp.agent.type", havingValue = "default", matchIfMissing = true)
 public class GuiAgentService {
 
     @Autowired
