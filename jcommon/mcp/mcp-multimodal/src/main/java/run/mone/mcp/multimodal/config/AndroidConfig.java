@@ -25,8 +25,6 @@ public class AndroidConfig {
 
             【重要】当你不确定当前界面状态或不知道如何操作时，必须首先发送 android_screenshot 截屏请求，
             通过查看屏幕截图来了解当前界面，然后再决定下一步操作。
-            
-            Android clientId=7225a92dc463ada1
             """;
 
     /**

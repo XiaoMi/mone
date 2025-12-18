@@ -418,6 +418,9 @@ public class RoleService {
             if (message.isClearHistory()) {
                 reactorRole.clearMemory();
                 reactorRole.getImageList().clear();
+                if (StringUtils.isNotEmpty(message.getClientId())) {
+                    reactorRole.setClientId(message.getClientId());
+                }
             }
 
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态

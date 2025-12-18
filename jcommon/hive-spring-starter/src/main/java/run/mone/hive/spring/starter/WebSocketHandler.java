@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import reactor.core.publisher.Flux;
 
 import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.PreDestroy;
@@ -249,7 +250,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理设备信息消息
      * Android 客户端在连接时发送设备信息，包括屏幕尺寸
-     *
+     * <p>
      * 消息格式:
      * <pre>
      * {
@@ -319,7 +320,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * 处理图片分析请求
      * 当 cmd=img 时，调用大模型分析图片
-     *
+     * <p>
      * 客户端发送格式:
      * <pre>
      * {
@@ -412,7 +413,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                                                 return Map.of("x", absoluteX, "y", absoluteY);
                                             })
                                             .toList());
-                                    successResponse.put("result",successResponse.get("result")+"\n"+successResponse.get("points"));
+                                    successResponse.put("result", successResponse.get("result") + "\n" + successResponse.get("points"));
                                     log.info("Parsed {} click points from result (normalized to {}x{})",
                                             points.size(), screenWidth, screenHeight);
                                 }
@@ -555,6 +556,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             String agentId = data.containsKey("agentId") ?
                     (String) data.get("agentId") : "";
 
+            String androidId = data.containsKey("androidId") ? (String) data.get("androidId") : "";
+
             log.info("Processing agent message for client {}: content={}, userId={}, agentId={}",
                     clientId, content, userId, agentId);
 
@@ -563,7 +566,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .content(content)
                     .role("user")
                     .sentFrom("ws_" + clientId)
-                    .clientId(clientId)
+                    .clientId(androidId)
                     .userId(userId)
                     .agentId(agentId)
                     .createTime(System.currentTimeMillis())
