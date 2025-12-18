@@ -539,6 +539,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     /**
      * 处理 Agent 消息请求
+     * 汇集所有 Agent 返回的结果，然后一次性返回给客户端
      */
     private void handleAgentMessage(String clientId, Map<String, Object> messageMap) {
         try {
@@ -570,15 +571,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     .clearHistory(true)
                     .build();
 
-            // 调用 RoleService.receiveMsg 并订阅响应
+            // 调用 RoleService.receiveMsg，汇集所有结果后一次性返回
             roleService.receiveMsg(message)
+                    .collect(Collectors.joining())
                     .subscribe(
-                            response -> {
-                                // Agent 返回的每个消息片段
-                                log.debug("Agent response for client {}: {}", clientId, response);
+                            aggregatedResult -> {
+                                // 汇集所有结果后一次性返回
+                                log.info("Agent processing completed for client: {}, result length: {}",
+                                        clientId, aggregatedResult.length());
                                 Map<String, Object> responseMessage = Map.of(
                                         "type", "agent_response",
-                                        "data", response,
+                                        "data", aggregatedResult,
                                         "timestamp", System.currentTimeMillis()
                                 );
                                 sendMessage(clientId, responseMessage);
@@ -588,20 +591,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
                                 log.error("Agent error for client: {}", clientId, error);
                                 Map<String, Object> errorMessage = Map.of(
                                         "type", "agent_error",
-                                        "error", error.getMessage(),
+                                        "error", error.getMessage() != null ? error.getMessage() : "Unknown error",
                                         "timestamp", System.currentTimeMillis()
                                 );
                                 sendMessage(clientId, errorMessage);
-                            },
-                            () -> {
-                                // 完成处理
-                                log.info("Agent processing completed for client: {}", clientId);
-                                Map<String, Object> completeMessage = Map.of(
-                                        "type", "agent_complete",
-                                        "message", "Agent processing completed",
-                                        "timestamp", System.currentTimeMillis()
-                                );
-                                sendMessage(clientId, completeMessage);
                             }
                     );
 
