@@ -195,6 +195,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 case "client_response":
                     handleClientResponse(messageMap);
                     break;
+                case "device_info":
+                    handleDeviceInfo(clientId, messageMap);
+                    break;
+                case "heartbeat":
+                    // 忽略心跳消息，不需要处理
+                    break;
                 default:
                     log.warn("Unknown message type: {}", type);
                     sendError(clientId, "Unknown message type: " + type);
@@ -238,6 +244,45 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 "timestamp", System.currentTimeMillis()
         );
         sendMessage(clientId, response);
+    }
+
+    /**
+     * 处理设备信息消息
+     * Android 客户端在连接时发送设备信息，包括屏幕尺寸
+     *
+     * 消息格式:
+     * <pre>
+     * {
+     *     "type": "device_info",
+     *     "clientId": "设备ID",
+     *     "screenWidth": 1080,
+     *     "screenHeight": 2400,
+     *     "device": "设备型号",
+     *     "brand": "品牌",
+     *     ...
+     * }
+     * </pre>
+     */
+    private void handleDeviceInfo(String clientId, Map<String, Object> messageMap) {
+        log.info("Received device info from client {}: {}", clientId, messageMap);
+
+        // 提取屏幕尺寸
+        Object screenWidthObj = messageMap.get("screenWidth");
+        Object screenHeightObj = messageMap.get("screenHeight");
+
+        if (screenWidthObj != null && screenHeightObj != null) {
+            int screenWidth = ((Number) screenWidthObj).intValue();
+            int screenHeight = ((Number) screenHeightObj).intValue();
+
+            // 更新屏幕尺寸缓存
+            ScreenSizeCache.getInstance().updateScreenSize(clientId, screenWidth, screenHeight);
+
+            log.info("Cached screen size for client {}: {}x{}", clientId, screenWidth, screenHeight);
+        } else {
+            log.warn("Device info missing screenWidth or screenHeight for client {}", clientId);
+        }
+
+        // 可以在这里存储其他设备信息（如设备型号、品牌等）供后续使用
     }
 
     /**

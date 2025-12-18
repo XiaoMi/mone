@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.spring.starter.WebSocketCaller;
+import run.mone.hive.spring.starter.ScreenSizeCache;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,9 +38,7 @@ public class AndroidActionTool implements ITool {
     private static final Gson gson = new Gson();
     private static final int DEFAULT_TIMEOUT = 30;
 
-    // 屏幕尺寸常量，用于坐标归一化
-    private static final int SCREEN_WIDTH = 1440;
-    private static final int SCREEN_HEIGHT = 3200;
+    // 坐标归一化比例 (LLM 输出的坐标范围是 0-1000)
     private static final double COORDINATE_SCALE = 1000.0;
 
     @Override
@@ -227,6 +226,10 @@ public class AndroidActionTool implements ITool {
 
             log.info("执行 Android 批量操作: clientId={}, actions={}", clientId, actionsArray.size());
 
+            // 获取设备屏幕尺寸
+            ScreenSizeCache.ScreenSize screenSize = ScreenSizeCache.getInstance().getScreenSize(clientId);
+            log.info("使用屏幕尺寸: {}x{} for clientId={}", screenSize.getWidth(), screenSize.getHeight(), clientId);
+
             // 按顺序执行操作
             List<ActionResult> allResults = new ArrayList<>();
             int totalActions = actionsArray.size();
@@ -240,6 +243,8 @@ public class AndroidActionTool implements ITool {
                 item.setParams(actionMap);
 //                item.setLast(i == totalActions - 1); // 标记是否是最后一个操作
                 item.setLast(false);
+                item.setScreenWidth(screenSize.getWidth());
+                item.setScreenHeight(screenSize.getHeight());
 
                 ActionResult actionResult = executeAction(clientId, item, timeout);
                 allResults.add(actionResult);
@@ -323,20 +328,22 @@ public class AndroidActionTool implements ITool {
     private Map<String, Object> buildActionParams(ActionItem actionItem) {
         Map<String, Object> params = actionItem.getParams();
         String action = actionItem.getAction();
+        int screenWidth = actionItem.getScreenWidth();
+        int screenHeight = actionItem.getScreenHeight();
 
         Map<String, Object> actionParams = new HashMap<>();
 
         switch (action) {
             case "click":
                 // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
-                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0)));
-                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0)));
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0), screenWidth));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0), screenHeight));
                 break;
 
             case "long_press":
                 // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
-                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0)));
-                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0)));
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0), screenWidth));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0), screenHeight));
                 actionParams.put("duration", parseIntOrDefault(params.get("duration"), 1000));
                 break;
 
@@ -346,18 +353,18 @@ public class AndroidActionTool implements ITool {
 
             case "scroll":
                 // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
-                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 500)));
-                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 800)));
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 500), screenWidth));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 800), screenHeight));
                 actionParams.put("direction", params.getOrDefault("direction", "up"));
                 actionParams.put("distance", parseIntOrDefault(params.get("distance"), 500));
                 break;
 
             case "drag":
                 // 将相对坐标(0-1000)转换为设备屏幕绝对坐标
-                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0)));
-                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0)));
-                actionParams.put("x2", normalizeX(parseIntOrDefault(params.get("x2"), 0)));
-                actionParams.put("y2", normalizeY(parseIntOrDefault(params.get("y2"), 0)));
+                actionParams.put("x", normalizeX(parseIntOrDefault(params.get("x"), 0), screenWidth));
+                actionParams.put("y", normalizeY(parseIntOrDefault(params.get("y"), 0), screenHeight));
+                actionParams.put("x2", normalizeX(parseIntOrDefault(params.get("x2"), 0), screenWidth));
+                actionParams.put("y2", normalizeY(parseIntOrDefault(params.get("y2"), 0), screenHeight));
                 actionParams.put("duration", parseIntOrDefault(params.get("duration"), 500));
                 break;
 
@@ -385,16 +392,22 @@ public class AndroidActionTool implements ITool {
 
     /**
      * 将相对 X 坐标(0-1000)转换为设备屏幕绝对坐标
+     *
+     * @param rawX        相对 X 坐标 (0-1000)
+     * @param screenWidth 设备屏幕宽度
      */
-    private int normalizeX(int rawX) {
-        return (int) (rawX / COORDINATE_SCALE * SCREEN_WIDTH);
+    private int normalizeX(int rawX, int screenWidth) {
+        return (int) (rawX / COORDINATE_SCALE * screenWidth);
     }
 
     /**
      * 将相对 Y 坐标(0-1000)转换为设备屏幕绝对坐标
+     *
+     * @param rawY         相对 Y 坐标 (0-1000)
+     * @param screenHeight 设备屏幕高度
      */
-    private int normalizeY(int rawY) {
-        return (int) (rawY / COORDINATE_SCALE * SCREEN_HEIGHT);
+    private int normalizeY(int rawY, int screenHeight) {
+        return (int) (rawY / COORDINATE_SCALE * screenHeight);
     }
 
     /**
@@ -477,6 +490,8 @@ public class AndroidActionTool implements ITool {
         private String action;
         private Map<String, Object> params;
         private boolean isLast; // 标记是否是最后一个操作
+        private int screenWidth;  // 设备屏幕宽度
+        private int screenHeight; // 设备屏幕高度
     }
 
     @Data
