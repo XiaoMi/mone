@@ -125,7 +125,16 @@ const SUPPORTED_TAGS = [
   'process_pid',
   'process_content',
   'notification',
-  'tool_img'
+  'tool_img',
+  'android_action',
+  // tolerate common upstream typo in closing tag: </android_ation>
+  'android_ation',
+  'android_screenshot',
+  'clientId',
+  // tolerate common casing/underscore variants
+  'clientid',
+  'client_id',
+  'actions'
 ] as const;
 
 /**
