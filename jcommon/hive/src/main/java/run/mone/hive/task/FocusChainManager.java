@@ -365,6 +365,41 @@ public class FocusChainManager {
     }
     
     /**
+     * 自动完成所有未完成的任务项
+     * 在任务完成时调用，将所有 [ ] 标记为 [x]
+     */
+    public void autoCompleteAllTasks() {
+        if (!focusChainSettings.isEnabled() || taskState.getCurrentFocusChainChecklist() == null) {
+            return;
+        }
+
+        try {
+            String currentList = taskState.getCurrentFocusChainChecklist();
+            FocusChainFileUtils.FocusChainCounts counts =
+                FocusChainFileUtils.parseFocusChainListCounts(currentList);
+
+            // 只有存在未完成项时才进行自动完成
+            if (counts.getIncompleteItems() > 0) {
+                // 将所有 [ ] 替换为 [x]
+                String completedList = currentList.replaceAll("-\\s*\\[\\s*\\]", "- [x]");
+
+                System.out.println(String.format(
+                    "[Task %s] Auto-completing %d incomplete items on task completion",
+                    taskId, counts.getIncompleteItems()
+                ));
+
+                // 更新状态和文件
+                updateFCListFromToolResponse(completedList);
+            }
+        } catch (Exception e) {
+            System.err.println(String.format(
+                "[Task %s] Error auto-completing tasks: %s",
+                taskId, e.getMessage()
+            ));
+        }
+    }
+
+    /**
      * 分析任务完成时的未完成项目
      * 对应Cline中的analyzeIncompleteItemsOnCompletion方法
      */
@@ -372,12 +407,12 @@ public class FocusChainManager {
         if (!focusChainSettings.isEnabled() || taskState.getCurrentFocusChainChecklist() == null) {
             return;
         }
-        
+
         try {
             String currentList = taskState.getCurrentFocusChainChecklist();
-            FocusChainFileUtils.FocusChainCounts counts = 
+            FocusChainFileUtils.FocusChainCounts counts =
                 FocusChainFileUtils.parseFocusChainListCounts(currentList);
-            
+
             if (counts.getIncompleteItems() > 0) {
                 sayCallback.accept(String.format(
                     "Task completed with %d incomplete items out of %d total items (%.1f%% completion rate)",
@@ -385,7 +420,7 @@ public class FocusChainManager {
                     counts.getTotalItems(),
                     (double) counts.getCompletedItems() / counts.getTotalItems() * 100
                 ));
-                
+
                 // 这里可以添加遥测数据发送
                 // telemetryService.captureIncompleteItems(taskId, counts.getIncompleteItems());
             } else {

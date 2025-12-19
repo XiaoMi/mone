@@ -613,10 +613,15 @@ public class ReactorRole extends Role {
                 focusChainManager.updateFCListFromToolResponse(taskProgress);
             }
 
-
             String name = it.getTag();
 
             log.info("use tool:{}", name);
+
+            // 当检测到 attempt_completion 且没有提供 task_progress 时，自动完成所有任务
+            if ("attempt_completion".equals(name) && !it.getKeyValuePairs().containsKey(Const.TASK_PROGRESS)) {
+                log.info("Detected attempt_completion without task_progress, auto-completing all tasks");
+                focusChainManager.autoCompleteAllTasks();
+            }
 
             this.ac.setLastTool(name);
 
