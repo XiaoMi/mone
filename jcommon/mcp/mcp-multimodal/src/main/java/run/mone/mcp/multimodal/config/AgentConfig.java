@@ -78,7 +78,7 @@ public class AgentConfig {
      */
     private RoleMeta buildAndroidRoleMeta() {
         return RoleMeta.builder()
-                .profile(AndroidConfig.PROFILE)
+                .profile(AndroidConfig.getProfile())
                 .goal(AndroidConfig.GOAL)
                 .workflow(AndroidConfig.WORKFLOW)
                 .outputFormat(AndroidConfig.OUTPUT_FORMAT)

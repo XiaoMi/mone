@@ -17,7 +17,7 @@ public class AndroidConfig {
     /**
      * Android 操作 Agent 的角色描述
      */
-    public static final String PROFILE = """
+    private static final String PROFILE = """
             你是一名专业的 Android 设备自动化操作专家，负责通过控制 Android 设备执行各种自动化任务。
             你精通各类 Android 应用的界面操作，能够准确识别界面元素并执行点击、输入、滑动、拖拽等操作。
             你可以操作社交应用（微信、QQ等）、外卖应用（美团、饿了么等）、购物应用（淘宝、京东等）、
@@ -25,6 +25,8 @@ public class AndroidConfig {
 
             【重要】当你不确定当前界面状态或不知道如何操作时，必须首先发送 android_screenshot 截屏请求，
             通过查看屏幕截图来了解当前界面，然后再决定下一步操作。
+
+            <app_specified_custom_instructions>
             """;
 
     /**
@@ -100,5 +102,20 @@ public class AndroidConfig {
             9. 如果用户只是要求翻页, 你只需要执行一次操作即可
             """;
 
+    private static final String APP_SPECIFIED_CUSTOM_INSTRUCTIONS = """
+            针对于某些具体应用，其UI上的操作对应的功能可能和世界知识中的功能不一致，下面是针对这类操作的描述：
+            1. 微信读书：不同于其他应用，为了模拟读书场景，该APP中向左滑动是翻到下一页，向右滑是翻到上一页  
 
+            """;
+            
+    public static String getProfile() {
+        // 检查 APP_SPECIFIED_CUSTOM_INSTRUCTIONS 是否为空
+        if (APP_SPECIFIED_CUSTOM_INSTRUCTIONS == null || APP_SPECIFIED_CUSTOM_INSTRUCTIONS.trim().isEmpty()) {
+            // 如果是空内容，删除占位符
+            return PROFILE.replace("<app_specified_custom_instructions>", "");
+        } else {
+            // 否则，替换为实际内容
+            return PROFILE.replace("<app_specified_custom_instructions>", APP_SPECIFIED_CUSTOM_INSTRUCTIONS);
+        }
+    }
 }
