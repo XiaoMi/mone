@@ -597,6 +597,7 @@ public class ReactorRole extends Role {
             // 解析工具调用(有可能是tool也可能是mcp)
             List<ToolDataInfo> tools = new MultiXmlParser().parse(toolRes);
             if (tools.isEmpty()) {
+                log.warn("{} 没有找到工具", toolRes);
                 String _msg = "没有找到可用的工具\n";
                 this.putMessage(Message.builder().role(RoleType.assistant.name()).data(_msg).content(_msg).error(true).sink(sink).build());
                 sink.next(_msg);
@@ -771,7 +772,7 @@ public class ReactorRole extends Role {
                     contentForLlm = "执行 tool:" + res + "\n执行工具结果:\n" + toolRes.get("toolMsgType").getAsString() + "占位符；请继续";
                     contentForUser = toolRes.toString();
                 } else {
-                    contentForLlm = "执行 tool " + tool.getName() +" params:("+ params + ") \n执行工具结果:\n" + toolRes;
+                    contentForLlm = "执行 tool " + tool.getName() + " params:(" + params + ") \n执行工具结果:\n" + toolRes;
                     contentForUser = tool.formatResult(toolRes);
                     imageList.clear();
                 }
