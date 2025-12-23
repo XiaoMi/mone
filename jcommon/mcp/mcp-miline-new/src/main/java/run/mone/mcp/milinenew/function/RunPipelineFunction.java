@@ -78,7 +78,7 @@ public class RunPipelineFunction implements McpFunction {
     }
 
     @Override
-    @ReportCallCount(businessName = "miline-api-runPipeline", description = "miline-api操作工具调用")
+    @ReportCallCount(businessName = "miline-mcp-runPipeline", description = "miline-mcp-运行流水线")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("RunPipeline arguments: {}", arguments);
 

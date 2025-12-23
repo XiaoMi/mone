@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -117,6 +118,7 @@ public class JvmGenerationFunction implements McpFunction {
             """;
 
     @Override
+    @ReportCallCount(businessName = "miline-mcp-jvmGeneration", description = "miline-mcp-生成JVM参数")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("JvmGeneration arguments: {}", arguments);
 

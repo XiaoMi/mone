@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -112,6 +113,7 @@ public class CreateProjectTool implements ITool {
     }
 
     @Override
+    @ReportCallCount(businessName = "miline-agent-createProject", description = "miline-agent-创建Miline项目")
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {
