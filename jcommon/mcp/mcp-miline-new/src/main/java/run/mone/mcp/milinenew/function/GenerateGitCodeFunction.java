@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import reactor.core.publisher.Flux;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -65,6 +66,7 @@ public class GenerateGitCodeFunction implements McpFunction {
     }
 
     @Override
+    @ReportCallCount(businessName = "miline-mcp-generateGitCode", description = "miline-mcp-生成Git仓库代码")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("GenerateGitCode arguments: {}", arguments);
 

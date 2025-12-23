@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -105,6 +105,7 @@ public class GetDeployMachinesTool implements ITool {
     }
 
     @Override
+    @ReportCallCount(businessName = "miline-agent-getDeployMachines", description = "miline-agent-查看流水线运行状态")
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {

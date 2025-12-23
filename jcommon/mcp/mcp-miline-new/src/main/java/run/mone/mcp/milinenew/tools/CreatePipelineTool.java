@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -128,6 +129,7 @@ public class CreatePipelineTool implements ITool {
     }
 
     @Override
+    @ReportCallCount(businessName = "miline-agent-createPipeline", description = "miline-agent-创建CI/CD流水线")
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import run.mone.hive.annotation.ReportCallCount;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ITool;
 
@@ -356,6 +357,7 @@ public class ScaleOrderTool implements ITool {
     }
 
     @Override
+    @ReportCallCount(businessName = "miline-agent-scaleOrder", description = "miline-agent-创建扩缩容工单")
     public JsonObject execute(ReactorRole role, JsonObject inputJson) {
         JsonObject result = new JsonObject();
         try {
