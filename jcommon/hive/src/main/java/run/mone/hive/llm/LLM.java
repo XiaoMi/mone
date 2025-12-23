@@ -2391,15 +2391,21 @@ public class LLM {
             if (msg.getParts() != null && !msg.getParts().isEmpty()) {
                 msg.getParts().forEach(part -> {
                     JsonObject obj2 = new JsonObject();
-                    obj2.addProperty("type", "image_url");
-                    JsonObject imgObj = new JsonObject();
-                    if (!part.getData().startsWith("data:image")) {
-                        imgObj.addProperty("url", "data:image/" + imageType + ";base64," + part.getData());
+                    if (part.getType().equals(LLM.TYPE_TEXT)) {
+                        obj2.addProperty("type", "text");
+                        obj2.addProperty("text", part.getData());
+                        array.add(obj2);
                     } else {
-                        imgObj.addProperty("url", part.getData());
+                        obj2.addProperty("type", "image_url");
+                        JsonObject imgObj = new JsonObject();
+                        if (!part.getData().startsWith("data:image")) {
+                            imgObj.addProperty("url", "data:image/" + imageType + ";base64," + part.getData());
+                        } else {
+                            imgObj.addProperty("url", part.getData());
+                        }
+                        obj2.add("image_url", imgObj);
+                        array.add(obj2);
                     }
-                    obj2.add("image_url", imgObj);
-                    array.add(obj2);
                 });
             }
             req.add("content", array);

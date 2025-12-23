@@ -124,7 +124,17 @@ const SUPPORTED_TAGS = [
   'terminal_append',
   'process_pid',
   'process_content',
-  'notification'
+  'notification',
+  'tool_img',
+  'android_action',
+  // tolerate common upstream typo in closing tag: </android_ation>
+  'android_ation',
+  'android_screenshot',
+  'clientId',
+  // tolerate common casing/underscore variants
+  'clientid',
+  'client_id',
+  'actions'
 ] as const;
 
 /**
@@ -550,7 +560,7 @@ export class SimpleHtmlParser {
 
       // 检查是否在 tool_result 标签内
       if (this.isInToolResult) {
-        // 在 tool_result 内，检查是否是 tool_result 结束标签
+        // 在 tool_result 内，检查是否是 tool_result 结束标签或 tool_img 标签
         const isEndTag = match[1] === '/';
         const tagName = (match[2] || '').trim();
         
@@ -563,6 +573,9 @@ export class SimpleHtmlParser {
           this.handleCloseTag(tagName, fullTag, location);
           lastIndex = matchIndex + matchLength;
           continue;
+        } else if (tagName === 'tool_img' || (isEndTag && tagName === 'tool_img')) {
+          // tool_img 标签在 tool_result 内也要正常解析，不作为纯文本处理
+          // 继续后续的正常处理流程，不在这里 continue
         } else {
           // 在 tool_result 内的其他标签，作为纯文本处理
           const startPos = this.getPosition();

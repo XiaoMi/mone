@@ -29,6 +29,7 @@ public class AttemptCompletionTool implements ITool {
         return """
                 - result: (required) The result of the task. Formulate this result in a way that is final and does not require further input from the user. Don't end your result with questions or offers for further assistance.
                 - command: (optional) A CLI command to execute to show a live demo of the result to the user. For example, use \\`open index.html\\` to display a created html website, or \\`open localhost:3000\\` to display a locally running development server. But DO NOT use commands like \\`echo\\` or \\`cat\\` that merely print text. This command should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.
+                - task_progress: (optional) The final updated task progress checklist in Markdown format. Use this to mark all tasks as completed (- [x]) to reflect that the work is done. If provided, this will update the Focus Chain list with the final completion status.
                 """;
     }
 
@@ -40,6 +41,11 @@ public class AttemptCompletionTool implements ITool {
             Your final result description here
             </result>
             <command>Command to demonstrate result (optional)</command>
+            <task_progress>
+            - [x] Completed task 1
+            - [x] Completed task 2
+            (optional, use this to mark all tasks as done)
+            </task_progress>
             </attempt_completion>
             """;
     }

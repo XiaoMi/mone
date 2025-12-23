@@ -229,6 +229,80 @@ $font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
   }
 }
 
+// ===== Android 工具块 (<android_action> / <android_screenshot>) =====
+.android-tool-block {
+  @include block-base;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+
+  &.android-action {
+    .android-tool-header {
+      background: rgba($accent-indigo, 0.15);
+    }
+  }
+
+  &.android-screenshot {
+    .android-tool-header {
+      background: rgba($accent-cyan, 0.15);
+    }
+  }
+
+  .android-tool-header {
+    @include header-base;
+
+    i {
+      @include icon-base($accent-green);
+    }
+
+    span {
+      color: $text-primary;
+      font-weight: 500;
+    }
+  }
+
+  .android-tool-content {
+    @include content-base;
+    padding: 16px 20px;
+
+    .android-tool-field {
+      margin: 10px 0;
+      padding: 10px 12px;
+      background: $background-secondary;
+      border-radius: 6px;
+      border: 1px solid rgba($border-color, 0.7);
+
+      .label {
+        color: $text-secondary;
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+
+      code {
+        @include code-style;
+        color: $accent-blue;
+      }
+
+      pre {
+        margin: 8px 0 0 0;
+        padding: 12px;
+        background: $background-primary;
+        border-radius: 6px;
+        border: 1px solid rgba($border-color, 0.6);
+        overflow: auto;
+
+        code {
+          font-family: $font-mono;
+          font-size: 0.9em;
+          color: $text-primary;
+          white-space: pre-wrap;
+          word-break: break-word;
+          background: transparent;
+          padding: 0;
+        }
+      }
+    }
+  }
+}
+
 // ===== 完成尝试块 =====
 .attempt-completion-block {
   @include block-base;

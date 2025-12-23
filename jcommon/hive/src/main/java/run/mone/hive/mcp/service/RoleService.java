@@ -316,6 +316,10 @@ public class RoleService {
             if (StringUtils.isNotEmpty(agentId) && StringUtils.isNotEmpty(userId)) {
                 //每个用户的配置是不同的
                 Map<String, String> configMap = hiveManagerService.getConfig(ImmutableMap.of("agentId", agentId, "userId", userId));
+                //用来控制android
+                if (configMap.containsKey("androidId")) {
+                    role.setAndroidId(configMap.get("androidId"));
+                }
                 if (refreshMcp) {
                     if (configMap.containsKey(Const.MCP) && !configMap.get(Const.MCP).trim().equals("")) {
                         List<String> list = Splitter.on(",").splitToList(configMap.get(Const.MCP));
@@ -418,6 +422,9 @@ public class RoleService {
             if (message.isClearHistory()) {
                 reactorRole.clearMemory();
                 reactorRole.getImageList().clear();
+                if (StringUtils.isNotEmpty(message.getClientId())) {
+                    reactorRole.setAndroidId(message.getClientId());
+                }
             }
 
             // 如果当前是中断状态，但新命令不是中断命令，则自动重置中断状态
