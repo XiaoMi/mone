@@ -61,7 +61,7 @@ public class FilterFunction implements McpFunction {
     @Override
     public String getDesc() {
         return """
-                Gateway filter操作工具，用于查询filter信息。
+                Gateway filter查询工具，用于查询filter信息。
                 **使用场景：**
                 - 根据网关filter中文名称、英文名称、filter的id查询网关filter信息
                 - 如：查询中国区测试环境名为“xxx”的filter

@@ -182,7 +182,7 @@ public class DubboTestFunction implements McpFunction {
     @Override
     public String getDesc() {
         return """
-                工具说明：对dubbo接口进行测试或泛化调用。
+                工具说明：对dubbo接口进行测试或泛化调用，如果是本地的服务则不需要调用其他miapi工具。
                 参数说明和默认值：
                 - interfaceName dubbo服务全限定名，必填，如："com.xiaomi.youpin.test0618.api.testService"
                 - methodName dubbo方法名，必填，如："backslash"
@@ -197,7 +197,7 @@ public class DubboTestFunction implements McpFunction {
                 - dubboTag dubbo调用时指定的dubbo tag，非必填，如："test"，默认值为:""
                 - env dubbo调用时dubbo服务注册中心环境，必填，如："st"，可选值：中国区测试或国内测试（st）、新加坡测试或全球测试（singaporeSt）
                 使用示例：
-                1.帮我针对当前项目中testService的dubbo服务的backslash方法进行指定本地ip调用，参数为[{\"name\":\"张三\",\"id\":12,\"map\":{}}]
+                1.、对当前项目中dubbo服务testService的backslash方法进行指定本地ip调用，参数为[{\"name\":\"张三\",\"id\":12,\"map\":{}}]
                 """;
     }
 
