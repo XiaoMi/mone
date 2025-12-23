@@ -10,6 +10,7 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.mcp.gateway.function.ApiFunction;
+import run.mone.mcp.gateway.function.DeleteFilterFunction;
 import run.mone.mcp.gateway.function.FilterFunction;
 import run.mone.mcp.gateway.function.ReferencedFunction;
 
@@ -29,6 +30,9 @@ public class GatewayAgentConfig {
 
     @Autowired
     private ReferencedFunction referencedFunction;
+
+    @Autowired
+    private DeleteFilterFunction deleteFilterFunction;
 
     @Value("${mcp.agent.mode:MCP}")
     private String agentMode;
@@ -52,7 +56,7 @@ public class GatewayAgentConfig {
                 .mcpTools(
                         RoleMeta.RoleMode.valueOf(agentMode).equals(RoleMeta.RoleMode.AGENT)
                                 ? Lists.newArrayList(new ChatFunction(agentName, 20))
-                                : Lists.newArrayList(apiFunction, filterFunction, referencedFunction)
+                                : Lists.newArrayList(apiFunction, filterFunction, referencedFunction, deleteFilterFunction)
                 )
                 .workflow("""
                         你是网关Gateway智能化助手，严格按照以下步骤执行：
