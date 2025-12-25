@@ -101,6 +101,7 @@ public class SearchApiFunction implements McpFunction {
                 如：帮我查询dubbo的user接口。
                 如：帮我查询http的user接口。
                 如：帮我查询userinfo接口。
+                返回结果说明：如果搜索接口返回的结果为空，则分为两种情况，一是在当前用户有权限的项目中没有搜索到接口信息，二是用户没有该接口对应项目的权限，所以无法展示。
                 """;
     }
 

@@ -78,6 +78,7 @@ public class IndexInfoFunction implements McpFunction {
                 根据项目名或用户查询接口集合列表
                 如：帮我查询我有权限的接口集合。
                 如：帮我查询mi-api的接口集合。
+                工具说明：搜索集合时必须有该集合所在项目的权限，否则搜索为空。
                 """;
     }
 
