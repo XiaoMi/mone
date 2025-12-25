@@ -83,6 +83,7 @@ public class IndexDetailFunction implements McpFunction {
                 如：帮我查询我有权限的接口集合。
                 如：帮我查询userIndex集合。
                 如：帮我查询indexId为265的集合。
+                工具说明：搜索集合时必须有该集合所在项目的权限，否则搜索为空。
                 """;
     }
 
