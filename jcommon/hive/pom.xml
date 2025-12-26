@@ -185,6 +185,12 @@
             <version>1.5-jdk8-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>dev.toonformat</groupId>
+            <artifactId>jtoon</artifactId>
+            <version>1.0.7</version>
+        </dependency>
+
         <!-- Chroma Java client for embedded vector store -->
         <dependency>
             <groupId>io.github.amikos-tech</groupId>
