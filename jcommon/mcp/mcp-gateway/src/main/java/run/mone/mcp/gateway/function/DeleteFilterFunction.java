@@ -54,6 +54,8 @@ public class DeleteFilterFunction implements McpFunction {
                 - 删除中国区测试id为xxx的filter。
                 **参数说明：**
                 - env网关环境，可选值为staging(中国区测试环境)、sgpStaging(新加坡测试环境)、online(中国区线上环境)、sgpOnline(新加坡线上环境)、eurOnline(欧洲线上环境)，默认值为staging。
+                **工具说明：**
+                - 用户没有主动发起删除filter操作，则不允许自动执行此工具。
                 """;
     }
 

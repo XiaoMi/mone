@@ -76,6 +76,7 @@ public class ApplyProjectAuth implements McpFunction {
     public String getDesc() {
         return """
                 根据miapi项目id申请项目权限。
+                工具说明：用户没有主动发起项目权限申请，则不允许自动执行此工具。
                 """;
     }
 
