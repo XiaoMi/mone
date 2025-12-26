@@ -74,7 +74,7 @@ public class SearchApiFunction implements McpFunction {
             userMap.put("protocol", protocol);
             userMap.put("userName", Optional.ofNullable((String) arguments.get(Const.TOKEN_USERNAME)).orElse(""));
             String resultText = httpUtils.request("/mtop/miapi/getApiList", userMap, Map.class);
-            resultText = String.format("查询到的接口信息为: %s", resultText);
+            resultText = String.format("查询结果为: %s", resultText);
             return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(resultText)),
                     false
