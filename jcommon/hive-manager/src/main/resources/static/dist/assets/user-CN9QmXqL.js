@@ -1,0 +1,1 @@
+import{S as s}from"./index-BYulWOv-.js";const e=r=>s({url:"/v1/users/login",method:"post",data:r}),o=r=>s({url:"/v1/users/register",method:"post",data:r}),n=()=>s({url:"/v1/users/list",method:"get"}),u=r=>s({url:"/v1/users/internal-account",method:"post",data:r});export{u as b,n as g,e as l,o as r};

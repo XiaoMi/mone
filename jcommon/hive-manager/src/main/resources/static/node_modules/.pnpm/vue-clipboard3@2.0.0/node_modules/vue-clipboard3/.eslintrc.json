@@ -1,0 +1,92 @@
+{
+  "root": true,
+  "env": {
+    "node": true
+  },
+  "extends": [
+    "plugin:vue/recommended",
+    "eslint:recommended",
+    "plugin:node/recommended",
+    "plugin:import/warnings",
+    "prettier/vue",
+    "plugin:prettier/recommended"
+  ],
+  "parserOptions": {
+    "parser": "babel-eslint",
+    "sourceType": "module",
+    "allowImportExportEverywhere": true
+  },
+  "plugins": [
+    "node",
+    "prettier",
+    "promise",
+    "vue",
+    "import"
+  ],
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [
+          ".js",
+          ".vue"
+        ]
+      }
+    }
+  },
+  "globals": {
+    "$nuxt": true
+  },
+  "rules": {
+    "vue/component-name-in-template-casing": [
+      "error",
+      "PascalCase"
+    ],
+    "prettier/prettier": "error",
+    "max-len": [
+      "error",
+      {
+        "code": 110,
+        "ignoreComments": true,
+        "ignoreTrailingComments": true,
+        "ignoreUrls": true,
+        "ignoreStrings": true,
+        "ignoreTemplateLiterals": true,
+        "ignoreRegExpLiterals": true
+      }
+    ],
+    "block-scoped-var": "error",
+    "eqeqeq": "error",
+    "no-warning-comments": "off",
+    "no-console": "off",
+    "node/no-missing-require": "off",
+    "node/no-unpublished-require": "off",
+    "node/no-unsupported-features/es-syntax": "off",
+    "node/no-extraneous-import": "off",
+    "prefer-arrow-callback": "error",
+    "no-throw-literal": "warn",
+    "require-await": "off",
+    "promise/prefer-await-to-then": "warn",
+    "promise/no-nesting": "warn",
+    "prefer-destructuring": [
+      "warn",
+      {
+        "object": true,
+        "array": false
+      }
+    ],
+    "no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "args": "after-used"
+      }
+    ],
+    "func-style": [
+      "error",
+      "expression",
+      {
+        "allowArrowFunctions": true
+      }
+    ]
+  }
+}

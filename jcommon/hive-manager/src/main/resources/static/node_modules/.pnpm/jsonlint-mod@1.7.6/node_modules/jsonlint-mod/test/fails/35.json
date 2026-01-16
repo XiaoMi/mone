@@ -1,0 +1,72 @@
+{
+    "chapters":[
+        {
+            "title":"Unit Opener",
+            "file":"index1.html"
+        },
+        {
+            "title":"Reading",
+            "file":"index2.html"
+        },
+        {
+            "title":"Reading Comprehension",
+            "file":"index3.html"
+        },
+        {
+            "title":"Vocabulary List",
+            "file":"index4.html"
+        },
+        {
+            "title":"Mind Map",
+            "file":"index5.html"
+        },
+        {
+            "title":"Vocabulary and Spelling",
+            "file":"index6.html"
+        },
+        {
+            "title":"Language Arts",
+            "file":"index7.html"
+        },
+        {
+            "title":"Grammar",
+            "file":"index8.html"
+        },
+		{
+            "title":"Reading 2",
+            "file":"index9.html"
+        },
+        {
+            "title":"Reading Comprehension and Vocabulary",
+            "file":"index10.html"
+        },
+        {
+            "title":"Let's Play",
+            "file":"index11.html"
+        },
+        {
+            "title":"Investigate and Report",
+            "file":"index12.html"
+        },
+        {
+            "title":"Grammar Review",
+            "file":"index13.html"
+        },
+        {
+            "title":"Everyday English",
+            "file":"index14.html"
+        },
+        {
+            "title":"Test Yourself: Reading",
+            "file":"index15.html"
+        },
+        {
+            "title":"Test Yourself: Writing",
+            "file":"index16.html"
+        },
+		{
+            "title":"Logic: Allegory",
+            "file":"index16.html"
+        }
+    ]
+}

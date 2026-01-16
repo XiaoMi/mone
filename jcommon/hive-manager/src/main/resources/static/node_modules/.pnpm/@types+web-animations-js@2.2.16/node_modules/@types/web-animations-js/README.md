@@ -1,0 +1,15 @@
+# Installation
+> `npm install --save @types/web-animations-js`
+
+# Summary
+This package contains type definitions for web-animations-js (https://github.com/web-animations/web-animations-js).
+
+# Details
+Files were exported from https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/web-animations-js.
+
+### Additional Details
+ * Last updated: Tue, 07 Nov 2023 15:11:36 GMT
+ * Dependencies: none
+
+# Credits
+These definitions were written by [Kristian Moerch](https://github.com/kritollm).

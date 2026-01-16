@@ -1,0 +1,14 @@
+
+Simple inline math
+.
+$1+1 = 2$
+.
+i| 1+1 = 2
+.
+
+Simple block math
+.
+$$1+1 = 2$$
+.
+b| 1+1 = 2
+.

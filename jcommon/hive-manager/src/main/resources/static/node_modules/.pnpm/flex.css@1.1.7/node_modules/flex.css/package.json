@@ -1,0 +1,27 @@
+{
+  "name": "flex.css",
+  "version": "1.1.7",
+  "keywords": ["flex ", "css", "flexible", "react-flex", "vue-flex", "angular-flex", "css-flex", "flex-css"],
+  "description": "移动端flex布局神器，兼容微信，UC，webview等移动端主流浏览器",
+  "main": "dist/flex.css",
+  "scripts": {
+    "gulp": "node_modules/.bin/gulp",
+    "dev": "npm run gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lzxb/flex.css.git"
+  },
+  "author": "狼族小狈",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lzxb/flex.css/issues"
+  },
+  "homepage": "https://github.com/lzxb/flex.css#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^3.1.0",
+    "gulp-less": "^3.1.0",
+    "gulp-minify-css": "^1.2.4"
+  }
+}

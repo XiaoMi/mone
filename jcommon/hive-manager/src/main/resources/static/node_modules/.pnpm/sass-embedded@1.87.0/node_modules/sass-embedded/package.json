@@ -1,0 +1,98 @@
+{
+  "name": "sass-embedded",
+  "version": "1.87.0",
+  "protocol-version": "3.1.0",
+  "compiler-version": "1.87.0",
+  "description": "Node.js library that communicates with Embedded Dart Sass using the Embedded Sass protocol",
+  "repository": "sass/embedded-host-node",
+  "author": "Google Inc.",
+  "license": "MIT",
+  "exports": {
+    "import": {
+      "types": "./dist/types/index.m.d.ts",
+      "default": "./dist/lib/index.mjs"
+    },
+    "types": "./dist/types/index.d.ts",
+    "default": "./dist/lib/index.js"
+  },
+  "main": "dist/lib/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "bin": {
+    "sass": "dist/bin/sass.js"
+  },
+  "scripts": {
+    "init": "ts-node ./tool/init.ts",
+    "check": "npm-run-all check:gts check:tsc",
+    "check:gts": "gts check",
+    "check:tsc": "tsc --noEmit",
+    "clean": "gts clean",
+    "compile": "tsc -p tsconfig.build.json && cp lib/index.mjs dist/lib/index.mjs && cp -r lib/src/vendor/sass/ dist/lib/src/vendor/sass && cp dist/lib/src/vendor/sass/index.d.ts dist/lib/src/vendor/sass/index.m.d.ts",
+    "fix": "gts fix",
+    "prepublishOnly": "npm run clean && ts-node ./tool/prepare-release.ts",
+    "test": "jest"
+  },
+  "optionalDependencies": {
+    "sass-embedded-android-arm": "1.87.0",
+    "sass-embedded-android-arm64": "1.87.0",
+    "sass-embedded-android-ia32": "1.87.0",
+    "sass-embedded-android-riscv64": "1.87.0",
+    "sass-embedded-android-x64": "1.87.0",
+    "sass-embedded-darwin-arm64": "1.87.0",
+    "sass-embedded-darwin-x64": "1.87.0",
+    "sass-embedded-linux-arm": "1.87.0",
+    "sass-embedded-linux-arm64": "1.87.0",
+    "sass-embedded-linux-ia32": "1.87.0",
+    "sass-embedded-linux-riscv64": "1.87.0",
+    "sass-embedded-linux-x64": "1.87.0",
+    "sass-embedded-linux-musl-arm": "1.87.0",
+    "sass-embedded-linux-musl-arm64": "1.87.0",
+    "sass-embedded-linux-musl-ia32": "1.87.0",
+    "sass-embedded-linux-musl-riscv64": "1.87.0",
+    "sass-embedded-linux-musl-x64": "1.87.0",
+    "sass-embedded-win32-arm64": "1.87.0",
+    "sass-embedded-win32-ia32": "1.87.0",
+    "sass-embedded-win32-x64": "1.87.0"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.0.0",
+    "buffer-builder": "^0.2.0",
+    "colorjs.io": "^0.5.0",
+    "immutable": "^5.0.2",
+    "rxjs": "^7.4.0",
+    "supports-color": "^8.1.1",
+    "sync-child-process": "^1.0.2",
+    "varint": "^6.0.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.39.0",
+    "@bufbuild/protoc-gen-es": "^2.0.0",
+    "@types/buffer-builder": "^0.2.0",
+    "@types/google-protobuf": "^3.7.2",
+    "@types/jest": "^29.4.0",
+    "@types/node": "^22.0.0",
+    "@types/shelljs": "^0.8.8",
+    "@types/supports-color": "^8.1.1",
+    "@types/tar": "^6.1.0",
+    "@types/varint": "^6.0.1",
+    "@types/yargs": "^17.0.4",
+    "extract-zip": "^2.0.1",
+    "gts": "^6.0.2",
+    "jest": "^29.4.1",
+    "npm-run-all": "^4.1.5",
+    "shelljs": "^0.9.1",
+    "simple-git": "^3.15.1",
+    "source-map-js": "^1.0.2",
+    "tar": "^6.0.5",
+    "ts-jest": "^29.0.5",
+    "ts-node": "^10.2.1",
+    "typescript": "^5.0.2",
+    "yaml": "^2.2.1",
+    "yargs": "^17.2.1"
+  }
+}

@@ -1,0 +1,21 @@
+{
+    "name" : "buffer-builder",
+    "version" : "0.2.0",
+    "description" : "Build a buffer without knowing its size beforehand",
+    "main" : "buffer-builder",
+    "repository" : {
+        "type" : "git",
+        "url" : "http://github.com/PeterReid/node-buffer-builder.git"
+    },
+    "keywords" : [
+        "buffer-builder", "buffer"
+    ],
+    "author" : {
+        "name" : "Peter Reid",
+        "email" : "peter.d.reid@gmail.com"
+    },
+    "license" : "MIT/X11",
+    "engine" : {
+        "node" : ">=0.6.0"
+    }
+}

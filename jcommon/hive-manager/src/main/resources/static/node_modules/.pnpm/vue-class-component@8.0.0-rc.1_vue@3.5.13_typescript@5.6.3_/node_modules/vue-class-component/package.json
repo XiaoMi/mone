@@ -1,0 +1,82 @@
+{
+  "name": "vue-class-component",
+  "version": "8.0.0-rc.1",
+  "description": "ES201X/TypeScript class decorator for Vue components",
+  "main": "dist/vue-class-component.cjs.js",
+  "module": "dist/vue-class-component.esm-bundler.js",
+  "unpkg": "dist/vue-class-component.global.js",
+  "jsdelivr": "dist/vue-class-component.global.js",
+  "types": "dist/vue-class-component.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "yarn build:ts && yarn build:main && yarn build:dts",
+    "build:ts": "tsc -p .",
+    "build:main": "node scripts/build.js",
+    "build:dts": "api-extractor run",
+    "clean": "rimraf dist lib",
+    "example": "webpack --config example/webpack.config.js",
+    "dev": "webpack --config example/webpack.config.js --watch",
+    "lint": "prettier -l --parser typescript \"**/*.[jt]s?(x)\"",
+    "lint:fix": "yarn lint --write",
+    "test": "yarn test:ts && yarn test:babel && yarn test:dts",
+    "test:ts": "jest",
+    "test:babel": "BABEL_TEST=1 jest",
+    "test:dts": "tsc -p ./test-dts",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "release": "bash scripts/release.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vuejs/vue-class-component.git"
+  },
+  "keywords": [
+    "vue",
+    "class",
+    "babel",
+    "typescript"
+  ],
+  "author": "Evan You",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vuejs/vue-class-component/issues"
+  },
+  "homepage": "https://github.com/vuejs/vue-class-component#readme",
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.4",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-decorators": "^7.10.5",
+    "@babel/preset-env": "^7.11.0",
+    "@babel/preset-typescript": "^7.10.4",
+    "@microsoft/api-extractor": "^7.9.9",
+    "@types/jest": "^26.0.10",
+    "@types/node": "^14.6.0",
+    "@vue/compiler-sfc": "^3.0.0",
+    "babel-jest": "^26.3.0",
+    "babel-loader": "^8.1.0",
+    "conventional-changelog-cli": "^2.1.0",
+    "css-loader": "^4.2.1",
+    "jest": "^26.4.2",
+    "prettier": "^2.0.5",
+    "reflect-metadata": "^0.1.13",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.26.5",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-replace": "^2.2.0",
+    "ts-jest": "^26.2.0",
+    "ts-loader": "^8.0.2",
+    "typescript": "^4.0.2",
+    "uglify-es": "^3.3.9",
+    "vue": "^3.0.0",
+    "vue-loader": "^16.0.0-beta.5",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  }
+}

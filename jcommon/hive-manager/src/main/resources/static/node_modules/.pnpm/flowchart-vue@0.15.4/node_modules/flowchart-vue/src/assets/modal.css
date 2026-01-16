@@ -1,0 +1,36 @@
+.modal {
+    border: 1px solid #d3d3d3;
+    box-shadow: 2px 2px 1px #d3d3d3;
+    background-color: white;
+    position: absolute;
+    top: 100px;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    height: 30px;
+    margin-bottom: 10px;
+}
+
+.footer {
+    padding: 10px;
+    text-align: right;
+}
+
+.footer > button {
+    margin-left: 10px;
+}
+
+.body {
+    padding: 10px;
+}
+
+.header {
+    padding: 10px;
+    border-bottom: 1px solid #d3d3d3;
+}

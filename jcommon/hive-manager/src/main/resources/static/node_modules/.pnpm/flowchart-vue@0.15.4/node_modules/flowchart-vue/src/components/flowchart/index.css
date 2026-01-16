@@ -1,0 +1,59 @@
+#svg {
+    background-size: 20px 20px, 20px 20px, 10px 10px, 10px 10px;
+    background-image: linear-gradient(to right, #dfdfdf 1px, transparent 1px),
+    linear-gradient(to bottom, #dfdfdf 1px, transparent 1px),
+    linear-gradient(to right, #f1f1f1 1px, transparent 1px),
+    linear-gradient(to bottom, #f1f1f1 1px, transparent 1px);
+    background-position: left -1px top -1px, left -1px top -1px, left -1px top -1px, left -1px top -1px;
+    height: 100%;
+    width: 100%;
+}
+
+#chart {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    border: 1px solid #dfdfdf;
+}
+
+#position {
+    position: absolute;
+    right: 4px;
+}
+
+.unselectable {
+    moz-user-select: -moz-none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.connector {
+    cursor: crosshair;
+    opacity: 0;
+}
+
+.connector.active {
+    opacity: 1;
+    fill: white;
+    stroke: #bbbbbb;
+    stroke-width: 1px;
+}
+
+.connector:hover {
+    stroke: red;
+}
+
+#svg .selection {
+    stroke: lightblue;
+    fill: lightblue;
+    fill-opacity: 0.8;
+    display: none;
+}
+
+#svg .selection.active {
+    display: block;
+}

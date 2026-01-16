@@ -1,0 +1,193 @@
+.vmsg-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  background: rgba(0,0,0,.7);
+  align-items: center;
+  justify-content: center;
+}
+
+.vmsg-popup {
+  box-sizing: border-box;
+  width: 250px;
+  padding: 10px;
+  border-radius: 4px;
+  background: #e4e1e5;
+  box-shadow: 1px 1px 4px 0 rgba(59,26,84,.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: Helvetica,sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #0a0a0a;
+}
+
+.vmsg-progress {
+  width: 40%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+}
+
+.vmsg-progress-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  animation: vmsg-progress 1s linear infinite;
+}
+.vmsg-progress-dot:nth-child(2) {
+  animation-delay: -0.8s;
+}
+.vmsg-progress-dot:nth-child(3) {
+  animation-delay: -0.6s;
+}
+@keyframes vmsg-progress {
+  0%, 60%, 100% {
+    background: none;
+  }
+  30% {
+    background: #9e85ad;
+  }
+}
+
+.vmsg-error {
+  font-weight: bold;
+  text-align: center;
+}
+
+.vmsg-record-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.vmsg-button {
+  min-width: 40px;
+  line-height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid #ccc;
+  font-family: Helvetica,sans-serif;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+.vmsg-button:disabled {
+  cursor: default;
+  color: #999;
+}
+.vmsg-button:not(:disabled):hover {
+  border-color: #9e85ad;
+}
+.vmsg-button::-moz-focus-inner {
+  border: 0;
+}
+.vmsg-record-button {
+  font-size: 30px;
+  color: #f00;
+}
+.vmsg-stop-button {
+  font-size: 25px;
+  color: #000;
+}
+.vmsg-save-button {
+  font-size: 25px;
+  color: #090;
+}
+
+.vmsg-timer {
+  line-height: 32px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.vmsg-slider-wrapper {
+  position: relative;
+  margin-top: 3px;
+}
+.vmsg-slider-wrapper::after {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  line-height: 14px;
+  text-align: center;
+  color: #999;
+  pointer-events: none;
+}
+.vmsg-pitch-slider-wrapper::after {
+  content: "pitch";
+}
+.vmsg-gain-slider-wrapper::after {
+  content: "gain";
+}
+.vmsg-slider {
+  display: block;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  background: none;
+  -webkit-appearance: none;
+}
+.vmsg-slider::-moz-focus-outer {
+  border: 0;
+}
+.vmsg-slider::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  height: 16px;
+  background: none;
+  border: 1px solid #ccc;
+}
+.vmsg-slider::-moz-range-track {
+  box-sizing: border-box;
+  height: 16px;
+  background: none;
+  border: 1px solid #ccc;
+}
+.vmsg-slider::-ms-track {
+  box-sizing: border-box;
+  height: 16px;
+  background: none;
+  border: 1px solid #ccc;
+}
+.vmsg-slider::-webkit-slider-thumb {
+  width: 39px;
+  height: 14px;
+  background: #ccc;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+.vmsg-slider::-moz-range-thumb {
+  width: 40px;
+  height: 14px;
+  background: #ccc;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
+.vmsg-slider::-ms-thumb {
+  width: 39px;
+  height: 14px;
+  background: #ccc;
+  cursor: pointer;
+}
+.vmsg-slider::-webkit-slider-thumb:hover {
+  background: #999;
+}
+.vmsg-slider::-moz-range-thumb:hover {
+  background: #999;
+}
+.vmsg-slider::-ms-thumb:hover {
+  background: #999;
+}
+.vmsg-slider::-ms-tooltip {
+  display: none;
+}

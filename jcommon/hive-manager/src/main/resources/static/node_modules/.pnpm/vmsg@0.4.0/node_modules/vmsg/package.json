@@ -1,0 +1,44 @@
+{
+  "name": "vmsg",
+  "version": "0.4.0",
+  "description": "Library for creating voice messages",
+  "main": "vmsg.js",
+  "typings": "vmsg.d.ts",
+  "scripts": {
+    "start": "parcel demo/index.html",
+    "prepare": "babel vmsg.js -o vmsg.es5.js",
+    "demo": "D=`mktemp -d` && parcel build demo/index.html --out-dir \"$D\" --public-url ./ && git checkout gh-pages && rm `git ls-files *` && mv \"$D\"/* . && rmdir \"$D\" && git add -A && git commit -m 'Update demo'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kagami/vmsg.git"
+  },
+  "keywords": [
+    "voice",
+    "voice message",
+    "emscripten",
+    "webassembly",
+    "lame",
+    "mp3"
+  ],
+  "author": "Kagami Hiiragi",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/Kagami/vmsg/issues"
+  },
+  "homepage": "https://github.com/Kagami/vmsg#readme",
+  "parcelDisableLoaders": [
+    "wasm"
+  ],
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.2.2",
+    "@babel/plugin-proposal-class-properties": "^7.3.0",
+    "@babel/preset-env": "^7.3.1",
+    "autoprefixer": "^9.4.7",
+    "parcel-bundler": "^1.11.0",
+    "parcel-plugin-disable-loaders": "^1.0.3",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1"
+  }
+}
