@@ -1,1 +1,0 @@
-function s(n,r,t,c){const e=new WebSocket(n);let l;return e.onopen=()=>{r(),console.log("连接成功.")},e.onmessage=o=>{c(o.data)},e.onerror=o=>{console.error("WebSocket error:",o)},e.onclose=o=>{clearInterval(l),t(),console.log("WebSocket connection closed:",o)},e}export{s as w};
