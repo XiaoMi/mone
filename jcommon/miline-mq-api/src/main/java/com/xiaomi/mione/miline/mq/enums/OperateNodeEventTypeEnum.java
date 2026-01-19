@@ -15,13 +15,7 @@ public enum OperateNodeEventTypeEnum {
     /**
      * 启动开发
      */
-    EVENT_START_CODING(1, "启动开发"),
-
-    /**
-     * 提测准入
-     */
-    EVENT_TEST_ADMISSION(2, "提测准入"),
-
+    EVENT_START_CODING(1, "启动开发事件"),
     /**
      * 启动部署
      */
@@ -40,7 +34,12 @@ public enum OperateNodeEventTypeEnum {
     /**
      * 回滚部署
      */
-    EVENT_ROLLBACK_DEPLOY(9, "回滚部署");
+    EVENT_ROLLBACK_DEPLOY(9, "回滚部署"),
+
+    /**
+     * 应用变更状态变更消息
+     */
+    EVENT_APP_CHANGE_STATUS(10, "应用变更状态变更消息");
 
     private final Integer code;
     private final String desc;
