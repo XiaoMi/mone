@@ -12,6 +12,10 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum EventTagEnum {
     /**
+     * 测试使用
+     */
+    EVENT_TEST("test", "启动开发事件"),
+    /**
      * 创建应用变更
      */
     EVENT_CREATE_APP_CHANGE("createAppChange", "启动开发事件"),
