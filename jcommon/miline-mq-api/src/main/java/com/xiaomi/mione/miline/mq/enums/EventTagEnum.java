@@ -4,13 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
- * MQ 节点操作事件类型枚举
+ * MQ 事件的tag， 用于区分一类的事件消息， 比如： 订单创建消息、 订单支付消息、 订单取消消息等
  *
  * @author qoder
  */
 @Getter
 @AllArgsConstructor
-public enum OperateNodeEventTypeEnum {
+public enum EventTagEnum {
     /**
      * 创建应用变更
      */
