@@ -19,7 +19,10 @@ public enum EventTagEnum {
      * 申请应用部署(去部署)
      */
     EVENT_CREATE_DEPLOY_REQUEST("createDeployRequest", "去部署"),
-
+    /**
+     * 开始部署
+     */
+    EVENT_DEPLOY_START("deployStart", "开始部署"),
     /**
      * 完成部署
      */
