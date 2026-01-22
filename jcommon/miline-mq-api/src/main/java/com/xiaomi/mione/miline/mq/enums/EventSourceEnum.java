@@ -15,7 +15,8 @@ public enum EventSourceEnum {
     /**
      * miline平台
      */
-    MILINE("miline", "miline平台");
+    MILINE("miline", "miline平台"),
+    APP_STACK("appStack", "appStack平台");
 
     private final String code;
     private final String desc;
