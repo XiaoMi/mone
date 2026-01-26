@@ -48,7 +48,7 @@ public class OperateNodeEventBody implements Serializable {
     /**
      * meego工作项ID，如需求ID
      */
-    private Integer workItemId;
+    private Long workItemId;
 
     /**
      * meego工作项标题/需求名称
