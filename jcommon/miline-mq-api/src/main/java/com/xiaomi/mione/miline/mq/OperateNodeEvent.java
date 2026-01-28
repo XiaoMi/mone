@@ -39,4 +39,12 @@ public class OperateNodeEvent<T> implements Serializable {
      * 事件消息体
      */
     private T eventBody;
+
+    public String getEventTag() {
+        return eventTag.getTag();
+    }
+
+    public EventTagEnum getEventTagEnum() {
+        return eventTag;
+    }
 }
