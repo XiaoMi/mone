@@ -10,8 +10,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import run.mone.mcp.hera.analysis.api.IDubboInterfaceQpsService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -21,12 +23,11 @@ import java.util.List;
 
 /**
  * Dubbo接口QPS查询服务实现类
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class DubboInterfaceQpsService {
+@DubboService(timeout = 10000, group = "${dubbo.group}", version = "1.0")
+public class DubboInterfaceQpsService implements IDubboInterfaceQpsService {
 
     @Value("${dubbo.qps.api.url}")
     private String dubboQpsUrl;
@@ -44,6 +45,7 @@ public class DubboInterfaceQpsService {
      * @param endTimeSec 结束时间戳（秒）
      * @return 格式化的QPS信息字符串
      */
+    @Override
     public String getDubboInterfaceQps(String appName, String serviceName, String methodName,
                                        String serverZone, long startTimeSec, long endTimeSec) {
         try {

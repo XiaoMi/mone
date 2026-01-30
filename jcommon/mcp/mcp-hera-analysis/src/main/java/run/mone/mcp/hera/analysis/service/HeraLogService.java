@@ -11,21 +11,28 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import run.mone.mcp.hera.analysis.api.IHeraLogService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Hera日志服务实现类
+ */
 @Service
 @Slf4j
-public class HeraLogService {
+@DubboService(timeout = 10000, group = "${dubbo.group}", version = "1.0")
+public class HeraLogService implements IHeraLogService {
 
     @Value("${hera.log.create.api.url}")
     private String heraLogCreateUrl;
 
     private final Gson gson = new Gson();
 
+    @Override
     public String createLogByMiline(Long projectId, Long envId, String tailName, String logPath, String userName, String userId) {
         try {
             // 构建请求体

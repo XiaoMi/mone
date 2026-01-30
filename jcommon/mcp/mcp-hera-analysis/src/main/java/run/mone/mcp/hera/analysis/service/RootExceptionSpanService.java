@@ -17,6 +17,7 @@ import org.apache.ozhera.trace.etl.domain.jaegeres.JaegerAttribute;
 import org.apache.ozhera.trace.etl.domain.jaegeres.JaegerLogs;
 import org.apache.ozhera.trace.etl.domain.jaegeres.JaegerProcess;
 import org.apache.ozhera.trace.etl.domain.tracequery.Span;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.CustomConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
+import run.mone.mcp.hera.analysis.api.IRootExceptionSpanService;
 import run.mone.mcp.hera.analysis.constant.Prompts;
 
 import javax.annotation.PostConstruct;
@@ -37,12 +39,11 @@ import java.util.regex.Pattern;
 /**
  * 根因Span查询服务实现类
  * 用于分析trace链路，提取异常根因节点的相关信息
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class RootExceptionSpanService {
+@DubboService(timeout = 60000, group = "${dubbo.group}", version = "1.0")
+public class RootExceptionSpanService implements IRootExceptionSpanService {
 
     @Value("${trace.query.section.api.url}")
     private String traceSectionQueryUrl;
@@ -65,6 +66,7 @@ public class RootExceptionSpanService {
      * @param env 环境（staging/online）
      * @return 格式化的根因span信息
      */
+    @Override
     public String queryRootExceptionSpan(String traceId, String env) {
         try {
             // 1. 查询部门trace数据

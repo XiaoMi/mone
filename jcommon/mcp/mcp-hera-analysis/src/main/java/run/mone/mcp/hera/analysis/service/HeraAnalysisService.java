@@ -9,9 +9,11 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import run.mone.mcp.hera.analysis.api.IHeraAnalysisService;
 import run.mone.mcp.hera.analysis.model.HeraAnalysisRequest;
 import run.mone.mcp.hera.analysis.model.HeraAnalysisResponse;
 
@@ -20,12 +22,11 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Hera分析服务实现类
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class HeraAnalysisService {
+@DubboService(timeout = 30000, group = "${dubbo.group}", version = "1.0")
+public class HeraAnalysisService implements IHeraAnalysisService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -48,6 +49,7 @@ public class HeraAnalysisService {
      * @param env       环境
      * @return 分析结果
      */
+    @Override
     public String analyzeTraceRoot(String traceId, String env) {
         try {
             HeraAnalysisRequest request = new HeraAnalysisRequest();
