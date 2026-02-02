@@ -147,6 +147,17 @@ public class NacosNaming {
         return namingService.getAllInstances(serviceName);
     }
 
+    /**
+     * 获取服务列表
+     *
+     * @param serviceName
+     * @return
+     * @throws NacosException
+     */
+    public List<Instance> selectInstances(String serviceName, boolean healthy) throws NacosException {
+        return namingService.selectInstances(serviceName, healthy);
+    }
+
 
     /**
      * 订阅服务
