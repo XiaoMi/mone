@@ -49,13 +49,13 @@
     </dependencies>
 
     <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
-        </repository>
         <snapshotRepository>
-            <id>snapshots</id>
-            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
 </project>
