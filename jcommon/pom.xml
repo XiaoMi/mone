@@ -99,6 +99,7 @@
         <module>infra-common</module>
         <module>mockjs</module>
         <module>sysFunc</module>
+        <module>miline-mq-api</module>
     </modules>
 
 
