@@ -13,10 +13,7 @@ import run.mone.hive.mcp.function.ChatFunction;
 import run.mone.hive.mcp.function.McpFunction;
 import run.mone.hive.mcp.service.RoleMeta;
 import run.mone.hive.roles.tool.*;
-import run.mone.mcp.git.function.*;
 import run.mone.mcp.hera.analysis.function.*;
-import run.mone.mcp.miline.function.GetPipelineDetailFunction;
-import run.mone.mcp.miline.function.RunPipelineFunction;
 
 import java.util.ArrayList;
 
@@ -65,27 +62,6 @@ public class MCPConfig {
 
     @Autowired
     private HeraLogCreateFunction heraLogCreateFunction;
-
-    @Autowired
-    private GitCommitFunction gitCommitFunction;
-
-    @Autowired
-    private GitPushFunction gitPushFunction;
-
-    @Autowired
-    private GitCloneFunction gitCloneFunction;
-
-    @Autowired
-    private GitCheckoutNewBranchFunction gitCheckoutNewBranchFunction;
-
-    @Autowired
-    private GitCreateMergeRequestFunction gitCreateMergeRequestFunction;
-
-    @Autowired
-    private RunPipelineFunction runPipelineFunction;
-
-    @Autowired
-    private GetPipelineDetailFunction getPipelineDetailFunction;
 
     @Bean
     public RoleMeta roleMeta() {

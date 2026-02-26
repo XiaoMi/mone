@@ -11,20 +11,21 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import run.mone.mcp.hera.analysis.api.ILogQueryService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
  * 日志查询服务实现类
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class LogQueryService {
+@DubboService(timeout = 10000, group = "${dubbo.group}", version = "1.0")
+public class LogQueryService implements ILogQueryService {
 
     @Value("${log.query.api.url}")
     private String logQueryUrl;
@@ -45,6 +46,7 @@ public class LogQueryService {
      * @param pageSize 每页大小
      * @return 格式化的日志查询结果
      */
+    @Override
     public String queryLogs(String level, int projectId, int envId, long startTime, long endTime, String traceId, String logIp, int page, int pageSize) {
         try {
             // 构建请求体

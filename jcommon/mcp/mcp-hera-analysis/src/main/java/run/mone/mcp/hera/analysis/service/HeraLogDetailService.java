@@ -11,20 +11,21 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import run.mone.mcp.hera.analysis.api.IHeraLogDetailService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
  * Hera日志详情查询服务实现类
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class HeraLogDetailService {
+@DubboService(timeout = 10000, group = "${dubbo.group}", version = "1.0")
+public class HeraLogDetailService implements IHeraLogDetailService {
 
     @Value("${hera.log.detail.api.url}")
     private String heraLogDetailUrl;
@@ -44,6 +45,7 @@ public class HeraLogDetailService {
      * @param pageSize 每页大小
      * @return 格式化的日志查询结果
      */
+    @Override
     public String queryLogDetail(int spaceId, int storeId, String input, String tailName, String startTime, String endTime, int page, int pageSize) {
         try {
             // 构建请求体

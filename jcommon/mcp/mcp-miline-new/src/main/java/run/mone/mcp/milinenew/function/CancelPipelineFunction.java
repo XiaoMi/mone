@@ -67,7 +67,7 @@ public class CancelPipelineFunction implements McpFunction {
     }
 
     @Override
-    @ReportCallCount(businessName = "miline-api-cancelPipeline", description = "miline-api取消流水线工具调用")
+    @ReportCallCount(businessName = "miline-mcp-cancelPipeline", description = "miline-mcp-取消流水线")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("CancelPipeline arguments: {}", arguments);
 

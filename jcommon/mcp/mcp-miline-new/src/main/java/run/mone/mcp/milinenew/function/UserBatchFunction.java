@@ -80,7 +80,7 @@ public class UserBatchFunction implements McpFunction {
     }
 
     @Override
-    @ReportCallCount(businessName = "miline-api-userBatch", description = "miline-api灰度部署工具调用")
+    @ReportCallCount(businessName = "miline-mcp-userBatch", description = "miline-mcp-灰度部署")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("UserBatch arguments: {}", arguments);
 

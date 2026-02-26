@@ -71,7 +71,7 @@ public class K8sBatchDeployFunction implements McpFunction {
     }
 
     @Override
-    @ReportCallCount(businessName = "miline-api-k8sBatchDeploy", description = "miline-api批次部署工具调用")
+    @ReportCallCount(businessName = "miline-mcp-k8sBatchDeploy", description = "miline-mcp-批次部署")
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("K8sBatchDeploy arguments: {}", arguments);
 

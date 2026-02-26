@@ -8,8 +8,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import run.mone.mcp.hera.analysis.api.IApplicationMetricsService;
 import run.mone.mcp.hera.analysis.model.ApplicationMetricsResponse;
 
 import java.io.IOException;
@@ -20,12 +22,11 @@ import java.util.concurrent.Executors;
 
 /**
  * 应用指标监控服务实现类
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class ApplicationMetricsService {
+@DubboService(timeout = 10000, group = "${dubbo.group}", version = "1.0")
+public class ApplicationMetricsService implements IApplicationMetricsService {
 
     @Value("${metrics.api.url}")
     private String metricsUrl;
@@ -44,6 +45,7 @@ public class ApplicationMetricsService {
      * @param application 应用名称（项目ID和项目名称的组合）
      * @return 格式化的指标信息字符串
      */
+    @Override
     public String getApplicationMetrics(String application) {
         try {
             // 计算时间戳（秒级）

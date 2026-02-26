@@ -14,8 +14,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.apache.ozhera.trace.etl.domain.tracequery.Span;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import run.mone.mcp.hera.analysis.api.ITraceQueryService;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -26,12 +28,11 @@ import java.util.List;
 /**
  * Trace查询服务实现类
  * 用于查询全量trace数据
- *
- * @author dingtao
  */
 @Slf4j
 @Service
-public class TraceQueryService {
+@DubboService(timeout = 10000, group = "${dubbo.group}", version = "1.0")
+public class TraceQueryService implements ITraceQueryService {
 
     @Value("${trace.query.api.url}")
     private String traceQueryUrl;
@@ -105,6 +106,7 @@ public class TraceQueryService {
      * @param env 环境（staging/online）
      * @return 格式化的trace查询结果
      */
+    @Override
     public String queryTraceData(String traceId, String env) {
         try {
             List<Span> spans = queryTraceDataAsSpans(traceId, env);
