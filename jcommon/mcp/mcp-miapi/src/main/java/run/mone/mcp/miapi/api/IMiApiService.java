@@ -89,20 +89,17 @@ public interface IMiApiService {
      *
      * @param interfaceName dubbo服务全限定名
      * @param methodName    dubbo方法名
-     * @param paramType     参数类型
-     * @param parameter     参数
-     * @param env           环境
      * @param group         分组
      * @param version       版本
      * @param attachment    RpcContext
-     * @param timeout       超时时间
-     * @param retries       重试次数
+     * @param paramType     参数类型
+     * @param parameter     参数
      * @param addr          指定ip:port
      * @param dubboTag      dubbo tag
      * @param userName      用户名
      * @return 调用结果
      */
-    String dubboTest(String interfaceName, String methodName, String paramType, String parameter,
-                     String env, String group, String version, String attachment,
-                     String timeout, String retries, String addr, String dubboTag, String userName);
+    String dubboTest(String interfaceName, String methodName, String group, String version,
+                     String attachment, String paramType, String parameter,
+                     String addr, String dubboTag, String userName);
 }

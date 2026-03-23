@@ -221,11 +221,11 @@ public class MiApiService implements IMiApiService {
     }
 
     @Override
-    public String dubboTest(String interfaceName, String methodName, String paramType, String parameter,
-                            String env, String group, String version, String attachment,
-                            String timeout, String retries, String addr, String dubboTag, String userName) {
+    public String dubboTest(String interfaceName, String methodName, String group, String version,
+                            String attachment, String paramType, String parameter,
+                            String addr, String dubboTag, String userName) {
         String effectiveUserName = getEffectiveUserName(userName);
-        log.info("dubboTest, interfaceName: {}, methodName: {}, env: {}", interfaceName, methodName, env);
+        log.info("dubboTest, interfaceName: {}, methodName: {}, group: {}", interfaceName, methodName, group);
         String error = checkBaseUrl();
         if (error != null) {
             return error;
@@ -234,28 +234,15 @@ public class MiApiService implements IMiApiService {
             Map<String, Object> params = new HashMap<>();
             params.put("interfaceName", interfaceName);
             params.put("methodName", methodName);
-            params.put("paramType", paramType);
-            params.put("parameter", parameter);
-            params.put("env", env);
             params.put("group", group);
             params.put("version", version);
-            if (attachment != null) {
-                params.put("attachment", attachment);
-            }
-            if (timeout != null) {
-                params.put("timeout", timeout);
-            }
-            if (retries != null) {
-                params.put("retries", retries);
-            }
-            if (addr != null) {
-                params.put("addr", addr);
-            }
-            if (dubboTag != null) {
-                params.put("dubboTag", dubboTag);
-            }
+            params.put("attachment", attachment != null ? attachment : "");
+            params.put("paramType", paramType != null ? paramType : "[]");
+            params.put("parameter", parameter != null ? parameter : "[]");
+            params.put("addr", addr != null ? addr : "");
+            params.put("dubboTag", dubboTag != null ? dubboTag : "");
             params.put("userName", effectiveUserName);
-            return httpUtils.request("/mtop/miapi/dubboTestAgent", params, java.util.Map.class);
+            return httpUtils.request("/mtop/miapi/dubboTestAgent", params, Object.class);
         } catch (Throwable e) {
             log.error("dubboTest error", e);
             return "错误：" + e.getMessage();
