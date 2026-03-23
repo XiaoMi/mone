@@ -132,6 +132,7 @@ public class PushChannelEventListener implements ChannelEventListener {
     public void onChannelClose(String remoteAddr, Channel channel) {
         logger.info("onChannelClose:{}", remoteAddr);
         AgentContext.ins().map.remove(remoteAddr);
+        RemotingUtil.closeChannel(channel);
     }
 
     @Override

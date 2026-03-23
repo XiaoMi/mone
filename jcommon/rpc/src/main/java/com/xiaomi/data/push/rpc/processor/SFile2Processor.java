@@ -33,7 +33,7 @@ public class SFile2Processor implements NettyRequestProcessor {
 
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
-        log.info("receive file:{}",request.getExtField("targetPath"));
+        log.info("receive file:{}", request.getExtField("targetPath"));
         RandomAccessFile raf = null;
         if (null == request.getBody()) {
             return null;
