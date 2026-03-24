@@ -284,6 +284,22 @@ public class RpcServer implements Service {
 
 
     /**
+     * 发送请求异步
+     *
+     * @param channel
+     * @param req
+     * @param timeout
+     * @param callback
+     */
+    public void send(Channel channel, RemotingCommand req, long timeout, InvokeCallback callback) {
+        try {
+            this.server.invokeAsync(channel, req, timeout, callback);
+        } catch (Throwable e) {
+            throw new RpcException(e.getMessage(), e);
+        }
+    }
+
+    /**
      * 发送请求
      *
      * @param address

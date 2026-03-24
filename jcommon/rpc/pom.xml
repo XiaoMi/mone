@@ -9,14 +9,15 @@
   </parent>
   <artifactId>rpc</artifactId>
 <!--  <version>${submodule-release.version}</version>-->
-  <version>1.6.4-jdk21-SNAPSHOT</version>
-  
+<!--  <version>1.6.4-jdk21-SNAPSHOT</version>-->
+  <version>1.6.6-jdk21-SNAPSHOT</version>
+
   <!-- 默认属性，适用于JDK 8 -->
   <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+<!--    <maven.compiler.source>1.8</maven.compiler.source>-->
+<!--    <maven.compiler.target>1.8</maven.compiler.target>-->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>1.8</java.version>
+<!--    <java.version>1.8</java.version>-->
     <lombok.version>1.18.4</lombok.version>
     <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
   </properties>
@@ -176,6 +177,11 @@
               <source>21</source>
               <target>21</target>
               <encoding>UTF-8</encoding>
+              <compilerArgs>
+                <arg>-encoding</arg>
+                <arg>UTF-8</arg>
+              </compilerArgs>
+
             </configuration>
           </plugin>
         </plugins>
